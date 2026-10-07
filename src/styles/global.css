@@ -440,8 +440,8 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
 /* 라이팅 버튼 네 종류 — 아이콘·글자는 선택이다(둘 다, 하나만 모두 된다).
    1. 라이팅 동그라미 버튼 .scr-lighting-circle-btn   52px 원 · 유리 바탕(등록 FAB · 맨 위로)
    2. 라이팅 알약 버튼     .scr-lighting-pill-btn     알약 채움 + 글로우(선택 막대의 삭제·숨김)
-   3. 라이팅 네모 버튼     .scr-lighting-rect-btn     테두리 네모 · 모서리 4px · 패딩 6px 12px · 높이 32(회원 생성 · 대표맵 추가 · 팀 구성하기)
-   4. 라이팅 컴팩트 네모 버튼 .scr-lighting-compact-rect-btn  같은 꼴 · 패딩 4px 8px · 높이 26(스크랩 · 사용법 · 상성 보기 · 월 선택)
+   3. 라이팅 네모 버튼     .scr-lighting-rect-btn     테두리 네모 · 모서리 6px · 패딩 6px 12px · 높이 32(회원 생성 · 대표맵 추가 · 팀 구성하기)
+   4. 라이팅 컴팩트 네모 버튼 .scr-lighting-compact-rect-btn  같은 꼴 · 사방 패딩 4px 6px · 높이는 내용대로(글자 12 → 약 23~25px)(스크랩 · 사용법 · 상성 보기 · 월 선택)
    자리 잡기(fixed 위치·크기 전환)는 .scr-scrolltop·.scr-activity-add-fab 같은 제자리 클래스가 따로 진다. */
 .scr-lighting-circle-btn {
   width: 52px; height: 52px; border-radius: 50%; padding: 0; flex: 0 0 auto;
@@ -481,13 +481,13 @@ html.scr-light-theme .scr-lighting-circle-btn {
 .scr-lighting-pill-btn:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
 .scr-lighting-compact-rect-btn, .scr-lighting-rect-btn {
   display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; box-sizing: border-box;
-  border: 1.5px solid rgba(255,255,255,0.32); border-radius: 4px;
+  border: 1.5px solid rgba(255,255,255,0.32); border-radius: 6px;
   background: var(--panel-raised); color: var(--text);
   font-family: inherit; font-weight: 600; line-height: 1;
   cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent;
   transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
 }
-.scr-lighting-compact-rect-btn { gap: 5px; padding: 4px 8px; min-height: 26px; font-size: 12px; }
+.scr-lighting-compact-rect-btn { gap: 5px; padding: 4px 6px; font-size: 12px; }
 .scr-lighting-rect-btn { gap: 6px; padding: 6px 12px; min-height: 32px; font-size: var(--fs-caption); }
 .scr-lighting-compact-rect-btn svg, .scr-lighting-rect-btn svg { display: block; flex: 0 0 auto; }
 @media (hover: hover) {
