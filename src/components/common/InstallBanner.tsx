@@ -32,7 +32,7 @@ export default function InstallBanner() {
         <b>주소창 없이 앱처럼</b>
         <span>홈 화면에 추가하면 화면이 넓어져요{platform === "ios" ? " (방법 안내)" : ""}.</span>
       </div>
-      <button type="button" className="scr-pill-btn scr-lighting-color-fill" onClick={onInstall}>
+      <button type="button" className="scr-pill-btn" onClick={onInstall}>
         <Download size={14} /> 추가
       </button>
       <button type="button" className="scr-install-banner-close" onClick={close} aria-label="닫기">

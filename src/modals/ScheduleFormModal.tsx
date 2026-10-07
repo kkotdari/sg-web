@@ -106,9 +106,9 @@ export default function ScheduleFormModal({ initial, onClose, onSaved }: {
         </div>
 
         <div className="scr-form-actions">
-          <button className="scr-rect-btn scr-lighting-color" onClick={onClose}>취소</button>
+          <button className="scr-rect-btn" onClick={onClose}>취소</button>
           <button
-            className={cx("scr-rect-btn scr-lighting-color-fill")}
+            className={cx("scr-rect-btn is-fill")}
             onClick={submit} disabled={!canSubmit || busy}
           >
             {busy ? <><Spinner /> 저장하는 중...</> : <><CalendarPlus size={14} /> {initial ? "저장" : "등록"}</>}

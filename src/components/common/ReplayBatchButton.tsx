@@ -171,7 +171,7 @@ export default function ReplayBatchButton() {
             </span>
             <button
               type="button"
-              className="scr-rect-btn scr-lighting-color scr-batch-stop"
+              className="scr-rect-btn scr-batch-stop"
               onClick={() => { abortRef.current = true; }}
             >
               중단
@@ -181,10 +181,10 @@ export default function ReplayBatchButton() {
       ) : (
         <>
           <div className="scr-batch-pick">
-            <button type="button" className="scr-rect-btn scr-lighting-color scr-batch-pick-btn" onClick={() => openPicker("file")}>
+            <button type="button" className="scr-rect-btn scr-batch-pick-btn" onClick={() => openPicker("file")}>
               <FileUp size={15} /> 파일 고르기
             </button>
-            <button type="button" className="scr-rect-btn scr-lighting-color scr-batch-pick-btn" onClick={() => openPicker("dir")}>
+            <button type="button" className="scr-rect-btn scr-batch-pick-btn" onClick={() => openPicker("dir")}>
               <FolderUp size={15} /> 폴더 고르기
             </button>
           </div>
@@ -215,13 +215,13 @@ export default function ReplayBatchButton() {
               </ul>
               <div className="scr-batch-foot">
                 <button
-                  type="button" className="scr-rect-btn scr-lighting-color scr-batch-clear"
+                  type="button" className="scr-rect-btn scr-batch-clear"
                   onClick={() => { setStaged([]); setPickedNote(""); }}
                 >
                   비우기
                 </button>
                 <button
-                  type="button" className="scr-rect-btn scr-lighting-color-fill scr-batch-go"
+                  type="button" className="scr-rect-btn is-fill scr-batch-go"
                   onClick={() => { void executeBatch(staged); }}
                 >
                   {staged.length}개 읽어 오기
@@ -237,7 +237,7 @@ export default function ReplayBatchButton() {
       {pendingReview && (
         <button
           type="button"
-          className="scr-rect-btn scr-lighting-color-fill scr-batch-reopen"
+          className="scr-rect-btn is-fill scr-batch-reopen"
           onClick={() => setReviewOpen(true)}
         >
           읽어 온 {manualDrafts.length}개 다시 열기

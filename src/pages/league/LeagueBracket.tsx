@@ -288,7 +288,7 @@ function MatchEditModal({
             />
             {canScore && (a !== "" || b !== "") && (
               <button
-                type="button" className="scr-rect-btn scr-lighting-color"
+                type="button" className="scr-rect-btn"
                 onClick={() => { setA(""); setB(""); }}
               >
                 지우기
@@ -309,8 +309,8 @@ function MatchEditModal({
 
         {err && <div className="scr-err" role="alert">{err}</div>}
         <div className="scr-form-actions">
-          <button type="button" className="scr-rect-btn scr-lighting-color" onClick={onClose} disabled={busy}>취소</button>
-          <button type="button" className="scr-rect-btn scr-lighting-color-fill" onClick={save} disabled={busy}>
+          <button type="button" className="scr-rect-btn" onClick={onClose} disabled={busy}>취소</button>
+          <button type="button" className="scr-rect-btn is-fill" onClick={save} disabled={busy}>
             {busy && <Spinner size={14} />} 저장
           </button>
         </div>
@@ -649,7 +649,7 @@ export default function LeagueBracket({
         <div className="scr-league-bracket-seed-actions" />
         {canShape && shape.length > 0 && (
           <button
-            type="button" className="scr-rect-btn scr-lighting-color"
+            type="button" className="scr-rect-btn"
             onClick={() => setConfirmingBracket(true)} disabled={busy || dirty}
             title={dirty ? "먼저 저장하세요" : undefined}
           >

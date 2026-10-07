@@ -18,7 +18,7 @@ export default function ScrollTopButton() {
   return (
     <button
       type="button"
-      className="scr-scrolltop scr-circle-btn scr-lighting-color-glass"
+      className="scr-scrolltop scr-circle-btn"
       onClick={() => smoothScrollRootToTop()}
       aria-label="맨 위로"
     >

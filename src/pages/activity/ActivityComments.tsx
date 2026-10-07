@@ -233,7 +233,7 @@ function NoteComposer({
       {onCancel && (
         <button
           type="button"
-          className="scr-rect-btn scr-lighting-color scr-comment-submit-btn scr-comment-cancel-btn"
+          className="scr-rect-btn scr-comment-submit-btn scr-comment-cancel-btn"
           onMouseDown={(e) => e.preventDefault()}
           onClick={onCancel}
           aria-label="수정 취소"
@@ -243,7 +243,7 @@ function NoteComposer({
       )}
       <button
         type="button"
-        className="scr-rect-btn scr-lighting-color-fill scr-comment-submit-btn"
+        className="scr-rect-btn is-fill scr-comment-submit-btn"
         disabled={!canSubmit}
         onClick={doSubmit}
         aria-label="메모 등록"

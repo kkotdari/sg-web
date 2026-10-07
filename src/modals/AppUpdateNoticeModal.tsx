@@ -26,7 +26,7 @@ export default function AppUpdateNoticeModal({ notes, onClose }: AppUpdateNotice
 
         </div>
         <div className="scr-form-actions">
-          <button type="button" className="scr-rect-btn scr-lighting-color-fill" onClick={onClose}>확인</button>
+          <button type="button" className="scr-rect-btn is-fill" onClick={onClose}>확인</button>
         </div>
       </div>
     </div>,

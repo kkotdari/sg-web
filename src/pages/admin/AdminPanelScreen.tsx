@@ -314,7 +314,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     </span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn scr-lighting-color-fill scr-adm-row-btn"
+                    type="button" className="scr-rect-btn is-fill scr-adm-row-btn"
                     onClick={openVersionPicker} disabled={busy}
                   >
                     {busy ? <Spinner /> : "바꾸기"}
@@ -327,7 +327,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     <span className="scr-adm-row-desc">버전을 더하거나 지우고, 버전마다의 안내 글을 씁니다.</span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn scr-lighting-color scr-adm-row-btn"
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
                     onClick={() => setVersionManageOpen(true)}
                   >
                     열기
@@ -371,7 +371,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     </span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn scr-lighting-color-fill scr-adm-row-btn"
+                    type="button" className="scr-rect-btn is-fill scr-adm-row-btn"
                     onClick={() => { void openPicker(); }} disabled={redo !== null}
                   >
                     {redo ? (
@@ -390,7 +390,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     <span className="scr-adm-row-desc">등록된 리플레이 전부를 날짜별 폴더로 묶어 zip 하나로 받습니다.</span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn scr-lighting-color scr-adm-row-btn"
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
                     onClick={downloadReplays} disabled={downloading}
                   >
                     {downloading ? <Spinner /> : "내려받기"}
@@ -413,7 +413,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     </label>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn scr-lighting-color scr-adm-row-btn"
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
                     onClick={() => { void askPurgeTruth(); }} disabled={purging}
                   >
                     {purging ? <Spinner /> : "지우기"}
@@ -428,7 +428,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     </span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn scr-lighting-color scr-adm-row-btn"
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
                     onClick={() => setDeletedGamesOpen(true)}
                   >
                     열기
@@ -441,7 +441,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     <span className="scr-adm-row-desc">첨부 리플레이까지 함께 지워지고 되돌릴 수 없어요.</span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn scr-lighting-color scr-adm-row-btn"
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
                     onClick={deleteAllGameResults} disabled={busy}
                   >
                     {busy ? <Spinner /> : "삭제"}
@@ -464,7 +464,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     </span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn scr-lighting-color-fill scr-adm-row-btn"
+                    type="button" className="scr-rect-btn is-fill scr-adm-row-btn"
                     onClick={() => setExtShareOpen(true)}
                   >
                     열기
@@ -559,7 +559,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
               <span className="scr-redo-pick-count">{picked.size}건 선택</span>
               <button
                 type="button"
-                className="scr-rect-btn scr-lighting-color-fill"
+                className="scr-rect-btn is-fill"
                 disabled={picked.size === 0}
                 onClick={() => { setPickerOpen(false); setConfirmRedo(true); }}
               >
@@ -627,7 +627,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   />
                   <button
                     type="button"
-                    className="scr-rect-btn scr-lighting-color-fill scr-version-pick-confirm"
+                    className="scr-rect-btn is-fill scr-version-pick-confirm"
                     onClick={() => { setConfirmSetVersion(pickValue); setVersionPickerOpen(false); }}
                     disabled={!pickValue}
                   >

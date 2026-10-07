@@ -93,8 +93,8 @@ export default function ChangePasswordModal({ onClose }: ChangePasswordModalProp
 
         </div>
         <div className="scr-form-actions">
-          <button className="scr-rect-btn scr-lighting-color" onClick={onClose}>취소</button>
-          <button className="scr-rect-btn scr-lighting-color-fill" onClick={save} disabled={busy}>
+          <button className="scr-rect-btn" onClick={onClose}>취소</button>
+          <button className="scr-rect-btn is-fill" onClick={save} disabled={busy}>
             {busy ? <><Spinner /> 변경 중...</> : "변경"}
           </button>
         </div>

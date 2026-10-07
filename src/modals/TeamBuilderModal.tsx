@@ -144,11 +144,11 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
               )}
 
               <div className="scr-tb-actions">
-                <button type="button" className="scr-rect-btn scr-lighting-color" onClick={() => setResult(null)}>
+                <button type="button" className="scr-rect-btn" onClick={() => setResult(null)}>
                   다시 고르기
                 </button>
                 <button
-                  type="button" className="scr-rect-btn scr-lighting-color-fill"
+                  type="button" className="scr-rect-btn is-fill"
                   disabled={!result || result.splits.length <= 1}
                   onClick={() => setResult((r) => (r ? { ...r, at: (r.at + 1) % r.splits.length } : r))}
                 >
@@ -199,7 +199,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
               <div className="scr-tb-actions">
                 <span className="scr-tb-hint">내전 승률(전체 기간)로 맞춥니다.</span>
                 <button
-                  type="button" className="scr-rect-btn scr-lighting-color-fill"
+                  type="button" className="scr-rect-btn is-fill"
                   disabled={picked.size < 2} onClick={build}
                 >
                   <Users size={13} /> 팀 짜기

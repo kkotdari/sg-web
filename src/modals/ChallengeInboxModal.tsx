@@ -146,7 +146,7 @@ export default function ChallengeInboxModal({
             </div>
           </div>
           <div className="scr-form-actions scr-challenge-letter-actions">
-            <button type="button" className="scr-rect-btn scr-lighting-color-fill" onClick={advance}>
+            <button type="button" className="scr-rect-btn is-fill" onClick={advance}>
               {closeLabel}
             </button>
           </div>
@@ -190,19 +190,19 @@ export default function ChallengeInboxModal({
           {canRespond ? (
             <div className="scr-form-actions scr-challenge-letter-actions">
               <button
-                className="scr-rect-btn scr-lighting-color scr-challenge-reject-btn" onClick={() => respond("rejected")}
+                className="scr-rect-btn scr-challenge-reject-btn" onClick={() => respond("rejected")}
                 disabled={busy}
               >
                 {busy ? <Spinner /> : "거절"}
               </button>
               <button
-                type="button" className="scr-rect-btn scr-lighting-color" onClick={advance}
+                type="button" className="scr-rect-btn" onClick={advance}
                 disabled={busy}
               >
                 고민중
               </button>
               <button
-                className="scr-rect-btn scr-lighting-color scr-challenge-accept-btn" onClick={() => respond("accepted")}
+                className="scr-rect-btn scr-challenge-accept-btn" onClick={() => respond("accepted")}
                 disabled={busy || !canAccept}
               >
                 {busy ? <><Spinner /> 처리 중...</> : "승락"}
@@ -210,7 +210,7 @@ export default function ChallengeInboxModal({
             </div>
           ) : (
             <div className="scr-form-actions scr-challenge-letter-actions">
-              <button type="button" className="scr-rect-btn scr-lighting-color-fill" onClick={advance}>
+              <button type="button" className="scr-rect-btn is-fill" onClick={advance}>
                 {closeLabel}
               </button>
             </div>
@@ -226,7 +226,7 @@ export default function ChallengeInboxModal({
             <div className="scr-challenge-sent-desc">{respondedDesc}</div>
             <div className="scr-form-actions scr-challenge-sent-actions">
               <KakaoShareButton variant="full" iconOnly content={shareResponded} />
-              <button type="button" className="scr-rect-btn scr-lighting-color-fill" onClick={advance}>확인</button>
+              <button type="button" className="scr-rect-btn is-fill" onClick={advance}>확인</button>
             </div>
           </div>
           {comments}
@@ -245,7 +245,7 @@ export default function ChallengeInboxModal({
               aria-hidden={!envReady}
             >
               <button
-                type="button" className="scr-rect-btn scr-lighting-color-fill scr-challenge-envelope-open"
+                type="button" className="scr-rect-btn is-fill scr-challenge-envelope-open"
                 onClick={() => setStage("letter")} disabled={busy || !envReady}
               >
                 열기

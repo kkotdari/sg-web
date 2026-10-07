@@ -89,7 +89,7 @@ export default function KakaoShareButton({
   return (
     <button
       type="button"
-      className={cx("scr-rect-btn scr-lighting-color scr-kakao-share-btn", iconOnly && "scr-kakao-share-btn-icon", className)}
+      className={cx("scr-rect-btn scr-kakao-share-btn", iconOnly && "scr-kakao-share-btn-icon", className)}
       onClick={(e) => { e.stopPropagation(); void share(); }}
       disabled={busy}
       aria-label={label}

@@ -76,9 +76,9 @@ function MapImageModal({
               : <Spinner />}
         </div>
         <div className="scr-form-actions">
-          <button type="button" className="scr-rect-btn scr-lighting-color" onClick={onClose}>닫기</button>
+          <button type="button" className="scr-rect-btn" onClick={onClose}>닫기</button>
           <button
-            type="button" className="scr-rect-btn scr-lighting-color-fill" disabled={!url}
+            type="button" className="scr-rect-btn is-fill" disabled={!url}
             onClick={() => { if (url) void downloadMinimapPng(grid, title); }}
           >
             PNG 내려받기
@@ -226,7 +226,7 @@ export default function MapCanonScreen() {
           <span className="scr-notice-edit-label">안 묶인 맵 {unmapped.length}개</span>
           {orphans.length > 0 && (
             <button
-              type="button" className="scr-rect-btn scr-lighting-color" disabled={busy}
+              type="button" className="scr-rect-btn" disabled={busy}
               onClick={() => setConfirmOrphan(true)}
             >
               안 쓰는 맵 {orphans.length}개 정리
@@ -265,7 +265,7 @@ export default function MapCanonScreen() {
                 ...canons.map((c) => ({ value: String(c.id), label: c.name })),
               ]}
             />
-            <button type="button" className="scr-rect-btn scr-lighting-color-fill" disabled={busy} onClick={assign}>
+            <button type="button" className="scr-rect-btn is-fill" disabled={busy} onClick={assign}>
               {picked.size}개 묶기
             </button>
           </div>
@@ -276,7 +276,7 @@ export default function MapCanonScreen() {
         <div className="scr-minimap-panel-head">
           <span className="scr-notice-edit-label">대표맵 {canons.length}개</span>
           <button
-            type="button" className="scr-rect-btn scr-lighting-color" disabled={busy}
+            type="button" className="scr-rect-btn" disabled={busy}
             onClick={() => setAddOpen((v) => !v)} aria-expanded={addOpen}
           >
             <Plus size={12} /> 추가
@@ -290,7 +290,7 @@ export default function MapCanonScreen() {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") submitName(); }}
             />
-            <button type="button" className="scr-rect-btn scr-lighting-color-fill" disabled={busy} onClick={submitName}>
+            <button type="button" className="scr-rect-btn is-fill" disabled={busy} onClick={submitName}>
               만들기
             </button>
           </div>

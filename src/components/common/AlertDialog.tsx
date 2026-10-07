@@ -34,7 +34,7 @@ export default function AlertHost() {
         </div>
         <p className="scr-confirm-msg">{item.message}</p>
         <div className="scr-form-actions">
-          <button className="scr-rect-btn scr-lighting-color-fill" onClick={close} autoFocus>확인</button>
+          <button className="scr-rect-btn is-fill" onClick={close} autoFocus>확인</button>
         </div>
       </div>
     </div>,

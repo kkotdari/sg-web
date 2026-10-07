@@ -116,11 +116,11 @@ export default function ChallengeResultInboxModal({ challenges, onClose }: Chall
           </div>
 
           <div className="scr-form-actions">
-            <button className="scr-rect-btn scr-lighting-color" onClick={() => submit("draw")} disabled={busy}>무승부</button>
-            <button className="scr-rect-btn scr-lighting-color" onClick={() => submit("not_held")} disabled={busy}>미실시</button>
+            <button className="scr-rect-btn" onClick={() => submit("draw")} disabled={busy}>무승부</button>
+            <button className="scr-rect-btn" onClick={() => submit("not_held")} disabled={busy}>미실시</button>
           </div>
           <div className="scr-form-actions">
-            <button className="scr-rect-btn scr-lighting-color" onClick={advance} disabled={busy}>나중에</button>
+            <button className="scr-rect-btn" onClick={advance} disabled={busy}>나중에</button>
           </div>
           {busy && <div className="scr-challenge-result-busy"><Spinner /></div>}
         </div>

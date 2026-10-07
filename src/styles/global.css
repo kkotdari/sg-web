@@ -72,8 +72,6 @@
   --pipe: #a7302b;
   --pipe-bright: #ce4a3a;
   --pipe-dark: #651d1a;
-  --lighting-accent: var(--point);
-  --lighting-accent-glow: none;
 
   --line: rgba(255, 255, 255, 0.16);
   --scroll-thumb: rgba(255, 255, 255, 0.16);
@@ -130,6 +128,22 @@
   --radius: 12px;
   --radius-sm: 8px;
   --radius-chip: 6px;
+
+  --font-mono: "D2Coding", ui-monospace, "SF Mono", "Cascadia Code", "Consolas", "Roboto Mono", monospace;
+  --font-ui: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
+
+  --field-h: 38px;
+  --field-h-sm: 32px;
+
+  --mobile-footer-h: 69px;
+}
+
+/* 색 스킴 — 최상위 html 에 한 번만 둔다(index.html <html class="color-lighting">). 색이 든 요소(버튼·알약·탭 표시·체크·탭바·FAB…)는
+   모두 아래 --lighting-* 와 --btn-* 변수를 읽으므로, 이 클래스를 다른 스킴으로 바꾸면 색만 통째로 갈린다. 꼴 클래스(.scr-rect-btn 따위)는
+   색을 모른다. 테마(밝기)는 종전대로 html.scr-light-theme 가 가른다(scplay 와 공유하는 이름 · 없으면 어두운 테마). */
+html.color-lighting {
+  --lighting-accent: var(--point);
+  --lighting-accent-glow: none;
   --lighting-panel-bg: color-mix(in srgb, var(--panel-solid) 86%, transparent);
   --lighting-panel-blur: blur(2px);
   --lighting-bar-bg: color-mix(in srgb, var(--panel-solid) 30%, transparent);
@@ -148,14 +162,25 @@
   --lighting-press-glow: 0 0 10px rgba(255, 255, 255, 0.15), 0 0 20px rgba(255, 255, 255, 0.06);
   --lighting-text: var(--text-dim);
   --lighting-text-hover: var(--text);
-
-  --font-mono: "D2Coding", ui-monospace, "SF Mono", "Cascadia Code", "Consolas", "Roboto Mono", monospace;
-  --font-ui: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
-
-  --field-h: 38px;
-  --field-h-sm: 32px;
-
-  --mobile-footer-h: 69px;
+  /* 버튼 역할 색 — 꼴 클래스가 읽는다: 테두리(기본) · 채움(알약·is-fill) · 유리(동그라미) */
+  --btn-outline-text: var(--text);
+  --btn-outline-bg: var(--panel-raised);
+  --btn-outline-border: rgba(255, 255, 255, 0.32);
+  --btn-fill-text: var(--lighting-pill-text);
+  --btn-fill-bg: var(--lighting-pill-bg);
+  --btn-fill-border: rgba(var(--lighting-rgb), 0.55);
+  --btn-fill-glow: var(--lighting-pill-glow);
+  --btn-glass-bg: color-mix(in srgb, var(--panel-solid) 30%, transparent);
+  --btn-glass-blur: blur(8px) saturate(1.15);
+  --btn-glass-edge:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 5px rgba(0, 0, 0, 0.2),
+    0 6px 16px -8px rgba(0, 0, 0, 0.3);
+  --btn-hover-border: rgba(var(--lighting-rgb), 0.55);
+  --btn-hover-glow: var(--lighting-hover-glow);
+  --btn-press-glow: var(--lighting-press-glow);
+  --btn-focus: var(--lighting-accent);
 }
 
 * { box-sizing: border-box; }
@@ -408,85 +433,53 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
 }
 @media (hover: hover) { .scr-lighting-text-btn:hover { color: var(--lighting-text-hover); } }
 .scr-lighting-text-btn:focus-visible { outline: 2px solid var(--lighting-accent); outline-offset: 2px; border-radius: 6px; }
-/* 버튼 체계 — 꼴(shape) × 색(color) 두 클래스를 함께 쓴다. 예) class="scr-pill-btn scr-lighting-color-fill"
-   꼴 네 종류는 크기·패딩·모서리·배치만 쥐고, 색·투명도·글로우는 색 클래스가 --btn-* 변수로 준다 — 색만 갈아 끼우기 쉽게.
+/* 버튼 꼴 네 종류 — 크기·패딩·모서리·배치만 쥔다. 색·투명도·글로우는 html.color-lighting 이 준 --btn-* 변수를 읽는다(위 색 스킴 절).
    아이콘·글자는 선택이다(둘 다, 하나만 모두 된다). 자리 잡기(fixed 위치·크기 전환)는 .scr-scrolltop·.scr-activity-add-fab 같은 제자리 클래스가 따로 진다.
-   1. 동그라미 .scr-circle-btn         52px 원(등록 FAB · 맨 위로)
-   2. 알약     .scr-pill-btn           999px · 패딩 4px 10px · 글자 12(선택 막대 삭제·숨김 · 알림 배너)
-   3. 네모     .scr-rect-btn           모서리 6px · 패딩 6px 12px · 높이 32 · 글자 caption(폼·모달 등 옛 기본 버튼 전부)
-   4. 컴팩트 네모 .scr-compact-rect-btn  모서리 6px · 사방 패딩 4px 6px · 높이는 내용대로(스크랩 · 사용법 · 상성 보기 · 월 선택 · 작은 토글)
-   색: .scr-lighting-color(테두리 기본) · .scr-lighting-color-fill(채움 — 알약·강조) · .scr-lighting-color-glass(유리 — 동그라미)
-   맥락이 색을 바꿀 때는 속성이 아니라 변수를 덮는다(예: 서랍 메뉴 줄 --btn-bg: transparent). */
+   1. 동그라미 .scr-circle-btn         52px 원 · 유리 역할(등록 FAB · 맨 위로)
+   2. 알약     .scr-pill-btn           999px · 패딩 4px 10px · 글자 12 · 채움 역할(선택 막대 삭제·숨김 · 알림 배너)
+   3. 네모     .scr-rect-btn           모서리 6px · 패딩 6px 12px · 높이 32 · 글자 caption · 테두리 역할(폼·모달 등 옛 기본 버튼 전부)
+   4. 컴팩트 네모 .scr-compact-rect-btn  모서리 6px · 사방 패딩 4px 6px · 높이는 내용대로 · 테두리 역할(스크랩 · 사용법 · 상성 보기 · 월 선택 · 작은 토글)
+   강조는 상태 하나 — .is-fill 을 네모·컴팩트 네모에 붙이면 채움 역할의 색을 쓴다(모달 확인 · 로그인 · 고른 토글).
+   맥락이 색을 바꿀 때는 속성이 아니라 역할 변수를 덮는다(예: 서랍 메뉴 줄 --btn-outline-bg: transparent). */
 .scr-circle-btn, .scr-pill-btn, .scr-rect-btn, .scr-compact-rect-btn {
   display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; box-sizing: border-box;
   font-family: inherit; line-height: 1; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent;
-  color: var(--btn-text, inherit); background: var(--btn-bg, transparent);
-  border: var(--btn-border-w, 1.5px) solid var(--btn-border, transparent);
-  box-shadow: var(--btn-shadow, none);
-  -webkit-backdrop-filter: var(--btn-blur, none); backdrop-filter: var(--btn-blur, none);
+  color: var(--btn-outline-text, inherit); background: var(--btn-outline-bg, transparent);
+  border: var(--btn-border-w, 1.5px) solid var(--btn-outline-border, transparent);
   transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .12s ease;
 }
 .scr-circle-btn {
   width: 52px; height: 52px; padding: 0; border-radius: 50%; --btn-border-w: 0px;
   font-size: var(--fs-caption); font-weight: 700;
+  background: var(--btn-glass-bg, transparent); box-shadow: var(--btn-glass-edge, none);
+  -webkit-backdrop-filter: var(--btn-glass-blur, none); backdrop-filter: var(--btn-glass-blur, none);
   transition: transform .12s ease, width .26s cubic-bezier(0.16, 1, 0.3, 1),
     height .26s cubic-bezier(0.16, 1, 0.3, 1), font-size .26s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .scr-pill-btn { gap: 5px; padding: 4px 10px; border-radius: 999px; --btn-border-w: 1px; font-size: 12px; font-weight: 700; }
 .scr-rect-btn { gap: 6px; padding: 6px 12px; min-height: 32px; border-radius: 6px; font-size: var(--fs-caption); font-weight: 600; }
 .scr-compact-rect-btn { gap: 5px; padding: 4px 6px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.scr-pill-btn, .scr-rect-btn.is-fill, .scr-compact-rect-btn.is-fill {
+  color: var(--btn-fill-text, inherit); background: var(--btn-fill-bg, transparent);
+  border-color: var(--btn-fill-border, transparent); box-shadow: var(--btn-fill-glow, none);
+}
 .scr-circle-btn svg, .scr-pill-btn svg, .scr-rect-btn svg, .scr-compact-rect-btn svg { display: block; flex: 0 0 auto; }
 @media (hover: hover) {
-  .scr-circle-btn:hover:not(:disabled), .scr-pill-btn:hover:not(:disabled), .scr-rect-btn:hover:not(:disabled), .scr-compact-rect-btn:hover:not(:disabled) {
-    border-color: var(--btn-hover-border, var(--btn-border, transparent));
-    box-shadow: var(--btn-hover-shadow, var(--btn-shadow, none));
+  .scr-rect-btn:hover:not(:disabled), .scr-compact-rect-btn:hover:not(:disabled) {
+    border-color: var(--btn-hover-border, currentColor); box-shadow: var(--btn-hover-glow, none);
+  }
+  .scr-pill-btn:hover:not(:disabled), .scr-rect-btn.is-fill:hover:not(:disabled), .scr-compact-rect-btn.is-fill:hover:not(:disabled) {
+    box-shadow: var(--btn-hover-glow, none), var(--btn-fill-glow, none);
   }
 }
-.scr-circle-btn:active:not(:disabled), .scr-pill-btn:active:not(:disabled), .scr-rect-btn:active:not(:disabled), .scr-compact-rect-btn:active:not(:disabled) {
-  box-shadow: var(--btn-press-shadow, var(--btn-shadow, none));
+.scr-pill-btn:active:not(:disabled), .scr-rect-btn:active:not(:disabled), .scr-compact-rect-btn:active:not(:disabled) {
+  box-shadow: var(--btn-press-glow, none);
 }
 .scr-circle-btn:active:not(:disabled) { transform: scale(0.94); }
-.scr-circle-btn:disabled, .scr-pill-btn:disabled, .scr-rect-btn:disabled, .scr-compact-rect-btn:disabled { opacity: var(--btn-disabled-opacity, 0.6); cursor: not-allowed; }
-.scr-circle-btn:focus-visible, .scr-pill-btn:focus-visible, .scr-rect-btn:focus-visible, .scr-compact-rect-btn:focus-visible { outline: 2px solid var(--btn-focus, currentColor); outline-offset: 2px; }
-
-.scr-lighting-color {
-  --btn-text: var(--text);
-  --btn-bg: var(--panel-raised);
-  --btn-border: rgba(255, 255, 255, 0.32);
-  --btn-hover-border: rgba(var(--lighting-rgb), 0.55);
-  --btn-hover-shadow: var(--lighting-hover-glow);
-  --btn-press-shadow: var(--lighting-press-glow);
-  --btn-focus: var(--lighting-accent);
-}
-.scr-light-theme .scr-lighting-color { --btn-border: rgba(0, 0, 0, 0.28); }
-.scr-lighting-color-fill {
-  --btn-text: var(--lighting-pill-text);
-  --btn-bg: var(--lighting-pill-bg);
-  --btn-border: rgba(var(--lighting-rgb), 0.55);
-  --btn-shadow: var(--lighting-pill-glow);
-  --btn-hover-border: rgba(var(--lighting-rgb), 0.55);
-  --btn-hover-shadow: var(--lighting-hover-glow), var(--lighting-pill-glow);
-  --btn-press-shadow: var(--lighting-press-glow);
-  --btn-focus: var(--lighting-accent);
-  --btn-disabled-opacity: 0.4;
-}
-.scr-lighting-color-glass {
-  --btn-text: var(--text);
-  --btn-bg: color-mix(in srgb, var(--panel-solid) 30%, transparent);
-  --btn-blur: blur(8px) saturate(1.15);
-  --btn-shadow:
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 2px 5px rgba(0, 0, 0, 0.2),
-    0 6px 16px -8px rgba(0, 0, 0, 0.3);
-  --btn-focus: var(--lighting-accent);
-}
-html.scr-light-theme .scr-lighting-color-glass {
-  --btn-shadow:
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 2px 5px rgba(0, 0, 0, 0.1),
-    0 6px 16px -8px rgba(0, 0, 0, 0.16);
+.scr-circle-btn:disabled, .scr-rect-btn:disabled, .scr-compact-rect-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.scr-pill-btn:disabled, .scr-rect-btn.is-fill:disabled, .scr-compact-rect-btn.is-fill:disabled { opacity: 0.4; cursor: not-allowed; }
+.scr-circle-btn:focus-visible, .scr-pill-btn:focus-visible, .scr-rect-btn:focus-visible, .scr-compact-rect-btn:focus-visible {
+  outline: 2px solid var(--btn-focus, currentColor); outline-offset: 2px;
 }
 
 .scr-icon-btn { background: transparent; border: none; color: var(--muted); width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;  border-radius: 50%; }
@@ -532,8 +525,6 @@ html.scr-light-theme {
   --pipe: #000000;
   --pipe-bright: #000000;
   --pipe-dark: #000000;
-  --lighting-accent: #3b82f6;
-  --lighting-accent-glow: 0 0 6px rgba(59, 130, 246, 0.45);
   --divider-soft: rgba(0, 0, 0, 0.14);
   --point: #000000;
   --point-rgb: 0, 0, 0;
@@ -552,6 +543,13 @@ html.scr-light-theme {
   --info: #6f97dc;
   --divider-tint: 0, 0, 0;
   --overlay-rgb: 0, 0, 0;
+  --bar-winrate: #34c759;
+  --bar-plays: #2f7cf0;
+  --bar-win: #93cba0;
+}
+html.color-lighting.scr-light-theme {
+  --lighting-accent: #3b82f6;
+  --lighting-accent-glow: 0 0 6px rgba(59, 130, 246, 0.45);
   --lighting-panel-bg: color-mix(in srgb, var(--panel-solid) 88%, transparent);
   --lighting-bar-edge: inset 0 0 0 0.5px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.75);
   --lighting-bar-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 -2px 14px -6px rgba(0, 0, 0, 0.12);
@@ -565,9 +563,13 @@ html.scr-light-theme {
   --lighting-hover-glow: 0 0 8px rgba(168, 193, 225, 0.14), 0 0 16px rgba(168, 193, 225, 0.06);
   --lighting-press-glow: 0 0 10px rgba(168, 193, 225, 0.18), 0 0 22px rgba(168, 193, 225, 0.08);
   --lighting-text-hover: var(--lighting-accent);
-  --bar-winrate: #34c759;
-  --bar-plays: #2f7cf0;
-  --bar-win: #93cba0;
+
+  --btn-outline-border: rgba(0, 0, 0, 0.28);
+  --btn-glass-edge:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 2px 5px rgba(0, 0, 0, 0.1),
+    0 6px 16px -8px rgba(0, 0, 0, 0.16);
 }
 
 html.scr-light-theme { --header-bg: rgba(255, 255, 255, 0.9); }
@@ -2170,7 +2172,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 }
 
 .scr-month-cal { position: relative; display: inline-flex; }
-.scr-month-cal-open { border-color: var(--btn-hover-border); box-shadow: var(--btn-hover-shadow); }
+.scr-month-cal-open { border-color: var(--btn-hover-border); box-shadow: var(--btn-hover-glow); }
 
 .scr-month-cal-pop {
   z-index: 210; width: 248px; padding: 8px; border-radius: 12px;
@@ -3312,7 +3314,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-drawer-actions {
   margin-top: 8px; display: flex; flex-direction: column; gap: 6px; padding-top: 12px;
 }
-.scr-drawer-actions .scr-rect-btn { justify-content: flex-start; --btn-border: transparent; --btn-bg: transparent; }
+.scr-drawer-actions .scr-rect-btn { justify-content: flex-start; --btn-outline-border: transparent; --btn-outline-bg: transparent; }
 .scr-drawer-actions .scr-rect-btn { font-size: var(--fs-subhead); }
 
 @media (max-width: 1159px) {

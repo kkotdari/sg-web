@@ -134,14 +134,14 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                   onClear={sel.clear}
                 >
                   <button
-                    type="button" className="scr-pill-btn scr-lighting-color-fill"
+                    type="button" className="scr-pill-btn"
                     disabled={pickedRows.length === 0 || busyId !== null}
                     onClick={() => { setConfirmErr(null); setBulk({ kind: "restore", games: pickedRows }); }}
                   >
                     복원
                   </button>
                   <button
-                    type="button" className="scr-pill-btn scr-lighting-color-fill"
+                    type="button" className="scr-pill-btn"
                     disabled={pickedRows.length === 0 || busyId !== null}
                     onClick={() => { setConfirmErr(null); setBulk({ kind: "purge", games: pickedRows }); }}
                   >
@@ -174,7 +174,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                       </div>
                       <div className="scr-trash-actions">
                         <button
-                          type="button" className="scr-rect-btn scr-lighting-color scr-trash-restore"
+                          type="button" className="scr-rect-btn scr-trash-restore"
                           onClick={() => { setConfirmErr(null); setConfirm({ kind: "restore", game: g }); }}
                           disabled={busyId !== null}
                           title="복원 — 목록·통계로 되돌립니다"
