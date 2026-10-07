@@ -86,12 +86,12 @@ export default function GuestApp() {
             <div className="scr-user">
               <button
                 type="button"
-                className={cx("scr-header-text-btn", lightTheme && "scr-header-text-btn-active")}
+                className={cx("scr-text-btn", lightTheme && "is-on")}
                 onClick={() => setLightTheme((v) => !v)}
               >
                 테마
               </button>
-              <button type="button" className="scr-header-text-btn" onClick={toLogin}>
+              <button type="button" className="scr-text-btn" onClick={toLogin}>
                 로그인
               </button>
             </div>

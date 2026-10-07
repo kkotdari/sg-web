@@ -21,7 +21,7 @@ export default function AuthScreen() {
       <div className="scr-bg-grid" />
       <button
         type="button"
-        className="scr-header-text-btn scr-auth-theme-btn"
+        className="scr-text-btn scr-auth-theme-btn"
         onClick={() => setLightTheme((v) => !v)}
         aria-label="라이트 테마 토글"
       >
@@ -34,7 +34,7 @@ export default function AuthScreen() {
         {tab === "login" ? (
           <div className="scr-auth-card scr-auth-card-plain">
             <LoginForm />
-            <button type="button" className="scr-lighting-text-btn scr-auth-guest" onClick={goGuest}>
+            <button type="button" className="scr-text-btn scr-auth-guest" onClick={goGuest}>
               손님으로 입장
             </button>
           </div>
@@ -48,7 +48,7 @@ export default function AuthScreen() {
         )}
       </div>
       {tab === "login" && (
-        <button type="button" className="scr-header-text-btn scr-auth-signup-link" onClick={() => setTab("signup")}>
+        <button type="button" className="scr-text-btn scr-auth-signup-link" onClick={() => setTab("signup")}>
           회원가입
         </button>
       )}

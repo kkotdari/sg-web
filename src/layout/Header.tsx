@@ -190,13 +190,13 @@ export default function Header({
         <div className="scr-user">
           <button
             type="button"
-            className={cx("scr-header-text-btn", lightTheme && "scr-header-text-btn-active")}
+            className={cx("scr-text-btn", lightTheme && "is-on")}
             onClick={() => setLightTheme((v) => !v)}
           >
             테마
           </button>
           {!installed && (
-            <button type="button" className="scr-header-text-btn" onClick={onInstallClick}>
+            <button type="button" className="scr-text-btn" onClick={onInstallClick}>
               앱 설치
             </button>
           )}
