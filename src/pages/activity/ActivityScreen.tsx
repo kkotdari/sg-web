@@ -16,7 +16,6 @@ import GameResultStory from "./GameResultStory";
 import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
 import { ChallengeCard, ChallengeTimeHeadEdit, challengeStatusInfo } from "../challenge/ChallengeScreen";
 import ReplayReviewModal from "../../modals/ReplayReviewModal";
-import ExtSharePickDialog from "../../modals/ExtSharePickDialog";
 import ActivityComments, { primeActivityComments, commentStatOf, subscribeComments } from "./ActivityComments";
 import { primeReplayMaps, useReplayMapTick, SCENE_LINK_KEYS9 } from "scplay";
 import ChallengeFormModal from "../../modals/ChallengeFormModal";
@@ -265,26 +264,15 @@ function bulkDeleteMessageOf(items: DisplayItem[]): string {
 
 const HIDE_FORMS = { did: "숨겼어요", couldNot: "숨기지 못했어요" };
 
-function SelectionActions({ picked, onDelete, onHide, onPublish }: {
+function SelectionActions({ picked, onDelete, onHide }: {
   picked: DisplayItem[];
   onDelete: (items: DisplayItem[]) => void;
   onHide: (items: DisplayItem[]) => void;
-  onPublish?: (items: DisplayItem[]) => void;
 }) {
   const games = picked.filter((it) => it.kind === "gameResult");
   const onlyGames = picked.length > 0 && games.length === picked.length;
   return (
     <>
-      {onPublish && (
-        <button
-          type="button" className="scr-selbar-act"
-          disabled={!onlyGames}
-          onClick={() => onPublish(games)}
-          title={onlyGames ? "고른 게임을 외부 공개 목록에 담아요" : "게임만 골랐을 때 켜져요"}
-        >
-          공개
-        </button>
-      )}
       <button
         type="button" className="scr-selbar-act"
         disabled={!onlyGames}
@@ -558,7 +546,7 @@ function GameTabs({ value, onChange }: { value: GameTab; onChange: (next: GameTa
 function ActivityGroupPage({
   groupKey, label, items, memberOf, members, renderRow, onBack,
   gameTab, onGameTabChange,
-  selection, canPick, selectionNote, onDeleteItems, onHideItems, onPublishItems, refreshKey,
+  selection, canPick, selectionNote, onDeleteItems, onHideItems, refreshKey,
 }: {
   groupKey: ActivityGroupKey;
   label: string;
@@ -570,7 +558,6 @@ function ActivityGroupPage({
   selectionNote: string;
   onDeleteItems: (items: DisplayItem[]) => void;
   onHideItems: (items: DisplayItem[]) => void;
-  onPublishItems?: (items: DisplayItem[]) => void;
   refreshKey: number;
   gameTab: GameTab;
   onGameTabChange: (next: GameTab) => void;
@@ -771,7 +758,6 @@ function ActivityGroupPage({
         >
           <SelectionActions
             picked={pickedItems} onDelete={onDeleteItems} onHide={onHideItems}
-            onPublish={groupKey === "gameResult" ? onPublishItems : undefined}
           />
         </SelectionBar>
       )}
@@ -1497,12 +1483,6 @@ export default function ActivityScreen() {
     );
   };
 
-  const [publishGames, setPublishGames] = useState<GameResult[] | null>(null);
-  const askPublish = useCallback((items: DisplayItem[]) => {
-    const games = items.flatMap((it) => (it.kind === "gameResult" ? [it.gameResult] : []));
-    if (games.length > 0) setPublishGames(games);
-  }, []);
-
   const [bulkHide, setBulkHide] = useState<DisplayItem[] | null>(null);
   const askBulkHide = useCallback((items: DisplayItem[]) => {
     if (items.length === 0) return;
@@ -1820,7 +1800,6 @@ export default function ActivityScreen() {
           selectionNote={selectionNote}
           onDeleteItems={askBulkDelete}
           onHideItems={askBulkHide}
-          onPublishItems={isAdmin ? askPublish : undefined}
           refreshKey={groupRefreshKey}
         />
       )}
@@ -1940,13 +1919,6 @@ export default function ActivityScreen() {
           error={bulkErr}
           onConfirm={() => { if (!bulkProgress) void runBulkHide(bulkHide); }}
           onCancel={() => { if (!bulkProgress) { setBulkHide(null); setBulkErr(null); } }}
-        />
-      )}
-      {publishGames && (
-        <ExtSharePickDialog
-          games={publishGames}
-          onClose={() => setPublishGames(null)}
-          onDone={() => { setPublishGames(null); selClear(); }}
         />
       )}
 
