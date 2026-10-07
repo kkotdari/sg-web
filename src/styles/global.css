@@ -1226,6 +1226,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard .scr-stat-mix-cell, .scr-clan-decks .scr-stat-mix-cell { --scr-toplist-w: 124px; }
 @media (max-width: 1159px) {
   .scr-statcard { padding-left: 0; padding-right: 0; }
+  /* 폰 개인 카드 머리는 두 줄 — 판수·승률이 윗줄, APM·데미지가 아랫줄(요청). */
+  .scr-statcard-sum > .scr-statcard-sum-item:first-child { flex-basis: 100%; }
   .scr-statcard-deck { padding-left: 8px; padding-right: 8px; }
   .scr-statcard .scr-stat-mix-row > * { padding-left: 6px; padding-right: 6px; }
 }
