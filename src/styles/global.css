@@ -437,6 +437,22 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
 }
 @media (hover: hover) { .scr-lighting-text-btn:hover { color: var(--lighting-text-hover); } }
 .scr-lighting-text-btn:focus-visible { outline: 2px solid var(--lighting-accent); outline-offset: 2px; border-radius: 6px; }
+.scr-lighting-compact-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: 0 0 auto;
+  padding: 4px 8px; min-height: 26px; box-sizing: border-box;
+  border: 1.5px solid rgba(255,255,255,0.32); border-radius: 4px;
+  background: var(--panel-raised); color: var(--text);
+  font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1;
+  cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+}
+.scr-lighting-compact-btn svg { display: block; flex: 0 0 auto; }
+@media (hover: hover) {
+  .scr-lighting-compact-btn:hover { border-color: rgba(var(--lighting-rgb), 0.55); box-shadow: var(--lighting-hover-glow); }
+}
+.scr-lighting-compact-btn:active { box-shadow: var(--lighting-press-glow); }
+.scr-light-theme .scr-lighting-compact-btn { border-color: rgba(0,0,0,0.28); }
+.scr-lighting-compact-btn:focus-visible { outline: 2px solid var(--lighting-accent); outline-offset: 2px; }
 .scr-btn-sm { padding: 7px 12px; font-size: var(--fs-body); min-height: var(--field-h-sm); }
 .scr-btn-pw {
   font-size: var(--fs-micro); min-height: 0;
@@ -6860,15 +6876,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
   padding: 4px 6px; border-radius: 8px; cursor: pointer;
 }
 .scr-crumb-back:hover { background: rgba(127, 127, 127, 0.16); color: var(--text); }
-.scr-crumb-guide {
-  flex: 0 0 auto;
-  transform: translateY(1px);
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 12px; color: var(--text-dim); background: none;
-  border: 1px solid var(--line); border-radius: 999px;
-  padding: 4px 10px; cursor: pointer;
-}
-.scr-crumb-guide:hover { color: var(--text); border-color: var(--point); }
+.scr-crumb-tools { margin-left: auto; display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
 .scr-v2-toolbar-title-row.scr-crumb {
   margin-bottom: 0; padding-bottom: 0; border-bottom: 0; min-height: 31px;
 }

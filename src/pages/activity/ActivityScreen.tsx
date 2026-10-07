@@ -710,22 +710,22 @@ function ActivityGroupPage({
           </button>
           <h1 className="scr-title scr-crumb-title">{label}</h1>
           {groupKey === "gameResult" && (
-            <>
+            <div className="scr-crumb-tools">
               <button
-                type="button" className="scr-crumb-guide"
+                type="button" className="scr-lighting-compact-btn"
                 onClick={() => requestScreen("scraps")}
               >
                 <Bookmark size={13} />
                 <span>스크랩</span>
               </button>
               <button
-                type="button" className="scr-crumb-guide"
+                type="button" className="scr-lighting-compact-btn"
                 onClick={() => requestScreen("guide")}
               >
                 <BookOpen size={13} />
                 <span>사용법</span>
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
