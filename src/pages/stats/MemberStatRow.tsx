@@ -201,6 +201,14 @@ export default function MemberStatRow({
   const openMemberProfile = useAppStore((s) => s.openMemberProfile);
   const [photoOpen, setPhotoOpen] = useState(false);
   const kd = kdOf(stats);
+  const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
+  const toggleRace = (r: BaseRace): void => {
+    setOpenRaces((prev) => {
+      const next = new Set(prev);
+      if (next.has(r)) next.delete(r); else next.add(r);
+      return next;
+    });
+  };
 
   return (
     <section className={cx("scr-statcard", me && "scr-statcard-me")}>
@@ -240,18 +248,27 @@ export default function MemberStatRow({
       </header>
       <div className="scr-statcard-decks">
         <div className="scr-statcard-deck-grid">
-        {RACES.map((r) => (
-          <div key={r} className="scr-statcard-deck">
-            <span className="scr-statcard-deck-head">
-              <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
-              {r}
-              <span className="scr-statcard-deck-rec">
-                <Record stats={byRace?.[r]} />
+        {RACES.map((r) => {
+          const open = openRaces.has(r);
+          return (
+            <div key={r} className="scr-statcard-deck">
+              <span className="scr-statcard-deck-head">
+                <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
+                {r}
+                <span className="scr-statcard-deck-rec">
+                  <Record stats={byRace?.[r]} />
+                </span>
+                <button
+                  type="button" className="scr-text-btn scr-statcard-deck-toggle"
+                  aria-expanded={open} onClick={() => toggleRace(r)}
+                >
+                  {open ? "▾ 접기" : "▸ 펼치기"}
+                </button>
               </span>
-            </span>
-            <RaceMixCell race={r} stats={byRace?.[r]} />
-          </div>
-        ))}
+              {open && <RaceMixCell race={r} stats={byRace?.[r]} />}
+            </div>
+          );
+        })}
         </div>
       </div>
       {photoOpen && member.avatar && (
