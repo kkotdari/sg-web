@@ -66,9 +66,9 @@ function MapImageModal({
               : <Spinner />}
         </div>
         <div className="scr-form-actions">
-          <button type="button" className="scr-rect-btn" onClick={onClose}>닫기</button>
+          <button type="button" className="scr-rect-btn is-secondary" onClick={onClose}>닫기</button>
           <button
-            type="button" className="scr-rect-btn is-fill" disabled={!url}
+            type="button" className="scr-rect-btn" disabled={!url}
             onClick={() => { if (url) void downloadMinimapPng(grid, title); }}
           >
             PNG 내려받기
@@ -253,7 +253,7 @@ export default function MapCanonScreen() {
                 ...canons.map((c) => ({ value: String(c.id), label: c.name })),
               ]}
             />
-            <button type="button" className="scr-rect-btn is-fill" disabled={busy} onClick={assign}>
+            <button type="button" className="scr-rect-btn" disabled={busy} onClick={assign}>
               {picked.size}개 묶기
             </button>
           </div>
@@ -278,7 +278,7 @@ export default function MapCanonScreen() {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") submitName(); }}
             />
-            <button type="button" className="scr-rect-btn is-fill" disabled={busy} onClick={submitName}>
+            <button type="button" className="scr-rect-btn" disabled={busy} onClick={submitName}>
               만들기
             </button>
           </div>

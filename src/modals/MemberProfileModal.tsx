@@ -48,7 +48,7 @@ export default function MemberProfileModal({ member, onClose }: MemberProfileMod
 
         </div>
         <div className="scr-form-actions">
-          <button type="button" className="scr-rect-btn" onClick={onClose}>닫기</button>
+          <button type="button" className="scr-rect-btn is-secondary" onClick={onClose}>닫기</button>
         </div>
       </div>
 

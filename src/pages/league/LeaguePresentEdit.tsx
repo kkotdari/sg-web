@@ -100,7 +100,7 @@ export default function LeaguePresentEdit({ league, onUpdated, onClose }: {
             </button>
           )}
           <button
-            type="button" className="scr-rect-btn is-fill"
+            type="button" className="scr-rect-btn"
             onClick={saveAll} disabled={saving || dirtyCount === 0}
             title={dirtyCount === 0 ? "바뀐 게 없어요" : "저장"}
           >

@@ -123,7 +123,7 @@ export default function VersionManageModal({ onClose }: VersionManageModalProps)
             />
             <button
               type="button"
-              className="scr-rect-btn is-fill scr-version-add-btn"
+              className="scr-rect-btn scr-version-add-btn"
               onClick={() => void add()}
               disabled={!canAdd || adding}
             >
@@ -171,7 +171,7 @@ export default function VersionManageModal({ onClose }: VersionManageModalProps)
           <div className="scr-notice-edit-actions">
             <button
               type="button"
-              className="scr-rect-btn"
+              className="scr-rect-btn is-secondary"
               onClick={() => setPreviewing(true)}
               disabled={!hasNoticeContent(draft)}
             >
@@ -179,7 +179,7 @@ export default function VersionManageModal({ onClose }: VersionManageModalProps)
             </button>
             <button
               type="button"
-              className="scr-rect-btn is-fill"
+              className="scr-rect-btn"
               onClick={() => void saveNotes()}
               disabled={savingNotes || !dirty}
             >

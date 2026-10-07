@@ -51,8 +51,8 @@ export default function ChallengeTimeEditModal({
           {err && <div className="scr-err">{err}</div>}
         </div>
         <div className="scr-form-actions">
-          <button className="scr-rect-btn" onClick={onClose} disabled={busy}>취소</button>
-          <button className="scr-rect-btn is-fill" onClick={save} disabled={busy}>
+          <button className="scr-rect-btn is-secondary" onClick={onClose} disabled={busy}>취소</button>
+          <button className="scr-rect-btn" onClick={save} disabled={busy}>
             {busy ? <><Spinner /> 저장 중...</> : "저장"}
           </button>
         </div>

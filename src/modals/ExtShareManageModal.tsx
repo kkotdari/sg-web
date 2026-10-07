@@ -140,7 +140,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
           <div className="scr-extshare-adm-head">
             <div className="scr-notice-edit-label">재생 목록</div>
             <button
-              type="button" className="scr-rect-btn is-fill"
+              type="button" className="scr-rect-btn"
               onClick={() => setAddOpen((v) => !v)} disabled={busy}
               aria-expanded={addOpen}
             >
@@ -159,7 +159,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                 onChange={(e) => setNewPass(e.target.value)}
               />
               <button
-                type="button" className="scr-rect-btn is-fill"
+                type="button" className="scr-rect-btn"
                 onClick={() => void addList()} disabled={busy || !newName.trim()}
               >
                 {busy ? <Spinner /> : "만들기"}
@@ -196,7 +196,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                           }))}
                         />
                         <button
-                          type="button" className="scr-rect-btn is-fill"
+                          type="button" className="scr-rect-btn"
                           disabled={!dirty || !d.name.trim()}
                           onClick={() => void patchList(l.id, {
                             name: d.name.trim(), password: d.password.trim(),

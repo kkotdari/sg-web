@@ -77,7 +77,7 @@ function GameResultOutcomeDialog({ gameResult, memberOf, onChanged, onClose }: {
             <>
               {[...gameResult.team1, ...gameResult.team2].map((sl) => (
                 <button
-                  key={sl.rawName ?? sl.memberId} type="button" className="scr-rect-btn is-fill"
+                  key={sl.rawName ?? sl.memberId} type="button" className="scr-rect-btn"
                   disabled={busy || !sl.rawName} onClick={() => pick("team1", sl.rawName ?? undefined)}
                 >
                   승리자 — {nameOf(sl)}
@@ -87,11 +87,11 @@ function GameResultOutcomeDialog({ gameResult, memberOf, onChanged, onClose }: {
             </>
           ) : (
             <>
-              <button type="button" className="scr-rect-btn is-fill" disabled={busy} onClick={() => pick("team1")}>
+              <button type="button" className="scr-rect-btn" disabled={busy} onClick={() => pick("team1")}>
                 1팀 승 — {namesOf(gameResult.team1)}
               </button>
               <button type="button" className="scr-rect-btn" disabled={busy} onClick={() => pick("draw")}>무승부</button>
-              <button type="button" className="scr-rect-btn is-fill" disabled={busy} onClick={() => pick("team2")}>
+              <button type="button" className="scr-rect-btn" disabled={busy} onClick={() => pick("team2")}>
                 2팀 승 — {namesOf(gameResult.team2)}
               </button>
             </>

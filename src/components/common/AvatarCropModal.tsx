@@ -138,8 +138,8 @@ export default function AvatarCropModal({ file, onCancel, onDone }: AvatarCropMo
           )}
         </div>
         <div className="scr-form-actions">
-          <button type="button" className="scr-rect-btn" onClick={onCancel}>취소</button>
-          <button type="button" className="scr-rect-btn is-fill" onClick={confirm} disabled={!img}>완료</button>
+          <button type="button" className="scr-rect-btn is-secondary" onClick={onCancel}>취소</button>
+          <button type="button" className="scr-rect-btn" onClick={confirm} disabled={!img}>완료</button>
         </div>
       </div>
     </div>,

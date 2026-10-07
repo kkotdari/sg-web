@@ -288,7 +288,7 @@ function MatchEditModal({
             />
             {canScore && (a !== "" || b !== "") && (
               <button
-                type="button" className="scr-rect-btn"
+                type="button" className="scr-rect-btn is-secondary"
                 onClick={() => { setA(""); setB(""); }}
               >
                 지우기
@@ -309,8 +309,8 @@ function MatchEditModal({
 
         {err && <div className="scr-err" role="alert">{err}</div>}
         <div className="scr-form-actions">
-          <button type="button" className="scr-rect-btn" onClick={onClose} disabled={busy}>취소</button>
-          <button type="button" className="scr-rect-btn is-fill" onClick={save} disabled={busy}>
+          <button type="button" className="scr-rect-btn is-secondary" onClick={onClose} disabled={busy}>취소</button>
+          <button type="button" className="scr-rect-btn" onClick={save} disabled={busy}>
             {busy && <Spinner size={14} />} 저장
           </button>
         </div>

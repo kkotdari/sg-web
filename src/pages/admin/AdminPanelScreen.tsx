@@ -314,7 +314,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     </span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn is-fill scr-adm-row-btn"
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
                     onClick={openVersionPicker} disabled={busy}
                   >
                     {busy ? <Spinner /> : "바꾸기"}
@@ -371,7 +371,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     </span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn is-fill scr-adm-row-btn"
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
                     onClick={() => { void openPicker(); }} disabled={redo !== null}
                   >
                     {redo ? (
@@ -464,7 +464,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     </span>
                   </div>
                   <button
-                    type="button" className="scr-rect-btn is-fill scr-adm-row-btn"
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
                     onClick={() => setExtShareOpen(true)}
                   >
                     열기
@@ -559,7 +559,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
               <span className="scr-redo-pick-count">{picked.size}건 선택</span>
               <button
                 type="button"
-                className="scr-rect-btn is-fill"
+                className="scr-rect-btn"
                 disabled={picked.size === 0}
                 onClick={() => { setPickerOpen(false); setConfirmRedo(true); }}
               >
@@ -627,7 +627,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   />
                   <button
                     type="button"
-                    className="scr-rect-btn is-fill scr-version-pick-confirm"
+                    className="scr-rect-btn scr-version-pick-confirm"
                     onClick={() => { setConfirmSetVersion(pickValue); setVersionPickerOpen(false); }}
                     disabled={!pickValue}
                   >

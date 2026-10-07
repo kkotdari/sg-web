@@ -21,7 +21,7 @@ export default function AppReloadModal({ from, to }: { from: string; to: string 
         </div>
         <div className="scr-form-actions">
           <button
-            type="button" className="scr-rect-btn is-fill"
+            type="button" className="scr-rect-btn"
             onClick={() => window.location.reload()}
           >
             새로고침

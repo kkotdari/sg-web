@@ -232,13 +232,13 @@ export default function ScrapScreen() {
             </div>
             <div className="scr-scrap-pop-btns">
               <button
-                type="button" className="scr-rect-btn"
+                type="button" className="scr-rect-btn is-secondary"
                 onClick={() => setEdit(null)}
               >
                 취소
               </button>
               <button
-                type="button" className="scr-rect-btn is-fill"
+                type="button" className="scr-rect-btn"
                 onClick={() => void saveEdit()} disabled={busy || !draft.trim()}
               >
                 {busy ? "저장 중…" : "저장"}

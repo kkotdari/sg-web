@@ -322,7 +322,7 @@ export default function MembersScreen() {
               {([["recent", "최근 등장순"], ["count", "등장횟수순"]] as const).map(([v, label]) => (
                 <button
                   key={v} type="button"
-                  className={cx("scr-compact-rect-btn", unresolvedSort === v && "is-fill")}
+                  className={cx("scr-compact-rect-btn", unresolvedSort !== v && "is-secondary")}
                   onClick={() => setUnresolvedSort(v)}
                 >
                   {label}

@@ -215,13 +215,13 @@ export default function ReplayBatchButton() {
               </ul>
               <div className="scr-batch-foot">
                 <button
-                  type="button" className="scr-rect-btn scr-batch-clear"
+                  type="button" className="scr-rect-btn is-secondary scr-batch-clear"
                   onClick={() => { setStaged([]); setPickedNote(""); }}
                 >
                   비우기
                 </button>
                 <button
-                  type="button" className="scr-rect-btn is-fill scr-batch-go"
+                  type="button" className="scr-rect-btn scr-batch-go"
                   onClick={() => { void executeBatch(staged); }}
                 >
                   {staged.length}개 읽어 오기
@@ -237,7 +237,7 @@ export default function ReplayBatchButton() {
       {pendingReview && (
         <button
           type="button"
-          className="scr-rect-btn is-fill scr-batch-reopen"
+          className="scr-rect-btn scr-batch-reopen"
           onClick={() => setReviewOpen(true)}
         >
           읽어 온 {manualDrafts.length}개 다시 열기

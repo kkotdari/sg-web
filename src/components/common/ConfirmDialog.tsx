@@ -28,8 +28,8 @@ export default function ConfirmDialog({
         {message && <p className="scr-confirm-msg">{message}</p>}
         {error && <div className="scr-err" role="alert">{error}</div>}
         <div className="scr-form-actions">
-          <button className="scr-rect-btn" onClick={onCancel}>{cancelLabel}</button>
-          <button className="scr-rect-btn is-fill" onClick={onConfirm}>{confirmLabel}</button>
+          <button className="scr-rect-btn is-secondary" onClick={onCancel}>{cancelLabel}</button>
+          <button className="scr-rect-btn" onClick={onConfirm}>{confirmLabel}</button>
         </div>
       </div>
     </div>,

@@ -316,15 +316,15 @@ export function ChallengeCard({ challenge, myId, highlightMemberIds, readOnly, o
             </button>
           </div>
           <div className="scr-challenge-card-actions">
-            <button className="scr-rect-btn" onClick={() => submitResult("draw")} disabled={busy}>
+            <button className="scr-rect-btn is-secondary" onClick={() => submitResult("draw")} disabled={busy}>
               무승부
             </button>
-            <button className="scr-rect-btn" onClick={() => submitResult("not_held")} disabled={busy}>
+            <button className="scr-rect-btn is-secondary" onClick={() => submitResult("not_held")} disabled={busy}>
               미실시
             </button>
           </div>
           <div className="scr-challenge-card-actions">
-            <button className="scr-rect-btn" onClick={closeMode} disabled={busy}>취소</button>
+            <button className="scr-rect-btn is-secondary" onClick={closeMode} disabled={busy}>취소</button>
           </div>
           {busy && <div className="scr-challenge-result-busy"><Spinner /></div>}
         </div>
@@ -348,7 +348,7 @@ export function ChallengeCard({ challenge, myId, highlightMemberIds, readOnly, o
               <div className="scr-challenge-sent-desc">{sharePromptDesc}</div>
               <div className="scr-form-actions scr-challenge-sent-actions">
                 <KakaoShareButton variant="full" iconOnly content={buildShareContent} />
-                <button type="button" className="scr-rect-btn is-fill" onClick={dismissShare}>확인</button>
+                <button type="button" className="scr-rect-btn" onClick={dismissShare}>확인</button>
               </div>
             </div>
           </div>

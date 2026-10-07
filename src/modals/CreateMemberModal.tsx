@@ -122,8 +122,8 @@ export default function CreateMemberModal({ onClose }: CreateMemberModalProps) {
 
         </div>
         <div className="scr-form-actions">
-          <button type="button" className="scr-rect-btn" onClick={onClose}>취소</button>
-          <button type="button" className="scr-rect-btn is-fill" onClick={submit} disabled={busy}>
+          <button type="button" className="scr-rect-btn is-secondary" onClick={onClose}>취소</button>
+          <button type="button" className="scr-rect-btn" onClick={submit} disabled={busy}>
             {busy ? <><Spinner /> 생성 중...</> : "생성"}
           </button>
         </div>

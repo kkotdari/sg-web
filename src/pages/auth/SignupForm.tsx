@@ -65,7 +65,7 @@ export default function SignupForm({ onDone }: SignupFormProps) {
             ? "가입이 완료됐어요. 방금 만든 아이디로 로그인할 수 있어요."
             : "가입 신청이 접수됐어요. 운영자가 승인하면 로그인할 수 있어요."}
         </div>
-        <button className="scr-rect-btn" onClick={onDone}>로그인 화면으로</button>
+        <button className="scr-rect-btn is-secondary" onClick={onDone}>로그인 화면으로</button>
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function SignupForm({ onDone }: SignupFormProps) {
       <input className="scr-input" value={insta} onChange={(e) => setInsta(e.target.value)} placeholder="인스타 닉네임 (선택, nickname)" />
 
       {err && <div className="scr-err">{err}</div>}
-      <button type="submit" className="scr-rect-btn is-fill" disabled={busy}>
+      <button type="submit" className="scr-rect-btn" disabled={busy}>
         {busy ? <><Spinner /> 처리 중...</> : "가입하기"}
       </button>
 

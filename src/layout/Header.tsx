@@ -251,21 +251,21 @@ export default function Header({
             </nav>
 
             <div className="scr-drawer-actions">
-              <button className="scr-rect-btn" onClick={() => setLightTheme((v) => !v)}>
+              <button className="scr-rect-btn is-secondary" onClick={() => setLightTheme((v) => !v)}>
                 테마
               </button>
               {!installed && (
-                <button className="scr-rect-btn" onClick={onInstallClick}>
+                <button className="scr-rect-btn is-secondary" onClick={onInstallClick}>
                   앱 설치
                 </button>
               )}
-              <button className="scr-rect-btn" onClick={() => { onOpenProfile(); setMenuOpen(false); }}>
+              <button className="scr-rect-btn is-secondary" onClick={() => { onOpenProfile(); setMenuOpen(false); }}>
                 내 정보
               </button>
-              <button className="scr-rect-btn" onClick={() => { onLogout(); setMenuOpen(false); }}>
+              <button className="scr-rect-btn is-secondary" onClick={() => { onLogout(); setMenuOpen(false); }}>
                 로그아웃
               </button>
-              <button className="scr-rect-btn" onClick={() => setMenuOpen(false)}>
+              <button className="scr-rect-btn is-secondary" onClick={() => setMenuOpen(false)}>
                 메뉴 닫기
               </button>
             </div>

@@ -243,7 +243,7 @@ function NoteComposer({
       )}
       <button
         type="button"
-        className="scr-rect-btn is-fill scr-comment-submit-btn"
+        className="scr-rect-btn scr-comment-submit-btn"
         disabled={!canSubmit}
         onClick={doSubmit}
         aria-label="메모 등록"
