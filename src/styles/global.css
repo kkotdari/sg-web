@@ -6900,6 +6900,7 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   color: var(--timeline-blue);
   background: color-mix(in srgb, var(--timeline-blue) 16%, transparent);
 }
+.scr-compact-rect-btn > .scr-tb-beta { font-size: 9px; line-height: 1; padding: 1px 4px; }
 
 .scr-tb-pickhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .scr-tb-picked { font-size: var(--fs-caption); font-weight: 700; color: var(--text); }
