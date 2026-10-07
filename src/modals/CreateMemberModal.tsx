@@ -86,7 +86,7 @@ export default function CreateMemberModal({ onClose }: CreateMemberModalProps) {
               </button>
               <button
                 type="button"
-                className={cx("scr-icon-btn", "scr-icon-btn-danger", "scr-avatar-pick-btn", !avatar && "scr-avatar-pick-btn-hidden")}
+                className={cx("scr-icon-btn", "is-danger", "scr-avatar-pick-btn", !avatar && "scr-avatar-pick-btn-hidden")}
                 onClick={() => setAvatar(null)}
                 aria-label="사진 삭제"
                 tabIndex={avatar ? 0 : -1}

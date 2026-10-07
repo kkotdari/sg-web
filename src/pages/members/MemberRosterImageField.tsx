@@ -65,7 +65,7 @@ export default function MemberRosterImageField({ member }: { member: Member }) {
           </button>
           {src && (
             <button
-              type="button" className="scr-icon-btn scr-icon-btn-danger"
+              type="button" className="scr-icon-btn is-danger"
               onClick={() => setConfirmDelete(true)} disabled={busy}
               aria-label="로스터 이미지 삭제" title="로스터 이미지 삭제"
             >

@@ -354,7 +354,7 @@ export default function LeagueTeamsPanel({ league, onRegisterSave, section = "al
                   )}
                   {editable && (
                     <button
-                      type="button" className="scr-icon-btn scr-icon-btn-danger"
+                      type="button" className="scr-icon-btn is-danger"
                       onClick={() => deleteTeam(team.key)}
                       aria-label={`${label}${isIndividual ? "" : "팀"} 삭제`}
                     >

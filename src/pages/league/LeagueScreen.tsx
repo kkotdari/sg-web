@@ -266,7 +266,7 @@ export default function LeagueScreen() {
                     <X size={16} />
                   </button>
                   <button
-                    type="button" className="scr-icon-btn scr-icon-btn-danger"
+                    type="button" className="scr-icon-btn is-danger"
                     onClick={() => setDeleteTarget(leagues.find((l) => l.id === league.id) ?? null)}
                     aria-label="리그 삭제" title="리그 삭제"
                   >
