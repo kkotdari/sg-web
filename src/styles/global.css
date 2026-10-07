@@ -2774,6 +2774,8 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
   }
   .scr-challenge-card { padding-left: 12px; padding-right: 12px; }
   .scr-v2-toolbar { padding-bottom: 4px; min-height: calc(var(--field-h-sm) + 4px); }
+  .scr-v2-toolbar-title { padding-left: 14px; }
+  .scr-crumb-back + .scr-v2-toolbar-title { padding-left: 0; }
   .scr-screen { gap: 4px; }
   .scr-brand-text { display: none; }
   .scr-brand-logo-img { height: 13px; }
@@ -6858,6 +6860,10 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 }
 .scr-v2-toolbar-crumb { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
 .scr-v2-toolbar-crumb + * { margin-top: 16px; }
+@media (max-width: 1159px) {
+  .scr-v2-toolbar-crumb { padding-bottom: 6px; }
+  .scr-v2-toolbar-crumb + * { margin-top: 6px; }
+}
 .scr-extshare-adm-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
