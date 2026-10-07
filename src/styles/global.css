@@ -1155,8 +1155,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   font-variant-numeric: tabular-nums;
 }
 .scr-clan-race-unit { font-size: var(--fs-10, 10px); font-weight: 500; color: var(--text-dim); margin-left: 1px; }
+.scr-clan-race-label { font-size: var(--fs-10, 10px); font-weight: 600; color: var(--text-dim); margin-right: 4px; }
 .scr-clan-race-rate {
-  flex: none; width: 46px; text-align: right;
+  flex: none; min-width: 46px; text-align: right; white-space: nowrap;
   font-size: var(--fs-micro, 12px); font-weight: 600;
   font-variant-numeric: tabular-nums; color: var(--win);
 }

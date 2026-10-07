@@ -54,6 +54,7 @@ function RaceRecords({ byRace }: { byRace?: Partial<Record<BaseRace, MemberStats
               {(p.s?.plays ?? 0).toLocaleString()}<span className="scr-clan-race-unit">회</span>
             </span>
             <span className="scr-clan-race-rate">
+              <span className="scr-clan-race-label">승률</span>
               {p.s && p.s.plays > 0 ? `${p.s.winRate}%` : "-"}
             </span>
           </div>

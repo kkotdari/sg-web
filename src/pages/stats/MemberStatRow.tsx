@@ -184,6 +184,7 @@ function Record({ stats }: { stats?: MemberStats }) {
   return (
     <>
       <Num value={plays > 0 ? plays : null} unit="판" />
+      <span className="scr-statcard-sum-label">승률</span>
       <Num value={plays > 0 ? stats!.winRate : null} unit="%" />
     </>
   );
