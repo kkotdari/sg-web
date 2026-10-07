@@ -6953,10 +6953,6 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   color: var(--timeline-blue);
   background: color-mix(in srgb, var(--timeline-blue) 16%, transparent);
 }
-.scr-clan-teambtn {
-  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
-  min-height: 30px; height: 30px; padding: 5px 10px; font-size: 12px;
-}
 
 .scr-tb-pickhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .scr-tb-picked { font-size: var(--fs-caption); font-weight: 700; color: var(--text); }
