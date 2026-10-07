@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Users } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronUp, Users } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -39,32 +39,59 @@ function KpiTile({
   );
 }
 
+/** 종족 전적 — 줄마다 꺽쇠로 그 종족의 생산·업그레이드 덱을 펼친다(요청: 따로 서던 '종족별 생산·업그레이드'를 접기·펼치기로 통합).
+ *  덱은 개인 카드와 같은 RaceMixCell · 처음엔 모두 접힌 채다. */
 function RaceRecords({ byRace }: { byRace?: Partial<Record<BaseRace, MemberStats>> }) {
-  const parts = RACES.map((r) => ({ race: r, s: byRace?.[r] }));
+  const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
+  const toggle = (r: BaseRace): void => {
+    setOpenRaces((prev) => {
+      const next = new Set(prev);
+      if (next.has(r)) next.delete(r); else next.add(r);
+      return next;
+    });
+  };
   return (
-    <>
-      <div className="scr-clan-races">
-        {parts.map((p) => (
-          <div key={p.race} className="scr-clan-race">
-            <span className="scr-clan-race-name">
-              <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[p.race] }} />
-              {p.race}
-            </span>
-            <span className="scr-clan-race-plays">
-              {(p.s?.plays ?? 0).toLocaleString()}<span className="scr-clan-race-unit">회</span>
-            </span>
-            <span className="scr-clan-race-rate">
-              {p.s && p.s.plays > 0 && (
-                <>
-                  <span className="scr-clan-race-label">승률</span>
-                  {p.s.winRate}%
-                </>
-              )}
-            </span>
-          </div>
-        ))}
-      </div>
-    </>
+    <div className="scr-clan-races">
+      {RACES.map((r) => {
+        const s = byRace?.[r];
+        const open = openRaces.has(r);
+        return (
+          <Fragment key={r}>
+            <div className="scr-clan-race">
+              <span className="scr-clan-race-name">
+                <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
+                {r}
+              </span>
+              <span className="scr-clan-race-plays">
+                {(s?.plays ?? 0).toLocaleString()}<span className="scr-clan-race-unit">회</span>
+              </span>
+              <span className="scr-clan-race-rate">
+                {s && s.plays > 0 && (
+                  <>
+                    <span className="scr-clan-race-label">승률</span>
+                    {s.winRate}%
+                  </>
+                )}
+              </span>
+              <button
+                type="button" className="scr-text-btn scr-statcard-deck-toggle"
+                aria-expanded={open} aria-label={`${r} 생산·업그레이드 ${open ? "접기" : "펼치기"}`}
+                onClick={() => toggle(r)}
+              >
+                {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
+              </button>
+            </div>
+            {open && (
+              <div className="scr-statcard-decks scr-clan-decks scr-clan-race-deck">
+                <div className="scr-statcard-deck">
+                  <RaceMixCell race={r} stats={s} />
+                </div>
+              </div>
+            )}
+          </Fragment>
+        );
+      })}
+    </div>
   );
 }
 
@@ -289,23 +316,6 @@ export default function ClanStatsScreen() {
             <RaceRecords byRace={view.clan.byRace} />
           </div>
           </div>
-
-          <details className="scr-clan-detail">
-            <summary className="scr-clan-detail-sum">종족별 생산·업그레이드</summary>
-            <div className="scr-statcard-decks scr-clan-decks">
-              <div className="scr-statcard-deck-grid">
-                {RACES.map((r) => (
-                  <div key={r} className="scr-statcard-deck">
-                    <span className="scr-statcard-deck-head">
-                      <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
-                      {r}
-                    </span>
-                    <RaceMixCell race={r} stats={view.clan?.byRace?.[r]} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </details>
         </section>
       )}
 

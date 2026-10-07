@@ -1161,7 +1161,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-clan-race-rate {
   flex: none; min-width: 46px; text-align: right; white-space: nowrap;
   font-size: var(--fs-micro, 12px); font-weight: 600;
-  font-variant-numeric: tabular-nums; color: var(--win);
+  font-variant-numeric: tabular-nums;   /* 승률은 일반 글자색(요청) — 한때 var(--win) 이었다 */
 }
 
 .scr-clan-decks {
@@ -1232,17 +1232,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard .scr-stat-up-note, .scr-clan-decks .scr-stat-up-note {
   white-space: normal; word-break: keep-all; font-size: 11px; line-height: 1.35;
 }
-.scr-clan-detail { min-width: 0; }
-.scr-clan-detail-sum {
-  cursor: pointer; list-style: none;
-  font-size: var(--fs-micro, 12px); color: var(--text-dim);
-  padding: 6px 0; user-select: none;
-}
-.scr-clan-detail-sum::-webkit-details-marker { display: none; }
-.scr-clan-detail-sum::before { content: "▸ "; }
-.scr-clan-detail[open] .scr-clan-detail-sum::before { content: "▾ "; }
-.scr-clan-detail-sum:hover { color: var(--text); }
-.scr-clan-detail-sum:focus-visible { outline: 2px solid var(--accent, #6aa6ff); outline-offset: 2px; border-radius: 4px; }
+/* 종족 전적 줄 아래 펼친 생산·업그레이드 덱(요청: 따로 서던 '종족별 생산·업그레이드'를 접기·펼치기로 통합) */
+.scr-clan-race-deck { padding-bottom: 6px; }
+.scr-clan-race > .scr-statcard-deck-toggle { margin-left: 2px; }
 
 
 .scr-clan-dash-panels {
