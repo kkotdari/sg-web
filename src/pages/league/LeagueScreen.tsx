@@ -181,7 +181,7 @@ export default function LeagueScreen() {
 
       {isAdmin && selectedId === null && (
         <div className={cx("scr-activity-add-fab-wrap scr-activity-add-wrap", fabHidden && "scr-activity-add-fab-wrap-hidden")}>
-          <button type="button" className="scr-activity-add-fab scr-lighting-circle-btn" onClick={() => setCreating(true)}>
+          <button type="button" className="scr-activity-add-fab scr-circle-btn scr-lighting-color-glass" onClick={() => setCreating(true)}>
             생성
           </button>
         </div>

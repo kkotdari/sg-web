@@ -78,9 +78,9 @@ export default function ExtSharePickDialog({ games, onClose, onDone }: {
         )}
         {err && <div className="scr-err" role="alert">{err}</div>}
         <div className="scr-form-actions">
-          <button type="button" className="scr-btn scr-btn-ghost" onClick={onClose} disabled={busy}>취소</button>
+          <button type="button" className="scr-rect-btn scr-lighting-color" onClick={onClose} disabled={busy}>취소</button>
           <button
-            type="button" className="scr-btn scr-btn-primary"
+            type="button" className="scr-rect-btn scr-lighting-color-fill"
             onClick={() => void submit()} disabled={busy || pick === null}
           >
             {busy ? <Spinner size={14} /> : "담기"}

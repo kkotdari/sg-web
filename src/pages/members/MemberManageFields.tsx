@@ -81,7 +81,7 @@ export default function MemberManageFields({ member }: { member: Member }) {
       <div className="scr-member-gameids-head">
         <span>회원 정보</span>
         <button
-          type="button" className="scr-btn scr-btn-sm scr-member-manage-btn"
+          type="button" className="scr-compact-rect-btn scr-lighting-color"
           onClick={saveAll} disabled={saving || !anyChanged}
           title={anyChanged ? "바뀐 권한·상태를 저장합니다" : "바뀐 게 없어요"}
         >

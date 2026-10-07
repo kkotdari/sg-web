@@ -57,7 +57,7 @@ export default function InAppBrowserNotice({ compact = false }: { compact?: bool
   return (
     <div className="scr-inapp-notice" role="dialog" aria-label="외부 브라우저로 열기 안내">
       <div className="scr-inapp-notice-main">
-        <button type="button" className="scr-inapp-notice-cta" onClick={openExternal}>
+        <button type="button" className="scr-pill-btn scr-lighting-color-fill" onClick={openExternal}>
           <ExternalLink size={14} /> 기본 브라우저로 열기
         </button>
         <button type="button" className="scr-inapp-notice-close" onClick={close} aria-label="닫기">

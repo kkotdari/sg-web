@@ -140,7 +140,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
           <div className="scr-extshare-adm-head">
             <div className="scr-notice-edit-label">재생 목록</div>
             <button
-              type="button" className="scr-btn scr-btn-primary"
+              type="button" className="scr-rect-btn scr-lighting-color-fill"
               onClick={() => setAddOpen((v) => !v)} disabled={busy}
               aria-expanded={addOpen}
             >
@@ -159,7 +159,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                 onChange={(e) => setNewPass(e.target.value)}
               />
               <button
-                type="button" className="scr-btn scr-btn-primary"
+                type="button" className="scr-rect-btn scr-lighting-color-fill"
                 onClick={() => void addList()} disabled={busy || !newName.trim()}
               >
                 {busy ? <Spinner /> : "만들기"}
@@ -196,7 +196,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                           }))}
                         />
                         <button
-                          type="button" className="scr-btn scr-btn-primary"
+                          type="button" className="scr-rect-btn scr-lighting-color-fill"
                           disabled={!dirty || !d.name.trim()}
                           onClick={() => void patchList(l.id, {
                             name: d.name.trim(), password: d.password.trim(),
@@ -254,7 +254,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                   onClear={sel.clear}
                 >
                   <button
-                    type="button" className="scr-lighting-pill-btn"
+                    type="button" className="scr-pill-btn scr-lighting-color-fill"
                     disabled={pickedGames.length === 0 || busy}
                     onClick={() => { setBulkErr(null); setBulkDel(pickedGames); }}
                   >

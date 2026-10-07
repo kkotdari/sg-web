@@ -314,7 +314,7 @@ export default function LeagueTeamsPanel({ league, onRegisterSave, section = "al
           {isIndividual ? "선수" : "팀"} ({localTeams.length})
         </h2>
         <div className="scr-league-teams-panel-actions">
-          <button type="button" className="scr-btn scr-btn-sm" onClick={addTeam}>
+          <button type="button" className="scr-rect-btn scr-lighting-color" onClick={addTeam}>
             <Plus size={14} /> {isIndividual ? "선수 추가" : "팀 추가"}
           </button>
         </div>

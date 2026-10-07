@@ -149,7 +149,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
           <div className="scr-field">
             <span className="scr-label">비밀번호</span>
             <div className="scr-field-actions">
-              <button type="button" className="scr-btn scr-btn-ghost scr-btn-sm scr-btn-pw" onClick={() => setPasswordModalOpen(true)}>
+              <button type="button" className="scr-compact-rect-btn scr-lighting-color" onClick={() => setPasswordModalOpen(true)}>
                 비밀번호 변경
               </button>
             </div>
@@ -165,8 +165,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
         </div>
         <div className="scr-form-actions">
-          <button className="scr-btn scr-btn-ghost" onClick={requestClose}>취소</button>
-          <button className="scr-btn scr-btn-primary" onClick={save} disabled={busy}>
+          <button className="scr-rect-btn scr-lighting-color" onClick={requestClose}>취소</button>
+          <button className="scr-rect-btn scr-lighting-color-fill" onClick={save} disabled={busy}>
             {busy ? <><Spinner /> 저장 중...</> : "저장"}
           </button>
         </div>

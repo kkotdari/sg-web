@@ -109,13 +109,13 @@ export function useSceneScrap(content: () => KakaoShareContent, gameNo: string):
         {err && <div className="scr-err" role="alert">{err}</div>}
         <div className="scr-scrap-pop-btns">
           <button
-            type="button" className="scr-btn scr-btn-ghost"
+            type="button" className="scr-rect-btn scr-lighting-color"
             onClick={() => settle(false)}
           >
             취소
           </button>
           <button
-            type="button" className="scr-btn scr-btn-primary"
+            type="button" className="scr-rect-btn scr-lighting-color-fill"
             onClick={() => void save()} disabled={busy}
           >
             {busy ? "저장 중…" : "저장"}

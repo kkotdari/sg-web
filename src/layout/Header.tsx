@@ -251,21 +251,21 @@ export default function Header({
             </nav>
 
             <div className="scr-drawer-actions">
-              <button className="scr-btn scr-btn-ghost scr-btn-sm" onClick={() => setLightTheme((v) => !v)}>
+              <button className="scr-rect-btn scr-lighting-color" onClick={() => setLightTheme((v) => !v)}>
                 테마
               </button>
               {!installed && (
-                <button className="scr-btn scr-btn-ghost scr-btn-sm" onClick={onInstallClick}>
+                <button className="scr-rect-btn scr-lighting-color" onClick={onInstallClick}>
                   앱 설치
                 </button>
               )}
-              <button className="scr-btn scr-btn-ghost scr-btn-sm" onClick={() => { onOpenProfile(); setMenuOpen(false); }}>
+              <button className="scr-rect-btn scr-lighting-color" onClick={() => { onOpenProfile(); setMenuOpen(false); }}>
                 내 정보
               </button>
-              <button className="scr-btn scr-btn-ghost scr-btn-sm" onClick={() => { onLogout(); setMenuOpen(false); }}>
+              <button className="scr-rect-btn scr-lighting-color" onClick={() => { onLogout(); setMenuOpen(false); }}>
                 로그아웃
               </button>
-              <button className="scr-btn scr-btn-ghost scr-btn-sm" onClick={() => setMenuOpen(false)}>
+              <button className="scr-rect-btn scr-lighting-color" onClick={() => setMenuOpen(false)}>
                 메뉴 닫기
               </button>
             </div>

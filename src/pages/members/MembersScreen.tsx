@@ -205,7 +205,7 @@ export default function MembersScreen() {
 
       {isAdmin && (
         <div className="scr-v2-primary-row">
-          <button type="button" className="scr-lighting-rect-btn" onClick={() => setCreating(true)}>
+          <button type="button" className="scr-rect-btn scr-lighting-color" onClick={() => setCreating(true)}>
             <UserPlus size={14} /> 생성
           </button>
         </div>
@@ -322,7 +322,7 @@ export default function MembersScreen() {
               {([["recent", "최근 등장순"], ["count", "등장횟수순"]] as const).map(([v, label]) => (
                 <button
                   key={v} type="button"
-                  className={cx("scr-btn scr-btn-sm", unresolvedSort === v ? "scr-btn-primary" : "scr-btn-ghost")}
+                  className={cx("scr-compact-rect-btn", unresolvedSort === v ? "scr-lighting-color-fill" : "scr-lighting-color")}
                   onClick={() => setUnresolvedSort(v)}
                 >
                   {label}

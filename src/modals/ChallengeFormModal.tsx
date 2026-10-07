@@ -135,7 +135,7 @@ export default function ChallengeFormModal({ onClose, onCreated, presetTargetIds
             <div className="scr-challenge-sent-desc">호출을 보냈어요.</div>
             <div className="scr-form-actions scr-challenge-sent-actions">
               <KakaoShareButton variant="full" iconOnly content={() => shareCall(sentChallenge)} />
-              <button className="scr-btn scr-btn-primary scr-btn-primary-solid" onClick={finish}>확인</button>
+              <button className="scr-rect-btn scr-lighting-color-fill" onClick={finish}>확인</button>
             </div>
           </div>
         </div>
@@ -231,8 +231,8 @@ export default function ChallengeFormModal({ onClose, onCreated, presetTargetIds
 
         </div>
         <div className="scr-form-actions">
-          <button className="scr-btn scr-btn-ghost" onClick={onClose}>취소</button>
-          <button className="scr-btn scr-challenge-call-btn scr-challenge-submit-btn" onClick={submit} disabled={!canSubmit || busy}>
+          <button className="scr-rect-btn scr-lighting-color" onClick={onClose}>취소</button>
+          <button className="scr-rect-btn scr-lighting-color scr-challenge-call-btn scr-challenge-submit-btn" onClick={submit} disabled={!canSubmit || busy}>
             {busy ? <><Spinner /> 호출하는 중...</> : <><Phone size={14} /> 호출</>}
           </button>
         </div>

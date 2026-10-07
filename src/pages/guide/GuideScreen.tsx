@@ -80,7 +80,7 @@ export default function GuideScreen({ onClose }: { onClose?: () => void } = {}) 
       </section>
 
       <div className="scr-guide-back">
-        <button type="button" className="scr-btn scr-btn-secondary" onClick={closeGuide}>
+        <button type="button" className="scr-rect-btn scr-lighting-color" onClick={closeGuide}>
           닫기
         </button>
       </div>

@@ -58,7 +58,7 @@ export default function MemberRosterImageField({ member }: { member: Member }) {
         <span>로스터 이미지</span>
         <span className="scr-member-roster-actions">
           <button
-            type="button" className="scr-btn scr-btn-sm scr-member-manage-btn"
+            type="button" className="scr-compact-rect-btn scr-lighting-color"
             onClick={() => fileRef.current?.click()} disabled={busy}
           >
             {busy ? <Spinner size={12} /> : <ImagePlus size={13} />} {src ? "변경" : "업로드"}

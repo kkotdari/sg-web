@@ -274,7 +274,7 @@ function SelectionActions({ picked, onDelete, onHide }: {
   return (
     <>
       <button
-        type="button" className="scr-lighting-pill-btn"
+        type="button" className="scr-pill-btn scr-lighting-color-fill"
         disabled={!onlyGames}
         onClick={() => onHide(games)}
         title={onlyGames ? "고른 게임을 숨겨요" : "게임만 골랐을 때 켜져요"}
@@ -282,7 +282,7 @@ function SelectionActions({ picked, onDelete, onHide }: {
         숨김
       </button>
       <button
-        type="button" className="scr-lighting-pill-btn"
+        type="button" className="scr-pill-btn scr-lighting-color-fill"
         disabled={picked.length === 0}
         onClick={() => onDelete(picked)}
         title={picked.length === 0 ? "고른 것이 없어요" : undefined}
@@ -712,14 +712,14 @@ function ActivityGroupPage({
           {groupKey === "gameResult" && (
             <div className="scr-crumb-tools">
               <button
-                type="button" className="scr-lighting-compact-rect-btn"
+                type="button" className="scr-compact-rect-btn scr-lighting-color"
                 onClick={() => requestScreen("scraps")}
               >
                 <Bookmark size={13} />
                 <span>스크랩</span>
               </button>
               <button
-                type="button" className="scr-lighting-compact-rect-btn"
+                type="button" className="scr-compact-rect-btn scr-lighting-color"
                 onClick={() => requestScreen("guide")}
               >
                 <BookOpen size={13} />
@@ -1811,7 +1811,7 @@ export default function ActivityScreen() {
         {(
           <button
             type="button"
-            className="scr-activity-add-fab scr-lighting-circle-btn"
+            className="scr-activity-add-fab scr-circle-btn scr-lighting-color-glass"
             onClick={directAdd ?? (() => setAddMenuOpen((v) => !v))}
             aria-expanded={directAdd ? undefined : addMenuOpen}
           >

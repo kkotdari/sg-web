@@ -127,7 +127,7 @@ export default function SharePage({ target, onExit }: { target: ShareTarget; onE
 function ShareFoot({ onExit }: { onExit: () => void }) {
   return (
     <div className="scr-share-foot">
-      <button type="button" className="scr-btn scr-btn-primary scr-btn-primary-solid" onClick={onExit}>
+      <button type="button" className="scr-rect-btn scr-lighting-color-fill" onClick={onExit}>
         스타게이트로
       </button>
     </div>

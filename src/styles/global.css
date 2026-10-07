@@ -384,35 +384,7 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
 .scr-link-danger { background: transparent; border: none; color: var(--loss); font-size: var(--fs-body); font-family: inherit; cursor: pointer; padding: 2px 0; text-decoration: underline; text-underline-offset: 2px; }
 @media (hover: hover) { .scr-link-danger:hover { color: var(--text); } }
 
-.scr-btn { border: 1.5px solid rgba(255,255,255,0.32); background: var(--panel-raised); color: var(--text); padding: 10px 16px; font-size: var(--fs-body); font-weight: 600; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--field-h); box-sizing: border-box; transition: background .15s, border-color .15s, color .15s, box-shadow .15s;  border-radius: var(--radius-sm); }
-@media (hover: hover) {
-  .scr-btn:hover { border-color: rgba(var(--lighting-rgb), 0.55); box-shadow: var(--lighting-hover-glow); }
-}
-.scr-light-theme .scr-btn { border-color: rgba(0,0,0,0.28); }
-.scr-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.scr-btn-primary {
-  background: #fff; border-color: #fff; color: #10151a; text-shadow: none;
-  box-shadow: var(--lighting-pill-glow);
-}
-@media (hover: hover) {
-  .scr-btn-primary:hover {
-    box-shadow: 0 0 12px rgba(var(--lighting-rgb), 0.25), 0 0 28px rgba(var(--lighting-rgb), 0.13);
-  }
-}
-.scr-light-theme .scr-btn-primary {
-  background: var(--lighting-pill-bg); border-color: transparent; color: var(--text);
-  box-shadow: var(--lighting-pill-glow);
-}
-@media (hover: hover) {
-  .scr-light-theme .scr-btn-primary:hover {
-    box-shadow: 0 0 12px rgba(var(--lighting-rgb), 0.25), 0 0 28px rgba(var(--lighting-rgb), 0.13);
-  }
-}
-
-.scr-auth-submit {
-  align-self: center; width: 50%; min-height: calc(var(--field-h) * 0.8);
-  font-size: var(--fs-body); border-radius: 999px; margin-top: 16px;
-}
+.scr-auth-submit { align-self: center; width: 50%; margin-top: 16px; }
 .scr-auth-card .scr-input {
   border-color: rgba(255,255,255,0.4);
   box-shadow: 0 0 6px rgba(255,255,255,0.18), inset 0 0 4px rgba(255,255,255,0.05);
@@ -429,7 +401,6 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
   border-color: rgba(0,0,0,0.6);
   box-shadow: 0 0 12px rgba(0,0,0,0.25), inset 0 0 4px rgba(0,0,0,0.06);
 }
-.scr-btn-ghost { background: transparent; }
 .scr-lighting-text-btn {
   background: none; border: none; padding: 6px 10px; cursor: pointer; font-family: inherit;
   font-size: var(--fs-body); font-weight: 600; color: var(--lighting-text);
@@ -437,72 +408,85 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
 }
 @media (hover: hover) { .scr-lighting-text-btn:hover { color: var(--lighting-text-hover); } }
 .scr-lighting-text-btn:focus-visible { outline: 2px solid var(--lighting-accent); outline-offset: 2px; border-radius: 6px; }
-/* 라이팅 버튼 네 종류 — 아이콘·글자는 선택이다(둘 다, 하나만 모두 된다).
-   1. 라이팅 동그라미 버튼 .scr-lighting-circle-btn   52px 원 · 유리 바탕(등록 FAB · 맨 위로)
-   2. 라이팅 알약 버튼     .scr-lighting-pill-btn     알약 채움 + 글로우(선택 막대의 삭제·숨김)
-   3. 라이팅 네모 버튼     .scr-lighting-rect-btn     테두리 네모 · 모서리 6px · 패딩 6px 12px · 높이 32(회원 생성 · 대표맵 추가 · 팀 구성하기)
-   4. 라이팅 컴팩트 네모 버튼 .scr-lighting-compact-rect-btn  같은 꼴 · 사방 패딩 4px 6px · 높이는 내용대로(글자 12 → 약 23~25px)(스크랩 · 사용법 · 상성 보기 · 월 선택)
-   자리 잡기(fixed 위치·크기 전환)는 .scr-scrolltop·.scr-activity-add-fab 같은 제자리 클래스가 따로 진다. */
-.scr-lighting-circle-btn {
-  width: 52px; height: 52px; border-radius: 50%; padding: 0; flex: 0 0 auto;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: none; cursor: pointer; color: var(--text);
-  font-family: inherit; font-size: var(--fs-caption); font-weight: 700; white-space: nowrap;
-  background-color: color-mix(in srgb, var(--panel-solid) 30%, transparent);
-  backdrop-filter: blur(8px) saturate(1.15);
-  -webkit-backdrop-filter: blur(8px) saturate(1.15);
-  box-shadow:
+/* 버튼 체계 — 꼴(shape) × 색(color) 두 클래스를 함께 쓴다. 예) class="scr-pill-btn scr-lighting-color-fill"
+   꼴 네 종류는 크기·패딩·모서리·배치만 쥐고, 색·투명도·글로우는 색 클래스가 --btn-* 변수로 준다 — 색만 갈아 끼우기 쉽게.
+   아이콘·글자는 선택이다(둘 다, 하나만 모두 된다). 자리 잡기(fixed 위치·크기 전환)는 .scr-scrolltop·.scr-activity-add-fab 같은 제자리 클래스가 따로 진다.
+   1. 동그라미 .scr-circle-btn         52px 원(등록 FAB · 맨 위로)
+   2. 알약     .scr-pill-btn           999px · 패딩 4px 10px · 글자 12(선택 막대 삭제·숨김 · 알림 배너)
+   3. 네모     .scr-rect-btn           모서리 6px · 패딩 6px 12px · 높이 32 · 글자 caption(폼·모달 등 옛 기본 버튼 전부)
+   4. 컴팩트 네모 .scr-compact-rect-btn  모서리 6px · 사방 패딩 4px 6px · 높이는 내용대로(스크랩 · 사용법 · 상성 보기 · 월 선택 · 작은 토글)
+   색: .scr-lighting-color(테두리 기본) · .scr-lighting-color-fill(채움 — 알약·강조) · .scr-lighting-color-glass(유리 — 동그라미)
+   맥락이 색을 바꿀 때는 속성이 아니라 변수를 덮는다(예: 서랍 메뉴 줄 --btn-bg: transparent). */
+.scr-circle-btn, .scr-pill-btn, .scr-rect-btn, .scr-compact-rect-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; box-sizing: border-box;
+  font-family: inherit; line-height: 1; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  color: var(--btn-text, inherit); background: var(--btn-bg, transparent);
+  border: var(--btn-border-w, 1.5px) solid var(--btn-border, transparent);
+  box-shadow: var(--btn-shadow, none);
+  -webkit-backdrop-filter: var(--btn-blur, none); backdrop-filter: var(--btn-blur, none);
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .12s ease;
+}
+.scr-circle-btn {
+  width: 52px; height: 52px; padding: 0; border-radius: 50%; --btn-border-w: 0px;
+  font-size: var(--fs-caption); font-weight: 700;
+  transition: transform .12s ease, width .26s cubic-bezier(0.16, 1, 0.3, 1),
+    height .26s cubic-bezier(0.16, 1, 0.3, 1), font-size .26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.scr-pill-btn { gap: 5px; padding: 4px 10px; border-radius: 999px; --btn-border-w: 1px; font-size: 12px; font-weight: 700; }
+.scr-rect-btn { gap: 6px; padding: 6px 12px; min-height: 32px; border-radius: 6px; font-size: var(--fs-caption); font-weight: 600; }
+.scr-compact-rect-btn { gap: 5px; padding: 4px 6px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.scr-circle-btn svg, .scr-pill-btn svg, .scr-rect-btn svg, .scr-compact-rect-btn svg { display: block; flex: 0 0 auto; }
+@media (hover: hover) {
+  .scr-circle-btn:hover:not(:disabled), .scr-pill-btn:hover:not(:disabled), .scr-rect-btn:hover:not(:disabled), .scr-compact-rect-btn:hover:not(:disabled) {
+    border-color: var(--btn-hover-border, var(--btn-border, transparent));
+    box-shadow: var(--btn-hover-shadow, var(--btn-shadow, none));
+  }
+}
+.scr-circle-btn:active:not(:disabled), .scr-pill-btn:active:not(:disabled), .scr-rect-btn:active:not(:disabled), .scr-compact-rect-btn:active:not(:disabled) {
+  box-shadow: var(--btn-press-shadow, var(--btn-shadow, none));
+}
+.scr-circle-btn:active:not(:disabled) { transform: scale(0.94); }
+.scr-circle-btn:disabled, .scr-pill-btn:disabled, .scr-rect-btn:disabled, .scr-compact-rect-btn:disabled { opacity: var(--btn-disabled-opacity, 0.6); cursor: not-allowed; }
+.scr-circle-btn:focus-visible, .scr-pill-btn:focus-visible, .scr-rect-btn:focus-visible, .scr-compact-rect-btn:focus-visible { outline: 2px solid var(--btn-focus, currentColor); outline-offset: 2px; }
+
+.scr-lighting-color {
+  --btn-text: var(--text);
+  --btn-bg: var(--panel-raised);
+  --btn-border: rgba(255, 255, 255, 0.32);
+  --btn-hover-border: rgba(var(--lighting-rgb), 0.55);
+  --btn-hover-shadow: var(--lighting-hover-glow);
+  --btn-press-shadow: var(--lighting-press-glow);
+  --btn-focus: var(--lighting-accent);
+}
+.scr-light-theme .scr-lighting-color { --btn-border: rgba(0, 0, 0, 0.28); }
+.scr-lighting-color-fill {
+  --btn-text: var(--lighting-pill-text);
+  --btn-bg: var(--lighting-pill-bg);
+  --btn-border: rgba(var(--lighting-rgb), 0.55);
+  --btn-shadow: var(--lighting-pill-glow);
+  --btn-hover-border: rgba(var(--lighting-rgb), 0.55);
+  --btn-hover-shadow: var(--lighting-hover-glow), var(--lighting-pill-glow);
+  --btn-press-shadow: var(--lighting-press-glow);
+  --btn-focus: var(--lighting-accent);
+  --btn-disabled-opacity: 0.4;
+}
+.scr-lighting-color-glass {
+  --btn-text: var(--text);
+  --btn-bg: color-mix(in srgb, var(--panel-solid) 30%, transparent);
+  --btn-blur: blur(8px) saturate(1.15);
+  --btn-shadow:
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 2px 5px rgba(0, 0, 0, 0.2),
     0 6px 16px -8px rgba(0, 0, 0, 0.3);
-  transition: transform .12s ease, width .26s cubic-bezier(0.16, 1, 0.3, 1),
-    height .26s cubic-bezier(0.16, 1, 0.3, 1), font-size .26s cubic-bezier(0.16, 1, 0.3, 1);
-  -webkit-tap-highlight-color: transparent;
+  --btn-focus: var(--lighting-accent);
 }
-.scr-lighting-circle-btn:active { transform: scale(0.94); }
-html.scr-light-theme .scr-lighting-circle-btn {
-  box-shadow:
+html.scr-light-theme .scr-lighting-color-glass {
+  --btn-shadow:
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     0 2px 5px rgba(0, 0, 0, 0.1),
     0 6px 16px -8px rgba(0, 0, 0, 0.16);
-}
-.scr-lighting-pill-btn {
-  flex: 0 0 auto; display: inline-flex; align-items: center;
-  font-size: 12px; font-weight: 700; font-family: inherit; white-space: nowrap; cursor: pointer;
-  color: var(--lighting-pill-text); background: var(--lighting-pill-bg);
-  border: 1px solid rgba(var(--lighting-rgb), 0.55); border-radius: 999px; padding: 4px 10px;
-  box-shadow: var(--lighting-pill-glow);
-  transition: box-shadow .15s, opacity .15s;
-}
-@media (hover: hover) { .scr-lighting-pill-btn:hover:not(:disabled) { box-shadow: var(--lighting-hover-glow), var(--lighting-pill-glow); } }
-.scr-lighting-pill-btn:active:not(:disabled) { box-shadow: var(--lighting-press-glow); }
-.scr-lighting-pill-btn:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
-.scr-lighting-compact-rect-btn, .scr-lighting-rect-btn {
-  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; box-sizing: border-box;
-  border: 1.5px solid rgba(255,255,255,0.32); border-radius: 6px;
-  background: var(--panel-raised); color: var(--text);
-  font-family: inherit; font-weight: 600; line-height: 1;
-  cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent;
-  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
-}
-.scr-lighting-compact-rect-btn { gap: 5px; padding: 4px 6px; font-size: 12px; }
-.scr-lighting-rect-btn { gap: 6px; padding: 6px 12px; min-height: 32px; font-size: var(--fs-caption); }
-.scr-lighting-compact-rect-btn svg, .scr-lighting-rect-btn svg { display: block; flex: 0 0 auto; }
-@media (hover: hover) {
-  .scr-lighting-compact-rect-btn:hover:not(:disabled), .scr-lighting-rect-btn:hover:not(:disabled) {
-    border-color: rgba(var(--lighting-rgb), 0.55); box-shadow: var(--lighting-hover-glow);
-  }
-}
-.scr-lighting-compact-rect-btn:active:not(:disabled), .scr-lighting-rect-btn:active:not(:disabled) { box-shadow: var(--lighting-press-glow); }
-.scr-lighting-compact-rect-btn:disabled, .scr-lighting-rect-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.scr-light-theme .scr-lighting-compact-rect-btn, .scr-light-theme .scr-lighting-rect-btn { border-color: rgba(0,0,0,0.28); }
-.scr-lighting-compact-rect-btn:focus-visible, .scr-lighting-rect-btn:focus-visible { outline: 2px solid var(--lighting-accent); outline-offset: 2px; }
-.scr-btn-sm { padding: 7px 12px; font-size: var(--fs-body); min-height: var(--field-h-sm); }
-.scr-btn-pw {
-  font-size: var(--fs-micro); min-height: 0;
-  padding: 7px 9px; border-radius: 6px;
 }
 
 .scr-icon-btn { background: transparent; border: none; color: var(--muted); width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;  border-radius: 50%; }
@@ -856,11 +840,6 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-v2-toolbar-title-row .scr-v2-toolbar-title { grid-area: auto; transform: none; }
 .scr-v2-primary-row { display: flex; justify-content: center; margin-bottom: 12px; }
 .scr-members-screen-v2 .scr-v2-primary-row { margin-bottom: 30px; }
-.scr-v2-primary-row .scr-btn {
-  font-size: var(--fs-body);
-  padding: 6.7px 11.5px;
-  min-height: 30px;
-}
 .scr-rail-hotzone { display: none; }
 @media (min-width: 1160px) {
   :root { --rail-w: 0px; --rail-col: 176px; }
@@ -988,16 +967,6 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 .scr-light-theme .scr-inapp-notice { box-shadow: 0 8px 26px rgba(0,0,0,0.16), inset 0 0 0 1px rgba(0,0,0,0.08); }
 .scr-inapp-notice-main { display: flex; align-items: center; gap: 10px; }
-.scr-inapp-notice-cta {
-  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  background: var(--lighting-pill-bg); color: var(--lighting-pill-text); border: none; border-radius: 999px;
-  box-shadow: inset 0 0 0 0.5px rgba(var(--lighting-rgb), 0.5);
-  padding: 8px 13px; font-size: var(--fs-caption); font-weight: 800; font-family: inherit; cursor: pointer;
-  transition: box-shadow .15s;
-}
-@media (hover: hover) {
-  .scr-inapp-notice-cta:hover { box-shadow: inset 0 0 11px rgba(var(--lighting-rgb), 0.5); }
-}
 .scr-inapp-notice-close {
   flex-shrink: 0; width: 28px; height: 28px; display: grid; place-items: center;
   background: transparent; border: none; border-radius: 50%; color: var(--muted); cursor: pointer;
@@ -1021,15 +990,6 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-install-banner-text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
 .scr-install-banner-text b { font-size: var(--fs-body); }
 .scr-install-banner-text span { font-size: var(--fs-caption); color: var(--muted); }
-.scr-install-banner-cta {
-  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
-  background: var(--lighting-pill-bg); color: var(--lighting-pill-text); border: none; border-radius: 999px;
-  box-shadow: var(--lighting-pill-glow);
-  padding: 7px 14px; font-size: var(--fs-caption); font-weight: 700; cursor: pointer;
-}
-@media (hover: hover) {
-  .scr-install-banner-cta:hover { box-shadow: 0 0 12px rgba(var(--lighting-rgb), 0.25), 0 0 28px rgba(var(--lighting-rgb), 0.13); }
-}
 .scr-install-banner-close {
   flex-shrink: 0; background: transparent; border: none; color: var(--muted);
   cursor: pointer; padding: 4px; display: inline-flex; align-items: center;
@@ -2210,7 +2170,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 }
 
 .scr-month-cal { position: relative; display: inline-flex; }
-.scr-month-cal-open { border-color: rgba(var(--lighting-rgb), 0.55); box-shadow: var(--lighting-hover-glow); }
+.scr-month-cal-open { border-color: var(--btn-hover-border); box-shadow: var(--btn-hover-shadow); }
 
 .scr-month-cal-pop {
   z-index: 210; width: 248px; padding: 8px; border-radius: 12px;
@@ -2726,7 +2686,6 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
 .scr-form-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-bottom: 18px; }
 .scr-modal > .scr-modal-body ~ .scr-form-actions { flex-shrink: 0; padding-top: 14px; }
 
-.scr-form-actions .scr-btn { padding: 6px 10px; font-size: var(--fs-caption); gap: 4px; min-height: 0; border-radius: 6px; }
 
 .scr-replay-draft-body { display: flex; flex-direction: column; gap: 14px; }
 .scr-replay-draft-body-excluded { opacity: 0.4; filter: grayscale(0.5); }
@@ -3138,7 +3097,6 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 }
 .scr-selbar-note { font-size: var(--fs-micro, 11px); color: var(--dim); }
 .scr-selbar-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.scr-selbar-actions .scr-btn { white-space: nowrap; }
 .scr-selcell { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 2px 0 10px; cursor: pointer; }
 .scr-selcell.is-off { opacity: 0.3; cursor: default; }
 .scr-selcell input { cursor: inherit; }
@@ -3252,7 +3210,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-confirm-msg { font-size: var(--fs-body); color: var(--muted); line-height: 1.6; margin: 0 0 16px; }
 
 .scr-outcome-input-opts { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 16px; }
-.scr-outcome-input-opts .scr-btn { white-space: normal; line-height: 1.4; }
+.scr-outcome-input-opts .scr-rect-btn { white-space: normal; line-height: 1.4; }
 
 .scr-mobile-tabbar {
   display: none;
@@ -3354,8 +3312,8 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-drawer-actions {
   margin-top: 8px; display: flex; flex-direction: column; gap: 6px; padding-top: 12px;
 }
-.scr-drawer-actions .scr-btn { justify-content: flex-start; border-color: transparent; }
-.scr-drawer-actions .scr-btn { font-size: var(--fs-subhead); }
+.scr-drawer-actions .scr-rect-btn { justify-content: flex-start; --btn-border: transparent; --btn-bg: transparent; }
+.scr-drawer-actions .scr-rect-btn { font-size: var(--fs-subhead); }
 
 @media (max-width: 1159px) {
   .scr-nav-desktop { display: none !important; }
@@ -3513,7 +3471,6 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   font-size: var(--fs-caption); color: var(--muted);
 }
 .scr-member-gameids-head b { color: var(--text); font-weight: 700; margin-left: 2px; }
-.scr-member-manage-btn { min-height: 24px; padding: 2px 10px; font-size: var(--fs-micro); gap: 4px; }
 .scr-member-gameids-empty { font-size: var(--fs-caption); color: var(--dim); }
 .scr-member-section { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line-hair); }
 .scr-member-info { margin: 2px 0 0; }
@@ -3558,7 +3515,6 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   display: inline-flex;
   gap: 4px;
 }
-.scr-members-sublist-sort .scr-btn { padding: 2px 8px; font-size: 11px; }
 .scr-members-sublist-note { margin-left: auto; font-size: 11px; font-weight: 500; color: var(--dim); }
 
 .scr-member-gameid-meta {
@@ -3791,7 +3747,6 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-light-theme .scr-challenge-time-edit-input:focus {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(0,0,0,0.04), 0 0 0 1.5px var(--pipe-bright);
 }
-.scr-challenge-time-edit-row .scr-btn { flex: 0 0 auto; }
 .scr-challenge-result-when { flex: 1 1 auto; min-width: 0; }
 .scr-challenge-time-edit-cell { flex: 0 1 auto; min-width: 0; width: fit-content; max-width: 100%; }
 .scr-challenge-time-edit-cell > .scr-challenge-time-edit-input { width: auto; max-width: 100%; }
@@ -3994,7 +3949,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   opacity: 0; pointer-events: none; transition: opacity .45s ease;
 }
 .scr-challenge-envelope-actions-ready { opacity: 1; pointer-events: auto; }
-.scr-challenge-envelope-actions .scr-btn { min-width: 96px; }
+.scr-challenge-envelope-actions .scr-rect-btn { min-width: 96px; }
 .scr-challenge-envelope-open {
   background: rgba(var(--lighting-rgb), 0.92); border-color: transparent; color: #10151a;
   box-shadow: inset 0 0 0 0.5px rgba(var(--lighting-rgb), 0.7), 0 2px 12px rgba(0, 0, 0, 0.18);
@@ -4393,7 +4348,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 @media (max-width: 1159px) {
   .scr-member-row-name { font-size: var(--fs-caption); }
   .scr-member-row-tag { font-size: var(--fs-micro); }
-  .scr-drawer-actions .scr-btn { font-size: var(--fs-body); }
+  .scr-drawer-actions .scr-rect-btn { font-size: var(--fs-body); }
   .scr-challenge-card-team .scr-roster-name { font-size: var(--fs-micro); }
   .scr-rank-detail-history .scr-game-result-row-team-tail .scr-team-block-team2 { margin-left: -8px; }
   .scr-roster-matchup .scr-roster-side:not(.scr-roster-side-target) { flex: 0.85 1 0; }
@@ -4448,7 +4403,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 
 .scr-member-row-name { font-size: var(--fs-caption); }
 .scr-member-row-tag { font-size: var(--fs-micro); }
-.scr-drawer-actions .scr-btn { font-size: var(--fs-body); }
+.scr-drawer-actions .scr-rect-btn { font-size: var(--fs-body); }
 .scr-challenge-card-team .scr-roster-name { font-size: var(--fs-micro); }
 .scr-team-outcome { font-size: var(--fs-body); }
 .scr-challenge-form-modal .scr-hint { font-size: var(--fs-caption); }
@@ -4540,7 +4495,6 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 }
 
 .scr-league-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-.scr-league-toolbar > .scr-btn { flex: 0 0 auto; white-space: nowrap; }
 .scr-league-mode-toggle { display: flex; gap: 8px; margin-top: 4px; }
 .scr-league-mode-hint { font-size: var(--fs-caption); }
 .scr-league-screen {
@@ -4549,7 +4503,6 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   --league-advance: #5fe06a;
 }
 .scr-league-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-.scr-league-toolbar > .scr-btn { flex: 0 0 auto; white-space: nowrap; }
 .scr-league-mode-toggle { display: flex; gap: 8px; margin-top: 4px; }
 .scr-league-mode-hint { font-size: var(--fs-caption); }
 .scr-league-list { display: flex; flex-direction: column; }
@@ -4586,9 +4539,6 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-league-teams-panel { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; }
 .scr-league-teams-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .scr-league-teams-panel-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.scr-league-teams-panel-head .scr-btn-sm {
-  padding: 4px 8px; font-size: var(--fs-caption); height: 28px; min-height: 28px; box-sizing: border-box;
-}
 .scr-league-section-title { font-size: var(--fs-body); font-weight: 800; color: var(--dim); letter-spacing: 0.02em; margin: 0; }
 .scr-league-teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .scr-league-team-card {
@@ -4792,9 +4742,6 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 }
 .scr-league-bracket-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .scr-league-bracket-seed-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.scr-league-bracket-toolbar > .scr-btn-sm, .scr-league-bracket-seed-actions .scr-btn-sm {
-  padding: 4px 8px; font-size: var(--fs-caption); height: 28px; min-height: 28px; box-sizing: border-box;
-}
 
 .scr-league-present {
   position: fixed; inset: 0; z-index: 96;
@@ -4834,7 +4781,7 @@ html.scr-light-theme .scr-league-present-tab-no { background: rgba(0,0,0,0.10); 
 }
 .scr-league-present-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .scr-league-present-spacer { flex: 1 1 auto; }
-.scr-league-present-actions .scr-btn:disabled { opacity: 0.4; }
+.scr-league-present-actions .scr-rect-btn:disabled { opacity: 0.4; }
 .scr-league-present-err { margin: 8px 20px 0; }
 .scr-league-present-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 16px 20px 24px; }
 .scr-league-present-pane { display: block; }
@@ -5043,10 +4990,10 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-rivalry-legend-note { width: 100%; text-align: center; color: var(--dim); }
 .scr-rivalry-legend-secret { padding: 2px 1px; margin: -2px -1px; -webkit-tap-highlight-color: transparent; }
 
-.scr-btn, .scr-icon-btn, .scr-header-text-btn, .scr-link-btn, .scr-pill-tab-btn, .scr-cselect-trigger, .scr-nav-tab, .scr-pagination-btn, .scr-select-opt, .scr-cselect-opt, .scr-pv-opt, .scr-menu-pop-opt {
+.scr-icon-btn, .scr-header-text-btn, .scr-link-btn, .scr-pill-tab-btn, .scr-cselect-trigger, .scr-nav-tab, .scr-pagination-btn, .scr-select-opt, .scr-cselect-opt, .scr-pv-opt, .scr-menu-pop-opt {
   -webkit-tap-highlight-color: transparent;
 }
-.scr-btn:not(:disabled):active, .scr-icon-btn:not(:disabled):active, .scr-header-text-btn:active, .scr-link-btn:active, .scr-cselect-trigger:active, .scr-pagination-btn:not(:disabled):active {
+.scr-icon-btn:not(:disabled):active, .scr-header-text-btn:active, .scr-link-btn:active, .scr-cselect-trigger:active, .scr-pagination-btn:not(:disabled):active {
   box-shadow: var(--lighting-press-glow);
 }
 .scr-select-opt:active, .scr-cselect-opt:active, .scr-pv-opt:active, .scr-menu-pop-drop .scr-menu-pop-opt:active {
@@ -6367,7 +6314,6 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 .scr-minimap-map-meta { font-size: var(--fs-caption); color: var(--muted); }
 .scr-minimap-assign { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .scr-minimap-assign .scr-input { flex: 1 1 auto; min-width: 0; }
-.scr-minimap-assign .scr-btn { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; }
 .scr-minimap-image-row { cursor: default; }
 .scr-minimap-name-input { flex: 1 1 auto; min-width: 0; height: 30px; font-size: 13.5px; }
 .scr-minimap-group {
@@ -6880,11 +6826,6 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
 .scr-extshare-adm-head > .scr-notice-edit-label { margin-bottom: 0; }
-.scr-extshare-adm-head > .scr-btn {
-  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px;
-  padding: 5px 10px; font-size: 12px;
-  min-height: 30px; height: 30px;
-}
 .scr-extshare-adm-row > .scr-adm-card-meta {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px;
   max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -6898,10 +6839,6 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
   border-color: var(--timeline-blue);
   box-shadow: inset 0 0 0 1px var(--timeline-blue);
   background: color-mix(in srgb, var(--timeline-blue) 10%, var(--panel));
-}
-.scr-extshare-adm-row .scr-btn {
-  flex: 0 0 auto; padding: 5px 10px; font-size: 12px;
-  min-height: 30px; height: 30px;
 }
 .scr-extshare-adm-row .scr-icon-btn { height: 30px; }
 .scr-extshare-adm-row input.scr-extshare-adm-name,
@@ -7016,7 +6953,6 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   margin-top: auto; padding: 10px 0 14px;
 }
-.scr-tb-actions .scr-btn { min-height: 32px; padding: 6px 12px; font-size: 12.5px; gap: 5px; }
 
 .scr-sb { display: flex; flex-direction: column; gap: 24px; }
 .scr-sb-item { position: relative; }

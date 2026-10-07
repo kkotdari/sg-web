@@ -55,14 +55,14 @@ export default function LeagueCreateModal({ onClose, onCreated }: LeagueCreateMo
             <div className="scr-league-mode-toggle">
               <button
                 type="button"
-                className={cx("scr-btn scr-btn-sm", mode === "team" ? "scr-btn-primary" : "scr-btn-ghost")}
+                className={cx("scr-rect-btn", mode === "team" ? "scr-lighting-color-fill" : "scr-lighting-color")}
                 onClick={() => setMode("team")}
               >
                 팀리그
               </button>
               <button
                 type="button"
-                className={cx("scr-btn scr-btn-sm", mode === "individual" ? "scr-btn-primary" : "scr-btn-ghost")}
+                className={cx("scr-rect-btn", mode === "individual" ? "scr-lighting-color-fill" : "scr-lighting-color")}
                 onClick={() => setMode("individual")}
               >
                 개인리그
@@ -78,8 +78,8 @@ export default function LeagueCreateModal({ onClose, onCreated }: LeagueCreateMo
 
         </div>
         <div className="scr-form-actions">
-          <button type="button" className="scr-btn scr-btn-ghost" onClick={onClose}>취소</button>
-          <button type="button" className="scr-btn scr-btn-primary scr-btn-primary-solid" onClick={submit} disabled={busy}>
+          <button type="button" className="scr-rect-btn scr-lighting-color" onClick={onClose}>취소</button>
+          <button type="button" className="scr-rect-btn scr-lighting-color-fill" onClick={submit} disabled={busy}>
             {busy ? <><Spinner /> 생성 중...</> : "생성"}
           </button>
         </div>

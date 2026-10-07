@@ -77,28 +77,28 @@ function GameResultOutcomeDialog({ gameResult, memberOf, onChanged, onClose }: {
             <>
               {[...gameResult.team1, ...gameResult.team2].map((sl) => (
                 <button
-                  key={sl.rawName ?? sl.memberId} type="button" className="scr-btn scr-btn-primary"
+                  key={sl.rawName ?? sl.memberId} type="button" className="scr-rect-btn scr-lighting-color-fill"
                   disabled={busy || !sl.rawName} onClick={() => pick("team1", sl.rawName ?? undefined)}
                 >
                   승리자 — {nameOf(sl)}
                 </button>
               ))}
-              <button type="button" className="scr-btn" disabled={busy} onClick={() => pick("draw")}>무승부</button>
+              <button type="button" className="scr-rect-btn scr-lighting-color" disabled={busy} onClick={() => pick("draw")}>무승부</button>
             </>
           ) : (
             <>
-              <button type="button" className="scr-btn scr-btn-primary" disabled={busy} onClick={() => pick("team1")}>
+              <button type="button" className="scr-rect-btn scr-lighting-color-fill" disabled={busy} onClick={() => pick("team1")}>
                 1팀 승 — {namesOf(gameResult.team1)}
               </button>
-              <button type="button" className="scr-btn" disabled={busy} onClick={() => pick("draw")}>무승부</button>
-              <button type="button" className="scr-btn scr-btn-primary" disabled={busy} onClick={() => pick("team2")}>
+              <button type="button" className="scr-rect-btn scr-lighting-color" disabled={busy} onClick={() => pick("draw")}>무승부</button>
+              <button type="button" className="scr-rect-btn scr-lighting-color-fill" disabled={busy} onClick={() => pick("team2")}>
                 2팀 승 — {namesOf(gameResult.team2)}
               </button>
             </>
           )}
         </div>
         <div className="scr-form-actions">
-          <button type="button" className="scr-btn" onClick={onClose} disabled={busy}>취소</button>
+          <button type="button" className="scr-rect-btn scr-lighting-color" onClick={onClose} disabled={busy}>취소</button>
         </div>
       </div>
     </div>,

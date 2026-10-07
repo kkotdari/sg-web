@@ -458,7 +458,7 @@ export default function ReplayReviewModal({
                       </button>
                       {d.excludeReason !== "duplicate" && (
                         <button
-                          type="button" className="scr-btn scr-btn-ghost scr-btn-sm scr-replay-review-skip-btn"
+                          type="button" className="scr-rect-btn scr-lighting-color scr-replay-review-skip-btn"
                           onClick={(e) => { e.stopPropagation(); toggleExcluded(i); }}
                           disabled={submittedIndices.has(i)}
                         >
@@ -609,7 +609,7 @@ export default function ReplayReviewModal({
         <div className="scr-form-actions">
           {blocked.length > 0 && (
             <button
-              type="button" className="scr-btn scr-btn-ghost scr-replay-review-jump"
+              type="button" className="scr-rect-btn scr-lighting-color scr-replay-review-jump"
               onClick={() => {
                 const i9 = blocked[0]?.i;
                 if (i9 === undefined) return;
@@ -622,9 +622,9 @@ export default function ReplayReviewModal({
               손볼 경기 {blocked.length}건 — 첫 건 보기
             </button>
           )}
-          <button type="button" className="scr-btn scr-btn-ghost" onClick={requestClose}>취소</button>
+          <button type="button" className="scr-rect-btn scr-lighting-color" onClick={requestClose}>취소</button>
           <button
-            type="button" className="scr-btn scr-btn-primary" onClick={submitAll}
+            type="button" className="scr-rect-btn scr-lighting-color-fill" onClick={submitAll}
             disabled={busy || blocked.length > 0}
           >
             {busy ? <><Spinner /> 등록 중... ({submittedIndices.size}/{nonExcludedCount})</> : <><Upload size={14} /> 등록 ({pendingIndices.length})</>}

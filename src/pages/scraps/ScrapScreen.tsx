@@ -124,7 +124,7 @@ export default function ScrapScreen() {
           onClear={sel.clear}
         >
           <button
-            type="button" className="scr-lighting-pill-btn"
+            type="button" className="scr-pill-btn scr-lighting-color-fill"
             disabled={pickedRows.length === 0}
             onClick={() => { setBulkErr(null); setBulkConfirm(pickedRows); }}
           >
@@ -232,13 +232,13 @@ export default function ScrapScreen() {
             </div>
             <div className="scr-scrap-pop-btns">
               <button
-                type="button" className="scr-btn scr-btn-ghost"
+                type="button" className="scr-rect-btn scr-lighting-color"
                 onClick={() => setEdit(null)}
               >
                 취소
               </button>
               <button
-                type="button" className="scr-btn scr-btn-primary"
+                type="button" className="scr-rect-btn scr-lighting-color-fill"
                 onClick={() => void saveEdit()} disabled={busy || !draft.trim()}
               >
                 {busy ? "저장 중…" : "저장"}
