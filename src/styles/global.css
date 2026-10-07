@@ -472,7 +472,7 @@ html.scr-light-theme .scr-lighting-circle-btn {
   flex: 0 0 auto; display: inline-flex; align-items: center;
   font-size: 12px; font-weight: 700; font-family: inherit; white-space: nowrap; cursor: pointer;
   color: var(--lighting-pill-text); background: var(--lighting-pill-bg);
-  border: 1px solid rgba(var(--lighting-rgb), 0.55); border-radius: 999px; padding: 4px 12px;
+  border: 1px solid rgba(var(--lighting-rgb), 0.55); border-radius: 999px; padding: 4px 10px;
   box-shadow: var(--lighting-pill-glow);
   transition: box-shadow .15s, opacity .15s;
 }
