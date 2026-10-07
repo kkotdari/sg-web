@@ -276,7 +276,7 @@ export default function MapCanonScreen() {
         <div className="scr-minimap-panel-head">
           <span className="scr-notice-edit-label">대표맵 {canons.length}개</span>
           <button
-            type="button" className="scr-btn scr-btn-sm scr-btn-primary" disabled={busy}
+            type="button" className="scr-lighting-rect-btn" disabled={busy}
             onClick={() => setAddOpen((v) => !v)} aria-expanded={addOpen}
           >
             <Plus size={12} /> 추가

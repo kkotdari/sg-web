@@ -205,7 +205,7 @@ export default function MembersScreen() {
 
       {isAdmin && (
         <div className="scr-v2-primary-row">
-          <button type="button" className="scr-btn scr-btn-primary scr-btn-primary-solid scr-btn-sm" onClick={() => setCreating(true)}>
+          <button type="button" className="scr-lighting-rect-btn" onClick={() => setCreating(true)}>
             <UserPlus size={14} /> 생성
           </button>
         </div>

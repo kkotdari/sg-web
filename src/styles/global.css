@@ -437,22 +437,26 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
 }
 @media (hover: hover) { .scr-lighting-text-btn:hover { color: var(--lighting-text-hover); } }
 .scr-lighting-text-btn:focus-visible { outline: 2px solid var(--lighting-accent); outline-offset: 2px; border-radius: 6px; }
-.scr-lighting-compact-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: 0 0 auto;
-  padding: 4px 8px; min-height: 26px; box-sizing: border-box;
+.scr-lighting-compact-btn, .scr-lighting-rect-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; box-sizing: border-box;
   border: 1.5px solid rgba(255,255,255,0.32); border-radius: 4px;
   background: var(--panel-raised); color: var(--text);
-  font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1;
+  font-family: inherit; font-weight: 600; line-height: 1;
   cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent;
   transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
 }
-.scr-lighting-compact-btn svg { display: block; flex: 0 0 auto; }
+.scr-lighting-compact-btn { gap: 5px; padding: 4px 8px; min-height: 26px; font-size: 12px; }
+.scr-lighting-rect-btn { gap: 6px; padding: 6px 12px; min-height: 32px; font-size: var(--fs-caption); }
+.scr-lighting-compact-btn svg, .scr-lighting-rect-btn svg { display: block; flex: 0 0 auto; }
 @media (hover: hover) {
-  .scr-lighting-compact-btn:hover { border-color: rgba(var(--lighting-rgb), 0.55); box-shadow: var(--lighting-hover-glow); }
+  .scr-lighting-compact-btn:hover:not(:disabled), .scr-lighting-rect-btn:hover:not(:disabled) {
+    border-color: rgba(var(--lighting-rgb), 0.55); box-shadow: var(--lighting-hover-glow);
+  }
 }
-.scr-lighting-compact-btn:active { box-shadow: var(--lighting-press-glow); }
-.scr-light-theme .scr-lighting-compact-btn { border-color: rgba(0,0,0,0.28); }
-.scr-lighting-compact-btn:focus-visible { outline: 2px solid var(--lighting-accent); outline-offset: 2px; }
+.scr-lighting-compact-btn:active:not(:disabled), .scr-lighting-rect-btn:active:not(:disabled) { box-shadow: var(--lighting-press-glow); }
+.scr-lighting-compact-btn:disabled, .scr-lighting-rect-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.scr-light-theme .scr-lighting-compact-btn, .scr-light-theme .scr-lighting-rect-btn { border-color: rgba(0,0,0,0.28); }
+.scr-lighting-compact-btn:focus-visible, .scr-lighting-rect-btn:focus-visible { outline: 2px solid var(--lighting-accent); outline-offset: 2px; }
 .scr-btn-sm { padding: 7px 12px; font-size: var(--fs-body); min-height: var(--field-h-sm); }
 .scr-btn-pw {
   font-size: var(--fs-micro); min-height: 0;
@@ -808,11 +812,6 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-v2-toolbar-title-row { grid-area: title; display: flex; align-items: center; gap: 10px; min-width: 0; }
 .scr-v2-toolbar-title-row { transform: translateY(-6px); }
 .scr-v2-toolbar-title-row .scr-v2-toolbar-title { grid-area: auto; transform: none; }
-.scr-title-side-btn {
-  flex: 0 0 auto; align-self: center;
-  min-height: 0; height: 22px; padding: 0 9px;
-  font-size: var(--fs-micro); font-weight: 800; border-radius: var(--radius-sm);
-}
 .scr-v2-primary-row { display: flex; justify-content: center; margin-bottom: 12px; }
 .scr-members-screen-v2 .scr-v2-primary-row { margin-bottom: 30px; }
 .scr-v2-primary-row .scr-btn {
@@ -2169,22 +2168,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 }
 
 .scr-month-cal { position: relative; display: inline-flex; }
-.scr-month-cal-trigger {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 7px; box-sizing: border-box;
-  border: none; border-radius: var(--radius-sm); cursor: pointer;
-  background: rgba(255,255,255,0.08); color: var(--text);
-  font-family: inherit; font-size: var(--fs-caption); font-weight: 600; white-space: nowrap;
-  transition: background .12s;
-}
-.scr-light-theme .scr-month-cal-trigger { background: rgba(0,0,0,0.06); }
-.scr-month-cal-trigger svg { color: var(--muted); }
-@media (hover: hover) {
-  .scr-month-cal-trigger:hover { background: rgba(255,255,255,0.14); }
-  .scr-light-theme .scr-month-cal-trigger:hover { background: rgba(0,0,0,0.09); }
-}
-.scr-month-cal-open { background: rgba(255,255,255,0.16); }
-.scr-light-theme .scr-month-cal-open { background: rgba(0,0,0,0.10); }
+.scr-month-cal-open { border-color: rgba(var(--lighting-rgb), 0.55); box-shadow: var(--lighting-hover-glow); }
 
 .scr-month-cal-pop {
   z-index: 210; width: 248px; padding: 8px; border-radius: 12px;
