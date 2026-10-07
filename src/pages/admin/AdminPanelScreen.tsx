@@ -76,6 +76,24 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     }
   };
 
+  const [kdBusy, setKdBusy] = useState(false);
+  const backfillKdSupply = async () => {
+    setKdBusy(true);
+    try {
+      const { scheduled } = await api.backfillKdSupply();
+      showToast(
+        scheduled === 0
+          ? "다시 셀 경기가 없어요 — 모든 경기의 K/D 가 이미 인구수 기준이에요."
+          : `${scheduled}판의 K/D 를 인구수로 다시 세기 시작했어요. 잠시 뒤 통계를 다시 열어 보세요.`,
+        { kind: "ok" },
+      );
+    } catch (e) {
+      showAlert(e instanceof Error ? e.message : "다시 세기를 시작하지 못했어요.");
+    } finally {
+      setKdBusy(false);
+    }
+  };
+
   const [purgeUntil, setPurgeUntil] = useState(() => {
     const d = gameNow();
     d.setDate(d.getDate() - 30);
@@ -394,6 +412,22 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     onClick={downloadReplays} disabled={downloading}
                   >
                     {downloading ? <Spinner /> : "내려받기"}
+                  </button>
+                </div>
+
+                <div className="scr-adm-row">
+                  <div className="scr-adm-row-text">
+                    <span className="scr-adm-row-title">K/D 인구수로 다시 세기</span>
+                    <span className="scr-adm-row-desc">
+                      마릿수로 세어 둔 옛 경기의 K/D 를 잡은·잃은 유닛의 인구수 기준으로 다시 셉니다.
+                      리플레이가 있는 경기만, 서버가 뒤에서 차례로 돌아요(재생 자료는 그대로).
+                    </span>
+                  </div>
+                  <button
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
+                    onClick={() => { void backfillKdSupply(); }} disabled={kdBusy}
+                  >
+                    {kdBusy ? <Spinner /> : "다시 세기"}
                   </button>
                 </div>
 
