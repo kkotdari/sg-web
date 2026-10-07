@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { ListChecks, X } from "lucide-react";
 import { cx } from "../../utils/format";
 
 export function SelectionBar({ total, count, onSelectAll, onClear, children, note }: {
@@ -13,16 +12,16 @@ export function SelectionBar({ total, count, onSelectAll, onClear, children, not
   const clearing = count > 0;
   return (
     <div className="scr-selbar" role="toolbar" aria-label="선택">
-      <button
-        type="button"
-        className={cx("scr-sel-toggle", clearing && "is-on")}
-        onClick={clearing ? onClear : onSelectAll}
-        disabled={!clearing && total === 0}
+      <label
+        className="scr-checkbox-field scr-sel-all"
         title={clearing ? "고른 것을 모두 풀어요" : (total > 0 ? "고를 수 있는 줄을 모두 골라요" : "고를 수 있는 줄이 없어요")}
       >
-        {clearing ? <X size={13} aria-hidden /> : <ListChecks size={13} aria-hidden />}
+        <input
+          type="checkbox" checked={clearing} disabled={!clearing && total === 0}
+          onChange={clearing ? onClear : onSelectAll}
+        />
         <span aria-live="polite">{clearing ? `선택취소(${count})` : `전체선택${total > 0 ? ` (${total})` : ""}`}</span>
-      </button>
+      </label>
       {note && <span className="scr-selbar-note">{note}</span>}
       <div className="scr-selbar-actions">{children}</div>
     </div>

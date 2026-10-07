@@ -3068,16 +3068,9 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-trash-purge:hover { color: var(--loss); }
 .scr-trash-empty { color: var(--muted); font-size: var(--fs-caption); text-align: center; padding: 16px 0; display: flex; justify-content: center; gap: 8px; }
 
-.scr-sel-toggle {
-  flex: 0 0 auto;
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 12px; color: var(--text-dim); background: none;
-  border: 1px solid var(--line); border-radius: var(--radius-chip);
-  padding: 4px 10px; cursor: pointer; font-family: inherit; white-space: nowrap;
-}
-.scr-sel-toggle:hover { color: var(--text); }
-.scr-sel-toggle.is-on { color: var(--text); border-color: var(--text-dim); background: rgba(var(--overlay-rgb), 0.08); }
-.scr-sel-toggle:disabled { opacity: 0.4; cursor: default; }
+.scr-sel-all { flex: 0 0 auto; gap: 8px; padding-left: 10px; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+.scr-sel-all:has(input:checked) { color: var(--text); }
+@media (hover: hover) { .scr-sel-all:hover { color: var(--text); } }
 .scr-selbar {
   position: sticky; top: calc(var(--safe-top, 0px) + 6px); z-index: 6;
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
