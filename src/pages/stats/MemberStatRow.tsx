@@ -172,9 +172,11 @@ function Num({ value, unit }: { value: number | string | null; unit?: string }) 
   );
 }
 
+/** K/D — 마릿수가 아니라 잡은 인구 ÷ 잃은 인구(저글링 0.5 · 마린 1 · 울트라 4).
+ *  옛 덤퍼로만 구운 회원은 인구 합이 없어 "-" 다(운영 패널 'K/D 인구수로 다시 세기'). */
 function kdOf(stats?: MemberStats): string | null {
-  const k = stats?.kills;
-  const d = stats?.deaths;
+  const k = stats?.killSupply;
+  const d = stats?.deathSupply;
   if (typeof k !== "number" || typeof d !== "number") return null;
   return (k / Math.max(1, d)).toFixed(2);
 }
@@ -244,7 +246,7 @@ export default function MemberStatRow({
             <Num value={stats.avgApm} />
           </span>
           <span className="scr-statcard-sum-item">
-            <span className="scr-statcard-sum-label">K/D</span>
+            <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
             <Num value={kd} />
           </span>
         </div>

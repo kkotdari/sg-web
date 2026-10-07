@@ -208,6 +208,9 @@ export interface MemberStats {
   upPlays: number | null;
   kills?: number | null;
   deaths?: number | null;
+  /** 인구 K/D — 잡은·잃은 유닛의 인구 합(저글링 0.5). 새 덤퍼로 구운 경기에만 있다. */
+  killSupply?: number | null;
+  deathSupply?: number | null;
   kdPlays?: number | null;
 }
 
