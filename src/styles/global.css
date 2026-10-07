@@ -3091,10 +3091,8 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-sel-all:has(input:checked) { color: var(--text); }
 @media (hover: hover) { .scr-sel-all:hover { color: var(--text); } }
 .scr-selbar {
-  position: sticky; top: calc(var(--safe-top, 0px) + 6px); z-index: 6;
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   padding: 8px 0; margin-bottom: 8px;
-  background: var(--void);
 }
 .scr-selbar-note { font-size: var(--fs-micro, 11px); color: var(--dim); }
 .scr-selbar-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
@@ -3120,11 +3118,9 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
   .scr-league-list .scr-sel-wrap:not(.is-picked):hover { background: rgba(var(--lighting-rgb), 0.07); }
   .scr-league-list .scr-sel-wrap > .scr-league-row:hover { background: transparent; }
 }
-.scr-extshare-modal .scr-selbar { position: static; background: none; }
 .scr-scrap-row.is-picked { background: var(--lighting-picked-bg); }
 .scr-trash-tools { display: flex; align-items: center; gap: 8px; }
 .scr-trash-tools .scr-trash-search { flex: 1 1 auto; min-width: 0; }
-.scr-trash .scr-selbar { position: static; background: none; }
 .scr-trash-row.scr-trash-row-sel { grid-template-columns: auto 1fr auto; }
 .scr-trash-row.scr-trash-row-sel .scr-selcell { padding-left: 2px; }
 .scr-trash-row.is-picked { background: var(--lighting-picked-bg); }
