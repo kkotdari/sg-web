@@ -76,21 +76,21 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     }
   };
 
-  const [kdBusy, setKdBusy] = useState(false);
-  const backfillKdSupply = async () => {
-    setKdBusy(true);
+  const [combatBusy, setCombatBusy] = useState(false);
+  const backfillCombatStats = async () => {
+    setCombatBusy(true);
     try {
-      const { scheduled } = await api.backfillKdSupply();
+      const { scheduled } = await api.backfillCombatStats();
       showToast(
         scheduled === 0
-          ? "다시 셀 경기가 없어요 — 모든 경기의 K/D 가 이미 인구수 기준이에요."
-          : `${scheduled}판의 K/D 를 인구수로 다시 세기 시작했어요. 잠시 뒤 통계를 다시 열어 보세요.`,
+          ? "다시 셀 경기가 없어요 — 모든 경기에 전투 집계가 이미 있어요."
+          : `${scheduled}판의 전투 집계를 다시 세기 시작했어요. 잠시 뒤 통계를 다시 열어 보세요.`,
         { kind: "ok" },
       );
     } catch (e) {
       showAlert(e instanceof Error ? e.message : "다시 세기를 시작하지 못했어요.");
     } finally {
-      setKdBusy(false);
+      setCombatBusy(false);
     }
   };
 
@@ -417,17 +417,17 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
 
                 <div className="scr-adm-row">
                   <div className="scr-adm-row-text">
-                    <span className="scr-adm-row-title">K/D 인구수로 다시 세기</span>
+                    <span className="scr-adm-row-title">전투 집계 다시 세기</span>
                     <span className="scr-adm-row-desc">
-                      마릿수로 세어 둔 옛 경기의 K/D 를 잡은·잃은 유닛의 인구수 기준으로 다시 셉니다.
+                      준·입은 데미지가 없는 옛 경기의 리플레이를 다시 돌려 전투 집계(데미지 · 인구 K/D)를 채웁니다.
                       리플레이가 있는 경기만, 서버가 뒤에서 차례로 돌아요(재생 자료는 그대로).
                     </span>
                   </div>
                   <button
                     type="button" className="scr-rect-btn scr-adm-row-btn"
-                    onClick={() => { void backfillKdSupply(); }} disabled={kdBusy}
+                    onClick={() => { void backfillCombatStats(); }} disabled={combatBusy}
                   >
-                    {kdBusy ? <Spinner /> : "다시 세기"}
+                    {combatBusy ? <Spinner /> : "다시 세기"}
                   </button>
                 </div>
 

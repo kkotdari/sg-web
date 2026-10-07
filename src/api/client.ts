@@ -280,9 +280,9 @@ export const api = {
     return request<{ message: string }>(`/api/game-results/${id}/bake-tracks`, { method: "POST" });
   },
 
-  /** 인구 K/D 가 없는 옛 경기의 집계를 서버가 뒤에서 다시 센다 — 예약한 경기 수를 돌려준다. */
-  async backfillKdSupply(): Promise<{ scheduled: number }> {
-    return request<{ scheduled: number }>("/api/game-results/kd-supply/backfill", { method: "POST" });
+  /** 전투 집계(준·입은 데미지 · 인구 K/D)가 없는 옛 경기를 서버가 뒤에서 다시 센다 — 예약한 경기 수를 돌려준다. */
+  async backfillCombatStats(): Promise<{ scheduled: number }> {
+    return request<{ scheduled: number }>("/api/game-results/combat-stats/backfill", { method: "POST" });
   },
 
   async setGameOutcome(id: number, result: GameOutcome, winnerPlayerName?: string): Promise<GameResult> {
