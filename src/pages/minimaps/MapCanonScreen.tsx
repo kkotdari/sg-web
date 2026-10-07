@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Trash2, Link2Off, ImageDown, Pencil, Plus } from "lucide-react";
-import { ReplayMapCanvas } from "scplay";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Select from "../../components/common/Select";
 import { Spinner } from "../../components/common/Feedback";
@@ -16,15 +15,6 @@ import { cx } from "../../utils/format";
 import type { MapCanon, MapCatalog, MapCatalogEntry } from "../../types";
 
 const mapLabel = (m: MapCatalogEntry): string => cleanMapName(m.name ?? "") || "(이름 없음)";
-
-function GridThumb({ hash }: { hash: string }) {
-  const grid = useReplayMap(hash);
-  return (
-    <span className="scr-minimap-thumb scr-minimap-thumb-grid">
-      {grid ? <ReplayMapCanvas grid={grid} /> : null}
-    </span>
-  );
-}
 
 function MapPngButton({
   map, disabled, onView,
@@ -105,7 +95,6 @@ function UnmappedRow({
   return (
     <label className={cx("scr-minimap-map-row", picked && "scr-minimap-map-row-on")}>
       <input type="checkbox" checked={picked} onChange={onToggle} disabled={disabled} />
-      <GridThumb hash={map.hash} />
       <span className="scr-minimap-map-text">
         <span className="scr-minimap-map-name">{mapLabel(map)}</span>
         <span className="scr-minimap-map-meta">{mapMeta(map)}</span>
@@ -123,7 +112,6 @@ function MappedRow({
 }) {
   return (
     <div className="scr-minimap-map-row scr-minimap-map-row-static">
-      <GridThumb hash={map.hash} />
       <span className="scr-minimap-map-text">
         <span className="scr-minimap-map-name">{mapLabel(map)}</span>
         <span className="scr-minimap-map-meta">{mapMeta(map)}</span>

@@ -6306,13 +6306,6 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 .scr-minimap-map-row-on {
   border-color: var(--point); background: rgba(var(--overlay-rgb), 0.14);
 }
-.scr-minimap-thumb {
-  flex-shrink: 0; width: 44px; height: 44px; border-radius: 6px;
-  border: 1px solid var(--line); object-fit: cover; background: #101418;
-}
-.scr-minimap-thumb-empty { display: block; }
-.scr-minimap-thumb-grid { position: relative; overflow: hidden; padding: 0; }
-.scr-minimap-thumb-grid .scr-minimap-canvas { border-radius: 0; }
 .scr-minimap-map-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
 .scr-minimap-map-name {
   font-size: var(--fs-body); font-weight: 700; color: var(--text);
@@ -6329,7 +6322,6 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
   background: rgba(var(--overlay-rgb), 0.05);
 }
 .scr-minimap-maps-nested { padding-left: 14px; }
-.scr-minimap-thumb-lg { width: 56px; height: 56px; }
 .scr-minimap-map-row-static { cursor: default; }
 .scr-minimap-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .scr-minimap-all {
