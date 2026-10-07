@@ -1,0 +1,959 @@
+import type {
+  Member, GameResult, ActivityComment, ActivityTargetType, RankingShift, ActivityNotice, ActivityFeedItem, ActivityFeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
+  ScreenKey, AppVersion, AppVersionStatus, AppVersionInfo,
+  MapCanon, MapCatalog,
+  GameResultSlot, GameResultPage, GameResultStatsResponse, GameOutcome, GameType, Race, TeamRankingResponse,
+  RatingHistoryResponse, RivalryPair,
+  ReplayNameClassificationEntry, ReplayNameKind, ReplayNameMappingEntry, ReplayNameMappingKind,
+  Challenge, ChallengeCreatePayload, ChallengeResult,
+  League, LeagueListItem, LeagueCreatePayload, LeagueUpdatePayload,
+  LeagueMatchSide, LeaguePoolKind, LeagueTeamCompositionEntry,
+  Schedule, ScheduleWrite,
+  SceneScrap,
+  ExtShareList, ExtShareAddResult,
+  DeletedGameResult,
+} from "../types";
+import type { ReplayMapGrid } from "../utils/replayParser";
+
+function buildQuery(params: Record<string, string | number | boolean | undefined>): string {
+  const usp = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === "" || value === "all") return;
+    usp.set(key, String(value));
+  });
+  const qs = usp.toString();
+  return qs ? `?${qs}` : "";
+}
+
+type WireSlot = Omit<GameResultSlot, "rawName"> & { playerName?: string | null };
+type WireGameResult = Omit<GameResult, "team1" | "team2"> & { team1: WireSlot[]; team2: WireSlot[] };
+type WireDeletedGameResult = Omit<DeletedGameResult, "team1" | "team2"> & { team1: WireSlot[]; team2: WireSlot[] };
+type WireActivityFeedPage = Omit<ActivityFeedPage, "items"> & {
+  items: (Omit<ActivityFeedItem, "gameResults"> & { gameResults: WireGameResult[] })[];
+};
+
+function slotToWire(slot: GameResultSlot): WireSlot {
+  const { rawName, ...rest } = slot;
+  return { ...rest, playerName: rawName ?? null };
+}
+function gameResultToWire(gameResult: NewGameResult): Omit<NewGameResult, "team1" | "team2"> & { team1: WireSlot[]; team2: WireSlot[] } {
+  return { ...gameResult, team1: gameResult.team1.map(slotToWire), team2: gameResult.team2.map(slotToWire) };
+}
+function slotFromWire(slot: WireSlot): GameResultSlot {
+  const { playerName, ...rest } = slot;
+  return { ...rest, rawName: playerName || null };
+}
+function gameResultFromWire(gameResult: WireGameResult): GameResult {
+  return {
+    ...gameResult,
+    team1: (gameResult.team1 ?? []).map(slotFromWire),
+    team2: (gameResult.team2 ?? []).map(slotFromWire),
+  };
+}
+
+export interface GameResultListParams {
+  cursor?: string;
+  limit?: number;
+  sort?: "latest" | "oldest";
+  dateFrom?: string;
+  dateTo?: string;
+  matchType?: GameType | "all";
+  userQuery?: string;
+  matchAllUsers?: boolean;
+  q?: string;
+  any?: string;
+  linked?: string;
+  hasPlaceholder?: boolean;
+  membersOnly?: boolean;
+  pubOnly?: boolean;
+  teamMemberIds?: string[];
+}
+
+export interface GameResultStatsParams {
+  memberIds?: string[];
+  dateFrom?: string;
+  dateTo?: string;
+  matchType?: GameType | "all";
+  race?: Race | "all" | "main";
+  ratingScope?: "total" | "period";
+}
+
+export interface TeamRankingParams {
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface MainRaceParams {
+  memberId: string;
+  dateFrom?: string;
+  dateTo?: string;
+  matchType?: GameType | "all";
+}
+
+export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+
+const CLIENT_ENV = import.meta.env.PROD ? "production" : "development";
+
+interface AuthResponse {
+  user: Member;
+}
+
+interface RawAuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  user: Member;
+}
+
+const TOKEN_KEY = "stargate_token";
+const REFRESH_KEY = "stargate_refresh_token";
+let accessToken: string | null = localStorage.getItem(TOKEN_KEY);
+let refreshToken: string | null = localStorage.getItem(REFRESH_KEY);
+
+function setTokens(access: string, refresh: string) {
+  accessToken = access;
+  refreshToken = refresh;
+  localStorage.setItem(TOKEN_KEY, access);
+  localStorage.setItem(REFRESH_KEY, refresh);
+}
+
+function clearTokens() {
+  accessToken = null;
+  refreshToken = null;
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+}
+
+let refreshingPromise: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  if (!refreshToken) return false;
+  if (!refreshingPromise) {
+    refreshingPromise = (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (!res.ok) {
+          clearTokens();
+          return false;
+        }
+        const body = (await res.json()) as RawAuthResponse;
+        setTokens(body.accessToken, body.refreshToken);
+        return true;
+      } catch {
+        clearTokens();
+        return false;
+      } finally {
+        refreshingPromise = null;
+      }
+    })();
+  }
+  return refreshingPromise;
+}
+
+const NO_REFRESH_RETRY_PATHS = ["/api/auth/login", "/api/auth/signup", "/api/auth/refresh"];
+
+async function request<T>(path: string, options: RequestInit = {}, retryOn401 = true): Promise<T> {
+  const headers = new Headers(options.headers);
+  headers.set("Content-Type", "application/json");
+  headers.set("X-Client-Env", CLIENT_ENV);
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  if (res.status === 401 && retryOn401 && !NO_REFRESH_RETRY_PATHS.includes(path)) {
+    const refreshed = await tryRefresh();
+    if (refreshed) return request<T>(path, options, false);
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const detail = body?.detail;
+    const message = typeof detail === "string"
+      ? detail
+      : Array.isArray(detail) && detail.length > 0 && typeof detail[0]?.msg === "string"
+        ? detail[0].msg
+        : "요청 처리 중 오류가 발생했어요.";
+    throw new ApiError(message, res.status);
+  }
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
+let extShareCtx: { listId: number; pass: string } | null = null;
+
+export function setExtShareContext(ctx: { listId: number; pass: string } | null): void {
+  extShareCtx = ctx;
+}
+
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+export const apiStatusOf = (e: unknown): number | undefined => (e instanceof ApiError ? e.status : undefined);
+
+export const api = {
+  async login(id: string, password: string): Promise<AuthResponse> {
+    const res = await request<RawAuthResponse>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ id, password }),
+    });
+    setTokens(res.accessToken, res.refreshToken);
+    return { user: res.user };
+  },
+
+  async signup(payload: SignupPayload): Promise<AuthResponse> {
+    const res = await request<RawAuthResponse>("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    setTokens(res.accessToken, res.refreshToken);
+    return { user: res.user };
+  },
+
+  async createMemberByAdmin(payload: MemberCreatePayload): Promise<Member> {
+    return request<Member>("/api/members", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  hasToken(): boolean {
+    return !!refreshToken;
+  },
+
+  async logout(): Promise<void> {
+    const tokenToRevoke = refreshToken;
+    clearTokens();
+    if (!tokenToRevoke) return;
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: tokenToRevoke }),
+      });
+    } catch {
+    }
+  },
+
+  async me(): Promise<Member> {
+    return request<Member>("/api/auth/me");
+  },
+
+  async getMembers(): Promise<Member[]> {
+    return request<Member[]>("/api/members");
+  },
+
+  async getGameResultsPage(params: GameResultListParams = {}): Promise<GameResultPage> {
+    const qs = buildQuery({
+      cursor: params.cursor,
+      limit: params.limit,
+      sort: params.sort,
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo,
+      matchType: params.matchType,
+      userQuery: params.userQuery,
+      hasPlaceholder: params.hasPlaceholder,
+      membersOnly: params.membersOnly,
+      pubOnly: params.pubOnly,
+      matchAllUsers: params.matchAllUsers,
+      q: params.q,
+      any: params.any,
+      linked: params.linked,
+      teamMemberIds: params.teamMemberIds?.length ? params.teamMemberIds.join(",") : undefined,
+    });
+    const page = await request<Omit<GameResultPage, "items"> & { items: WireGameResult[] }>(`/api/game-results${qs}`);
+    return { ...page, items: page.items.map(gameResultFromWire) };
+  },
+
+  async countGameResults(params: GameResultListParams = {}): Promise<number> {
+    const page = await this.getGameResultsPage({ ...params, cursor: undefined, limit: 1 });
+    return page.total ?? page.items.length;
+  },
+
+  async bakeGameTracks(id: number): Promise<{ message: string }> {
+    return request<{ message: string }>(`/api/game-results/${id}/bake-tracks`, { method: "POST" });
+  },
+
+  async setGameOutcome(id: number, result: GameOutcome, winnerPlayerName?: string): Promise<GameResult> {
+    return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}/result`, {
+      method: "PUT", body: JSON.stringify({ result, winnerPlayerName }),
+    }));
+  },
+
+  async markGameViewed(id: number): Promise<void> {
+    await request<void>(`/api/game-results/${id}/view`, { method: "POST" });
+  },
+
+  async getGameResult(id: number): Promise<GameResult> {
+    return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}`));
+  },
+
+  async getGameUnitTracks(id: number): Promise<{ motion: string | null }> {
+    const res = extShareCtx
+      ? await request<{ motion?: string | null }>(
+        `/api/restricted/share/lists/${extShareCtx.listId}/games/${id}/unit-tracks`,
+        { headers: { "X-Ext-Pass": extShareCtx.pass } },
+      )
+      : await request<{ motion?: string | null }>(`/api/game-results/${id}/unit-tracks`);
+    return { motion: res.motion ?? null };
+  },
+
+  async getGameResultStats(params: GameResultStatsParams = {}): Promise<GameResultStatsResponse> {
+    const qs = buildQuery({
+      memberIds: params.memberIds?.length ? params.memberIds.join(",") : undefined,
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo,
+      matchType: params.matchType,
+      race: params.race,
+      ratingScope: params.ratingScope,
+    });
+    return request<GameResultStatsResponse>(`/api/game-results/stats${qs}`);
+  },
+
+  async getRivalries(params: { dateFrom?: string; dateTo?: string; mode?: "solo" | "team" } = {}): Promise<{ pairs: RivalryPair[] }> {
+    const qs = buildQuery({ dateFrom: params.dateFrom, dateTo: params.dateTo, mode: params.mode });
+    return request<{ pairs: RivalryPair[] }>(`/api/game-results/stats/rivalries${qs}`);
+  },
+
+  async getRanking(params: GameResultStatsParams = {}): Promise<GameResultStatsResponse> {
+    const qs = buildQuery({
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo,
+      matchType: params.matchType,
+      race: params.race,
+    });
+    return request<GameResultStatsResponse>(`/api/game-results/ranking${qs}`);
+  },
+
+  async getRatingHistory(
+    memberId: string, matchType?: string, dateFrom?: string, dateTo?: string, race?: string,
+  ): Promise<RatingHistoryResponse> {
+    const qs = buildQuery({ memberId, matchType, dateFrom, dateTo, race });
+    return request<RatingHistoryResponse>(`/api/game-results/rating-history${qs}`);
+  },
+
+  async getTeamRanking(params: TeamRankingParams = {}): Promise<TeamRankingResponse> {
+    const qs = buildQuery({ dateFrom: params.dateFrom, dateTo: params.dateTo });
+    return request<TeamRankingResponse>(`/api/game-results/team-ranking${qs}`);
+  },
+
+  async getMemberMainRace(params: MainRaceParams): Promise<Race | null> {
+    const qs = buildQuery({
+      memberId: params.memberId,
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo,
+      matchType: params.matchType,
+    });
+    const res = await request<{ race: Race | null }>(`/api/game-results/main-race${qs}`);
+    return res.race;
+  },
+
+  async getEarliestGameResultDate(): Promise<string | null> {
+    const res = await request<{ date: string | null }>("/api/game-results/earliest-date");
+    return res.date;
+  },
+
+  async mergeReplay(payload: {
+    gameStartedAt: string;
+    result: "team1" | "team2" | "draw" | null;
+    mapName: string | null;
+    durationSeconds: number | null;
+    mapData: ReplayMapGrid | null;
+    chats?: { frame: number; text: string }[];
+    players: {
+      playerName: string;
+      race: string | null;
+      apm: number | null;
+      eapm: number | null;
+      cmdCount: number | null;
+      effectiveCmdCount: number | null;
+      buildCount: number | null;
+    }[];
+  }): Promise<{ merged: boolean; matchNo: string | null }> {
+    return request<{ merged: boolean; matchNo: string | null }>("/api/game-results/merge-replay", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async lookupReplayNameClassifications(rawNames: string[]): Promise<ReplayNameClassificationEntry[]> {
+    if (rawNames.length === 0) return [];
+    const res = await request<{ classifications: ReplayNameClassificationEntry[] }>(
+      "/api/game-results/replay-name-classifications/lookup",
+      { method: "POST", body: JSON.stringify({ rawNames }) },
+    );
+    return res.classifications;
+  },
+
+  async setReplayNameClassification(rawName: string, kind: ReplayNameKind): Promise<ReplayNameClassificationEntry> {
+    return request<ReplayNameClassificationEntry>("/api/game-results/replay-name-classifications", {
+      method: "POST",
+      body: JSON.stringify({ rawName, kind }),
+    });
+  },
+
+  async listReplayNameMappings(): Promise<ReplayNameMappingEntry[]> {
+    const res = await request<{ entries: ReplayNameMappingEntry[] }>("/api/game-results/replay-name-mappings");
+    return res.entries;
+  },
+
+  async setReplayNameMapping(
+    rawName: string, kind: ReplayNameMappingKind, memberId?: string,
+  ): Promise<ReplayNameMappingEntry> {
+    return request<ReplayNameMappingEntry>("/api/game-results/replay-name-mappings", {
+      method: "POST",
+      body: JSON.stringify({ rawName, kind, memberId }),
+    });
+  },
+
+  async deleteReplayNameMapping(rawName: string): Promise<void> {
+    await request<void>(`/api/game-results/replay-name-mappings/${encodeURIComponent(rawName)}`, { method: "DELETE" });
+  },
+
+  async getReplayMaps(hashes: string[]): Promise<ReplayMapGrid[]> {
+    if (hashes.length === 0) return [];
+    const qs = hashes.map((h) => `hash=${encodeURIComponent(h)}`).join("&");
+    const res = extShareCtx
+      ? await request<{ maps: ReplayMapGrid[] }>(
+        `/api/restricted/share/lists/${extShareCtx.listId}/maps?${qs}`,
+        { headers: { "X-Ext-Pass": extShareCtx.pass } },
+      )
+      : await request<{ maps: ReplayMapGrid[] }>(`/api/game-results/replay-maps?${qs}`);
+    return res.maps;
+  },
+
+  async getMapCatalog(): Promise<MapCatalog> {
+    return request<MapCatalog>("/api/game-results/replay-maps/catalog");
+  },
+
+  async createMapCanon(
+    body: { name: string; hashes?: string[] },
+  ): Promise<MapCanon> {
+    return request<MapCanon>("/api/game-results/replay-maps/canons", {
+      method: "POST", body: JSON.stringify(body),
+    });
+  },
+
+  async updateMapCanon(
+    id: number,
+    body: { name: string; hashes?: string[] },
+  ): Promise<MapCanon> {
+    return request<MapCanon>(`/api/game-results/replay-maps/canons/${id}`, {
+      method: "PUT", body: JSON.stringify(body),
+    });
+  },
+
+  async deleteOrphanMaps(): Promise<{ deleted: number }> {
+    return request<{ deleted: number }>("/api/game-results/replay-maps/orphans", {
+      method: "DELETE",
+    });
+  },
+
+  async deleteMapCanon(id: number): Promise<void> {
+    await request<void>(`/api/game-results/replay-maps/canons/${id}`, { method: "DELETE" });
+  },
+
+  async assignMapCanon(canonId: number | null, hashes: string[]): Promise<number> {
+    const res = await request<{ changed: number }>("/api/game-results/replay-maps/assign", {
+      method: "POST", body: JSON.stringify({ canonId, hashes }),
+    });
+    return res.changed;
+  },
+
+  async createGameResult(
+    gameResult: NewGameResult,
+  ): Promise<{ game: GameResult; merged: boolean; deleted: boolean }> {
+    const res = await request<WireGameResult & { merged?: boolean; deleted?: boolean }>("/api/game-results", {
+      method: "POST",
+      body: JSON.stringify(gameResultToWire(gameResult)),
+    });
+    return { game: gameResultFromWire(res), merged: res.merged === true, deleted: res.deleted === true };
+  },
+
+
+  async deleteGameResult(id: number): Promise<void> {
+    await request<void>(`/api/game-results/${id}`, { method: "DELETE" });
+  },
+
+  async hideGameResult(id: number): Promise<GameResult> {
+    return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}/hide`, { method: "POST" }));
+  },
+
+  async listDeletedGameResults(): Promise<DeletedGameResult[]> {
+    const res = await request<{ items: WireDeletedGameResult[] }>("/api/game-results/deleted");
+    return res.items.map((g) => ({ ...gameResultFromWire(g), deletedAt: g.deletedAt, deletedBy: g.deletedBy }));
+  },
+  async restoreGameResult(id: number): Promise<GameResult> {
+    return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}/restore`, { method: "POST" }));
+  },
+  async purgeGameResult(id: number): Promise<void> {
+    await request<void>(`/api/game-results/${id}/permanent`, { method: "DELETE" });
+  },
+
+  async deleteAllGameResults(): Promise<{ deleted: number }> {
+    return request<{ deleted: number }>("/api/game-results/all", { method: "DELETE" });
+  },
+
+  async countExpiredTruth(until?: string): Promise<{ count: number }> {
+    const q = until ? `?until=${encodeURIComponent(until)}` : "";
+    return request<{ count: number }>(`/api/game-results/truth-tracks/expired${q}`);
+  },
+  async purgeExpiredTruth(until?: string): Promise<{ deleted: number }> {
+    const q = until ? `?until=${encodeURIComponent(until)}` : "";
+    return request<{ deleted: number }>(`/api/game-results/truth-tracks/expired${q}`, { method: "DELETE" });
+  },
+
+  async recomputeRankingShifts(): Promise<{ changed: boolean }> {
+    return request<{ changed: boolean }>("/api/activities/ranking-shifts/recompute", { method: "POST" });
+  },
+
+  async reseedRankingShifts(): Promise<Record<string, number>> {
+    return request<Record<string, number>>("/api/activities/ranking-shifts/seed", { method: "POST" });
+  },
+
+  async listRankingShifts(): Promise<RankingShift[]> {
+    return request<RankingShift[]>("/api/activities/ranking-shifts");
+  },
+
+  async getActivityNotice(id: number): Promise<ActivityNotice> {
+    return request<ActivityNotice>(`/api/activities/notices/${id}`);
+  },
+
+  async listActivityFeed(params: { cursor?: string; limit?: number } = {}): Promise<ActivityFeedPage> {
+    const q = new URLSearchParams();
+    if (params.cursor) q.set("cursor", params.cursor);
+    if (params.limit) q.set("limit", String(params.limit));
+    const qs = q.toString();
+    const page = await request<WireActivityFeedPage>(`/api/activities${qs ? `?${qs}` : ""}`);
+    return {
+      ...page,
+      items: page.items.map((it) => ({
+        ...it,
+        gameResults: (it.gameResults ?? []).map(gameResultFromWire),
+      })),
+    };
+  },
+
+  async getActivityItem(kind: string, id: number): Promise<ActivityFeedItem> {
+    const it = await request<WireActivityFeedPage["items"][number]>(
+      `/api/activities/item?kind=${encodeURIComponent(kind)}&id=${id}`,
+    );
+    return { ...it, gameResults: (it.gameResults ?? []).map(gameResultFromWire) };
+  },
+
+  async listSchedules(): Promise<Schedule[]> {
+    const res = await request<{ items: Schedule[] }>("/api/schedules");
+    return res.items;
+  },
+  async getSchedule(id: number): Promise<Schedule> {
+    return request<Schedule>(`/api/schedules/${id}`);
+  },
+  async createSchedule(payload: ScheduleWrite): Promise<Schedule> {
+    return request<Schedule>("/api/schedules", { method: "POST", body: JSON.stringify(payload) });
+  },
+  async updateSchedule(id: number, payload: ScheduleWrite): Promise<Schedule> {
+    return request<Schedule>(`/api/schedules/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  },
+  async attendSchedule(id: number, response: "going" | "notGoing" | null): Promise<Schedule> {
+    return request<Schedule>(`/api/schedules/${id}/attend`, {
+      method: "POST", body: JSON.stringify({ response }),
+    });
+  },
+  async deleteSchedule(id: number): Promise<void> {
+    await request<void>(`/api/schedules/${id}`, { method: "DELETE" });
+  },
+
+  async deleteChallenge(id: number): Promise<void> {
+    await request<void>(`/api/challenges/${id}`, { method: "DELETE" });
+  },
+
+  async cancelChallenge(id: number): Promise<Challenge> {
+    return request<Challenge>(`/api/challenges/${id}/cancel`, { method: "POST" });
+  },
+
+  async listActivityComments(targetType: ActivityTargetType, targetId: number): Promise<ActivityComment[]> {
+    return request<ActivityComment[]>(`/api/activities/comments?targetType=${targetType}&targetId=${targetId}`);
+  },
+  async createActivityComment(
+    targetType: ActivityTargetType, targetId: number, text: string, targetMemberIds: string[],
+  ): Promise<ActivityComment> {
+    return request<ActivityComment>("/api/activities/comments", {
+      method: "POST",
+      body: JSON.stringify({ targetType, targetId, text, targetMemberIds }),
+    });
+  },
+  async updateActivityComment(
+    commentId: number, text: string, targetMemberIds: string[],
+  ): Promise<ActivityComment> {
+    return request<ActivityComment>(`/api/activities/comments/${commentId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ text, targetMemberIds }),
+    });
+  },
+  async deleteActivityComment(commentId: number): Promise<void> {
+    await request<void>(`/api/activities/comments/${commentId}`, { method: "DELETE" });
+  },
+
+
+  async downloadReplay(gameResultId: number): Promise<Blob> {
+    const headers = new Headers();
+    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+    const res = await fetch(`${API_BASE}/api/game-results/${gameResultId}/replay`, { headers });
+    if (!res.ok) throw new Error("리플레이를 다운로드하지 못했어요.");
+    return res.blob();
+  },
+
+  async reanalyzeGameResult(
+    gameResultId: number,
+    body: {
+      mapData?: ReplayMapGrid | null;
+      chats?: { frame: number; text: string }[];
+      mapName?: string | null;
+      gameStartedAt?: string | null;
+      durationSeconds?: number | null;
+      slots?: {
+        rawName: string;
+        race: string;
+        apm: number | null;
+        eapm: number | null;
+        cmdCount: number | null;
+        effectiveCmdCount: number | null;
+        buildCount: number | null;
+      }[];
+    },
+  ): Promise<void> {
+    await request<void>(`/api/game-results/${gameResultId}/summary`, {
+      method: "POST", body: JSON.stringify(body),
+    });
+  },
+
+  async downloadReplayArchive(): Promise<Blob> {
+    const headers = new Headers();
+    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+    const res = await fetch(`${API_BASE}/api/game-results/replays/archive`, { headers });
+    if (!res.ok) throw new Error("리플레이를 다운로드하지 못했어요.");
+    return res.blob();
+  },
+
+  async updateProfile(id: string, patch: Partial<Member>): Promise<Member> {
+    return request<Member>(`/api/members/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+  },
+
+  async replaceMemberReplayAliases(id: string, aliases: string[]): Promise<Member> {
+    return request<Member>(`/api/members/${id}/replay-aliases`, {
+      method: "PUT",
+      body: JSON.stringify({ aliases }),
+    });
+  },
+
+  async addMemberReplayAlias(id: string, alias: string): Promise<Member> {
+    return request<Member>(`/api/members/${id}/replay-aliases`, {
+      method: "POST",
+      body: JSON.stringify({ alias }),
+    });
+  },
+
+  async updateMemberPassword(id: string, currentPassword: string, newPassword: string): Promise<Member> {
+    return request<Member>(`/api/members/${id}/password`, {
+      method: "PATCH",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
+
+  async updateMemberStatus(id: string, status: MemberStatus): Promise<Member> {
+    return request<Member>(`/api/members/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  async updateMemberRoles(id: string, roles: MemberRole[]): Promise<Member> {
+    return request<Member>(`/api/members/${id}/roles`, {
+      method: "PATCH",
+      body: JSON.stringify({ roles }),
+    });
+  },
+
+  async setMemberRosterImage(id: string, image: string | null): Promise<Member> {
+    return request<Member>(`/api/members/${id}/roster-image`, {
+      method: "PUT", body: JSON.stringify({ image }),
+    });
+  },
+
+  async reprocessMemberAvatar(id: string): Promise<Member> {
+    return request<Member>(`/api/members/${id}/avatar/reprocess`, { method: "POST" });
+  },
+
+  async withdraw(id: string): Promise<Member> {
+    return request<Member>(`/api/members/${id}/withdraw`, { method: "POST" });
+  },
+
+  async pingPublicAccess(screen: string, detail?: string): Promise<void> {
+    try {
+      await request<void>("/api/public/access-ping", {
+        method: "POST", body: JSON.stringify({ screen, detail: detail ?? null }),
+      });
+    } catch { return; }
+  },
+
+  async getExtShareLists(): Promise<ExtShareList[]> {
+    return request<ExtShareList[]>("/api/public/share/lists");
+  },
+
+  async enterExtShare(listId: number, password: string): Promise<void> {
+    await request<{ ok: boolean }>(`/api/restricted/share/lists/${listId}/enter`, {
+      method: "POST", body: JSON.stringify({ password }),
+    });
+  },
+
+  async getExtShareGames(listId: number, password: string): Promise<GameResult[]> {
+    const res = await request<{ items: WireGameResult[] }>(
+      `/api/restricted/share/lists/${listId}/games`, { headers: { "X-Ext-Pass": password } },
+    );
+    return res.items.map(gameResultFromWire);
+  },
+
+  async pingAccess(screen: ScreenKey | "share" | (string & {}), detail?: string): Promise<void> {
+    await request<void>("/api/auth/access-ping", {
+      method: "POST",
+      body: JSON.stringify({ screen, detail: detail ?? null }),
+    });
+  },
+
+  async getAppVersion(): Promise<AppVersionStatus> {
+    return request<AppVersionStatus>("/api/app-version");
+  },
+
+  async getAppVersions(): Promise<AppVersionInfo[]> {
+    return request<AppVersionInfo[]>("/api/app-versions");
+  },
+
+  async setAppVersion(activeVersion: AppVersion): Promise<AppVersionStatus> {
+    return request<AppVersionStatus>("/api/app-version", {
+      method: "PUT",
+      body: JSON.stringify({ activeVersion }),
+    });
+  },
+
+  async addAppVersion(number: AppVersion): Promise<AppVersionInfo> {
+    return request<AppVersionInfo>("/api/app-versions", {
+      method: "POST",
+      body: JSON.stringify({ number }),
+    });
+  },
+
+  async deleteAppVersion(number: AppVersion): Promise<void> {
+    await request<void>(`/api/app-versions/${encodeURIComponent(number)}`, { method: "DELETE" });
+  },
+
+  async setVersionNoticeEnabled(enabled: boolean): Promise<{ enabled: boolean }> {
+    return request<{ enabled: boolean }>("/api/app-versions/notice-settings", {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    });
+  },
+
+  async setVersionNotes(number: AppVersion, notes: string): Promise<AppVersionInfo> {
+    return request<AppVersionInfo>(`/api/app-versions/${encodeURIComponent(number)}/notes`, {
+      method: "PUT",
+      body: JSON.stringify({ notes }),
+    });
+  },
+
+  async verifyAdminPanelPassword(password: string): Promise<boolean> {
+    const res = await request<{ ok: boolean }>("/api/env-vars/admin-panel/verify", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    });
+    return res.ok;
+  },
+
+  async getChallenges(): Promise<{ items: Challenge[] }> {
+    return request<{ items: Challenge[] }>("/api/challenges");
+  },
+
+  async getPendingChallengesForMe(): Promise<{ items: Challenge[] }> {
+    return request<{ items: Challenge[] }>("/api/challenges/pending-for-me");
+  },
+
+  async getResultPendingChallengesForMe(): Promise<{ items: Challenge[] }> {
+    return request<{ items: Challenge[] }>("/api/challenges/result-pending-for-me");
+  },
+
+  async createChallenge(payload: ChallengeCreatePayload): Promise<Challenge> {
+    return request<Challenge>("/api/challenges", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async respondToChallenge(
+    id: number, response: "accepted" | "rejected",
+    schedule?: { scheduledDate?: string | null; scheduledTimeNote?: string }, message?: string,
+  ): Promise<Challenge> {
+    return request<Challenge>(`/api/challenges/${id}/respond`, {
+      method: "POST",
+      body: JSON.stringify({ response, ...schedule, message }),
+    });
+  },
+
+  async rescheduleChallenge(
+    id: number, scheduledDate: string | null, scheduledTimeNote: string,
+  ): Promise<Challenge> {
+    return request<Challenge>(`/api/challenges/${id}/schedule`, {
+      method: "PATCH",
+      body: JSON.stringify({ scheduledDate, scheduledTimeNote }),
+    });
+  },
+
+  async enterChallengeResult(
+    id: number, winnerSide: ChallengeResult, scheduledDate: string,
+  ): Promise<Challenge> {
+    return request<Challenge>(`/api/challenges/${id}/result`, {
+      method: "POST",
+      body: JSON.stringify({ winnerSide, scheduledDate }),
+    });
+  },
+
+  async getLeagues(): Promise<LeagueListItem[]> {
+    const res = await request<{ items: LeagueListItem[] }>("/api/leagues");
+    return res.items;
+  },
+  async getLeague(id: number): Promise<League> {
+    return request<League>(`/api/leagues/${id}`);
+  },
+  async createLeague(payload: LeagueCreatePayload): Promise<League> {
+    return request<League>("/api/leagues", { method: "POST", body: JSON.stringify(payload) });
+  },
+  async updateLeague(id: number, payload: LeagueUpdatePayload): Promise<League> {
+    return request<League>(`/api/leagues/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  },
+  async deleteLeague(id: number): Promise<void> {
+    await request<void>(`/api/leagues/${id}`, { method: "DELETE" });
+  },
+  async addLeaguePoolMember(
+    leagueId: number, body: { kind: LeaguePoolKind; memberId?: string; name?: string },
+  ): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/pool`, {
+      method: "POST", body: JSON.stringify(body),
+    });
+  },
+  async removeLeaguePoolMember(leagueId: number, poolId: number): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/pool/${poolId}`, { method: "DELETE" });
+  },
+  async addLeagueTeam(leagueId: number, size: number): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/teams`, {
+      method: "POST", body: JSON.stringify({ size }),
+    });
+  },
+  async updateLeagueTeam(leagueId: number, teamId: number, size: number): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/teams/${teamId}`, {
+      method: "PATCH", body: JSON.stringify({ size }),
+    });
+  },
+  async setLeagueTeamComposition(
+    leagueId: number, teams: LeagueTeamCompositionEntry[],
+  ): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/teams`, {
+      method: "PUT", body: JSON.stringify({ teams }),
+    });
+  },
+  async setLeagueBracket(
+    leagueId: number,
+    paths: string[],
+    assignments: { path: string; side: LeagueMatchSide; teamId: number | null }[],
+  ): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/bracket`, {
+      method: "PUT", body: JSON.stringify({ paths, assignments }),
+    });
+  },
+  async confirmLeagueBracket(leagueId: number): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/bracket/confirm`, { method: "POST" });
+  },
+  async setLeagueBracketSeeding(
+    leagueId: number, assignments: { matchId: number; side: LeagueMatchSide; teamId: number | null }[],
+  ): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/bracket/seeding`, {
+      method: "PUT", body: JSON.stringify({ assignments }),
+    });
+  },
+  async setLeagueMatchSchedule(leagueId: number, matchId: number, scheduledAt: string | null): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/matches/${matchId}/schedule`, {
+      method: "PUT", body: JSON.stringify({ scheduledAt }),
+    });
+  },
+  async listSceneScraps(): Promise<SceneScrap[]> {
+    const res = await request<{ items?: SceneScrap[] }>("/api/scene-scraps");
+    return res.items ?? [];
+  },
+  async createSceneScrap(
+    body: { title: string; subtitle: string; link: string; gameNo?: string | null },
+  ): Promise<SceneScrap> {
+    return request<SceneScrap>("/api/scene-scraps", {
+      method: "POST", body: JSON.stringify(body),
+    });
+  },
+  async renameSceneScrap(id: number, title: string): Promise<SceneScrap> {
+    return request<SceneScrap>(`/api/scene-scraps/${id}`, {
+      method: "PATCH", body: JSON.stringify({ title }),
+    });
+  },
+  async deleteSceneScrap(id: number): Promise<void> {
+    await request<void>(`/api/scene-scraps/${id}`, { method: "DELETE" });
+  },
+
+  async setLeagueMatchResult(
+    leagueId: number, matchId: number, setsWonA: number | null, setsWonB: number | null,
+  ): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/matches/${matchId}/result`, {
+      method: "PUT", body: JSON.stringify({ setsWonA, setsWonB }),
+    });
+  },
+  async setLeagueMatchNote(leagueId: number, matchId: number, note: string): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/matches/${matchId}/note`, {
+      method: "PUT", body: JSON.stringify({ note }),
+    });
+  },
+
+  async adminExtShareLists(): Promise<ExtShareList[]> {
+    return request<ExtShareList[]>("/api/ext-share/admin/lists");
+  },
+  async adminCreateExtShareList(name: string, password: string): Promise<ExtShareList> {
+    return request<ExtShareList>("/api/ext-share/admin/lists", {
+      method: "POST", body: JSON.stringify({ name, password }),
+    });
+  },
+  async adminPatchExtShareList(
+    id: number, patch: { name?: string; password?: string; sortOrder?: number },
+  ): Promise<ExtShareList> {
+    return request<ExtShareList>(`/api/ext-share/admin/lists/${id}`, {
+      method: "PATCH", body: JSON.stringify(patch),
+    });
+  },
+  async adminDeleteExtShareList(id: number): Promise<void> {
+    await request<void>(`/api/ext-share/admin/lists/${id}`, { method: "DELETE" });
+  },
+  async adminExtShareGames(listId: number): Promise<GameResult[]> {
+    const res = await request<{ items: WireGameResult[] }>(
+      `/api/ext-share/admin/lists/${listId}/games`,
+    );
+    return res.items.map(gameResultFromWire);
+  },
+  async adminAddExtShareGames(listId: number, gameIds: number[]): Promise<ExtShareAddResult> {
+    return request<ExtShareAddResult>(`/api/ext-share/admin/lists/${listId}/games`, {
+      method: "POST", body: JSON.stringify({ gameIds }),
+    });
+  },
+  async adminRemoveExtShareGame(listId: number, gameId: number): Promise<void> {
+    await request<void>(`/api/ext-share/admin/lists/${listId}/games/${gameId}`, { method: "DELETE" });
+  },
+};

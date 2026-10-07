@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="/favicon.png" />
+    <title>스타게이트 등록기</title>
+    <style>
+      :root { color-scheme: light; }
+      body { margin: 0; padding: 24px; background: #ffffff; color: #111114; font: 14px/1.5 system-ui, "Malgun Gothic", sans-serif; text-align: center; }
+      h1 { font-size: 16px; margin: 0 0 4px; }
+      .sub { color: #6b6b73; margin: 0 0 16px; font-size: 12px; }
+      form { display: grid; gap: 10px; }
+      [hidden] { display: none !important; }
+      input { padding: 9px 10px; border-radius: 8px; border: 1px solid #d4d4da; background: #ffffff; color: inherit; font: inherit; }
+      button { padding: 9px 10px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+      button:disabled { opacity: .5; cursor: default; }
+      .status { margin-top: 14px; min-height: 1.5em; color: #55555c; white-space: pre-wrap; }
+      .status.ok { color: #1f8a4c; }
+      .status.err { color: #d23c3c; }
+      #browser { margin-top: 24px; border-top: 1px solid #d4d4da; padding-top: 16px; }
+      #results { padding-left: 18px; color: #55555c; font-size: 13px; text-align: left; }
+    </style>
+  </head>
+  <body>
+    <h1>스타게이트 등록기</h1>
+    <p class="sub">스타크래프트 AutoSave 리플레이를 스타게이트에 자동으로 올립니다.</p>
+    <form id="login" hidden autocomplete="on">
+      <input id="id" name="username" placeholder="아이디" autocomplete="username" />
+      <input id="pw" name="password" type="password" placeholder="비밀번호" autocomplete="current-password" />
+      <button id="btn" type="submit">로그인</button>
+    </form>
+    <div id="status" class="status"></div>
+    <div id="browser" hidden>
+      <p class="sub">브라우저에서 직접 열었어요 — 리플레이 파일을 고르면 등록기와 같은 절차로 등록합니다.</p>
+      <input id="files" type="file" accept=".rep" multiple />
+      <ul id="results"></ul>
+    </div>
+    <script type="module" src="/src/uploader/main.ts"></script>
+  </body>
+</html>

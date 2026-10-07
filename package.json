@@ -1,0 +1,41 @@
+{
+  "name": "sg-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "share-thumbs": "node scripts/make-share-thumbs.cjs",
+    "scplay": "npm uninstall scplay --no-audit --no-fund && npm install github:kkotdari/scplay --no-audit --no-fund"
+  },
+  "dependencies": {
+    "@floating-ui/dom": "^1.6.13",
+    "lucide-react": "^0.469.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "scplay": "github:kkotdari/scplay",
+    "screp-js": "^0.3.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright-core": "^1.62.1",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.5"
+  },
+  "allowScripts": {
+    "github:kkotdari/scplay#1cf201a90bc70b3bce5625503168b6b09e15f3cf": true,
+    "github:kkotdari/scplay#6f97f811cb67e74dffa61744c1bd3e6d027c36cf": true,
+    "github:kkotdari/scplay#4a9b308d958154ebd735065679ade6251041cf94": true,
+    "github:kkotdari/scplay#a6574283cf3d78c8a92faf0741eb09a65e1e665a": true,
+    "github:kkotdari/scplay#5fb034b572873060fae47a91ce937c2990cebb04": true,
+    "github:kkotdari/scplay#d799eae2f4b191c3072cbc58c7a8bddcfafa8d04": true,
+    "github:kkotdari/scplay#983eb3b1a9d3b6b3b720010987ae2210f7e0d0a2": true,
+    "github:kkotdari/scplay#c86da16a2e882b767cd4cd3554dddc03fd20e54a": true
+  }
+}

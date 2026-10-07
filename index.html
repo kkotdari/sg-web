@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="스타게이트" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <title>스타게이트 - 스타크래프트: 리마스터 동호회</title>
+    <script>
+      (function () {
+        var light = true;
+        try {
+          light = localStorage.getItem("scr-light-theme") !== "0";
+        } catch (e) {}
+        if (light) {
+          document.documentElement.classList.add("scr-light-theme");
+        } else {
+          document.querySelector('meta[name="theme-color"]')?.remove();
+          document.querySelector('meta[name="color-scheme"]')?.setAttribute("content", "dark");
+        }
+      })();
+
+      (function () {
+        var root = document.documentElement;
+        function readSafeTop() {
+          try {
+            var probe = document.createElement("div");
+            probe.style.cssText =
+              "position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);";
+            (document.body || root).appendChild(probe);
+            var h = probe.offsetHeight;
+            probe.parentNode.removeChild(probe);
+            if (h > 0) root.style.setProperty("--safe-area-top", h + "px");
+          } catch (e) {}
+        }
+        function readBottomGap() {
+          try {
+            var standalone =
+              (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+              window.navigator.standalone === true;
+            var gap = standalone ? Math.max(0, window.screen.height - window.innerHeight) : 0;
+            if (gap > 120) gap = 0;
+            root.style.setProperty("--vp-bottom-gap", gap + "px");
+          } catch (e) {}
+        }
+        function standaloneNow() {
+          try {
+            return (
+              (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+              (window.matchMedia && window.matchMedia("(display-mode: fullscreen)").matches) ||
+              window.navigator.standalone === true
+            );
+          } catch (e) { return false; }
+        }
+        function viewportSettled() {
+          var lo = Math.min(screen.width, screen.height);
+          var hi = Math.max(screen.width, screen.height);
+          var want = window.innerWidth > window.innerHeight ? lo : hi;
+          return window.innerHeight >= want - 4;
+        }
+        var settleHold = false;
+        function holdTall(on) {
+          var b = document.body;
+          if (!b || on === settleHold) return;
+          settleHold = on;
+          b.style.minHeight = on
+            ? (Math.max(screen.height, window.innerHeight) + 240) + "px"
+            : "";
+        }
+        function settleViewport() {
+          try {
+            if (!standaloneNow() || viewportSettled()) { holdTall(false); return true; }
+            if (settleHold) return false;
+            history.replaceState(history.state, "", location.href);
+            holdTall(true);
+            requestAnimationFrame(function () {
+              try {
+                var y = window.scrollY;
+                var prevBehavior = root.style.scrollBehavior;
+                root.style.scrollBehavior = "auto";
+                window.scrollTo(0, y + 1);
+                requestAnimationFrame(function () {
+                  try {
+                    window.scrollTo(0, y);
+                    root.style.scrollBehavior = prevBehavior;
+                  } catch (e) {}
+                });
+              } catch (e) {}
+            });
+            return false;
+          } catch (e) { holdTall(false); return true; }
+        }
+        var settleTimer = null;
+        var settleTries = 0;
+        function watchSettle() {
+          if (settleTimer || !standaloneNow()) return;
+          if (settleViewport()) return;
+          settleTries = 0;
+          settleTimer = setInterval(function () {
+            settleTries += 1;
+            if (settleViewport() || settleTries > 60) {
+              holdTall(false);
+              clearInterval(settleTimer);
+              settleTimer = null;
+            }
+          }, 400);
+        }
+        function schedule() {
+          readSafeTop();
+          readBottomGap();
+          settleViewport();
+          [80, 300, 800].forEach(function (t) { setTimeout(function () { readSafeTop(); readBottomGap(); }, t); });
+          [60, 200, 500, 1000].forEach(function (t) { setTimeout(settleViewport, t); });
+          watchSettle();
+        }
+        window.addEventListener("pageshow", function () { watchSettle(); readBottomGap(); });
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) watchSettle();
+        });
+        if (document.body) schedule();
+        else document.addEventListener("DOMContentLoaded", schedule);
+        var VP_KEY = "scr-vp-debug";
+        function vpFlag(on) {
+          try { if (on) localStorage.setItem(VP_KEY, "1"); else localStorage.removeItem(VP_KEY); } catch (e) {}
+        }
+        function vpWanted() {
+          try {
+            if (location.hash.indexOf("vp0") >= 0) { vpFlag(false); return false; }
+            if (location.hash.indexOf("vp") >= 0) { vpFlag(true); return true; }
+            return localStorage.getItem(VP_KEY) === "1";
+          } catch (e) { return false; }
+        }
+        var vpBox = null;
+        var vpTimer = null;
+        var vpFirst = null;
+        function vpPaint() {
+          var vv = window.visualViewport;
+          if (vpFirst === null) vpFirst = window.innerHeight;
+          var bar = document.querySelector(".scr-mobile-tabbar");
+          var r = bar && bar.getBoundingClientRect();
+          vpBox.textContent =
+            "standalone=" + standaloneNow() + "  screen=" + screen.width + "x" + screen.height + "\n" +
+            "inner=" + window.innerWidth + "x" + window.innerHeight + " (최초 " + vpFirst + ")" +
+            "  정착=" + viewportSettled() + "\n" +
+            "vv=" + (vv ? Math.round(vv.width) + "x" + Math.round(vv.height) + " off" + Math.round(vv.offsetTop) : "-") +
+            "  늘림=" + settleHold + " 시도=" + settleTries + "\n" +
+            "safe-top=" + getComputedStyle(root).getPropertyValue("--safe-area-top").trim() +
+            "  gap=" + getComputedStyle(root).getPropertyValue("--vp-bottom-gap").trim() + "\n" +
+            "vv-inset=" + getComputedStyle(root).getPropertyValue("--vv-bottom-inset").trim() +
+            "  float-bottom=" + getComputedStyle(root).getPropertyValue("--scr-float-bottom").trim() + "\n" +
+            "탭바 bottom=" + (r ? Math.round(r.bottom) : "-") +
+            "  화면바닥까지=" + (r ? Math.round(window.innerHeight - r.bottom) : "-");
+        }
+        function vpShow(on) {
+          if (on === !!vpBox) return;
+          if (!on) {
+            clearInterval(vpTimer); vpTimer = null;
+            if (vpBox && vpBox.parentNode) vpBox.parentNode.removeChild(vpBox);
+            vpBox = null;
+            return;
+          }
+          vpBox = document.createElement("div");
+          vpBox.style.cssText =
+            "position:fixed;left:8px;right:8px;top:calc(8px + env(safe-area-inset-top,0px));z-index:99999;" +
+            "background:rgba(0,0,0,.86);color:#7fffd4;font:11px/1.45 ui-monospace,monospace;" +
+            "padding:8px 10px;border-radius:8px;white-space:pre;pointer-events:none;";
+          (document.body || root).appendChild(vpBox);
+          vpPaint();
+          vpTimer = setInterval(vpPaint, 250);
+        }
+        (function () {
+          var hold = null;
+          function cancel() { if (hold) { clearTimeout(hold); hold = null; } }
+          document.addEventListener("touchstart", function (e) {
+            cancel();
+            if (e.touches.length !== 3) return;
+            hold = setTimeout(function () {
+              hold = null;
+              var next = !vpBox;
+              vpFlag(next);
+              vpShow(next);
+            }, 1000);
+          }, { passive: true });
+          document.addEventListener("touchmove", cancel, { passive: true });
+          document.addEventListener("touchend", cancel, { passive: true });
+          document.addEventListener("touchcancel", cancel, { passive: true });
+        })();
+        if (vpWanted()) {
+          if (document.body) vpShow(true);
+          else document.addEventListener("DOMContentLoaded", function () { vpShow(true); });
+        }
+        window.addEventListener("resize", readSafeTop);
+        window.addEventListener("orientationchange", schedule);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
