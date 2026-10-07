@@ -2078,6 +2078,10 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 .scr-activity-game-tab.is-on::after { background: var(--lighting-accent); box-shadow: var(--lighting-accent-glow); }
 @media (hover: hover) { .scr-activity-game-tab:hover:not(.is-on) { color: var(--text); } }
 .scr-activity-game-tab:focus-visible { outline: 2px solid var(--point); outline-offset: -2px; border-radius: 6px; }
+@media (max-width: 1159px) {
+  .scr-activity-game-tab:first-child { padding-left: 0; }
+  .scr-activity-game-tab:first-child::after { left: 0; }
+}
 @media (hover: hover) { .scr-activity-clan-only:hover { color: var(--text); } }
 .scr-filter-head-row { display: flex; align-items: baseline; gap: 10px; width: 100%; }
 .scr-filter-head-row > .scr-filter-bar-count {
@@ -5262,6 +5266,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-activity-row-state-loss { color: var(--loss); }
 .scr-activity-row-state-draw { color: var(--muted); }
 @media (max-width: 1159px) {
+  .scr-activity-rows { --scr-row-pad-x: 4px; border-radius: 3px; }
   .scr-activity-row > * + * { padding-left: 8px; }
   .scr-activity-row > * { padding-right: 8px; }
   .scr-activity-row > *:last-child { padding-right: 0; }
