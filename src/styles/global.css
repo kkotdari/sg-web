@@ -2079,6 +2079,8 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 @media (hover: hover) { .scr-activity-game-tab:hover:not(.is-on) { color: var(--text); } }
 .scr-activity-game-tab:focus-visible { outline: 2px solid var(--point); outline-offset: -2px; border-radius: 6px; }
 @media (max-width: 1159px) {
+  .scr-activity-game-tab { padding-left: 10px; padding-right: 10px; }
+  .scr-activity-game-tab::after { left: 6px; right: 6px; }
   .scr-activity-game-tab:first-child { padding-left: 0; }
   .scr-activity-game-tab:first-child::after { left: 0; }
 }
