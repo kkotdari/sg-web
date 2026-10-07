@@ -2,10 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Trash2, Pencil, X, Save, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Spinner, LoadingMark } from "../../components/common/Feedback";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import { RowCheck, SelectionBar } from "../../components/common/Selection";
-import { showToast } from "../../components/common/Toast";
-import { useSelection } from "../../hooks/useSelection";
-import { batchSummary, runBatch } from "../../utils/batch";
 import LeagueCreateModal from "../../modals/LeagueCreateModal";
 import LeagueTeamsPanel from "./LeagueTeamsPanel";
 import LeagueBracket from "./LeagueBracket";
@@ -43,30 +39,6 @@ export default function LeagueScreen() {
   const [creating, setCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<LeagueListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const sel = useSelection();
-  const selClear = sel.clear;
-  useEffect(() => { if (selectedId !== null) selClear(); }, [selectedId, selClear]);
-  const pickedLeagues = isAdmin ? leagues.filter((l) => sel.picked.has(String(l.id))) : [];
-  const [bulkConfirm, setBulkConfirm] = useState<LeagueListItem[] | null>(null);
-  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
-  const [bulkErr, setBulkErr] = useState<string | null>(null);
-  const runBulkDelete = async (targets: LeagueListItem[]) => {
-    setBulkErr(null);
-    setBulkProgress({ done: 0, total: targets.length });
-    const { done, failed } = await runBatch(targets, (l) => api.deleteLeague(l.id), {
-      onProgress: (n) => setBulkProgress({ done: n, total: targets.length }),
-    });
-    const doneIds = new Set(done.map((l) => l.id));
-    if (doneIds.size > 0) setLeagues((prev) => prev.filter((l) => !doneIds.has(l.id)));
-    setBulkProgress(null);
-    if (failed.length > 0 && done.length === 0) {
-      setBulkErr(batchSummary("삭제", 0, failed.length));
-      return;
-    }
-    setBulkConfirm(null);
-    selClear();
-    showToast(batchSummary("삭제", done.length, failed.length), { kind: failed.length > 0 ? "warn" : "ok" });
-  };
   const [presenting, setPresenting] = useState(false);
   const [viewing, setViewing] = useState(false);
   const [confirmCloseEdit, setConfirmCloseEdit] = useState(false);
@@ -219,54 +191,23 @@ export default function LeagueScreen() {
         loadingList ? <LoadingMark />
           : leagues.length === 0 ? <div className="scr-empty">리그가 없어요</div>
           : (
-            <>
-            {!!user && (
-              <SelectionBar
-                total={isAdmin ? leagues.length : 0} count={pickedLeagues.length}
-                onSelectAll={() => sel.setMany(leagues.map((l) => String(l.id)), true)}
-                onClear={sel.clear}
-                note={isAdmin ? undefined : "리그 삭제는 운영자만 할 수 있어요."}
-              >
-                <button
-                  type="button" className="scr-selbar-act"
-                  disabled={!isAdmin || pickedLeagues.length === 0}
-                  onClick={() => { setBulkErr(null); setBulkConfirm(pickedLeagues); }}
-                >
-                  삭제
-                </button>
-              </SelectionBar>
-            )}
             <div className="scr-league-list">
-              {leagues.map((l) => {
-                const key = String(l.id);
-                const picked = isAdmin && sel.picked.has(key);
-                const row = (
-                  <button
-                    key={l.id} type="button" className="scr-league-row"
-                    onClick={() => openLeague(l.id)}
-                  >
-                    <span className="scr-league-row-name">{l.name}</span>
-                    <span className="scr-league-row-meta">
-                      {MODE_LABEL[l.mode]} · {l.teamCount}{l.mode === "individual" ? "명" : "팀"}
-                    </span>
-                    <span className={cx("scr-league-status-pill", `scr-league-status-${l.status}`)}>
-                      {STATUS_LABEL[l.status]}
-                    </span>
-                    <ChevronRight size={14} className="scr-league-row-go" />
-                  </button>
-                );
-                return user ? (
-                  <div key={l.id} className={cx("scr-sel-wrap", picked && "is-picked")}>
-                    <RowCheck
-                      checked={picked} disabled={!isAdmin} disabledTitle="리그 삭제는 운영자만 할 수 있어요"
-                      onChange={() => sel.toggle(key)} label={`${l.name} 선택`}
-                    />
-                    {row}
-                  </div>
-                ) : row;
-              })}
+              {leagues.map((l) => (
+                <button
+                  key={l.id} type="button" className="scr-league-row"
+                  onClick={() => openLeague(l.id)}
+                >
+                  <span className="scr-league-row-name">{l.name}</span>
+                  <span className="scr-league-row-meta">
+                    {MODE_LABEL[l.mode]} · {l.teamCount}{l.mode === "individual" ? "명" : "팀"}
+                  </span>
+                  <span className={cx("scr-league-status-pill", `scr-league-status-${l.status}`)}>
+                    {STATUS_LABEL[l.status]}
+                  </span>
+                  <ChevronRight size={14} className="scr-league-row-go" />
+                </button>
+              ))}
             </div>
-            </>
           )
       ) : loadingDetail || !league ? (
         <LoadingMark />
@@ -389,16 +330,6 @@ export default function LeagueScreen() {
           confirmLabel={deleting ? "삭제 중..." : "삭제"}
           onConfirm={confirmDelete}
           onCancel={() => setDeleteTarget(null)}
-        />
-      )}
-      {bulkConfirm && (
-        <ConfirmDialog
-          title={`선택한 리그 ${bulkConfirm.length}개를 삭제할까요?`}
-          message="각 리그의 팀/대진표/결과가 모두 함께 삭제되고 되돌릴 수 없어요."
-          confirmLabel={bulkProgress ? `삭제 중... ${bulkProgress.done}/${bulkProgress.total}` : "삭제"}
-          error={bulkErr}
-          onConfirm={() => { if (!bulkProgress) void runBulkDelete(bulkConfirm); }}
-          onCancel={() => { if (!bulkProgress) { setBulkConfirm(null); setBulkErr(null); } }}
         />
       )}
     </div>
