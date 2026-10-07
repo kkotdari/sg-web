@@ -2770,10 +2770,10 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
     display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
   }
   .scr-v2-toolbar-title .scr-activity-crumb-sep { margin: 0; }
-  .scr-header-inner { padding: 6px 8px 2px; gap: 12px; justify-content: flex-end; }
+  .scr-header-inner { padding: 6px 16px 2px; gap: 12px; justify-content: flex-end; }
   .scr-user { display: none; }
   .scr-main {
-    --main-pad-x: 8px; padding: 8px var(--main-pad-x) 48px;
+    --main-pad-x: 16px; padding: 8px var(--main-pad-x) 48px;
     --card-pad-bx: 0px; --card-head-pad-l: 0px;
   }
   .scr-challenge-card { padding-left: 12px; padding-right: 12px; }
