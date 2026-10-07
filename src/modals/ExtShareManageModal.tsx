@@ -254,7 +254,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                   onClear={sel.clear}
                 >
                   <button
-                    type="button" className="scr-selbar-act"
+                    type="button" className="scr-lighting-pill-btn"
                     disabled={pickedGames.length === 0 || busy}
                     onClick={() => { setBulkErr(null); setBulkDel(pickedGames); }}
                   >

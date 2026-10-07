@@ -134,14 +134,14 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                   onClear={sel.clear}
                 >
                   <button
-                    type="button" className="scr-selbar-act"
+                    type="button" className="scr-lighting-pill-btn"
                     disabled={pickedRows.length === 0 || busyId !== null}
                     onClick={() => { setConfirmErr(null); setBulk({ kind: "restore", games: pickedRows }); }}
                   >
                     복원
                   </button>
                   <button
-                    type="button" className="scr-selbar-act"
+                    type="button" className="scr-lighting-pill-btn"
                     disabled={pickedRows.length === 0 || busyId !== null}
                     onClick={() => { setConfirmErr(null); setBulk({ kind: "purge", games: pickedRows }); }}
                   >

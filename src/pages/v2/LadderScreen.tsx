@@ -171,7 +171,7 @@ export default function LadderScreen() {
           <h1 className="scr-title scr-v2-toolbar-title">래더</h1>
           <button
             type="button"
-            className="scr-lighting-compact-btn"
+            className="scr-lighting-compact-rect-btn"
             onClick={() => setRivalryOpen(true)}
           >
             상성 보기

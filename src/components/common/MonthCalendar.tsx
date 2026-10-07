@@ -65,7 +65,7 @@ export default function MonthCalendar({
     <div className={cx("scr-month-cal", className)} ref={ref}>
       <button
         type="button"
-        className={cx("scr-month-cal-trigger scr-lighting-compact-btn", open && "scr-month-cal-open")}
+        className={cx("scr-month-cal-trigger scr-lighting-compact-rect-btn", open && "scr-month-cal-open")}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
         aria-haspopup="dialog" aria-expanded={open}
