@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
-import { ModelCatalog, type ModelCatalogGroup } from "scplay";
+import {
+  ModelCatalog, MODEL_CATALOG_GROUPS, MODEL_CATALOG_RACES,
+  type ModelCatalogGroup, type ModelCatalogRace,
+} from "scplay";
+import PillTabs from "../../components/common/PillTabs";
 import { navigateTo, parseRoute } from "../../utils/route";
 
 const SLUG: Record<ModelCatalogGroup, string> = { 유닛: "unit", 건물: "bld", 부가: "aux" };
+const GROUP_OPTS = MODEL_CATALOG_GROUPS.map((g) => ({ value: g.key, label: g.label }));
+const RACE_OPTS = MODEL_CATALOG_RACES.map((r) => ({ value: r, label: r }));
 
 function groupFromUrl(): ModelCatalogGroup {
   const item = parseRoute().item;
@@ -12,6 +18,7 @@ function groupFromUrl(): ModelCatalogGroup {
 
 export default function CatalogScreen() {
   const [group, setGroup] = useState<ModelCatalogGroup>(groupFromUrl);
+  const [race, setRace] = useState<ModelCatalogRace>("전체");
 
   useEffect(() => {
     const onPop = (): void => {
@@ -33,7 +40,11 @@ export default function CatalogScreen() {
           <h1 className="scr-title scr-v2-toolbar-title">도록</h1>
         </div>
       </div>
-      <ModelCatalog group={group} onGroup={pick} />
+      <div className="scr-catalog-picks">
+        <PillTabs options={GROUP_OPTS} value={group} onChange={pick} aria-label="유형" fit />
+        <PillTabs options={RACE_OPTS} value={race} onChange={setRace} aria-label="종족" fit />
+      </div>
+      <ModelCatalog group={group} race={race} />
     </div>
   );
 }

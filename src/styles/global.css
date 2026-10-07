@@ -1956,6 +1956,15 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
   .scr-filter-panel .scr-pill-tab-btn:hover:not(.scr-pill-tab-btn-active) { color: var(--text); }
 }
 
+.scr-catalog-picks { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.scr-catalog-picks .scr-pill-tabs { height: 30px; background: rgba(255, 255, 255, 0.08); }
+.scr-light-theme .scr-catalog-picks .scr-pill-tabs { background: rgba(0, 0, 0, 0.06); }
+.scr-catalog-picks .scr-pill-tab-btn { font-size: var(--fs-caption); }
+.scr-catalog-picks .scr-pill-tab-btn:not(.scr-pill-tab-btn-active) { color: var(--muted); }
+@media (hover: hover) {
+  .scr-catalog-picks .scr-pill-tab-btn:hover:not(.scr-pill-tab-btn-active) { color: var(--text); }
+}
+
 .scr-search-filter-float .scr-list-search-wrap { width: 100%; }
 .scr-cselect.scr-user-mode-select { flex: 0 0 auto; width: auto; align-self: stretch; }
 .scr-cselect.scr-user-mode-select .scr-cselect-trigger {
