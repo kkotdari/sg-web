@@ -86,12 +86,16 @@ export function GameRowStatus({ game }: { game: GameResult }) {
   );
 }
 
-export function GameRowNames({ game, memberOf, mobile, playable }: {
+export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   game: GameResult;
   memberOf: (id: string) => Member | undefined;
   mobile: boolean;
   playable: boolean;
+  /** 보이는 이름만 바꾸는 손 — 손님 모드의 가리기(maskPlayerName). 자료는 그대로다. */
+  nameMask?: (name: string) => string;
 }) {
+  const nameOf = (s: GameResultSlot, all: GameResultSlot[]): string =>
+    (nameMask ?? ((n) => n))(resolveSlotName(s, all, memberOf));
   if (isSecretGame(game)) {
     return (
       <span className="scr-activity-row-names">
@@ -106,7 +110,7 @@ export function GameRowNames({ game, memberOf, mobile, playable }: {
     slots.flatMap((s, i) => [
       ...(i > 0 ? [<span className="scr-activity-row-slash" key={`s${i}`} aria-hidden>/</span>] : []),
       <span className="scr-activity-row-em" key={`n${i}`}>
-        {clipRowName(resolveSlotName(s, slots, memberOf), mobile)}
+        {clipRowName(nameOf(s, slots), mobile)}
       </span>,
     ]);
   if (isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 })) {
@@ -122,7 +126,7 @@ export function GameRowNames({ game, memberOf, mobile, playable }: {
                 </span>
               )] : []),
               <span className="scr-activity-row-em" key={`n${i}`}>
-                {clipRowName(resolveSlotName(s, all, memberOf), mobile)}
+                {clipRowName(nameOf(s, all), mobile)}
               </span>,
             ])}
           </span>

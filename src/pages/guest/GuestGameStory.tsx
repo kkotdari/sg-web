@@ -9,6 +9,7 @@ import { useReplayMap } from "scplay";
 import { cleanMapName } from "../../utils/mapName";
 import { cx } from "../../utils/format";
 import { normalizeSearchText } from "../../utils/memberSearch";
+import { maskPlayerName } from "../../utils/maskName";
 import type { GameResult, GameResultSlot, Member } from "../../types";
 export default function GuestGameStory({ gameResult, team1, team2, result, memberOf, highlightMemberIds, highlightTerms, active = true, menu, extShare = false, }: {
     gameResult: GameResult;
@@ -48,7 +49,8 @@ export default function GuestGameStory({ gameResult, team1, team2, result, membe
         }[] = [];
         const add = (list: GameResultSlot[], team: 1 | 2) => {
             list.forEach((slot) => {
-                const name = resolveSlotName(slot, all, memberOf);
+                /* 손님 모드 — 보이는 이름은 가린다(요청). raw(리플레이 원 이름)는 재생기가 트랙과 맞추는 열쇠라 그대로. */
+                const name = maskPlayerName(resolveSlotName(slot, all, memberOf));
                 if (slot.rawName)
                     rows.push({ raw: slot.rawName, name, slot, team });
             });
@@ -81,7 +83,7 @@ export default function GuestGameStory({ gameResult, team1, team2, result, membe
         const side = o1 === "win" ? t1 : t2;
         if (isMeleeGame({ matchType: gameResult.matchType, team1: t1, team2: t2 })
             || (t1.length === 1 && t2.length === 1)) {
-            return `${resolveSlotName(side[0], [...t1, ...t2], memberOf)} 승`;
+            return `${maskPlayerName(resolveSlotName(side[0], [...t1, ...t2], memberOf))} 승`;
         }
         return `${o1 === "win" ? 1 : 2}팀 승`;
     })();
@@ -180,19 +182,19 @@ export default function GuestGameStory({ gameResult, team1, team2, result, membe
             {[...t1, ...t2].map((s9, i9) => (<React.Fragment key={`${s9.memberId}-${i9}`}>
                 {i9 > 0 && <span className="scr-story-melee-vs" aria-hidden>vs</span>}
                 <div className="scr-roster-melee-one">
-                  <RosterSide team={[s9]} memberOf={memberOf} highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms}/>
+                  <RosterSide team={[s9]} memberOf={memberOf} highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms} nameMask={maskPlayerName}/>
                   
                   {result !== "not_held" && result !== "draw"
                     && t1.some((w9) => w9.memberId === s9.memberId) && (<span className="scr-story-win scr-story-win-t1">승</span>)}
                 </div>
               </React.Fragment>))}
           </div>) : (<div className={cx("scr-roster-matchup", "scr-activity-game-result-matchup", grid && "scr-story-matchup-wide")}>
-          <RosterSide team={t1} memberOf={memberOf} highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms}/>
+          <RosterSide team={t1} memberOf={memberOf} highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms} nameMask={maskPlayerName}/>
           
           <div className="scr-story-mid">
             {vsRow}
           </div>
-          <RosterSide team={t2} memberOf={memberOf} highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms}/>
+          <RosterSide team={t2} memberOf={memberOf} highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms} nameMask={maskPlayerName}/>
         </div>))}
       {result === "not_held" && <div className="scr-activity-game-result-notheld">미실시</div>}
       {!showRoster && mapBlock}

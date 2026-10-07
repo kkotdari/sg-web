@@ -8,6 +8,7 @@ import { isMeleeGame } from "../activity/GameResultSides";
 import { GameRowNames, GameRowStatus, ListRow } from "../activity/GameRow";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { formatAgo } from "../../utils/date";
+import { maskPlayerName } from "../../utils/maskName";
 import type { ExtShareList, GameResult, GameResultSlot } from "../../types";
 
 const PASS_KEY = "stargate_extshare_pass";
@@ -45,8 +46,9 @@ function lineupTitle(
   return [n1.join(", "), n2.join(", ")].filter(Boolean).join(" vs ");
 }
 
+/* 손님 모드 — 제목의 이름도 가린다(요청: 첫·끝 글자만 남기고 반각 동그라미). */
 function gameTitleOf(g: GameResult): string {
-  return lineupTitle(g, (s) => s.rawName || "") || "이름 없는 판";
+  return lineupTitle(g, (s) => maskPlayerName(s.rawName || "")) || "이름 없는 판";
 }
 
 function gameTime(g: GameResult): string {
@@ -300,7 +302,7 @@ export default function ExploreScreen() {
               onClick={() => openGame(g.id)}
               desc={<>
                 <GameRowStatus game={g} />
-                <GameRowNames game={g} memberOf={memberOf} mobile={isMobile} playable={!!g.hasTruth} />
+                <GameRowNames game={g} memberOf={memberOf} mobile={isMobile} playable={!!g.hasTruth} nameMask={maskPlayerName} />
               </>}
               side={formatAgo(gameTime(g))}
             />

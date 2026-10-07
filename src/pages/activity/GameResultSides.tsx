@@ -47,15 +47,17 @@ export function resolveSlotName(slot: GameResultSlot, players: GameResultSlot[],
 }
 
 export default function RosterSide({
-  team, memberOf, highlightMemberIds, highlightTerms,
+  team, memberOf, highlightMemberIds, highlightTerms, nameMask,
 }: {
   team: GameResultSlot[]; memberOf: (id: string) => Member | undefined;
   highlightMemberIds?: Set<string>; highlightTerms?: string[];
+  /** 보이는 이름만 바꾸는 손 — 손님 모드의 가리기(maskPlayerName). 자료(rawName·memberId)는 그대로다. */
+  nameMask?: (name: string) => string;
 }) {
   return (
     <div className="scr-roster-side">
       {team.map((s, i) => {
-        const name = resolveSlotName(s, team, memberOf);
+        const name = (nameMask ?? ((n) => n))(resolveSlotName(s, team, memberOf));
         const m = memberOf(s.memberId);
         const nameLc = normalizeSearchText(name);
         const hl = highlightMemberIds?.has(s.memberId) || !!highlightTerms?.some((t) => nameLc.includes(t));
