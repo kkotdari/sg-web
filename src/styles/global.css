@@ -1281,7 +1281,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   display: block; height: 4px; border-radius: 2px;
   background-color: var(--line-hair); overflow: hidden;
 }
-.scr-clan-panel-fill { display: block; height: 100%; border-radius: 2px; background-color: var(--accent, #6aa6ff); }
+.scr-clan-panel-fill { display: block; height: 100%; border-radius: 2px; background-color: var(--lighting-accent, var(--accent)); }
 .scr-stat-name-plain {
   font-weight: 700; letter-spacing: -0.01em;
   color: var(--text-strong, var(--text));
