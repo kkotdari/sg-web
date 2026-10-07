@@ -66,7 +66,6 @@ function RaceRecords({ byRace }: { byRace?: Partial<Record<BaseRace, MemberStats
 function BreakdownPanel({
   title, note, rows, empty,
 }: { title: string; note: string; rows: ClanBreakdownEntry[]; empty: string }) {
-  const top = rows[0]?.plays ?? 0;
   return (
     <div className="scr-clan-panel">
       <div className="scr-clan-panel-head">
@@ -87,12 +86,6 @@ function BreakdownPanel({
                     {r.plays}<span className="scr-clan-panel-unit">판</span>
                     <span className="scr-clan-panel-ratio">{r.ratio}%</span>
                   </span>
-                </span>
-                <span className="scr-clan-panel-bar">
-                  <span
-                    className="scr-clan-panel-fill"
-                    style={{ width: `${top > 0 ? Math.max(4, (r.plays / top) * 100) : 0}%` }}
-                  />
                 </span>
               </span>
             </li>
