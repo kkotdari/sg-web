@@ -212,6 +212,12 @@ export interface MemberStats {
   killSupply?: number | null;
   deathSupply?: number | null;
   kdPlays?: number | null;
+  /** 준·입은 데미지 — 체력+실드 점수 합. 유닛·건물로 나눠 오고 화면은 합쳐 보인다. dmgPlays = 그 값이 있는 경기 수. */
+  dmgDealtUnit?: number | null;
+  dmgDealtBldg?: number | null;
+  dmgTakenUnit?: number | null;
+  dmgTakenBldg?: number | null;
+  dmgPlays?: number | null;
 }
 
 export interface MemberStatsEntry {

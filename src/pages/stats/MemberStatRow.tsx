@@ -172,13 +172,30 @@ function Num({ value, unit }: { value: number | string | null; unit?: string }) 
   );
 }
 
-/** K/D — 마릿수가 아니라 잡은 인구 ÷ 잃은 인구(저글링 0.5 · 마린 1 · 울트라 4).
- *  옛 덤퍼로만 구운 회원은 인구 합이 없어 "-" 다(운영 패널 'K/D 인구수로 다시 세기'). */
+/** K/D 는 화면에서 걷었다(요청: 마지막에 죽인 사람만 세어 여럿이 함께 잡은 몫을 못 가른다) — 셈은 남겨 둔다. */
+const SHOW_KD = false;
+
+/** K/D — 마릿수가 아니라 잡은 인구 ÷ 잃은 인구(저글링 0.5 · 마린 1 · 울트라 4). 서버가 새 덤퍼로 구운 경기만 안다. */
 function kdOf(stats?: MemberStats): string | null {
   const k = stats?.killSupply;
   const d = stats?.deathSupply;
   if (typeof k !== "number" || typeof d !== "number") return null;
   return (k / Math.max(1, d)).toFixed(2);
+}
+
+/** 1234 → "1.2k" · 980 → "980". 데미지는 한 판에 수천~수만이라 천 단위로 줄인다. */
+function fmtK(v: number): string {
+  return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`;
+}
+
+/** 준·입은 데미지 — **경기당 평균**(유닛+건물 합 · 체력+실드 점수). 여럿이 함께 잡아도 때린 만큼 갈려서 K/D 보다 공정하다.
+ *  유닛·건물은 서버가 따로 주지만 화면은 합쳐 보인다(요청 — 나중에 나눌 수 있게). 새 덤퍼로 구운 경기만 더해져 있다. */
+function dmgOf(stats?: MemberStats): { dealt: string; taken: string } | null {
+  const n = stats?.dmgPlays;
+  const parts = [stats?.dmgDealtUnit, stats?.dmgDealtBldg, stats?.dmgTakenUnit, stats?.dmgTakenBldg];
+  if (!n || !parts.every((v): v is number => typeof v === "number")) return null;
+  const [du, db, tu, tb] = parts as number[];
+  return { dealt: fmtK((du + db) / n), taken: fmtK((tu + tb) / n) };
 }
 
 function Record({ stats }: { stats?: MemberStats }) {
@@ -206,6 +223,7 @@ export default function MemberStatRow({
   const openMemberProfile = useAppStore((s) => s.openMemberProfile);
   const [photoOpen, setPhotoOpen] = useState(false);
   const kd = kdOf(stats);
+  const dmg = dmgOf(stats);
   const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
   const toggleRace = (r: BaseRace): void => {
     setOpenRaces((prev) => {
@@ -245,10 +263,20 @@ export default function MemberStatRow({
             <span className="scr-statcard-sum-label">APM</span>
             <Num value={stats.avgApm} />
           </span>
-          <span className="scr-statcard-sum-item">
-            <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
-            <Num value={kd} />
+          <span className="scr-statcard-sum-item" title="경기당 평균 준 데미지 — 유닛+건물 · 체력+실드 점수">
+            <span className="scr-statcard-sum-label">준 데미지</span>
+            <Num value={dmg?.dealt ?? null} />
           </span>
+          <span className="scr-statcard-sum-item" title="경기당 평균 입은 데미지 — 유닛+건물 · 체력+실드 점수">
+            <span className="scr-statcard-sum-label">입은 데미지</span>
+            <Num value={dmg?.taken ?? null} />
+          </span>
+          {SHOW_KD && (
+            <span className="scr-statcard-sum-item">
+              <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
+              <Num value={kd} />
+            </span>
+          )}
         </div>
       </header>
       <div className="scr-statcard-decks">
