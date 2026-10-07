@@ -1,4 +1,5 @@
 import { Fragment, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
@@ -263,7 +264,7 @@ export default function MemberStatRow({
                   aria-expanded={open} aria-label={open ? "접기" : "펼치기"}
                   onClick={() => toggleRace(r)}
                 >
-                  {open ? "▴" : "▾"}
+                  {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
                 </button>
               </span>
               {open && <RaceMixCell race={r} stats={byRace?.[r]} />}
