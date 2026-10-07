@@ -444,7 +444,7 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
    4. 라이팅 컴팩트 네모 버튼 .scr-lighting-compact-rect-btn  같은 꼴 · 패딩 4px 8px · 높이 26(스크랩 · 사용법 · 상성 보기 · 월 선택)
    자리 잡기(fixed 위치·크기 전환)는 .scr-scrolltop·.scr-activity-add-fab 같은 제자리 클래스가 따로 진다. */
 .scr-lighting-circle-btn {
-  width: 52px; height: 52px; border-radius: 50%; padding: 0;
+  width: 52px; height: 52px; border-radius: 50%; padding: 0; flex: 0 0 auto;
   display: inline-flex; align-items: center; justify-content: center;
   border: none; cursor: pointer; color: var(--text);
   font-family: inherit; font-size: var(--fs-caption); font-weight: 700; white-space: nowrap;
