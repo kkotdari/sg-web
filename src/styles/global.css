@@ -1216,6 +1216,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard-deck-toggle svg { display: block; }
 .scr-statcard-deck-head > .scr-clan-band-dot { align-self: center; }
 .scr-statcard-deck-rec { display: inline-flex; align-items: baseline; gap: 5px; margin-left: auto; }
+.scr-statcard-deck-label { font-weight: 600; color: var(--muted); }
 .scr-statcard-deck > .scr-stat-mix-cell { padding: 0; min-width: 0; }
 .scr-statcard-deck > .scr-stat-mix-cell { grid-template-rows: minmax(156px, 1fr); }
 .scr-statcard-deck > .scr-stat-mix-cell > .scr-stat-points-empty { grid-row: 1 / -1; }

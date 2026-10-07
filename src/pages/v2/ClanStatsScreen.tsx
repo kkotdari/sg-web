@@ -241,7 +241,7 @@ export default function ClanStatsScreen() {
             className="scr-v2-toolbar-month"
           />
           <button
-            type="button" className="scr-rect-btn"
+            type="button" className="scr-compact-rect-btn"
             onClick={() => setTeamBuilder(true)}
           >
             <Users size={13} /> 팀 구성하기
