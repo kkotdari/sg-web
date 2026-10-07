@@ -260,9 +260,10 @@ export default function MemberStatRow({
                 </span>
                 <button
                   type="button" className="scr-text-btn scr-statcard-deck-toggle"
-                  aria-expanded={open} onClick={() => toggleRace(r)}
+                  aria-expanded={open} aria-label={open ? "접기" : "펼치기"}
+                  onClick={() => toggleRace(r)}
                 >
-                  {open ? "▾ 접기" : "▸ 펼치기"}
+                  {open ? "▴" : "▾"}
                 </button>
               </span>
               {open && <RaceMixCell race={r} stats={byRace?.[r]} />}
