@@ -181,11 +181,12 @@ function kdOf(stats?: MemberStats): string | null {
 
 function Record({ stats }: { stats?: MemberStats }) {
   const plays = stats?.plays ?? 0;
+  if (plays === 0) return null;
   return (
     <>
-      <Num value={plays > 0 ? plays : null} unit="판" />
+      <Num value={plays} unit="판" />
       <span className="scr-statcard-deck-label">승률</span>
-      <Num value={plays > 0 ? stats!.winRate : null} unit="%" />
+      <Num value={stats!.winRate} unit="%" />
     </>
   );
 }

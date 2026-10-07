@@ -1222,6 +1222,11 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard-deck > .scr-stat-mix-cell > .scr-stat-points-empty { grid-row: 1 / -1; }
 .scr-statcard .scr-stat-upgrades, .scr-clan-decks .scr-stat-upgrades { --scr-up-num-w: 25px; max-width: 104px; }
 .scr-statcard .scr-stat-mix-cell, .scr-clan-decks .scr-stat-mix-cell { --scr-toplist-w: 124px; }
+@media (max-width: 1159px) {
+  .scr-statcard { padding-left: 0; padding-right: 0; }
+  .scr-statcard-deck { padding-left: 8px; padding-right: 8px; }
+  .scr-statcard .scr-stat-mix-row > * { padding-left: 6px; padding-right: 6px; }
+}
 .scr-statcard .scr-stat-up-note, .scr-clan-decks .scr-stat-up-note {
   white-space: normal; word-break: keep-all; font-size: 11px; line-height: 1.35;
 }
