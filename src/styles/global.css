@@ -97,6 +97,9 @@
   --win: #a3d693;
   --loss: #c07a86;
   --loss-rgb: 192, 122, 134;
+  /* 데미지 글자색 — 준 녹색 · 입은 붉은색, 둘 다 밝은 톤(요청). 통계 카드와 같은 뜻으로 재생기(replay.css)도 같은 값. */
+  --dmg-dealt: #5fdc92;
+  --dmg-taken: #ff8585;
   --kind-schedule: #4fd1a6;
   --kind-league: #c4aef8;
   --kind-call: #f1ec93;
@@ -563,6 +566,8 @@ html.scr-light-theme {
   --win: #34c759;
   --loss: #f2637a;
   --loss-rgb: 242, 99, 122;
+  --dmg-dealt: #1fa960;   /* 라이트 바탕에서는 한 단 짙게 — 밝은 톤 그대로면 흰 바탕에 안 읽힌다 */
+  --dmg-taken: #e4606c;
   --info: #6f97dc;
   --divider-tint: 0, 0, 0;
   --overlay-rgb: 0, 0, 0;
@@ -1197,7 +1202,12 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-stat-record-num-v { font-size: 13px; }
 .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-statcard-sum-label,
 .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-stat-record-num-unit { font-size: 12px; }
-.scr-statcard .scr-stat-name-btn { text-align: left; font-weight: 700; }
+/* PC 닉네임 칸은 고정 폭(10em = 200px) — 카드마다 스탯이 같은 자리에서 시작한다(요청). 넘치는 이름은 말줄임. 폰은 아래 72px 규칙이 덮는다. */
+.scr-statcard .scr-stat-name-btn { text-align: left; font-weight: 700; flex: none; width: 10em; }
+/* 데미지 한 칸 "12k(125%)/9.8k(75%)" — 준은 녹색 · 입은은 붉은색(괄호 %까지), 가운데 / 는 글자색 그대로. */
+.scr-stat-dmg { white-space: nowrap; }
+.scr-stat-dmg-dealt { color: var(--dmg-dealt); }
+.scr-stat-dmg-taken { color: var(--dmg-taken); }
 
 .scr-statcard-decks {
   border: 1px solid var(--line-soft); border-radius: var(--radius-sm, 8px);

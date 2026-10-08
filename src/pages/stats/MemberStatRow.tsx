@@ -184,24 +184,26 @@ function kdOf(stats?: MemberStats): string | null {
   return (k / Math.max(1, d)).toFixed(2);
 }
 
-/** 1234 → "1.2k" · 980 → "980". 데미지는 한 판에 수천~수만이라 천 단위로 줄인다. */
+/** 980 → "980" · 1234 → "1.2k" · 12345 → "12k". 데미지는 한 판에 수천~수만이라 천 단위로 줄이고, 만 단위부터는 소수도 뗀다(폰 한 줄). */
 function fmtK(v: number): string {
+  if (v >= 10000) return `${Math.round(v / 1000)}k`;
   return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`;
 }
 
 /** 준·입은 데미지 — **경기 평균 대비 %**(그 경기에서 오간 데미지를 참가자 수로 나눈 '평균 선수'가 100 · 경기마다 내어 평균).
  *  판 수·경기 길이·초반 공백·팀 인원이 다 지워져 많이 한 사람이 유리하지 않다(요청: "좀더 공평하게"). 분당은 초반 공백 탓에 짧은
  *  경기만 한 사람이 불리해 안 쓴다. 경기당 평균 점수(유닛+건물 · 체력+실드)는 title 로만 남긴다. 새 덤퍼로 구운 경기만 안다. */
-function dmgOf(stats?: MemberStats): { dealt: string; taken: string; avg: string | null } | null {
-  const dr = stats?.dmgDealtRel;
-  const tr = stats?.dmgTakenRel;
-  if (typeof dr !== "number" || typeof tr !== "number") return null;
+/** 한 칸 "12k(125%)/9.8k(75%)" — 앞은 경기당 평균 점수, 괄호는 경기 평균 대비 %(요청: "N(N%)/M(N%) 이렇게 간단하게").
+ *  비율이 없는(전체가 0인) 경기뿐이면 괄호를 뺀다. */
+function dmgOf(stats?: MemberStats): { dealt: string; taken: string } | null {
   const n = stats?.dmgPlays;
   const parts = [stats?.dmgDealtUnit, stats?.dmgDealtBldg, stats?.dmgTakenUnit, stats?.dmgTakenBldg];
-  const avg = n && parts.every((v): v is number => typeof v === "number")
-    ? `경기당 평균 준 ${fmtK((parts[0] + parts[1]) / n)} · 입은 ${fmtK((parts[2] + parts[3]) / n)}`
-    : null;
-  return { dealt: `${Math.round(dr)}%`, taken: `${Math.round(tr)}%`, avg };
+  if (!n || !parts.every((v): v is number => typeof v === "number")) return null;
+  const pct = (v: number | null | undefined): string => (typeof v === "number" ? `(${Math.round(v)}%)` : "");
+  return {
+    dealt: `${fmtK((parts[0] + parts[1]) / n)}${pct(stats?.dmgDealtRel)}`,
+    taken: `${fmtK((parts[2] + parts[3]) / n)}${pct(stats?.dmgTakenRel)}`,
+  };
 }
 
 function Record({ stats }: { stats?: MemberStats }) {
@@ -273,13 +275,13 @@ export default function MemberStatRow({
             <span className="scr-statcard-sum-label">APM</span>
             <Num value={stats.avgApm} />
           </span>
-          <span className="scr-statcard-sum-item" title={`준 데미지 — 그 경기 평균 선수 대비(100 = 평균)${dmg?.avg ? ` · ${dmg.avg}` : ""}`}>
-            <span className="scr-statcard-sum-label">준데미지</span>
-            <Num value={dmg?.dealt ?? null} />
-          </span>
-          <span className="scr-statcard-sum-item" title={`입은 데미지 — 그 경기 평균 선수 대비(100 = 평균)${dmg?.avg ? ` · ${dmg.avg}` : ""}`}>
-            <span className="scr-statcard-sum-label">입은데미지</span>
-            <Num value={dmg?.taken ?? null} />
+          <span className="scr-statcard-sum-item" title="준(녹색)/입은(붉은색) 데미지 — 경기당 평균 점수(유닛+건물 · 체력+실드) · 괄호는 그 경기 평균 선수 대비 %(100 = 평균)">
+            <span className="scr-statcard-sum-label">데미지</span>
+            {dmg ? (
+              <span className="scr-stat-record-num-v scr-stat-dmg">
+                <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>/<span className="scr-stat-dmg-taken">{dmg.taken}</span>
+              </span>
+            ) : <Num value={null} />}
           </span>
           {SHOW_KD && (
             <span className="scr-statcard-sum-item">
