@@ -1203,6 +1203,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
    작았다(값 13 · 라벨 12). 대신 라벨만 공통으로 줄인다(아래 .scr-statcard-sum-label 11px). */
 /* PC 닉네임 칸은 고정 폭(10em = 200px) — 카드마다 스탯이 같은 자리에서 시작한다(요청). 넘치는 이름은 말줄임. 폰은 아래 두 줄 규칙이 덮는다(칸 고정 없음). */
 .scr-statcard .scr-stat-name-btn { text-align: left; font-weight: 700; flex: none; width: 10em; }
+/* ⚠ 목록 판의 `.scr-stats-list-panel-v2 .scr-stat-name-btn { text-align: center; font-size: var(--fs-body) }`(아래)가 같은 무게(0,2,0)로 뒤에
+   있어 카드의 왼쪽 맞춤을 조용히 덮었다(지적: 폰에서 "닉네임이 한가운데" · PC 도 10em 칸 안에서 가운데였다). 한 겹 더 짚어(0,3,0) 못 박는다. */
+.scr-statcard .scr-statcard-head > .scr-stat-name-btn { text-align: left; }
 /* 데미지 한 칸 "12k(125%)/9.8k(75%)" — 준은 녹색 · 입은은 붉은색(괄호 %까지), 가운데 / 는 글자색 그대로. */
 .scr-stat-dmg { white-space: nowrap; }
 .scr-stat-dmg-sep { margin: 0 2px; color: var(--muted); }   /* / 양옆 한 뼘(요청) — 분수가 아니라 나란히 놓인 두 값이다 */
@@ -1245,12 +1248,17 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
      옛 판(닉네임 네 글자 고정 칸 64px 옆에 스탯 두 줄 · 오른쪽 맞춤 · 그 앞의 아바타 34/이름 18px)은 되물렸다. 아랫줄은 wrap 을 남겨
      아주 좁은 폰에서만 마지막 항목이 접힌다 — 393·375 폭에서는 한 줄(실측은 아래 주석). */
   .scr-statcard-head { align-items: center; flex-wrap: wrap; gap: 4px 8px; }
-  .scr-statcard-head > .scr-stat-name-btn { font-size: 16px; flex: 1 1 auto; width: auto; }
+  /* 이름은 **아바타 옆에 붙는다**(지적: "닉네임이 한가운데에 위치하네") — 첫 판은 flex 1 로 줄을 다 차지한 단추 안에서 글자가 가운데였다:
+     목록 판의 `.scr-stats-list-panel-v2 .scr-stat-name-btn { text-align: center }`(아래 · 같은 무게 0,2,0 · 뒤에 있어 이긴다)가 카드의 왼쪽
+     맞춤을 덮었다(검증 픽스처엔 그 감싸개가 없어 못 잡았다). 단추는 제 글자 폭만큼(0 1 auto · 좁으면 줄어 말줄임) · 왼쪽 맞춤은 한 겹
+     더 짚어(0,3,0) 못 박는다. */
+  .scr-statcard .scr-statcard-head > .scr-stat-name-btn { font-size: 16px; flex: 0 1 auto; width: auto; min-width: 0; }
   .scr-statcard-head > .scr-statcard-sum { flex: 1 0 100%; min-width: 0; justify-content: space-between; column-gap: 6px; }
   /* 아랫줄은 **폭에 자를 묶어 한 줄에 들게** 한다 — 라벨 11 · 값 14 · 사이 8/4 그대로는 393 폭에서 373.5 > 361 이라 데미지가 둘째 줄로
-     접혔다(실측). 묶음 글자 자 clamp(11.5px, 3.3vw, 14px): 393 폭 13px · 375 폭 12.4px · 360 폭(안드로이드 기본) 11.9px · 넓은 폰·태블릿은
-     14px 그대로. 값은 그 자(1em) · 라벨·단위는 0.786em(= 11/14 · PC 와 같은 비). 항목 사이 6 · 라벨-값 3. */
-  .scr-statcard-head > .scr-statcard-sum { font-size: clamp(11.5px, 3.3vw, 14px); }
+     접혔다(실측). 묶음 글자 자는 폭에 묶는다(처음 clamp(11.5px, 3.3vw, 14px) → 요청 "좀만 더 줄이고"로 clamp(11px, 3.05vw, 13px) · 아래).
+     값은 그 자(1em) · 라벨·단위는 0.786em(= 11/14 · PC 와 같은 비). 항목 사이 6 · 라벨-값 3. */
+  .scr-statcard-head > .scr-statcard-sum { font-size: clamp(11px, 3.05vw, 13px); }   /* 한 단 더(요청 "좀만 더 줄이고") — 393 폭 12px · 375 폭 11.4 · 360 폭 11 */
+  .scr-statcard-head > .scr-statcard-sum .scr-statcard-sum-paren { margin-left: 2px; }   /* "12판 (승률 …" 괄호 앞 살짝(요청) — 항목 사이 3 + 2 */
   .scr-statcard-head > .scr-statcard-sum .scr-stat-record-num-v { font-size: 1em; }
   .scr-statcard-head > .scr-statcard-sum .scr-statcard-sum-label,
   .scr-statcard-head > .scr-statcard-sum .scr-stat-record-num-unit { font-size: 0.786em; }
