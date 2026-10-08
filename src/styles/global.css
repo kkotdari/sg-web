@@ -1193,6 +1193,10 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   font-size: var(--fs-9); font-weight: 700; color: var(--muted); letter-spacing: 0.03em;
 }
 .scr-statcard .scr-stat-avatar-btn .scr-avatar { width: 32px !important; height: 32px !important; }
+/* 경기수·승률(첫 항목)보다 나머지(APM·준·입은 데미지)는 글자 한 단계 작게(요청 · 폰·PC 공통) — 값 14 → 13 · 라벨·단위 13 → 12. */
+.scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-stat-record-num-v { font-size: 13px; }
+.scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-statcard-sum-label,
+.scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-stat-record-num-unit { font-size: 12px; }
 .scr-statcard .scr-stat-name-btn { text-align: left; font-weight: 700; }
 
 .scr-statcard-decks {
@@ -1228,6 +1232,12 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-statcard { padding-left: 0; padding-right: 0; }
   /* 폰 개인 카드 머리는 두 줄 — 판수·승률이 윗줄, APM·데미지가 아랫줄(요청). */
   .scr-statcard-sum > .scr-statcard-sum-item:first-child { flex-basis: 100%; }
+  /* 아바타·닉네임은 옆의 두 줄 키에 맞춰 키우고 세로 가운데(요청: "아바타와 닉네임은 크게 해서 옆의 두줄과 맞게하고 세로 가운데 정렬").
+     머리는 한 줄로 못 박는다(nowrap) — 좁으면 두 줄 묶음이 제 안에서 접히고 긴 닉네임은 말줄임이다. 아바타 40 은 TSX 가 같은 수를 넘긴다. */
+  .scr-statcard-head { align-items: center; flex-wrap: nowrap; }
+  .scr-statcard-head > .scr-stat-name-btn { font-size: var(--fs-headline); }
+  .scr-statcard .scr-stat-avatar-btn .scr-avatar { width: 40px !important; height: 40px !important; }
+  .scr-statcard-head > .scr-statcard-sum { flex: 1 1 auto; min-width: 0; }
   .scr-statcard-deck { padding-left: 8px; padding-right: 8px; }
   .scr-statcard .scr-stat-mix-row > * { padding-left: 6px; padding-right: 6px; }
 }

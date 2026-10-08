@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { cx } from "../../utils/format";
 import { topEntries, type TruthMix, type TopEntry } from "../../utils/statsMix";
 import { TECH_KO, UNIT_KO } from "../../utils/replayNames";
@@ -222,6 +223,8 @@ export default function MemberStatRow({
 }: MemberStatRowProps) {
   const openMemberProfile = useAppStore((s) => s.openMemberProfile);
   const [photoOpen, setPhotoOpen] = useState(false);
+  /* 폰은 아바타를 40 으로(옆 두 줄 묶음의 키 · global.css 폰 규칙과 같은 수) — 글자 아바타의 머리글자 크기가 size 를 따르므로 CSS 만으론 안 된다. */
+  const isMobile = useIsMobile();
   const kd = kdOf(stats);
   const dmg = dmgOf(stats);
   const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
@@ -240,7 +243,7 @@ export default function MemberStatRow({
           type="button" className="scr-stat-avatar-btn"
           onClick={() => setPhotoOpen(true)} aria-label={`${member.nickname} 사진 보기`}
         >
-          <Avatar member={member} size={32} />
+          <Avatar member={member} size={isMobile ? 40 : 32} />
         </button>
         <button
           type="button" className="scr-stat-name-btn"
