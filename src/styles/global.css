@@ -1209,6 +1209,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* 데미지 한 칸 "12k(125%)/9.8k(75%)" — 준은 녹색 · 입은은 붉은색(괄호 %까지), 가운데 / 는 글자색 그대로. */
 .scr-stat-dmg { white-space: nowrap; }
 .scr-stat-dmg-sep { margin: 0 2px; color: var(--muted); }   /* / 양옆 한 뼘(요청) — 분수가 아니라 나란히 놓인 두 값이다 */
+.scr-stat-dmg-lead { color: var(--muted); margin-right: 0.3em; }   /* "평균의" — 값 앞의 흐린 머리말(라벨 "데미지"는 따로 선다) */
 .scr-stat-dmg-dealt { color: var(--dmg-dealt); }
 .scr-stat-dmg-taken { color: var(--dmg-taken); }
 

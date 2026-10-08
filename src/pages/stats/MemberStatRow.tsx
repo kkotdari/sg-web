@@ -187,7 +187,8 @@ function kdOf(stats?: MemberStats): string | null {
  *  센다(dmgDealtRel·dmgTakenRel · 100 = 1.0배) — 판 수·경기 길이·초반 공백·팀 인원이 다 지워져 많이 한 사람이 유리하지 않다(요청: "좀더
  *  공평하게"). 분당은 초반 공백 탓에 짧은 경기만 한 사람이 불리해 안 쓴다. 새 덤퍼로 구운 경기만 안다.
  *  화면은 **수치 없이 배수 글귀만** "평균의 1.1배 입힘 / 0.8배 입음"(요청: "수치는 빼고 … 이런 식으로") — 한때 "12k(125%)/9.8k(75%)"
- *  (경기당 평균 점수 + 괄호 %)였다. 배수가 없는(데미지 없는 옛 경기뿐) 사람은 null → 칸은 "데미지 –". */
+ *  (경기당 평균 점수 + 괄호 %)였다. 라벨 "데미지"는 그대로 두고(지적: "데미지 라벨 빠졌옹") 값 앞에 "평균의"를 흐리게 단다.
+ *  배수가 없는(데미지 없는 옛 경기뿐) 사람은 null → "데미지 –". */
 function dmgOf(stats?: MemberStats): { dealt: string; taken: string } | null {
   const d = stats?.dmgDealtRel;
   const t = stats?.dmgTakenRel;
@@ -264,9 +265,10 @@ export default function MemberStatRow({
             <Num value={stats.avgApm} />
           </span>
           <span className="scr-statcard-sum-item" title="준(녹색)/입은(붉은색) 데미지 — 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
-            <span className="scr-statcard-sum-label">{dmg ? "평균의" : "데미지"}</span>
+            <span className="scr-statcard-sum-label">데미지</span>
             {dmg ? (
               <span className="scr-stat-record-num-v scr-stat-dmg">
+                <span className="scr-stat-dmg-lead">평균의</span>
                 <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
                 <span className="scr-stat-dmg-sep">/</span>
                 <span className="scr-stat-dmg-taken">{dmg.taken}</span>
