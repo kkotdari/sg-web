@@ -183,26 +183,17 @@ function kdOf(stats?: MemberStats): string | null {
   return (k / Math.max(1, d)).toFixed(2);
 }
 
-/** 980 → "980" · 1234 → "1.2k" · 12345 → "12k". 데미지는 한 판에 수천~수만이라 천 단위로 줄이고, 만 단위부터는 소수도 뗀다(폰 한 줄). */
-function fmtK(v: number): string {
-  if (v >= 10000) return `${Math.round(v / 1000)}k`;
-  return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`;
-}
-
-/** 준·입은 데미지 — **경기 평균 대비 %**(그 경기에서 오간 데미지를 참가자 수로 나눈 '평균 선수'가 100 · 경기마다 내어 평균).
- *  판 수·경기 길이·초반 공백·팀 인원이 다 지워져 많이 한 사람이 유리하지 않다(요청: "좀더 공평하게"). 분당은 초반 공백 탓에 짧은
- *  경기만 한 사람이 불리해 안 쓴다. 경기당 평균 점수(유닛+건물 · 체력+실드)는 title 로만 남긴다. 새 덤퍼로 구운 경기만 안다. */
-/** 한 칸 "12k(125%)/9.8k(75%)" — 앞은 경기당 평균 점수, 괄호는 경기 평균 대비 %(요청: "N(N%)/M(N%) 이렇게 간단하게").
- *  비율이 없는(전체가 0인) 경기뿐이면 괄호를 뺀다. */
+/** 준·입은 데미지 — **그 경기 참가자 평균의 몇 배**인가(유닛+건물 · 체력+실드). API 가 조회 때 내 합 ÷ 그 경기들의 '평균 선수' 합으로
+ *  센다(dmgDealtRel·dmgTakenRel · 100 = 1.0배) — 판 수·경기 길이·초반 공백·팀 인원이 다 지워져 많이 한 사람이 유리하지 않다(요청: "좀더
+ *  공평하게"). 분당은 초반 공백 탓에 짧은 경기만 한 사람이 불리해 안 쓴다. 새 덤퍼로 구운 경기만 안다.
+ *  화면은 **수치 없이 배수 글귀만** "평균의 1.1배 입힘 / 0.8배 입음"(요청: "수치는 빼고 … 이런 식으로") — 한때 "12k(125%)/9.8k(75%)"
+ *  (경기당 평균 점수 + 괄호 %)였다. 배수가 없는(데미지 없는 옛 경기뿐) 사람은 null → 칸은 "데미지 –". */
 function dmgOf(stats?: MemberStats): { dealt: string; taken: string } | null {
-  const n = stats?.dmgPlays;
-  const parts = [stats?.dmgDealtUnit, stats?.dmgDealtBldg, stats?.dmgTakenUnit, stats?.dmgTakenBldg];
-  if (!n || !parts.every((v): v is number => typeof v === "number")) return null;
-  const pct = (v: number | null | undefined): string => (typeof v === "number" ? `(${Math.round(v)}%)` : "");
-  return {
-    dealt: `${fmtK((parts[0] + parts[1]) / n)}${pct(stats?.dmgDealtRel)}`,
-    taken: `${fmtK((parts[2] + parts[3]) / n)}${pct(stats?.dmgTakenRel)}`,
-  };
+  const d = stats?.dmgDealtRel;
+  const t = stats?.dmgTakenRel;
+  if (typeof d !== "number" || typeof t !== "number") return null;
+  const x = (v: number): string => `${(v / 100).toFixed(1)}배`;
+  return { dealt: `${x(d)} 입힘`, taken: `${x(t)} 입음` };
 }
 
 function Record({ stats }: { stats?: MemberStats }) {
@@ -272,8 +263,8 @@ export default function MemberStatRow({
             <span className="scr-statcard-sum-label">APM</span>
             <Num value={stats.avgApm} />
           </span>
-          <span className="scr-statcard-sum-item" title="준(녹색)/입은(붉은색) 데미지 — 경기당 평균 점수(유닛+건물 · 체력+실드) · 괄호는 그 경기 평균 선수 대비 %(100 = 평균)">
-            <span className="scr-statcard-sum-label">데미지</span>
+          <span className="scr-statcard-sum-item" title="준(녹색)/입은(붉은색) 데미지 — 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
+            <span className="scr-statcard-sum-label">{dmg ? "평균의" : "데미지"}</span>
             {dmg ? (
               <span className="scr-stat-record-num-v scr-stat-dmg">
                 <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
