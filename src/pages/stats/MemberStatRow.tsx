@@ -189,14 +189,19 @@ function fmtK(v: number): string {
   return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`;
 }
 
-/** 준·입은 데미지 — **경기당 평균**(유닛+건물 합 · 체력+실드 점수). 여럿이 함께 잡아도 때린 만큼 갈려서 K/D 보다 공정하다.
- *  유닛·건물은 서버가 따로 주지만 화면은 합쳐 보인다(요청 — 나중에 나눌 수 있게). 새 덤퍼로 구운 경기만 더해져 있다. */
-function dmgOf(stats?: MemberStats): { dealt: string; taken: string } | null {
+/** 준·입은 데미지 — **경기 평균 대비 %**(그 경기에서 오간 데미지를 참가자 수로 나눈 '평균 선수'가 100 · 경기마다 내어 평균).
+ *  판 수·경기 길이·초반 공백·팀 인원이 다 지워져 많이 한 사람이 유리하지 않다(요청: "좀더 공평하게"). 분당은 초반 공백 탓에 짧은
+ *  경기만 한 사람이 불리해 안 쓴다. 경기당 평균 점수(유닛+건물 · 체력+실드)는 title 로만 남긴다. 새 덤퍼로 구운 경기만 안다. */
+function dmgOf(stats?: MemberStats): { dealt: string; taken: string; avg: string | null } | null {
+  const dr = stats?.dmgDealtRel;
+  const tr = stats?.dmgTakenRel;
+  if (typeof dr !== "number" || typeof tr !== "number") return null;
   const n = stats?.dmgPlays;
   const parts = [stats?.dmgDealtUnit, stats?.dmgDealtBldg, stats?.dmgTakenUnit, stats?.dmgTakenBldg];
-  if (!n || !parts.every((v): v is number => typeof v === "number")) return null;
-  const [du, db, tu, tb] = parts as number[];
-  return { dealt: fmtK((du + db) / n), taken: fmtK((tu + tb) / n) };
+  const avg = n && parts.every((v): v is number => typeof v === "number")
+    ? `경기당 평균 준 ${fmtK((parts[0] + parts[1]) / n)} · 입은 ${fmtK((parts[2] + parts[3]) / n)}`
+    : null;
+  return { dealt: `${Math.round(dr)}%`, taken: `${Math.round(tr)}%`, avg };
 }
 
 function Record({ stats }: { stats?: MemberStats }) {
@@ -268,11 +273,11 @@ export default function MemberStatRow({
             <span className="scr-statcard-sum-label">APM</span>
             <Num value={stats.avgApm} />
           </span>
-          <span className="scr-statcard-sum-item" title="경기당 평균 준 데미지 — 유닛+건물 · 체력+실드 점수">
+          <span className="scr-statcard-sum-item" title={`준 데미지 — 그 경기 평균 선수 대비(100 = 평균)${dmg?.avg ? ` · ${dmg.avg}` : ""}`}>
             <span className="scr-statcard-sum-label">준데미지</span>
             <Num value={dmg?.dealt ?? null} />
           </span>
-          <span className="scr-statcard-sum-item" title="경기당 평균 입은 데미지 — 유닛+건물 · 체력+실드 점수">
+          <span className="scr-statcard-sum-item" title={`입은 데미지 — 그 경기 평균 선수 대비(100 = 평균)${dmg?.avg ? ` · ${dmg.avg}` : ""}`}>
             <span className="scr-statcard-sum-label">입은데미지</span>
             <Num value={dmg?.taken ?? null} />
           </span>

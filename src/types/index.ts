@@ -218,6 +218,10 @@ export interface MemberStats {
   dmgTakenUnit?: number | null;
   dmgTakenBldg?: number | null;
   dmgPlays?: number | null;
+  /** 경기 평균 대비 %(준·입은)의 경기별 평균 — 그 경기의 '평균 선수'가 100. 판 수·길이·팀 인원이 지워진 공평한 자. */
+  dmgDealtRel?: number | null;
+  dmgTakenRel?: number | null;
+  dmgRelPlays?: number | null;
 }
 
 export interface MemberStatsEntry {
