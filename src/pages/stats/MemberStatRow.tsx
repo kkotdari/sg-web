@@ -267,11 +267,11 @@ export default function MemberStatRow({
             <Num value={stats.avgApm} />
           </span>
           <span className="scr-statcard-sum-item" title="경기당 평균 준 데미지 — 유닛+건물 · 체력+실드 점수">
-            <span className="scr-statcard-sum-label">준 데미지</span>
+            <span className="scr-statcard-sum-label">준데미지</span>
             <Num value={dmg?.dealt ?? null} />
           </span>
           <span className="scr-statcard-sum-item" title="경기당 평균 입은 데미지 — 유닛+건물 · 체력+실드 점수">
-            <span className="scr-statcard-sum-label">입은 데미지</span>
+            <span className="scr-statcard-sum-label">입은데미지</span>
             <Num value={dmg?.taken ?? null} />
           </span>
           {SHOW_KD && (
