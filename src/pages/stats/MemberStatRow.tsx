@@ -194,7 +194,7 @@ function dmgOf(stats?: MemberStats): { dealt: string; taken: string } | null {
   const t = stats?.dmgTakenRel;
   if (typeof d !== "number" || typeof t !== "number") return null;
   const x = (v: number): string => `${(v / 100).toFixed(1)}배`;
-  return { dealt: `${x(d)} 입힘`, taken: `${x(t)} 입음` };
+  return { dealt: `${x(d)} 딜`, taken: `${x(t)} 피해` };
 }
 
 function Record({ stats }: { stats?: MemberStats }) {
@@ -264,8 +264,8 @@ export default function MemberStatRow({
             <span className="scr-statcard-sum-label">APM</span>
             <Num value={stats.avgApm} />
           </span>
-          <span className="scr-statcard-sum-item" title="준(녹색)/입은(붉은색) 데미지 — 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
-            <span className="scr-statcard-sum-label">데미지</span>
+          <span className="scr-statcard-sum-item" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
+            {/* 라벨 "데미지"는 걷었다(2026-10, 요청: "데미지 없애고 평균의 n배 딜 / n배 피해") — 딜·피해 두 낱말이 곧 라벨이다. 값이 없을 때만 "딜/피해 –". */}
             {dmg ? (
               <span className="scr-stat-record-num-v scr-stat-dmg">
                 <span className="scr-stat-dmg-lead">평균의</span>
@@ -273,7 +273,7 @@ export default function MemberStatRow({
                 <span className="scr-stat-dmg-sep">/</span>
                 <span className="scr-stat-dmg-taken">{dmg.taken}</span>
               </span>
-            ) : <Num value={null} />}
+            ) : <><span className="scr-statcard-sum-label">딜/피해</span><Num value={null} /></>}
           </span>
           {SHOW_KD && (
             <span className="scr-statcard-sum-item">
