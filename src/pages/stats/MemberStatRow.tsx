@@ -230,8 +230,8 @@ export default function MemberStatRow({
 }: MemberStatRowProps) {
   const openMemberProfile = useAppStore((s) => s.openMemberProfile);
   const [photoOpen, setPhotoOpen] = useState(false);
-  /* 폰은 아바타 34(global.css 폰 규칙과 같은 수 — 글자 아바타의 머리글자 크기가 size 를 따르므로 CSS 만으론 안 된다) · 닉네임은
-     **네 글자까지만**(요청: "말줄임표 없이 4글자까지 표시") — 칸이 네 글자 폭으로 고정돼 스탯 자리가 이름 길이와 무관하다. 전체 이름은 title 로. */
+  /* 폰 닉네임은 **네 글자까지만**(요청: "말줄임표 없이 4글자까지 표시") — 칸이 네 글자 폭(global.css 64px)으로 고정돼 스탯 자리가
+     이름 길이와 무관하다. 전체 이름은 title 로. 아바타는 PC·폰 같은 32. */
   const isMobile = useIsMobile();
   const nick = isMobile ? Array.from(member.nickname).slice(0, 4).join("") : member.nickname;
   const kd = kdOf(stats);
@@ -252,7 +252,7 @@ export default function MemberStatRow({
           type="button" className="scr-stat-avatar-btn"
           onClick={() => setPhotoOpen(true)} aria-label={`${member.nickname} 사진 보기`}
         >
-          <Avatar member={member} size={isMobile ? 34 : 32} />
+          <Avatar member={member} size={32} />
         </button>
         <button
           type="button" className="scr-stat-name-btn" title={member.nickname}
@@ -279,7 +279,9 @@ export default function MemberStatRow({
             <span className="scr-statcard-sum-label">데미지</span>
             {dmg ? (
               <span className="scr-stat-record-num-v scr-stat-dmg">
-                <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>/<span className="scr-stat-dmg-taken">{dmg.taken}</span>
+                <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
+                <span className="scr-stat-dmg-sep">/</span>
+                <span className="scr-stat-dmg-taken">{dmg.taken}</span>
               </span>
             ) : <Num value={null} />}
           </span>

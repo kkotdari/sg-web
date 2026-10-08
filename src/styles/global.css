@@ -1195,17 +1195,17 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard-sum-item { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; }
 .scr-statcard-sum-paren { display: inline; color: var(--muted); white-space: nowrap; }
 .scr-statcard-sum-label {
-  font-size: var(--fs-9); font-weight: 700; color: var(--muted); letter-spacing: 0.03em; white-space: nowrap;
+  /* 13 → 11px — 라벨만 더 줄인다(요청 · 폰·PC · 위아래 줄 공통). 값은 14px 그대로. */
+  font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap;
 }
 .scr-statcard .scr-stat-avatar-btn .scr-avatar { width: 32px !important; height: 32px !important; }
-/* 경기수·승률(첫 항목)보다 나머지(APM·준·입은 데미지)는 글자 한 단계 작게(요청 · 폰·PC 공통) — 값 14 → 13 · 라벨·단위 13 → 12. */
-.scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-stat-record-num-v { font-size: 13px; }
-.scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-statcard-sum-label,
-.scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-stat-record-num-unit { font-size: 12px; }
+/* 위아래 줄의 값은 같은 크기다(요청: "분수가 아니라 나란히 놓는 것뿐이니까 위아래줄 크기 다시 같게") — 한때 둘째 줄만 한 단계
+   작았다(값 13 · 라벨 12). 대신 라벨만 공통으로 줄인다(아래 .scr-statcard-sum-label 11px). */
 /* PC 닉네임 칸은 고정 폭(10em = 200px) — 카드마다 스탯이 같은 자리에서 시작한다(요청). 넘치는 이름은 말줄임. 폰은 아래 72px 규칙이 덮는다. */
 .scr-statcard .scr-stat-name-btn { text-align: left; font-weight: 700; flex: none; width: 10em; }
 /* 데미지 한 칸 "12k(125%)/9.8k(75%)" — 준은 녹색 · 입은은 붉은색(괄호 %까지), 가운데 / 는 글자색 그대로. */
 .scr-stat-dmg { white-space: nowrap; }
+.scr-stat-dmg-sep { margin: 0 2px; color: var(--muted); }   /* / 양옆 한 뼘(요청) — 분수가 아니라 나란히 놓인 두 값이다 */
 .scr-stat-dmg-dealt { color: var(--dmg-dealt); }
 .scr-stat-dmg-taken { color: var(--dmg-taken); }
 
@@ -1245,18 +1245,17 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   /* 아바타·닉네임은 옆의 두 줄 키에 맞춰 키우고 세로 가운데(요청: "아바타와 닉네임은 크게 해서 옆의 두줄과 맞게하고 세로 가운데 정렬").
      머리는 한 줄로 못 박는다(nowrap) — 좁으면 두 줄 묶음이 제 안에서 접히고 긴 닉네임은 말줄임이다. 아바타 40 은 TSX 가 같은 수를 넘긴다. */
   .scr-statcard-head { align-items: center; flex-wrap: nowrap; gap: 6px; }
-  /* 아바타 34 · 닉네임 18px 는 **네 글자 고정 칸**(72px · 넘치는 글자는 TSX 가 네 글자에서 자른다 — 말줄임표 없이)이라 스탯 묶음의
-     자리가 이름 길이와 무관하다(요청: "닉네임 길이에 따라 스탯 위치 안변하게 자리 고정"). 두 줄 묶음은 **오른쪽 맞춤**(요청) · 사이 여백 5 ·
-     라벨-값 2 · 라벨 자간 0 — 393 폭에서 둘째 줄(APM·준·입은 데미지)이 한 줄로 선다(실측 ≈234 ≤ 243). 더 좁은 폰은 둘째 줄이 접힌다. */
+  /* 아바타 32 · 닉네임 16px 는 **네 글자 고정 칸**(64px · 넘치는 글자는 TSX 가 네 글자에서 자른다 — 말줄임표 없이)이라 스탯 묶음의
+     자리가 이름 길이와 무관하다(요청: "닉네임 길이에 따라 스탯 위치 안변하게 자리 고정"). 두 줄 묶음은 **오른쪽 맞춤**(요청).
+     위아래 줄의 값이 같은 14px 이 되면서(요청) 둘째 줄 "APM 184 · 데미지 12k(125%) / 9.8k(75%)"가 393 폭에 들려면 왼쪽을 이만큼
+     죄어야 했다(아바타 34 → 32 · 이름 18/72 → 16/64 · 항목 사이 12 → 8). 더 좁은 폰은 둘째 줄이 접힌다. */
   .scr-statcard-head > .scr-stat-name-btn {
-    font-size: 18px; flex: none; width: 72px; box-sizing: content-box; padding: 2px 0; margin: -2px 0; overflow: visible;
+    font-size: 16px; flex: none; width: 64px; box-sizing: content-box; padding: 2px 0; margin: -2px 0; overflow: visible;
   }
-  .scr-statcard .scr-stat-avatar-btn .scr-avatar { width: 34px !important; height: 34px !important; }
-  /* 항목 사이 12 · 라벨-값 4 — 데미지가 한 칸이 되어 자리가 남아 넓혔다(요청: "항목별로 갭을 좀 더 … 너무 붙어있어서") · 실측 233 ≤ 243. */
-  .scr-statcard-head > .scr-statcard-sum { flex: 1 1 auto; min-width: 0; column-gap: 12px; justify-content: flex-end; text-align: right; }
+  /* 항목 사이 8 · 라벨-값 4(요청: "항목별로 갭을 좀 더 … 너무 붙어있어서" — 값이 14px 로 돌아와 12 는 안 든다). */
+  .scr-statcard-head > .scr-statcard-sum { flex: 1 1 auto; min-width: 0; column-gap: 8px; justify-content: flex-end; text-align: right; }
   .scr-statcard-sum > .scr-statcard-sum-item:first-child { justify-content: flex-end; }
   .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) { gap: 4px; }
-  .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-statcard-sum-label { letter-spacing: 0; }
   .scr-statcard-deck { padding-left: 8px; padding-right: 8px; }
   .scr-statcard .scr-stat-mix-row > * { padding-left: 6px; padding-right: 6px; }
 }
