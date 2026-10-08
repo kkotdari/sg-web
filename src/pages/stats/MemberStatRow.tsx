@@ -3,7 +3,6 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
-import { useIsMobile } from "../../hooks/useIsMobile";
 import { cx } from "../../utils/format";
 import { topEntries, type TruthMix, type TopEntry } from "../../utils/statsMix";
 import { TECH_KO, UNIT_KO } from "../../utils/replayNames";
@@ -230,10 +229,8 @@ export default function MemberStatRow({
 }: MemberStatRowProps) {
   const openMemberProfile = useAppStore((s) => s.openMemberProfile);
   const [photoOpen, setPhotoOpen] = useState(false);
-  /* 폰 닉네임은 **네 글자까지만**(요청: "말줄임표 없이 4글자까지 표시") — 칸이 네 글자 폭(global.css 64px)으로 고정돼 스탯 자리가
-     이름 길이와 무관하다. 전체 이름은 title 로. 아바타는 PC·폰 같은 32. */
-  const isMobile = useIsMobile();
-  const nick = isMobile ? Array.from(member.nickname).slice(0, 4).join("") : member.nickname;
+  /* 닉네임은 PC·폰 다 **전체**다(2026-10, 요청: "4글자로 하지 말고 다 보여주기" — 한때 폰은 네 글자 고정 칸이었다). 폰은 스탯이 제 줄로
+     내려가(global.css 폰 규칙) 이름 옆에 자리를 다툴 것이 없다. 너무 긴 이름만 말줄임(.scr-stat-name-btn). 아바타는 PC·폰 같은 32. */
   const kd = kdOf(stats);
   const dmg = dmgOf(stats);
   const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
@@ -258,7 +255,7 @@ export default function MemberStatRow({
           type="button" className="scr-stat-name-btn" title={member.nickname}
           onClick={() => openMemberProfile(member.id)}
         >
-          {nick}
+          {member.nickname}
         </button>
         <div className="scr-statcard-sum">
           <span className="scr-statcard-sum-item">
