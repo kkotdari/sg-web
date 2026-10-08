@@ -1252,9 +1252,10 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
     font-size: 18px; flex: none; width: 72px; box-sizing: content-box; padding: 2px 0; margin: -2px 0; overflow: visible;
   }
   .scr-statcard .scr-stat-avatar-btn .scr-avatar { width: 34px !important; height: 34px !important; }
-  .scr-statcard-head > .scr-statcard-sum { flex: 1 1 auto; min-width: 0; column-gap: 5px; justify-content: flex-end; text-align: right; }
+  /* 항목 사이 12 · 라벨-값 4 — 데미지가 한 칸이 되어 자리가 남아 넓혔다(요청: "항목별로 갭을 좀 더 … 너무 붙어있어서") · 실측 233 ≤ 243. */
+  .scr-statcard-head > .scr-statcard-sum { flex: 1 1 auto; min-width: 0; column-gap: 12px; justify-content: flex-end; text-align: right; }
   .scr-statcard-sum > .scr-statcard-sum-item:first-child { justify-content: flex-end; }
-  .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) { gap: 2px; }
+  .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) { gap: 4px; }
   .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-statcard-sum-label { letter-spacing: 0; }
   .scr-statcard-deck { padding-left: 8px; padding-right: 8px; }
   .scr-statcard .scr-stat-mix-row > * { padding-left: 6px; padding-right: 6px; }
