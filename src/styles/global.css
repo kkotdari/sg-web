@@ -1234,12 +1234,16 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-statcard-sum > .scr-statcard-sum-item:first-child { flex-basis: 100%; }
   /* 아바타·닉네임은 옆의 두 줄 키에 맞춰 키우고 세로 가운데(요청: "아바타와 닉네임은 크게 해서 옆의 두줄과 맞게하고 세로 가운데 정렬").
      머리는 한 줄로 못 박는다(nowrap) — 좁으면 두 줄 묶음이 제 안에서 접히고 긴 닉네임은 말줄임이다. 아바타 40 은 TSX 가 같은 수를 넘긴다. */
-  .scr-statcard-head { align-items: center; flex-wrap: nowrap; gap: 6px 6px; }
-  /* 닉네임 22px · 제 폭을 지킨다(flex none) — 다섯 글자(5.2em)를 넘으면 말줄임. 두 줄 묶음은 사이 여백 6 · 라벨-값 2 · 라벨 자간 0 으로
-     죄어 393 폭에서 세 글자 이름 옆에서도 둘째 줄(APM·준·입은 데미지)이 한 줄로 선다(실측 ≈232 ≤ 241). 더 긴 이름은 둘째 줄이 접힌다. */
-  .scr-statcard-head > .scr-stat-name-btn { font-size: 22px; flex: none; max-width: 5.2em; }
-  .scr-statcard .scr-stat-avatar-btn .scr-avatar { width: 40px !important; height: 40px !important; }
-  .scr-statcard-head > .scr-statcard-sum { flex: 1 1 auto; min-width: 0; column-gap: 6px; }
+  .scr-statcard-head { align-items: center; flex-wrap: nowrap; gap: 6px; }
+  /* 아바타 34 · 닉네임 18px 는 **네 글자 고정 칸**(72px · 넘치는 글자는 TSX 가 네 글자에서 자른다 — 말줄임표 없이)이라 스탯 묶음의
+     자리가 이름 길이와 무관하다(요청: "닉네임 길이에 따라 스탯 위치 안변하게 자리 고정"). 두 줄 묶음은 **오른쪽 맞춤**(요청) · 사이 여백 5 ·
+     라벨-값 2 · 라벨 자간 0 — 393 폭에서 둘째 줄(APM·준·입은 데미지)이 한 줄로 선다(실측 ≈234 ≤ 243). 더 좁은 폰은 둘째 줄이 접힌다. */
+  .scr-statcard-head > .scr-stat-name-btn {
+    font-size: 18px; flex: none; width: 72px; box-sizing: content-box; padding: 2px 0; margin: -2px 0; overflow: visible;
+  }
+  .scr-statcard .scr-stat-avatar-btn .scr-avatar { width: 34px !important; height: 34px !important; }
+  .scr-statcard-head > .scr-statcard-sum { flex: 1 1 auto; min-width: 0; column-gap: 5px; justify-content: flex-end; text-align: right; }
+  .scr-statcard-sum > .scr-statcard-sum-item:first-child { justify-content: flex-end; }
   .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) { gap: 2px; }
   .scr-statcard-sum > .scr-statcard-sum-item:not(:first-child) .scr-statcard-sum-label { letter-spacing: 0; }
   .scr-statcard-deck { padding-left: 8px; padding-right: 8px; }

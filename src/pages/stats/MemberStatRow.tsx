@@ -223,8 +223,10 @@ export default function MemberStatRow({
 }: MemberStatRowProps) {
   const openMemberProfile = useAppStore((s) => s.openMemberProfile);
   const [photoOpen, setPhotoOpen] = useState(false);
-  /* 폰은 아바타를 40 으로(옆 두 줄 묶음의 키 · global.css 폰 규칙과 같은 수) — 글자 아바타의 머리글자 크기가 size 를 따르므로 CSS 만으론 안 된다. */
+  /* 폰은 아바타 34(global.css 폰 규칙과 같은 수 — 글자 아바타의 머리글자 크기가 size 를 따르므로 CSS 만으론 안 된다) · 닉네임은
+     **네 글자까지만**(요청: "말줄임표 없이 4글자까지 표시") — 칸이 네 글자 폭으로 고정돼 스탯 자리가 이름 길이와 무관하다. 전체 이름은 title 로. */
   const isMobile = useIsMobile();
+  const nick = isMobile ? Array.from(member.nickname).slice(0, 4).join("") : member.nickname;
   const kd = kdOf(stats);
   const dmg = dmgOf(stats);
   const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
@@ -243,13 +245,13 @@ export default function MemberStatRow({
           type="button" className="scr-stat-avatar-btn"
           onClick={() => setPhotoOpen(true)} aria-label={`${member.nickname} 사진 보기`}
         >
-          <Avatar member={member} size={isMobile ? 40 : 32} />
+          <Avatar member={member} size={isMobile ? 34 : 32} />
         </button>
         <button
-          type="button" className="scr-stat-name-btn"
+          type="button" className="scr-stat-name-btn" title={member.nickname}
           onClick={() => openMemberProfile(member.id)}
         >
-          {member.nickname}
+          {nick}
         </button>
         <div className="scr-statcard-sum">
           <span className="scr-statcard-sum-item">
