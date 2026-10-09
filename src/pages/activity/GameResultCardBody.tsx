@@ -107,7 +107,7 @@ function GameResultOutcomeDialog({ gameResult, memberOf, onChanged, onClose }: {
 }
 
 export function GameResultActionsMenu({
-  gameResult, canDelete, isAdmin = false, memberOf, onDelete, onChanged,
+  gameResult, canDelete, isAdmin = false, memberOf, onDelete, onChanged, showNo = false,
 }: {
   gameResult: GameResult;
   canDelete: boolean;
@@ -115,6 +115,8 @@ export function GameResultActionsMenu({
   memberOf: (id: string) => Member | undefined;
   onDelete: (m: GameResult) => void;
   onChanged: (m: GameResult) => void;
+  /** 메뉴 첫 줄에 경기 번호를 적는다(게임 상세 페이지 — 제목 줄에서 번호를 걷은 자리 · ActivityScreen ★). */
+  showNo?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [outcomeOpen, setOutcomeOpen] = useState(false);
@@ -183,6 +185,7 @@ export function GameResultActionsMenu({
           className="scr-menu-pop-drop scr-activity-post-menu-drop scr-scroll" ref={dropRef} role="menu"
           onClick={(e) => e.stopPropagation()}
         >
+          {showNo && <div className="scr-menu-pop-head" role="presentation">경기 {gameResult.matchNo || gameResult.id}</div>}
           {items.map((it) => (
             <button
               key={it.key} type="button" role="menuitem"

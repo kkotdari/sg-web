@@ -189,10 +189,6 @@ export function sessionDateOf(it: GameResultItem): string {
   const dd = `${d.getDate()}`.padStart(2, "0");
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
-function gamePageTitle(g: GameResult): string {
-  return `${g.matchNo || g.id} 게임`;
-}
-
 function detailIdOf(it: DisplayItem): number | null {
   return it.kind === "challenge" ? it.challenge.id
     : it.kind === "schedule" ? it.schedule.id
@@ -1674,14 +1670,14 @@ export default function ActivityScreen() {
       {gameItem && (
         <div className="scr-activity-group-page">
           <div className="scr-v2-toolbar scr-v2-toolbar-crumb">
-            <div className="scr-v2-toolbar-title-row scr-crumb">
+            {/* ★ 제목 줄에 경기 번호 제목이 없다(2026-10-09, 지적: "게임 상세에서 결국 타이틀이 두 줄이 됐어 — 경기 번호는 케밥 안으로") — 옛
+                <h1>"{번호} 게임"</h1> 옆에 머리 칸(시각·맵·승패·등록자)이 서면 폰에서 머리 칸이 제 줄로 꺾여 두 줄이었다. 이제 머리 칸이 곧
+                제목 줄이고(.scr-crumb-notitle — 맵 이름이 굵다), 경기 번호는 오른쪽 케밥 메뉴의 첫 줄(GameResultActionsMenu showNo)에 선다. */}
+            <div className="scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle">
               <button type="button" className="scr-crumb-back" onClick={gotoGameList}>
                 <ArrowLeft size={14} />
                 <span>게임</span>
               </button>
-              <h1 className="scr-title scr-crumb-title">
-                {gameItem.kind === "gameResult" ? gamePageTitle(gameItem.gameResult) : ""}
-              </h1>
               <div className="scr-crumb-meta" ref={setGameHeadSlot9} />
             </div>
             {gameItem.kind === "gameResult" && (
@@ -1693,6 +1689,7 @@ export default function ActivityScreen() {
                   memberOf={memberOf}
                   onDelete={setGamePageDelete}
                   onChanged={upsertGameResult}
+                  showNo
                 />
               </div>
             )}
@@ -1715,6 +1712,7 @@ export default function ActivityScreen() {
                       memberOf={memberOf}
                       onDelete={setGamePageDelete}
                       onChanged={upsertGameResult}
+                      showNo
                     />
                   )}
                 />

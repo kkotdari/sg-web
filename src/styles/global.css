@@ -793,6 +793,11 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   transition: color .12s, border-radius .12s;
 }
 .scr-menu-pop-opt-label { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; }
+/* 메뉴 첫 줄의 **읽기 전용 머리**(경기 번호 · GameResultActionsMenu showNo · 2026-10-09) — 선택지와 같은 안쪽 여백, 작은 흐린 글자, 밑에 실금. */
+.scr-menu-pop-head {
+  padding: 6px 12px 5px; margin-bottom: 2px; border-bottom: 1px solid var(--line);
+  font-size: var(--fs-micro); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; cursor: default;
+}
 .scr-menu-pop-opt-active { color: var(--text); font-weight: 700; }
 .scr-menu-pop-drop-inline .scr-menu-pop-opt { -webkit-tap-highlight-color: transparent; }
 @media (hover: hover) {
@@ -6892,6 +6897,12 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 }
 .scr-crumb-meta:empty { display: none; }
 .scr-crumb-meta::before { content: "·"; color: var(--dim); }
+/* 제목 없는 제목 줄(.scr-crumb-notitle · 게임 상세 · 2026-10-09 — ActivityScreen ★): 머리 칸이 곧 제목이라 앞의 점은 없고 글자는 캡션 크기(맵 이름이
+   굵어 제목 노릇) · 폰에서도 제 줄로 꺾지 않고 뒤로 가기 단추와 한 줄(아래 미디어 블록의 flex 100% 를 이긴다 — 무게 (0,2,0)). */
+.scr-crumb-notitle .scr-crumb-meta::before { content: none; }
+/* ⚠ basis 0 — 줄바꿈(flex-wrap)은 **기본 크기**(auto = 내용 폭)로 가르므로 basis auto 면 폰에서 머리 칸이 줄어들기 전에 둘째 줄로 떨어진다(실측 하네스). */
+.scr-crumb-notitle .scr-crumb-meta { flex: 1 1 0%; font-size: var(--fs-caption); }
+.scr-v2-toolbar-title-row.scr-crumb.scr-crumb-notitle:has(> .scr-crumb-meta:not(:empty)) { flex-wrap: nowrap; }
 .scr-game-crumb-when { font-variant-numeric: tabular-nums; }
 .scr-game-crumb-sep { color: var(--dim); }
 .scr-game-crumb-map { color: var(--text); font-weight: 700; }
@@ -6907,6 +6918,9 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
   .scr-v2-toolbar-title-row.scr-crumb:has(> .scr-crumb-meta:not(:empty)) { flex-wrap: wrap; row-gap: 3px; }
   .scr-crumb-meta { flex: 1 0 100%; }
   .scr-crumb-meta::before { content: none; }
+  /* 폰은 옛 머리 칸 글자 크기 · 틈 5 — 390px 한 줄에 "어제 00:19 · 빨무 19분 · [승패 배지 자리(보이기 전에도 자리는 차지)] · ● 정구 등록"이 다 들어야 한다
+     (실측 하네스: 캡션 크기는 "정…", 미디엄 크기에 틈 6 은 "정구 …" · 틈 5 에서 다 든다 — 긴 닉네임은 종전대로 말줄임). */
+  .scr-crumb-notitle .scr-crumb-meta { font-size: var(--fs-micro); gap: 5px; }
   .scr-v2-toolbar-crumb:has(.scr-crumb-meta:not(:empty)) > .scr-v2-toolbar-actions { align-self: start; }
 }
 .scr-extshare-adm-head {
