@@ -271,7 +271,6 @@ export default function MemberStatRow({
               </span>
             ) : <><span className="scr-statcard-sum-label">딜/피해</span><Num value={null} /></>}
           </span>
-          {/* APM 은 데미지 **뒤**(2026-10-09, 요청: "개인 카드 타이틀 APM 과 데미지 순서 교체") — 총·승률 | 딜/피해 | APM. */}
           <span className="scr-statcard-sum-item">
             <span className="scr-statcard-sum-label">APM</span>
             <Num value={stats.avgApm} />

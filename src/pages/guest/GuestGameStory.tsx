@@ -162,7 +162,6 @@ export default function GuestGameStory({ gameResult, team1, team2, result, membe
         <span className="scr-game-crumb-when">{stampText}</span>
         {mapMeta && <span className="scr-game-crumb-sep" aria-hidden>·</span>}
         {mapMeta}
-        {/* 승패 배지는 제목 줄에서 걷었다(2026-10-09, 요청: "타이틀에 결과 표시 없애기") — 이긴 편은 재생기 독 로스터의 닉네임 칩 트로피가 말한다. 카드의 맵 줄(.scr-story-maphead)에는 그대로. */}
         {gameResult.createdBy && (
           <span className="scr-game-crumb-by">
             <Avatar
