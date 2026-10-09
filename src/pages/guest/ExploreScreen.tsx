@@ -234,6 +234,8 @@ export default function ExploreScreen() {
     document.title = open ? `${gameTitleOf(open)} — ${SITE}` : current ? `${current.name} — ${SITE}` : `${TITLE} — ${SITE}`;
   }, [open, current]);
 
+  /* 게임 제목 줄의 머리 칸 — GuestGameStory 가 시각·맵·승패·등록자를 여기에 포털로 그린다(2026-10-09). */
+  const [headSlot9, setHeadSlot9] = useState<HTMLDivElement | null>(null);
   return (
     <div className={open ? "scr-screen scr-extshare-main is-play" : "scr-screen scr-extshare-main"}>
       {listId === null ? (
@@ -250,6 +252,7 @@ export default function ExploreScreen() {
               <span>{open ? "목록" : "전체 목록"}</span>
             </button>
             <h1 className="scr-title scr-crumb-title">{open ? gameTitleOf(open) : current?.name ?? TITLE}</h1>
+            {open && <div className="scr-crumb-meta" ref={setHeadSlot9} />}
           </div>
         </div>
       )}
@@ -313,6 +316,7 @@ export default function ExploreScreen() {
       {open && (
         <div className="scr-extshare-detail">
           <GuestGameStory
+            headSlot={headSlot9}
             gameResult={open} team1={open.team1} team2={open.team2} result={open.result}
             memberOf={memberOf} extShare
           />

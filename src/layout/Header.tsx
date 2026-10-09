@@ -127,7 +127,7 @@ export default function Header({
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
-  const { railOpen, railEnter, railLeave } = useRail();
+  const { railOpen, railEnter, railEnterSoon, railLeave } = useRail();
   const profileAnchorRef = useRef<HTMLButtonElement>(null);
   const profileDropRef = useRef<HTMLDivElement>(null);
   const isNarrowHeader = useIsNarrow(1159);
@@ -164,7 +164,7 @@ export default function Header({
     <>
     <div
       className={cx("scr-rail-hotzone", railOpen && "scr-rail-hotzone-open")}
-      onPointerEnter={railEnter} onPointerLeave={railLeave} onClick={railEnter} aria-hidden
+      onPointerEnter={railEnterSoon} onPointerLeave={railLeave} onClick={railEnter} aria-hidden
     />
     <header
       className={cx("scr-header", railOpen && "scr-header-rail-open")}
@@ -242,6 +242,14 @@ export default function Header({
             onPointerUp={onDrawerPointerEnd}
             onPointerCancel={onDrawerPointerEnd}
           >
+            {/* 로고 — 모바일 머리띠의 로고 자리를 걷고(2026-10-09, 요청) 서랍 머리로 옮겼다. 누르면 홈. */}
+            <button
+              type="button" className="scr-drawer-brand"
+              onClick={() => go("activity")}
+              aria-label="홈으로"
+            >
+              <BrandLogo light={lightTheme} />
+            </button>
             <div className="scr-drawer-user">
               <Avatar member={user} size={48} />
               <div className="scr-drawer-user-name">{user.nickname}</div>

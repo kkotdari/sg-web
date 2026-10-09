@@ -1661,6 +1661,8 @@ export default function ActivityScreen() {
     }
     : null;
 
+  /* 게임 페이지 제목 줄의 머리 칸 — GameResultStory 가 시각·맵·승패·등록자를 여기에 포털로 그린다(2026-10-09). */
+  const [gameHeadSlot9, setGameHeadSlot9] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!gameItem) return undefined;
     document.body.classList.add("scr-gamepage-open");
@@ -1680,6 +1682,7 @@ export default function ActivityScreen() {
               <h1 className="scr-title scr-crumb-title">
                 {gameItem.kind === "gameResult" ? gamePageTitle(gameItem.gameResult) : ""}
               </h1>
+              <div className="scr-crumb-meta" ref={setGameHeadSlot9} />
             </div>
             {gameItem.kind === "gameResult" && (
               <div className="scr-v2-toolbar-actions">
@@ -1698,6 +1701,7 @@ export default function ActivityScreen() {
             <>
               <div className="scr-game-page-card">
                 <GameResultStory
+                  headSlot={gameHeadSlot9}
                   gameResult={gameItem.gameResult}
                   team1={gameItem.gameResult.team1}
                   team2={gameItem.gameResult.team2}

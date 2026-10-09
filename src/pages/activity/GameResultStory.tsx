@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState, type MouseEvent, type PointerEvent } from "react";
 import { formatWhen } from "../../utils/date";
 import { ReplayModule, sceneLinkOf9, type MotionBase } from "scplay";
+import { createPortal } from "react-dom";
 import { api } from "../../api/client";
 import ActivityComments from "./ActivityComments";
 import { gameResultShareContent } from "./gameShare";
@@ -20,7 +21,7 @@ import type { GameResult, GameResultSlot, Member } from "../../types";
 
 export default function GameResultStory({
   gameResult, team1, team2, result, memberOf, highlightMemberIds, highlightTerms, active = true,
-  menu,
+  menu, headSlot = null,
 }: {
   gameResult: GameResult;
   team1: GameResultSlot[];
@@ -31,6 +32,8 @@ export default function GameResultStory({
   highlightTerms?: string[];
   menu?: import("react").ReactNode;
   active?: boolean;
+  /** 페이지 제목 줄의 머리 칸(.scr-crumb-meta) — 있으면 시각·맵·승패·등록자를 거기에 포털로 그린다(게임 페이지). */
+  headSlot?: HTMLElement | null;
 }) {
   const grid = useReplayMap(gameResult.mapHash);
   const detailClose = useContext(GameDetailCloseContext);
@@ -104,7 +107,7 @@ export default function GameResultStory({
     if (!noTruth || !soleViewNow) return;
     showToast("더 이상 리플레이를 재생할 수 없어요.", { kind: "warn" });
   }, [noTruth, soleViewNow]);
-  const showMapLine = showRoster && Boolean(mapName || minutes !== null);
+  const showMapLine = showRoster && !headSlot && Boolean(mapName || minutes !== null);
 
   const stopBubble = {
     onPointerDown: (e: PointerEvent) => e.stopPropagation(),
@@ -144,36 +147,54 @@ export default function GameResultStory({
   }, [gameResult, memberOf]);
   useEffect(() => { preloadKakao(); }, []);
 
+  /* 머리 줄 — 시각 · 맵 이름 길이 · 승패 배지 · 등록자(2026-10-09). 재생기(scplay)의 머리 줄(.scr-story-map-head)을 걷고(요청: "빨간
+     상자 타이틀 부분을 제거해서 화면을 더 확보") 게임 페이지에서는 페이지 제목 줄의 칸(headSlot · .scr-crumb-meta)에 포털로 그린다.
+     칸이 없는 자리(피드 카드·공유 페이지)는 판 위에 맵 이름 한 줄만 둔다 — 시각·등록자는 카드 머리와 아래 등록 줄이 이미 말한다.
+     승패 배지는 **자리는 차지하고 그림만 감춘다**(veil) — 다 본 순간 줄이 뛰지 않게. */
+  const winSide = result === "draw" ? "draw" : o1 === "win" ? 1 : 2;
+  const winBadge = !showRoster && result !== "not_held" && result !== "unknown" ? (
+    <span
+      className={cx("scr-story-win",
+        winSide === "draw" ? "scr-story-win-draw" : winSide === 1 ? "scr-story-win-t1" : "scr-story-win-t2",
+        !revealWin && "scr-story-win-veil")}
+      aria-hidden={!revealWin}
+    >
+      {winLabel}
+    </span>
+  ) : null;
+  const mapMeta = mapName || minutes !== null ? (
+    <span className="scr-game-crumb-map">
+      {mapName}
+      {minutes !== null && <span className="scr-game-crumb-dur">{minutes}분</span>}
+    </span>
+  ) : null;
+  const headMeta = headSlot ? createPortal(
+    <>
+      <span className="scr-game-crumb-when">{stampText}</span>
+      {mapMeta && <span className="scr-game-crumb-sep" aria-hidden>·</span>}
+      {mapMeta}
+      {winBadge}
+      {gameResult.createdBy && (
+        <span className="scr-game-crumb-by">
+          <Avatar
+            member={{
+              id: gameResult.createdBy.id,
+              nickname: gameResult.createdBy.nickname,
+              avatar: memberOf(gameResult.createdBy.id)?.avatar ?? null,
+            }}
+            size={14}
+          />
+          <span>{gameResult.createdBy.nickname} 등록</span>
+        </span>
+      )}
+    </>,
+    headSlot,
+  ) : null;
   const mapBlock = storyMap && (
     <div {...stopBubble}>
       <ReplayModule
         grid={storyMap} endSec={endSecVal}
         bases={bases} teamOfRaw={teamOfRaw} active={active}
-        head={{
-          stamp: stampText,
-          mapName,
-          minutes,
-          win: !showRoster && result !== "not_held" && result !== "unknown"
-            ? {
-              side: result === "draw" ? "draw" : o1 === "win" ? 1 : 2,
-              label: winLabel,
-              veiled: !revealWin,
-            }
-            : null,
-          by: gameResult.createdBy ? (
-            <>
-              <Avatar
-                member={{
-                  id: gameResult.createdBy.id,
-                  nickname: gameResult.createdBy.nickname,
-                  avatar: memberOf(gameResult.createdBy.id)?.avatar ?? null,
-                }}
-                size={16}
-              />
-              <span>{gameResult.createdBy.nickname} 등록</span>
-            </>
-          ) : null,
-        }}
         sceneLink={sceneLink}
         clockKey={String(gameResult.matchNo || gameResult.id)}
         onScrap={scrapScene}
@@ -196,6 +217,7 @@ export default function GameResultStory({
 
   return (
     <div className="scr-story">
+    {headMeta}
       {showRoster && (
         melee ? (
           <div className={cx("scr-roster-matchup", "scr-roster-matchup-melee",
@@ -233,6 +255,13 @@ export default function GameResultStory({
         )
       )}
       {result === "not_held" && <div className="scr-activity-game-result-notheld">미실시</div>}
+    {!showRoster && !headSlot && (mapMeta || winBadge) && (
+      <div className="scr-game-result-trow-map-line scr-game-result-trow-map-meta scr-story-maphead">
+        {mapName && <span className="scr-game-result-trow-map">{mapName}</span>}
+        {minutes !== null && <span className="scr-game-result-trow-dur">({minutes}분)</span>}
+        {winBadge}
+      </div>
+    )}
       {(mapPending || playerWait) && <div className="scr-story-mapwait" aria-hidden />}
       {!showRoster && playerReady && mapBlock}
       {showMapLine && (

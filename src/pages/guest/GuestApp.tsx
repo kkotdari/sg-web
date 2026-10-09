@@ -28,7 +28,7 @@ export default function GuestApp() {
   const exitGuest = useAppStore((s) => s.exitGuest);
   const [screen, setScreen] = useState<ScreenKey>(guestScreenOf);
   const [lightTheme, setLightTheme] = useLightTheme();
-  const { railOpen, railEnter, railLeave } = useRail();
+  const { railOpen, railEnter, railEnterSoon, railLeave } = useRail();
 
   useEffect(() => {
     const s = parseRoute().screen;
@@ -65,7 +65,7 @@ export default function GuestApp() {
       <div id="scroll-root">
         <div
           className={cx("scr-rail-hotzone", railOpen && "scr-rail-hotzone-open")}
-          onPointerEnter={railEnter} onPointerLeave={railLeave} onClick={railEnter} aria-hidden
+          onPointerEnter={railEnterSoon} onPointerLeave={railLeave} onClick={railEnter} aria-hidden
         />
         <header
           className={cx("scr-header", railOpen && "scr-header-rail-open")}
