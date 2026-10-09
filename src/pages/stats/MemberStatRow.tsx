@@ -260,10 +260,6 @@ export default function MemberStatRow({
               </span>
             )}
           </span>
-          <span className="scr-statcard-sum-item">
-            <span className="scr-statcard-sum-label">APM</span>
-            <Num value={stats.avgApm} />
-          </span>
           <span className="scr-statcard-sum-item" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
             {/* 라벨 "데미지"는 걷었다(2026-10, 요청: "데미지 없애고 평균의 n배 딜 / n배 피해") — 딜·피해 두 낱말이 곧 라벨이다. 값이 없을 때만 "딜/피해 –". */}
             {dmg ? (
@@ -274,6 +270,11 @@ export default function MemberStatRow({
                 <span className="scr-stat-dmg-taken">{dmg.taken}</span>
               </span>
             ) : <><span className="scr-statcard-sum-label">딜/피해</span><Num value={null} /></>}
+          </span>
+          {/* APM 은 데미지 **뒤**(2026-10-09, 요청: "개인 카드 타이틀 APM 과 데미지 순서 교체") — 총·승률 | 딜/피해 | APM. */}
+          <span className="scr-statcard-sum-item">
+            <span className="scr-statcard-sum-label">APM</span>
+            <Num value={stats.avgApm} />
           </span>
           {SHOW_KD && (
             <span className="scr-statcard-sum-item">
