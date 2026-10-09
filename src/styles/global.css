@@ -5360,7 +5360,8 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   margin-bottom: var(--card-pad-b);
   --feed-trow-pad-x: 8px;
 }
-@media (min-width: 1160px) { .scr-game-page-card { --feed-trow-pad-x: 0px; } }
+/* PC 는 좌우 패딩 없음(2026-10-09, 요청: "scr-game-page-card pc에서 좌우패딩 제거") — 판이 카드 폭을 다 쓴다. */
+@media (min-width: 1160px) { .scr-game-page-card { --feed-trow-pad-x: 0px; padding-left: 0; padding-right: 0; } }
 .scr-game-page-card > * { margin: 0; }
 .scr-game-page-card .scr-roster-name { font-size: var(--fs-caption); }
 .scr-game-page-card .scr-roster-matchup .scr-roster-side { flex: 1 1 0; }
