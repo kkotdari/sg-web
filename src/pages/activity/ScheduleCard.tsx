@@ -679,7 +679,7 @@ export default function ScheduleCard({
           <ul className="scr-schedule-files">
             {docs.map((f) => (
               <li key={f.url}>
-                <a className="scr-schedule-file-link" href={f.url} download={f.name} target="_blank" rel="noreferrer noopener">
+                <a className="scr-schedule-file-link" href={imgSrc(f.url)} download={f.name} target="_blank" rel="noreferrer noopener">
                   <Paperclip size={13} aria-hidden />
                   <span className="scr-schedule-file-link-name">{f.name}</span>
                   <span className="scr-schedule-file-size">{formatBytes(f.size)}</span>

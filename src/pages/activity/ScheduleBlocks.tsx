@@ -410,7 +410,7 @@ function MediaBlock({
         </button>
       ) : (
         <a
-          className="scr-sb-file" href={block.url} download={block.name}
+          className="scr-sb-file" href={imgSrc(block.url)} download={block.name}
           target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}
         >
           <Paperclip size={13} aria-hidden />
