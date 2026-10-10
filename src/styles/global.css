@@ -5299,6 +5299,12 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   display: inline-flex; align-items: center; gap: 6px;
   margin: 0 5px; font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.04em;
 }
+.scr-activity-row-wl {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 4px 1px; border-radius: 4px; box-sizing: border-box;
+  font-size: var(--fs-caption); font-weight: 800; line-height: 1; letter-spacing: 0; white-space: nowrap;
+  color: var(--btn-fill-text); background: var(--btn-fill-bg); border: 1px solid var(--btn-fill-border);
+}
+.scr-activity-row-name-main > .scr-activity-row-wl { margin-left: 4px; }
 .scr-activity-row-flat { flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .scr-activity-row-play { flex: none; align-self: center; color: #4cc93b; }
 .scr-light-theme .scr-activity-row-play { color: #379a20; }
