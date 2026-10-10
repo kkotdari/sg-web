@@ -1164,9 +1164,14 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   font-size: var(--fs-11); font-weight: 700; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap;
 }
 .scr-clan-race-sum { flex: none; display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.scr-statcard-head.scr-clan-comp-head { align-items: center; flex-wrap: nowrap; justify-content: space-between; }
+.scr-clan-comp-head > .scr-pill-tabs { margin-left: auto; flex: none; height: 28px; background: rgba(255, 255, 255, 0.08); }
+.scr-light-theme .scr-clan-comp-head > .scr-pill-tabs { background: rgba(0, 0, 0, 0.06); }
+.scr-clan-comp-head .scr-pill-tab-btn { font-size: var(--fs-11); }
+.scr-clan-comp-head .scr-pill-tab-btn:not(.scr-pill-tab-btn-active) { color: var(--muted); }
+.scr-clan-comp-box { padding: 4px 12px; }
+.scr-clan-comp-box > .scr-clan-panel-empty { margin: 8px 0; }
 .scr-clan-race-sum + .scr-clan-race-sum { min-width: 6.4em; justify-content: flex-end; }
-.scr-clan-race-stats { display: flex; flex-direction: column; gap: 6px; }
-.scr-clan-race-stats > .scr-statcard-decks { margin-top: 0; }
 
 .scr-clan-decks {
   --fs-9: 13px; --fs-10: 13px; --fs-11: 14px; --fs-micro: 14px; --fs-caption: 16px;
@@ -1188,7 +1193,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 
 .scr-statcard-head { display: flex; align-items: baseline; gap: 6px 10px; min-width: 0; flex-wrap: wrap; }
 .scr-statcard-head > .scr-stat-avatar-btn { align-self: center; }
-.scr-statcard-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.scr-statcard-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.scr-statcard-sum-sep { color: var(--dim); font-weight: 400; }
 .scr-statcard-sum-item { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; }
 .scr-statcard-sum-paren { display: inline; color: var(--muted); white-space: nowrap; }
 .scr-statcard-sum-label {
@@ -1532,15 +1538,15 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   width: 100%; max-width: 92px;
   gap: 1px 6px; align-items: center; line-height: 1.15;
   font-size: var(--fs-11); color: var(--text);
-  font-variant-numeric: tabular-nums; text-align: right; flex: none;
+  font-variant-numeric: tabular-nums; text-align: center; flex: none;
 }
-.scr-stat-upgrades > span { white-space: nowrap; }
+.scr-stat-upgrades > span { white-space: nowrap; justify-self: center; }
 .scr-stat-up-head { color: var(--muted); }
-.scr-stat-up-row { color: var(--muted); text-align: left; overflow: hidden; text-overflow: ellipsis; }
+.scr-stat-up-row { color: var(--muted); text-align: center; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .scr-stat-up-solo, .scr-stat-up-solo-label { margin-top: 5px; }
 .scr-stat-up-solo { grid-column: 2 / -1; }
 .scr-stat-up-note {
-  grid-column: 1 / -1; margin-top: 3px;
+  grid-column: 1 / -1; margin-top: 3px; justify-self: start;
   font-size: var(--fs-9); color: var(--dim); text-align: left; white-space: nowrap;
 }
 
@@ -1769,6 +1775,8 @@ html:not(.scr-light-theme) .scr-stats-list-panel-v2 .scr-stat-name-cell, html:no
 }
 .scr-stats-list-panel-v2 .scr-stat-name-stack { align-items: center; flex: none; min-width: 0; }
 .scr-stats-list-panel-v2 .scr-stat-name-btn { text-align: center; font-size: var(--fs-body); }
+.scr-statcard.scr-clan-statcard { padding-left: 0; padding-right: 0; }
+@media (min-width: 1160px) { .scr-clan-statcard .scr-statcard-head > .scr-stat-name-btn { font-size: var(--fs-body); } }
 .scr-stats-list-panel-v2 .scr-stat-record-item .scr-stat-bar { gap: 1px; }
 .scr-stats-list-panel-v2 .scr-stat-bar-row { gap: 4px; }
 .scr-stats-list-panel-v2 .scr-stat-bar-track-wrap { min-height: 0; height: 18px; }

@@ -2,18 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { Users } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
+import PillTabs from "../../components/common/PillTabs";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { currentMonthValue, monthInputToRange } from "../../utils/date";
-import MemberStatRow, { RaceDecks } from "../stats/MemberStatRow";
+import MemberStatRow, { RaceDecks, StatSum } from "../stats/MemberStatRow";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { activeMemberSearchTerms, memberMatchesTerm, normalizeSearchText } from "../../utils/memberSearch";
 import { buildLexicon, segmentChunk, splitChunks } from "../../utils/gameSearch";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { cx } from "../../utils/format";
-import type { ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
+import type { ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 const CLAN_TYPE: GameType = "0102";
 const PERIOD_ALL = "all";
@@ -23,77 +24,48 @@ const EMPTY_STATS: MemberStats = {
   avgApm: null, avgEapm: null, avgCmd: null, avgEcmd: null, avgBuild: null, truthMix: null, avgWorker5: null, mixPlays: null, mixSeconds: null, upPlays: null,
 };
 
-function KpiTile({
-  label, value, unit, sub,
-}: { label: string; value: string; unit?: string; sub?: string }) {
-  return (
-    <div className="scr-clan-kpi">
-      <span className="scr-clan-kpi-label">{label}</span>
-      <span className="scr-clan-kpi-value">
-        {value}
-        {unit && <span className="scr-clan-kpi-unit">{unit}</span>}
-      </span>
-      {sub && <span className="scr-clan-kpi-sub">{sub}</span>}
-    </div>
-  );
-}
-
 /** 종족 전적 — 줄마다 꺽쇠로 그 종족의 생산·업그레이드 덱을 펼친다(요청: 따로 서던 '종족별 생산·업그레이드'를 접기·펼치기로 통합).
  *  덱은 개인 카드와 같은 RaceMixCell · 처음엔 모두 접힌 채다. */
-function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
-  if (rows.length === 0) return <p className="scr-clan-panel-empty">기록이 없어요</p>;
-  return (
-    <div className="scr-clan-races">
-      {rows.map((c) => (
-        <div key={c.label} className="scr-clan-race">
-          <span className="scr-clan-race-name">{c.label}</span>
-          <span className="scr-clan-race-sum">
-            <span className="scr-stat-record-num-v">
-              {c.plays.toLocaleString()}<span className="scr-stat-record-num-unit">판</span>
-            </span>
-          </span>
-          <span className="scr-clan-race-sum">
-            <span className="scr-statcard-sum-label">승률</span>
-            <span className="scr-stat-record-num-v">
-              {c.winRate}<span className="scr-stat-record-num-unit">%</span>
-            </span>
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
+const COMP_FORMATS = ["4:4", "3:3", "2:2"] as const;
+type CompFormat = (typeof COMP_FORMATS)[number];
 
-function BreakdownPanel({
-  title, note, rows, empty,
-}: { title: string; note: string; rows: ClanBreakdownEntry[]; empty: string }) {
+function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
+  const playsOf = (f: CompFormat): number => rows.filter((c) => c.format === f).reduce((n, c) => n + c.plays, 0);
+  const [format, setFormat] = useState<CompFormat | null>(null);
+  const shown = format ?? COMP_FORMATS.reduce((b, f) => (playsOf(f) > playsOf(b) ? f : b), "2:2" as CompFormat);
+  const list = rows.filter((c) => c.format === shown);
   return (
-    <div className="scr-clan-panel">
-      <div className="scr-clan-panel-head">
-        <span className="scr-clan-panel-title">{title}</span>
-        <span className="scr-clan-panel-note">{note}</span>
-      </div>
-      {rows.length === 0 ? (
-        <p className="scr-clan-panel-empty">{empty}</p>
-      ) : (
-        <ol className="scr-clan-panel-list">
-          {rows.map((r, i) => (
-            <li key={r.label} className="scr-clan-panel-item">
-              <span className="scr-clan-panel-rank">{i + 1}</span>
-              <span className="scr-clan-panel-body">
-                <span className="scr-clan-panel-line">
-                  <span className="scr-clan-panel-name" title={r.label}>{r.label}</span>
-                  <span className="scr-clan-panel-num">
-                    {r.plays}<span className="scr-clan-panel-unit">판</span>
-                    <span className="scr-clan-panel-ratio">{r.ratio}%</span>
-                  </span>
+    <section className="scr-statcard scr-clan-statcard">
+      <header className="scr-statcard-head scr-clan-comp-head">
+        <span className="scr-stat-name-btn">종족구성별 전적</span>
+        <PillTabs
+          options={COMP_FORMATS.map((f) => ({ value: f, label: f }))}
+          value={shown} onChange={setFormat} aria-label="팀 규모"
+        />
+      </header>
+      <div className="scr-statcard-decks scr-clan-comp-box">
+      {list.length === 0 ? <p className="scr-clan-panel-empty">기록이 없어요</p> : (
+        <div className="scr-clan-races">
+          {list.map((c) => (
+            <div key={c.label} className="scr-clan-race">
+              <span className="scr-clan-race-name">{c.label}</span>
+              <span className="scr-clan-race-sum">
+                <span className="scr-stat-record-num-v">
+                  {c.plays.toLocaleString()}<span className="scr-stat-record-num-unit">판</span>
                 </span>
               </span>
-            </li>
+              <span className="scr-clan-race-sum">
+                <span className="scr-statcard-sum-label">승률</span>
+                <span className="scr-stat-record-num-v">
+                  {c.winRate}<span className="scr-stat-record-num-unit">%</span>
+                </span>
+              </span>
+            </div>
           ))}
-        </ol>
+        </div>
       )}
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -146,7 +118,6 @@ export default function ClanStatsScreen() {
     memberIds: string[];
     stats: Record<string, MemberStatsEntry>;
     clan: MemberStatsEntry | null;
-    clanMaps: ClanBreakdownEntry[];
     clanComps: ClanCompEntry[];
   }
   const [view, setView] = useState<StatsView | null>(null);
@@ -163,7 +134,7 @@ export default function ClanStatsScreen() {
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
       : monthInputToRange(debouncedQuery.period);
-    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanMaps: [], clanComps: [] }); return; }
+    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [] }); return; }
     let cancelled = false;
     setError("");
     const byId = (res: GameResultStatsResponse) => {
@@ -178,12 +149,12 @@ export default function ClanStatsScreen() {
       if (cancelled) return;
       setView({
         ...blank, stats: byId(res), clan: res.clan ?? null,
-        clanMaps: res.clanMaps ?? [], clanComps: res.clanComps ?? [],
+        clanComps: res.clanComps ?? [],
       });
     }).catch((e) => {
       if (cancelled) return;
       setError(e instanceof Error ? e.message : "통계를 불러오지 못했어요.");
-      setView({ ...blank, stats: {}, clan: null, clanMaps: [], clanComps: [] });
+      setView({ ...blank, stats: {}, clan: null, clanComps: [] });
     });
     return () => { cancelled = true; };
   }, [debouncedQuery, debouncedSignature]);
@@ -269,32 +240,14 @@ export default function ClanStatsScreen() {
             </span>
           </header>
 
-          <div className="scr-clan-dash-row">
-          <div className="scr-clan-cell scr-clan-kpis">
-            <KpiTile
-              label="총 참가" value={view.clan.overall.plays.toLocaleString()} unit="회"
-              sub={`${view.clan.overall.wins}승 ${view.clan.overall.losses}패${
-                view.clan.overall.draws ? ` ${view.clan.overall.draws}무` : ""}`}
-            />
-            <KpiTile label="평균 APM" value={view.clan.overall.avgApm?.toLocaleString() ?? "-"} />
-            <KpiTile label="평균 커맨드" value={view.clan.overall.avgCmd?.toLocaleString() ?? "-"} unit="/분" />
-          </div>
-
-          <div className="scr-clan-cell scr-clan-dash-panels">
-            <BreakdownPanel
-              title="맵" note="대표맵 기준 · 상위 5"
-              rows={view.clanMaps} empty="기록이 없어요"
-            />
-          </div>
-          <div className="scr-clan-cell scr-clan-cell-races">
-            <span className="scr-clan-panel-title">종족구성별 전적</span>
-            <CompRecords rows={view.clanComps} />
-          </div>
-          </div>
-          <div className="scr-clan-race-stats scr-clan-decks">
-            <span className="scr-clan-panel-title">종족 통계</span>
+          <CompRecords rows={view.clanComps} />
+          <section className="scr-statcard scr-clan-statcard">
+            <header className="scr-statcard-head">
+              <span className="scr-stat-name-btn">클랜원 전체</span>
+              <StatSum stats={view.clan.overall} />
+            </header>
             <RaceDecks byRace={view.clan.byRace} />
-          </div>
+          </section>
         </section>
       )}
 

@@ -267,6 +267,7 @@ export interface ClanBreakdownEntry {
 }
 
 export interface ClanCompEntry {
+  format: string;
   label: string;
   plays: number;
   wins: number;

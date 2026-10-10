@@ -209,6 +209,47 @@ function Record({ stats }: { stats?: MemberStats }) {
   );
 }
 
+export function StatSum({ stats }: { stats: MemberStats }) {
+  const kd = kdOf(stats);
+  const dmg = dmgOf(stats);
+  return (
+    <div className="scr-statcard-sum">
+      <span className="scr-statcard-sum-item">
+        <Num value={stats.plays > 0 ? stats.plays : null} unit="판" />
+      </span>
+      <span className="scr-statcard-sum-sep" aria-hidden>|</span>
+      <span className="scr-statcard-sum-item">
+        <span className="scr-statcard-sum-label">승률</span>
+        <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
+      </span>
+      <span className="scr-statcard-sum-sep" aria-hidden>|</span>
+      <span className="scr-statcard-sum-item" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
+        <span className="scr-statcard-sum-label">데미지</span>
+        {dmg ? (
+          <span className="scr-stat-record-num-v scr-stat-dmg">
+            <span className="scr-stat-dmg-lead">평균의</span>
+            <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
+            <span className="scr-stat-dmg-sep">/</span>
+            <span className="scr-stat-dmg-taken">{dmg.taken}</span>
+          </span>
+        ) : <Num value={null} />}
+      </span>
+      <span className="scr-statcard-sum-sep" aria-hidden>|</span>
+      <span className="scr-statcard-sum-item">
+        <span className="scr-statcard-sum-label">APM</span>
+        <Num value={stats.avgApm} />
+      </span>
+      {SHOW_KD && <span className="scr-statcard-sum-sep" aria-hidden>|</span>}
+      {SHOW_KD && (
+        <span className="scr-statcard-sum-item">
+          <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
+          <Num value={kd} />
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function RaceDecks({ byRace }: { byRace?: Partial<Record<BaseRace, MemberStats>> }) {
   const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
   const toggleRace = (r: BaseRace): void => {
@@ -262,8 +303,6 @@ export default function MemberStatRow({
   const [photoOpen, setPhotoOpen] = useState(false);
   /* 닉네임은 PC·폰 다 **전체**다(2026-10, 요청: "4글자로 하지 말고 다 보여주기" — 한때 폰은 네 글자 고정 칸이었다). 폰은 스탯이 제 줄로
      내려가(global.css 폰 규칙) 이름 옆에 자리를 다툴 것이 없다. 너무 긴 이름만 말줄임(.scr-stat-name-btn). 아바타는 PC·폰 같은 32. */
-  const kd = kdOf(stats);
-  const dmg = dmgOf(stats);
 
   return (
     <section className={cx("scr-statcard", me && "scr-statcard-me")}>
@@ -280,36 +319,7 @@ export default function MemberStatRow({
         >
           {member.nickname}
         </button>
-        <div className="scr-statcard-sum">
-          <span className="scr-statcard-sum-item">
-            <Num value={stats.plays > 0 ? stats.plays : null} unit="판" />
-          </span>
-          <span className="scr-statcard-sum-item">
-            <span className="scr-statcard-sum-label">승률</span>
-            <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
-          </span>
-          <span className="scr-statcard-sum-item" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
-            <span className="scr-statcard-sum-label">데미지</span>
-            {dmg ? (
-              <span className="scr-stat-record-num-v scr-stat-dmg">
-                <span className="scr-stat-dmg-lead">평균의</span>
-                <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
-                <span className="scr-stat-dmg-sep">/</span>
-                <span className="scr-stat-dmg-taken">{dmg.taken}</span>
-              </span>
-            ) : <Num value={null} />}
-          </span>
-          <span className="scr-statcard-sum-item">
-            <span className="scr-statcard-sum-label">APM</span>
-            <Num value={stats.avgApm} />
-          </span>
-          {SHOW_KD && (
-            <span className="scr-statcard-sum-item">
-              <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
-              <Num value={kd} />
-            </span>
-          )}
-        </div>
+        <StatSum stats={stats} />
       </header>
       <RaceDecks byRace={byRace} />
       {photoOpen && member.avatar && (
