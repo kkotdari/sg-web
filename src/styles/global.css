@@ -5505,7 +5505,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
      오른쪽으로 미는 것은 **NEW 칸 하나뿐**이다(auto 여백이 둘이면 남는 폭을 반씩 나눠 가져 NEW 가 한가운데로 간다).
      줄 사이는 1, 위아래 여백은 11 → 7 로 좁혀 한 줄이 한 덩이로 모인다(요청: "타이트하게"). */
   .scr-activity-row-game > .scr-activity-row-main {
-    flex-wrap: wrap; align-items: center; gap: 1px 6px;
+    flex-wrap: wrap; align-items: center; gap: 3px 6px;
     padding-top: 7px; padding-bottom: 7px;
   }
   .scr-activity-row-game .scr-activity-row-badges { display: contents; }
@@ -5515,7 +5515,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-desc { order: 4; flex: 1 0 100%; }
   /* 배지는 한 치 작게(요청) — 글자 12 → 11 · 여백도 한 겹 줄인다. */
   .scr-activity-row-game .scr-activity-row-status-dur {
-    font-size: var(--fs-11); padding: 1px 4px 0; gap: 3px; line-height: 1.35;
+    font-size: var(--fs-10); padding: 0 3px; gap: 2px; line-height: 1.3;
   }
   /* 이름이 넘치면 **말줄임표 없이 그냥 자른다**(2026-10, 요청: "말줌임표 넣지말고 그자리에 글자를 한글자 더 넣어주면 돼") —
      "…" 가 한 글자를 잡아먹어 두 자 이름이 한 자로 보였다. */
