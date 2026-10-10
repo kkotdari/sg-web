@@ -67,7 +67,6 @@ function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
           {list.map((c) => (
             <div key={c.label} className="scr-clan-race">
               <span className="scr-clan-race-name">{c.label}</span>
-              <span className="scr-statcard-head-sep" aria-hidden>|</span>
               <span className="scr-statcard-sum-item scr-sum-plays">
                 <span className="scr-stat-record-num-v">
                   {c.plays.toLocaleString()}<span className="scr-stat-record-num-unit">회 플레이</span>
@@ -293,7 +292,6 @@ export default function ClanStatsScreen() {
           <section className="scr-statcard scr-clan-statcard">
             <header className="scr-statcard-head">
               <span className="scr-stat-name-btn scr-stat-name-plain">클랜원 전체</span>
-              <span className="scr-statcard-head-sep" aria-hidden>|</span>
               <StatSum stats={view.clan.overall} games={clanGames} hideRate hideDmg />
             </header>
             <RaceDecks byRace={view.clan.byRace} openAll={expandAll} />

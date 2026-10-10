@@ -221,9 +221,9 @@ function Record({ stats }: { stats?: MemberStats }) {
   );
 }
 
-/** 요약 줄 — **앞 덩이**(회 플레이 · 승률)와 **뒤 덩이**(데미지 · APM)로 갈린다(2026-10, 요청: "닉네임 플레이횟수 승률이 한덩이고
- *  나머지가 한덩이 · 나머지 한덩이를 우측정렬 · 중간 | 제거"). 사이에 끼우던 가는 | 는 모두 걷었다 — 남은 구분선은 이름 뒤의 굵은
- *  | (.scr-statcard-head-sep) 하나뿐이다.
+/** 요약 줄 — **앞 덩이**(회 플레이 · 승률)와 **뒤 덩이**(데미지 · APM)로 갈린다(2026-10, 요청). 사이에 끼우던 | 는 모두 걷었다 —
+ *  줄을 가르는 것은 머리 줄 아래의 연한 구분선뿐이다(요청: "사이사이 | 제거하고 헤더줄 아래 구분선 연한거 넣기"). 뒤 덩이는
+ *  우측 정렬하지 않고 승률 뒤에 쭉 이어 선다(요청) — 칸머리가 고정이라 줄끼리 세로줄은 맞는다.
  *  칸은 제 이름(.scr-sum-*)으로 바깥 글(.scr-statcard-head / -deck-head / .scr-clan-race)의 **같은 세로 칸**에 꽂힌다 — 묶음 두 개는
  *  display:contents 로 풀어 제 자식이 바로 칸에 서게 한다(global.css).
  *  · stats.plays 는 **사람이 뛴 횟수**지 경기 수가 아니다 — 한 경기에 여럿이 들어가므로 클랜 전체로 합치면 경기 수의 몇 배다.
@@ -314,9 +314,12 @@ export function RaceDecks({ byRace, openAll }: {
           return (
             <div key={r} className="scr-statcard-deck">
               <span className="scr-statcard-deck-head">
-                <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
-                <span className="scr-statcard-deck-name">{r}</span>
-                <span className="scr-statcard-head-sep" aria-hidden>|</span>
+                {/* 네모 + 종족명이 **종족 머리의 제목**이다(2026-10, 지적: "네모아이콘 때문에 다 밀리는데 그러지마") — 네모가 제 칸을
+                    차지하면 종족명부터 뒤가 통째로 밀린다. 한 덩이로 묶어 이름 칸에 담는다. */}
+                <span className="scr-statcard-deck-name">
+                  <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
+                  {r}
+                </span>
                 <span className="scr-statcard-deck-rec">
                   <Record stats={byRace?.[r]} />
                 </span>
@@ -359,19 +362,21 @@ export default function MemberStatRow({
   return (
     <section className="scr-stat-person">
       <header className="scr-statcard-head">
-        <button
-          type="button" className="scr-stat-avatar-btn"
-          onClick={() => setPhotoOpen(true)} aria-label={`${member.nickname} 사진 보기`}
-        >
-          <Avatar member={member} size={32} />
-        </button>
-        <button
-          type="button" className="scr-stat-name-btn" title={member.nickname}
-          onClick={() => openMemberProfile(member.id)}
-        >
-          {member.nickname}
-        </button>
-        <span className="scr-statcard-head-sep" aria-hidden>|</span>
+        {/* 아바타 + 닉네임도 한 덩이 제목이다 — 종족 머리의 네모+종족명과 같은 칸에 선다. */}
+        <span className="scr-statcard-head-title">
+          <button
+            type="button" className="scr-stat-avatar-btn"
+            onClick={() => setPhotoOpen(true)} aria-label={`${member.nickname} 사진 보기`}
+          >
+            <Avatar member={member} size={32} />
+          </button>
+          <button
+            type="button" className="scr-stat-name-btn" title={member.nickname}
+            onClick={() => openMemberProfile(member.id)}
+          >
+            {member.nickname}
+          </button>
+        </span>
         <StatSum stats={stats} />
       </header>
       <RaceDecks byRace={byRace} openAll={openAll} />
