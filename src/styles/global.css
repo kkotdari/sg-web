@@ -1117,6 +1117,13 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-clan-dash-head { display: flex; align-items: baseline; gap: 8px; }
 .scr-clan-dash-title { font-weight: 700; font-size: var(--fs-caption, 14px); letter-spacing: -0.01em; }
 .scr-clan-dash-sub { font-size: var(--fs-micro, 12px); color: var(--text-dim); }
+/* 곁글은 **명수만**(2026-10, 요청: "20명 전체 기간 → 명수만") — 기간은 위 달력 단추가 이미 말한다. 그 옆의 "전부 펼치기"는
+   클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다. 글자 단추지만 머리글 자에 맞춰 한 치 작고 여백도 좁다. */
+.scr-clan-dash-expand {
+  font-size: var(--fs-micro, 12px); font-weight: 600; color: var(--text-dim);
+  padding: 3px 7px; gap: 4px; margin-left: 2px; align-self: center;
+}
+.scr-clan-dash-expand svg { display: block; }
 
 .scr-clan-dash-row { display: flex; flex-direction: column; gap: 8px; }
 .scr-clan-cell {
@@ -1158,20 +1165,25 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 .scr-clan-races > .scr-clan-race:first-child { border-top: none; padding-top: 2px; }
 .scr-clan-races { --fs-9: 13px; --fs-11: 14px; }
+/* 줄은 **왼쪽으로 붙여 쌓는다**(2026-10, 요청: "데이터들도 세로줄은 맞추되 왼쪽으로 붙여 정렬") — 한때 이름이 flex:1 로 줄을 다 밀어
+   데이터가 오른쪽 끝에 붙었다. 이름·값 칸을 em 으로 못 박아 줄마다 같은 자리에서 시작한다(폰은 글자 자가 clamp 라 칸도 같이 준다).
+   남는 폭은 마지막 값 뒤에 그냥 둔다. */
 .scr-clan-race-name {
   display: inline-flex; align-items: center; gap: 5px;
-  flex: 1 1 auto; min-width: 0;
+  flex: 0 0 auto; min-width: 8.2em;
   font-size: var(--fs-11); font-weight: 700; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap;
 }
-.scr-clan-race-sum { flex: none; display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
-.scr-statcard-head.scr-clan-comp-head { align-items: center; flex-wrap: nowrap; justify-content: space-between; }
-.scr-clan-comp-head > .scr-pill-tabs { margin-left: auto; flex: none; height: 28px; background: rgba(255, 255, 255, 0.08); }
-.scr-light-theme .scr-clan-comp-head > .scr-pill-tabs { background: rgba(0, 0, 0, 0.06); }
-.scr-clan-comp-head .scr-pill-tab-btn { font-size: var(--fs-11); }
-.scr-clan-comp-head .scr-pill-tab-btn:not(.scr-pill-tab-btn-active) { color: var(--muted); }
+.scr-clan-race-sum {
+  flex: 0 0 auto; width: 5.6em; min-width: 5.6em;
+  display: inline-flex; align-items: baseline; justify-content: flex-start; gap: 5px; white-space: nowrap;
+}
+/* 4:4/3:3/2:2 는 제목 **아래 줄**의 밑줄 탭(내전·공방과 같은 .scr-line-tabs) — 제목 왼끝에 맞춰 첫 탭의 왼 여백을 지운다. */
+.scr-clan-comp-tabs { margin-top: -4px; margin-bottom: -2px; }
+.scr-clan-comp-tabs > .scr-line-tab-btn { font-size: var(--fs-11); }
+.scr-clan-comp-tabs > .scr-line-tab-btn:first-child { padding-left: 0; }
+.scr-clan-comp-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
 .scr-clan-comp-box { padding: 4px 12px; }
 .scr-clan-comp-box > .scr-clan-panel-empty { margin: 8px 0; }
-.scr-clan-race-sum + .scr-clan-race-sum { min-width: 6.4em; justify-content: flex-end; }
 
 .scr-clan-decks {
   --fs-9: 13px; --fs-10: 13px; --fs-11: 14px; --fs-micro: 14px; --fs-caption: 16px;
@@ -1179,7 +1191,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 
 .scr-stat-cards { display: flex; flex-direction: column; }
-.scr-statcard {
+/* .scr-statcard 는 **클랜 전체의 두 장**(종족구성별 전적 · 클랜원 전체)이고, .scr-stat-person 은 개인 줄이다 — 개인 줄은 더는 카드로
+   감싸지 않지만(2026-10, 요청) 글자 자·여백·칸 폭은 똑같이 쓰므로 아래 규칙을 함께 받는다. 본인 강조 바탕(.scr-statcard-me)은 걷었다. */
+.scr-statcard, .scr-stat-person {
   --fs-9: 13px;
   --fs-10: 13px;
   --fs-11: 14px;
@@ -1189,9 +1203,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   display: flex; flex-direction: column; gap: 8px;
   padding: 12px 10px 14px;
 }
-.scr-statcard-me { background-color: var(--stat-me-tint); border-radius: var(--radius-sm, 8px); }
-
 .scr-statcard-head { display: flex; align-items: baseline; gap: 6px 10px; min-width: 0; flex-wrap: wrap; }
+/* 제목(닉네임·카드 이름)과 종족 이름 **바로 뒤**에 세우는 구분선 — 데이터 사이의 | (.scr-statcard-sum-sep · 400)보다 한 치 굵고 크다(요청). */
+.scr-statcard-head-sep { color: var(--dim); font-weight: 600; font-size: 1.14em; }
 .scr-statcard-head > .scr-stat-avatar-btn { align-self: center; }
 .scr-statcard-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
 .scr-statcard-sum-sep { color: var(--dim); font-weight: 400; }
@@ -1202,14 +1216,29 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
      라벨만 11px(값 14)이었다. 단위(.scr-stat-record-num-unit · --fs-9)만 작다. 라벨은 색(muted)으로만 값과 갈린다. */
   font-size: var(--fs-11); font-weight: 700; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap;
 }
-.scr-statcard .scr-stat-avatar-btn .scr-avatar { width: 32px !important; height: 32px !important; }
+:is(.scr-statcard, .scr-stat-person) .scr-stat-avatar-btn .scr-avatar { width: 32px !important; height: 32px !important; }
+/* PC 아바타는 **닉네임 글자 높이와 같다**(2026-10, 요청: "타이틀의 아바타 크기(높이)를 글자와 같게 맞춰서 글자 아래 추가로 더 뜨게
+   만들지 않기") — 여태 28(아래 .scr-stats-list-panel-v2 규칙이 위 32 를 같은 무게로 덮어 왔다)이 머리 줄을 글자보다 높여 글자 아래에
+   빈 띠를 냈다. 닉네임은 16px → 줄 상자 20px. 한 겹 더 짚어(0,4,0) 뒤에 선 28/18 규칙에 안 밀린다. 폰은 건드리지 않는다. */
+@media (min-width: 1160px) {
+  .scr-stats-list-panel-v2 .scr-stat-person .scr-stat-avatar-btn .scr-avatar {
+    width: 20px !important; height: 20px !important;
+  }
+}
 /* 위아래 줄의 값은 같은 크기다(요청: "분수가 아니라 나란히 놓는 것뿐이니까 위아래줄 크기 다시 같게") — 한때 둘째 줄만 한 단계
    작았다(값 13 · 라벨 12). 대신 라벨만 공통으로 줄인다(아래 .scr-statcard-sum-label 11px). */
-/* PC 닉네임 칸은 고정 폭(10em = 200px) — 카드마다 스탯이 같은 자리에서 시작한다(요청). 넘치는 이름은 말줄임. 폰은 아래 두 줄 규칙이 덮는다(칸 고정 없음). */
-.scr-statcard .scr-stat-name-btn { text-align: left; font-weight: 700; flex: none; width: 10em; }
+/* 닉네임 칸은 **제 글자 폭만큼**이고 데이터가 그 바로 뒤에 붙는다(2026-10, 요청: "데이터를 닉네임과 종족명 이후에 바로 붙여쓰기") —
+   한때 10em 고정 칸으로 스탯 시작 자리를 줄마다 맞췄다. 긴 이름만 말줄임. */
+:is(.scr-statcard, .scr-stat-person) .scr-stat-name-btn { text-align: left; font-weight: 700; flex: 0 1 auto; width: auto; }
 /* ⚠ 목록 판의 `.scr-stats-list-panel-v2 .scr-stat-name-btn { text-align: center; font-size: var(--fs-body) }`(아래)가 같은 무게(0,2,0)로 뒤에
    있어 카드의 왼쪽 맞춤을 조용히 덮었다(지적: 폰에서 "닉네임이 한가운데" · PC 도 10em 칸 안에서 가운데였다). 한 겹 더 짚어(0,3,0) 못 박는다. */
-.scr-statcard .scr-statcard-head > .scr-stat-name-btn { text-align: left; }
+:is(.scr-statcard, .scr-stat-person) .scr-statcard-head > .scr-stat-name-btn { text-align: left; }
+/* 클랜 전체 두 장의 제목은 글자일 뿐이다 — 누를 것이 없으니 손가락 커서·호버 빛을 걷는다(2026-10, 요청).
+   .scr-stat-name-btn 의 cursor·:hover 가 아래(1390 줄대)에 있어 같은 무게로는 못 덮는다 — 두 겹으로 짚는다(0,2,0 · 0,3,0). */
+.scr-stat-name-btn.scr-stat-name-plain { cursor: default; }
+@media (hover: hover) {
+  .scr-stat-name-btn.scr-stat-name-plain:hover { background: transparent; box-shadow: none; }
+}
 /* 데미지 한 칸 "12k(125%)/9.8k(75%)" — 준은 녹색 · 입은은 붉은색(괄호 %까지), 가운데 / 는 글자색 그대로. */
 .scr-stat-dmg { white-space: nowrap; }
 .scr-stat-dmg-sep { margin: 0 2px; color: var(--muted); }   /* / 양옆 한 뼘(요청) — 분수가 아니라 나란히 놓인 두 값이다 */
@@ -1218,7 +1247,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stat-dmg-taken { color: var(--dmg-taken); }
 
 .scr-statcard-decks {
-  border: 1px solid var(--line-soft); border-radius: var(--radius-sm, 8px);
+  /* 모서리는 한 치 줄였다(2026-10, 요청: "래디우스 살짝 줄이기") — 종족구성별 전적 카드(.scr-clan-comp-box)도 이 규칙을 받는다. */
+  border: 1px solid var(--line-soft); border-radius: 6px;
   background-color: var(--panel-solid);
   overflow: hidden;
 }
@@ -1236,18 +1266,21 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   display: flex; align-items: baseline; gap: 5px;
   font-size: var(--fs-micro, 13px); font-weight: 600; color: var(--text-dim);
 }
-.scr-statcard-deck-toggle { align-self: center; margin-left: 4px; padding: 3px 6px; min-width: 26px; line-height: 1; }
+/* 전적이 종족 이름 바로 뒤에 붙으므로 줄 끝으로 밀리는 것은 **꺽쇠뿐**이다(요청) — 한때 전적 쪽이 margin-left:auto 였다. */
+.scr-statcard-deck-toggle { align-self: center; margin-left: auto; padding: 3px 6px; min-width: 26px; line-height: 1; }
 .scr-statcard-deck-toggle svg { display: block; }
 .scr-statcard-deck-head > .scr-clan-band-dot { align-self: center; }
-.scr-statcard-deck-rec { display: inline-flex; align-items: baseline; gap: 5px; margin-left: auto; }
+.scr-statcard-deck-rec { display: inline-flex; align-items: baseline; gap: 5px; }
 .scr-statcard-deck-label { font-weight: 600; color: var(--muted); }
 .scr-statcard-deck > .scr-stat-mix-cell { padding: 0; min-width: 0; }
 .scr-statcard-deck > .scr-stat-mix-cell { grid-template-rows: minmax(156px, 1fr); }
 .scr-statcard-deck > .scr-stat-mix-cell > .scr-stat-points-empty { grid-row: 1 / -1; }
-.scr-statcard .scr-stat-upgrades, .scr-clan-decks .scr-stat-upgrades { --scr-up-num-w: 25px; max-width: 104px; }
-.scr-statcard .scr-stat-mix-cell, .scr-clan-decks .scr-stat-mix-cell { --scr-toplist-w: 124px; }
+:is(.scr-statcard, .scr-stat-person) .scr-stat-upgrades, .scr-clan-decks .scr-stat-upgrades { --scr-up-num-w: 25px; max-width: 104px; }
+:is(.scr-statcard, .scr-stat-person) .scr-stat-mix-cell, .scr-clan-decks .scr-stat-mix-cell { --scr-toplist-w: 124px; }
 @media (max-width: 1159px) {
-  .scr-statcard { padding-left: 0; padding-right: 0; }
+  .scr-statcard, .scr-stat-person { padding-left: 0; padding-right: 0; }
+  /* 폰 머리는 두 줄(아래) — 스탯이 제 줄로 내려가니 제목 뒤의 | 는 첫 줄 끝에 홀로 남는다. 걷는다(종족 머리의 | 는 그대로). */
+  .scr-statcard-head > .scr-statcard-head-sep { display: none; }
   /* ★ 폰 카드 머리는 **두 줄**(2026-10, 요청: "닉네임 4글자로 하지 말고 다 보여주기 · 데이터를 아예 줄을 내려버리고 한 줄로 표현") —
      윗줄 아바타 + 닉네임 전체(고정 칸 없음 · 긴 이름만 말줄임) · 아랫줄 스탯 셋(총·승률 | APM | 데미지)이 **한 줄에 양끝 맞춤**으로 선다.
      옛 판(닉네임 네 글자 고정 칸 64px 옆에 스탯 두 줄 · 오른쪽 맞춤 · 그 앞의 아바타 34/이름 18px)은 되물렸다. 아랫줄은 wrap 을 남겨
@@ -1257,7 +1290,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
      목록 판의 `.scr-stats-list-panel-v2 .scr-stat-name-btn { text-align: center }`(아래 · 같은 무게 0,2,0 · 뒤에 있어 이긴다)가 카드의 왼쪽
      맞춤을 덮었다(검증 픽스처엔 그 감싸개가 없어 못 잡았다). 단추는 제 글자 폭만큼(0 1 auto · 좁으면 줄어 말줄임) · 왼쪽 맞춤은 한 겹
      더 짚어(0,3,0) 못 박는다. */
-  .scr-statcard .scr-statcard-head > .scr-stat-name-btn { font-size: 16px; flex: 0 1 auto; width: auto; min-width: 0; }
+  :is(.scr-statcard, .scr-stat-person) .scr-statcard-head > .scr-stat-name-btn { font-size: 16px; flex: 0 1 auto; width: auto; min-width: 0; }
   .scr-statcard-head > .scr-statcard-sum { flex: 1 0 100%; min-width: 0; justify-content: space-between; column-gap: 6px; }
   /* 아랫줄은 **폭에 자를 묶어 한 줄에 들게** 한다 — 라벨 11 · 값 14 · 사이 8/4 그대로는 393 폭에서 373.5 > 361 이라 데미지가 둘째 줄로
      접혔다(실측). 묶음 글자 자는 폭에 묶는다(처음 clamp(11.5px, 3.3vw, 14px) → 요청 "좀만 더 줄이고"로 clamp(11px, 3.05vw, 13px) · 아래).
@@ -1278,9 +1311,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-clan-race-sum .scr-stat-record-num-v, .scr-clan-race-sum .scr-statcard-sum-label { font-size: 1em; }
   .scr-clan-race-sum .scr-stat-record-num-unit { font-size: 0.786em; }
   .scr-statcard-deck { padding-left: 8px; padding-right: 8px; }
-  .scr-statcard .scr-stat-mix-row > * { padding-left: 6px; padding-right: 6px; }
+  :is(.scr-statcard, .scr-stat-person) .scr-stat-mix-row > * { padding-left: 6px; padding-right: 6px; }
 }
-.scr-statcard .scr-stat-up-note, .scr-clan-decks .scr-stat-up-note {
+:is(.scr-statcard, .scr-stat-person) .scr-stat-up-note, .scr-clan-decks .scr-stat-up-note {
   white-space: normal; word-break: keep-all; font-size: 11px; line-height: 1.35;
 }
 
@@ -1541,8 +1574,13 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   font-variant-numeric: tabular-nums; text-align: center; flex: none;
 }
 .scr-stat-upgrades > span { white-space: nowrap; justify-self: center; }
-.scr-stat-up-head { color: var(--muted); }
-.scr-stat-up-row { color: var(--muted); text-align: center; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* 라벨(공·방 머리와 보병·지상·공중·실드 …)은 값보다 **한 스텝 작다**(2026-10, 요청) — 칸 글자 자는 --fs-11(카드 안 14px)이고 라벨만
+   --fs-10(카드 안 13px)으로 내린다. */
+.scr-stat-up-head { color: var(--muted); font-size: var(--fs-10); }
+.scr-stat-up-row {
+  color: var(--muted); font-size: var(--fs-10);
+  text-align: center; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
 .scr-stat-up-solo, .scr-stat-up-solo-label { margin-top: 5px; }
 .scr-stat-up-solo { grid-column: 2 / -1; }
 .scr-stat-up-note {
@@ -2146,29 +2184,33 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
     width: min(calc(var(--coming-card-w, 92px) * 0.85), calc((100% - 6px) / 2));
   }
 }
-.scr-activity-game-tabs {
+/* 밑줄 탭 — 활동의 내전·공방이 쓰던 모양을 통계의 종족구성별 전적(4:4/3:3/2:2)도 함께 쓴다(2026-10, 요청: "내전/공방 탭디자인 적용").
+   .scr-line-tabs/.scr-line-tab-btn 이 이름이고 옛 .scr-activity-game-tab* 은 그대로 둔 별명이다. */
+.scr-activity-game-tabs, .scr-line-tabs {
   display: flex; align-items: flex-end; gap: 2px; flex: 0 0 auto; width: fit-content; max-width: 100%; min-width: 0;
 }
 .scr-activity-group > .scr-activity-game-tabs { margin: 8px 0 10px; }
-.scr-activity-game-tab {
+.scr-activity-game-tab, .scr-line-tab-btn {
   position: relative; background: none; border: none; cursor: pointer; font-family: inherit;
   padding: 6px 14px 9px;
   font-size: var(--fs-caption); font-weight: 700; color: var(--muted); letter-spacing: 0.02em;
   -webkit-tap-highlight-color: transparent;
 }
-.scr-activity-game-tab::after {
+.scr-activity-game-tab::after, .scr-line-tab-btn::after {
   content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 2px;
   background: transparent; transition: background-color .15s ease;
 }
-.scr-activity-game-tab.is-on { color: var(--text); }
-.scr-activity-game-tab.is-on::after { background: var(--lighting-accent); box-shadow: var(--lighting-accent-glow); }
-@media (hover: hover) { .scr-activity-game-tab:hover:not(.is-on) { color: var(--text); } }
-.scr-activity-game-tab:focus-visible { outline: 2px solid var(--point); outline-offset: -2px; border-radius: 6px; }
+.scr-activity-game-tab.is-on, .scr-line-tab-btn.is-on { color: var(--text); }
+.scr-activity-game-tab.is-on::after, .scr-line-tab-btn.is-on::after { background: var(--lighting-accent); box-shadow: var(--lighting-accent-glow); }
+@media (hover: hover) {
+  .scr-activity-game-tab:hover:not(.is-on), .scr-line-tab-btn:hover:not(.is-on) { color: var(--text); }
+}
+.scr-activity-game-tab:focus-visible, .scr-line-tab-btn:focus-visible { outline: 2px solid var(--point); outline-offset: -2px; border-radius: 6px; }
 @media (max-width: 1159px) {
-  .scr-activity-game-tab { padding-left: 10px; padding-right: 10px; }
-  .scr-activity-game-tab::after { left: 6px; right: 6px; }
-  .scr-activity-game-tab:first-child { padding-left: 0; }
-  .scr-activity-game-tab:first-child::after { left: 0; }
+  .scr-activity-game-tab, .scr-line-tab-btn { padding-left: 10px; padding-right: 10px; }
+  .scr-activity-game-tab::after, .scr-line-tab-btn::after { left: 6px; right: 6px; }
+  .scr-activity-game-tab:first-child, .scr-line-tab-btn:first-child { padding-left: 0; }
+  .scr-activity-game-tab:first-child::after, .scr-line-tab-btn:first-child::after { left: 0; }
 }
 @media (hover: hover) { .scr-activity-clan-only:hover { color: var(--text); } }
 .scr-filter-head-row { display: flex; align-items: baseline; gap: 10px; width: 100%; }

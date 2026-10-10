@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
@@ -209,49 +209,79 @@ function Record({ stats }: { stats?: MemberStats }) {
   );
 }
 
-export function StatSum({ stats }: { stats: MemberStats }) {
+/** 요약 줄 — 판 | 승률 | 데미지 | APM. 칸은 배열로 세우고 사이의 | 는 그릴 때 끼운다(한 칸을 빼도 구분선이 겹치거나 남지 않는다).
+ *  "클랜원 전체" 카드는 승률·데미지를 뺀다(2026-10, 요청) — 클랜끼리만 둔 내전이라 클랜 전체 승률은 늘 반반이고, 데미지도 그 경기
+ *  참가자 평균의 몇 배인지라 모두를 합치면 늘 1.0배다. 종족별 줄(RaceDecks)의 승률은 뜻이 있으니 그대로 둔다. */
+export function StatSum({ stats, hideRate = false, hideDmg = false }: {
+  stats: MemberStats;
+  hideRate?: boolean;
+  hideDmg?: boolean;
+}) {
   const kd = kdOf(stats);
   const dmg = dmgOf(stats);
-  return (
-    <div className="scr-statcard-sum">
+  const items: { key: string; node: ReactNode }[] = [
+    { key: "plays", node: (
       <span className="scr-statcard-sum-item">
         <Num value={stats.plays > 0 ? stats.plays : null} unit="판" />
       </span>
-      <span className="scr-statcard-sum-sep" aria-hidden>|</span>
-      <span className="scr-statcard-sum-item">
-        <span className="scr-statcard-sum-label">승률</span>
-        <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
-      </span>
-      <span className="scr-statcard-sum-sep" aria-hidden>|</span>
-      <span className="scr-statcard-sum-item" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
-        <span className="scr-statcard-sum-label">데미지</span>
-        {dmg ? (
-          <span className="scr-stat-record-num-v scr-stat-dmg">
-            <span className="scr-stat-dmg-lead">평균의</span>
-            <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
-            <span className="scr-stat-dmg-sep">/</span>
-            <span className="scr-stat-dmg-taken">{dmg.taken}</span>
-          </span>
-        ) : <Num value={null} />}
-      </span>
-      <span className="scr-statcard-sum-sep" aria-hidden>|</span>
-      <span className="scr-statcard-sum-item">
-        <span className="scr-statcard-sum-label">APM</span>
-        <Num value={stats.avgApm} />
-      </span>
-      {SHOW_KD && <span className="scr-statcard-sum-sep" aria-hidden>|</span>}
-      {SHOW_KD && (
-        <span className="scr-statcard-sum-item">
-          <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
-          <Num value={kd} />
+    ) },
+  ];
+  if (!hideRate) items.push({ key: "rate", node: (
+    <span className="scr-statcard-sum-item">
+      <span className="scr-statcard-sum-label">승률</span>
+      <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
+    </span>
+  ) });
+  if (!hideDmg) items.push({ key: "dmg", node: (
+    <span className="scr-statcard-sum-item" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
+      <span className="scr-statcard-sum-label">데미지</span>
+      {dmg ? (
+        <span className="scr-stat-record-num-v scr-stat-dmg">
+          <span className="scr-stat-dmg-lead">평균의</span>
+          <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
+          <span className="scr-stat-dmg-sep">/</span>
+          <span className="scr-stat-dmg-taken">{dmg.taken}</span>
         </span>
-      )}
+      ) : <Num value={null} />}
+    </span>
+  ) });
+  items.push({ key: "apm", node: (
+    <span className="scr-statcard-sum-item">
+      <span className="scr-statcard-sum-label">APM</span>
+      <Num value={stats.avgApm} />
+    </span>
+  ) });
+  if (SHOW_KD) items.push({ key: "kd", node: (
+    <span className="scr-statcard-sum-item">
+      <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
+      <Num value={kd} />
+    </span>
+  ) });
+  return (
+    <div className="scr-statcard-sum">
+      {items.map((it, i) => (
+        <Fragment key={it.key}>
+          {i > 0 && <span className="scr-statcard-sum-sep" aria-hidden>|</span>}
+          {it.node}
+        </Fragment>
+      ))}
     </div>
   );
 }
 
-export function RaceDecks({ byRace }: { byRace?: Partial<Record<BaseRace, MemberStats>> }) {
+export function RaceDecks({ byRace, openAll }: {
+  byRace?: Partial<Record<BaseRace, MemberStats>>;
+  /** 바깥의 "전부 펼치기"(통계 머리) — 켜지면 세 종족을 다 펼치고 끄면 다 접는다. 그 뒤 줄마다 꺽쇠로 다시 여닫을 수 있다. */
+  openAll?: boolean;
+}) {
   const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
+  useEffect(() => {
+    /* 같은 꼴이면 **쥐고 있던 집합을 그대로** 돌려준다 — 새 Set 을 매번 주면 처음 그릴 때(openAll=false)도 한 번 더 그린다(스무 명). */
+    setOpenRaces((prev) => {
+      if (openAll) return prev.size === RACES.length ? prev : new Set(RACES);
+      return prev.size === 0 ? prev : new Set();
+    });
+  }, [openAll]);
   const toggleRace = (r: BaseRace): void => {
     setOpenRaces((prev) => {
       const next = new Set(prev);
@@ -269,6 +299,9 @@ export function RaceDecks({ byRace }: { byRace?: Partial<Record<BaseRace, Member
               <span className="scr-statcard-deck-head">
                 <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
                 {r}
+                {(byRace?.[r]?.plays ?? 0) > 0 && (
+                  <span className="scr-statcard-head-sep" aria-hidden>|</span>
+                )}
                 <span className="scr-statcard-deck-rec">
                   <Record stats={byRace?.[r]} />
                 </span>
@@ -293,19 +326,23 @@ interface MemberStatRowProps {
   member: Member;
   stats: MemberStats;
   byRace?: Partial<Record<BaseRace, MemberStats>>;
-  me?: boolean;
+  openAll?: boolean;
 }
 
 export default function MemberStatRow({
-  member, stats, byRace, me = false,
+  member, stats, byRace, openAll,
 }: MemberStatRowProps) {
   const openMemberProfile = useAppStore((s) => s.openMemberProfile);
   const [photoOpen, setPhotoOpen] = useState(false);
   /* 닉네임은 PC·폰 다 **전체**다(2026-10, 요청: "4글자로 하지 말고 다 보여주기" — 한때 폰은 네 글자 고정 칸이었다). 폰은 스탯이 제 줄로
-     내려가(global.css 폰 규칙) 이름 옆에 자리를 다툴 것이 없다. 너무 긴 이름만 말줄임(.scr-stat-name-btn). 아바타는 PC·폰 같은 32. */
+     내려가(global.css 폰 규칙) 이름 옆에 자리를 다툴 것이 없다. 너무 긴 이름만 말줄임(.scr-stat-name-btn). 아바타는 PC 에서 닉네임
+     글자 높이와 같고(20 · 요청) 폰은 그대로다 — 자는 CSS 가 !important 로 덮으므로 아래 size={32} 는 바탕값일 뿐이다. */
 
+  /* 개인 줄은 **카드로 감싸지 않는다**(2026-10, 요청: "개인 카드를 scr-statcard로 감싸지 말기 · 본인 강조 효과도 제거") — 클랜 전체의 두 장
+     (종족구성별 전적 · 클랜원 전체)만 카드다. 글자 자·여백은 .scr-stat-person 이 .scr-statcard 와 똑같이 들고 있고(global.css), 본인
+     바탕 tint(.scr-statcard-me)는 걷었다. */
   return (
-    <section className={cx("scr-statcard", me && "scr-statcard-me")}>
+    <section className="scr-stat-person">
       <header className="scr-statcard-head">
         <button
           type="button" className="scr-stat-avatar-btn"
@@ -319,9 +356,10 @@ export default function MemberStatRow({
         >
           {member.nickname}
         </button>
+        <span className="scr-statcard-head-sep" aria-hidden>|</span>
         <StatSum stats={stats} />
       </header>
-      <RaceDecks byRace={byRace} />
+      <RaceDecks byRace={byRace} openAll={openAll} />
       {photoOpen && member.avatar && (
         <PhotoViewer src={member.avatar} alt={member.nickname} onClose={() => setPhotoOpen(false)} />
       )}

@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Users } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, Users } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
-import PillTabs from "../../components/common/PillTabs";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
@@ -35,14 +34,24 @@ function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
   const shown = format ?? COMP_FORMATS.reduce((b, f) => (playsOf(f) > playsOf(b) ? f : b), "2:2" as CompFormat);
   const list = rows.filter((c) => c.format === shown);
   return (
+    /* 4:4/3:3/2:2 는 **제목 아래 줄**에 내전·공방과 같은 밑줄 탭(.scr-line-tabs)으로 선다(2026-10, 요청) — 한때 제목 오른쪽 끝의
+       알약 탭(PillTabs)이었다. */
     <section className="scr-statcard scr-clan-statcard">
-      <header className="scr-statcard-head scr-clan-comp-head">
-        <span className="scr-stat-name-btn">종족구성별 전적</span>
-        <PillTabs
-          options={COMP_FORMATS.map((f) => ({ value: f, label: f }))}
-          value={shown} onChange={setFormat} aria-label="팀 규모"
-        />
+      <header className="scr-statcard-head">
+        <span className="scr-stat-name-btn scr-stat-name-plain">종족구성별 전적</span>
       </header>
+      <div className="scr-line-tabs scr-clan-comp-tabs" role="tablist" aria-label="팀 규모">
+        {COMP_FORMATS.map((f) => (
+          <button
+            key={f} type="button" role="tab"
+            aria-selected={f === shown}
+            className={cx("scr-line-tab-btn", f === shown && "is-on")}
+            onClick={() => setFormat(f)}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
       <div className="scr-statcard-decks scr-clan-comp-box">
       {list.length === 0 ? <p className="scr-clan-panel-empty">기록이 없어요</p> : (
         <div className="scr-clan-races">
@@ -71,7 +80,6 @@ function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
 
 export default function ClanStatsScreen() {
   const members = useAppStore((s) => s.members);
-  const user = useAppStore((s) => s.user);
   const suggestions = useMemo(() => activeMemberSearchTerms(members), [members]);
 
   const [searchApplied, setSearchApplied] = useUrlState("u");
@@ -82,6 +90,8 @@ export default function ClanStatsScreen() {
     [suggestions],
   );
   const [teamBuilder, setTeamBuilder] = useState(false);
+  /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
+  const [expandAll, setExpandAll] = useState(false);
   const matchedMembers = useMemo(() => {
     const terms = splitChunks(searchApplied)
       .flatMap((c) => segmentChunk(c, lexicon).map((p) => normalizeSearchText(p.text).trim()))
@@ -235,18 +245,27 @@ export default function ClanStatsScreen() {
         <section className="scr-clan-dash" aria-label="클랜 전체">
           <header className="scr-clan-dash-head">
             <span className="scr-clan-dash-title">클랜 전체</span>
-            <span className="scr-clan-dash-sub">
-              {view.memberIds.length}명 · {period === PERIOD_ALL ? "전체 기간" : period.replace("-", ".")}
-            </span>
+            <span className="scr-clan-dash-sub">{view.memberIds.length}명</span>
+            <button
+              type="button" className="scr-text-btn scr-clan-dash-expand"
+              aria-pressed={expandAll}
+              onClick={() => setExpandAll((v) => !v)}
+            >
+              {expandAll
+                ? <ChevronsDownUp size={13} aria-hidden />
+                : <ChevronsUpDown size={13} aria-hidden />}
+              {expandAll ? "전부 접기" : "전부 펼치기"}
+            </button>
           </header>
 
           <CompRecords rows={view.clanComps} />
           <section className="scr-statcard scr-clan-statcard">
             <header className="scr-statcard-head">
-              <span className="scr-stat-name-btn">클랜원 전체</span>
-              <StatSum stats={view.clan.overall} />
+              <span className="scr-stat-name-btn scr-stat-name-plain">클랜원 전체</span>
+              <span className="scr-statcard-head-sep" aria-hidden>|</span>
+              <StatSum stats={view.clan.overall} hideRate hideDmg />
             </header>
-            <RaceDecks byRace={view.clan.byRace} />
+            <RaceDecks byRace={view.clan.byRace} openAll={expandAll} />
           </section>
         </section>
       )}
@@ -280,8 +299,8 @@ export default function ClanStatsScreen() {
                 key={c.member.id}
                 member={c.member}
                 stats={c.stats}
-                me={c.member.id === user?.id}
                 byRace={c.entry?.byRace}
+                openAll={expandAll}
               />
             ))}
           </div>

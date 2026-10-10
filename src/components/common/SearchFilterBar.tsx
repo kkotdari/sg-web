@@ -91,11 +91,9 @@ export default function SearchFilterBar({
     setPickSeq((n) => n + 1);
     onSearchChange(next);
     setSuggestOpen(false);
-    if (searchNow) {
-      onSearchEnter?.(next);
-      justPicked.current = false;
-      return;
-    }
+    if (searchNow) onSearchEnter?.(next);
+    /* 검색을 걸어도 **커서는 입력칸에 남는다**(2026-10, 요청: "검색시(엔터) 커서 유지하기") — 한때 검색과 동시에 손을 뗐다(여기선 그냥
+       return · 아래 평검색은 blur()). 입력칸은 key={`si-${pickSeq}`} 로 골라 담을 때마다 새로 나므로 rAF 뒤에 다시 손을 얹고 캐럿을 끝으로. */
     requestAnimationFrame(() => {
       const el = inputRef.current;
       if (!el) { justPicked.current = false; return; }
@@ -152,7 +150,7 @@ export default function SearchFilterBar({
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     if (e.key === "Escape") { setSuggestOpen(false); return; }
     if (!suggestShown) {
-      if (e.key === "Enter") { onSearchEnter?.(searchValue); inputRef.current?.blur(); }
+      if (e.key === "Enter") { onSearchEnter?.(searchValue); }   /* 커서는 입력칸에 남는다(요청) — 한때 blur() 로 손을 뗐다 */
       return;
     }
     if (e.key === "ArrowDown") { e.preventDefault(); setHighlight((h) => (h + 1) % matchedSuggestions.length); }
