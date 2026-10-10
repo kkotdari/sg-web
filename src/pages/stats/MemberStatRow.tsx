@@ -195,8 +195,8 @@ function dmgOf(stats?: MemberStats): { dealt: string; taken: string } | null {
   const d = stats?.dmgDealtRel;
   const t = stats?.dmgTakenRel;
   if (typeof d !== "number" || typeof t !== "number") return null;
-  const x = (v: number): string => `${(v / 100).toFixed(1)}배`;
-  return { dealt: `${x(d)} 딜`, taken: `${x(t)} 피해` };
+  /* 숫자만 돌려준다 — "평균의 · 배 딜 · 배 피해"는 단위 자(12)로 따로 그린다(2026-10, 요청). */
+  return { dealt: (d / 100).toFixed(1), taken: (t / 100).toFixed(1) };
 }
 
 /** 종족별 헤더의 전적 — 요약 줄과 **같은 칸(.scr-sum-plays · .scr-sum-rate)**에 담아, 통계의 네 곳(종족구성별 전적 · 클랜원 전체
@@ -254,8 +254,11 @@ export function StatSum({ stats, games = null, hideRate = false, hideDmg = false
             <span className="scr-stat-record-num-v">
               <span className="scr-stat-record-num-n">{games > 0 ? games.toLocaleString() : "-"}</span>
               <span className="scr-stat-record-num-unit">판</span>
-              <span className="scr-stat-record-num-unit scr-sum-paren">
-                ({stats.plays.toLocaleString()}회)
+              {/* 괄호 안 숫자도 **값과 같은 자·색**이다(2026-10, 요청) — 괄호와 "회"만 단위 자로 흐리다. */}
+              <span className="scr-sum-paren">
+                <span className="scr-stat-record-num-unit">(</span>
+                <span className="scr-stat-record-num-n">{stats.plays.toLocaleString()}</span>
+                <span className="scr-stat-record-num-unit">회)</span>
               </span>
             </span>
           </span>
@@ -282,10 +285,16 @@ export function StatSum({ stats, games = null, hideRate = false, hideDmg = false
           <span className="scr-statcard-sum-item scr-sum-dmg" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
             {dmg ? (
               <span className="scr-stat-record-num-v scr-stat-dmg">
-                <span className="scr-stat-dmg-lead">평균의</span>
-                <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
+                <span className="scr-stat-record-num-unit scr-stat-dmg-lead">평균의</span>
+                <span className="scr-stat-dmg-dealt">
+                  <span className="scr-stat-record-num-n">{dmg.dealt}</span>
+                  <span className="scr-stat-record-num-unit">배 딜</span>
+                </span>
                 <span className="scr-stat-dmg-sep">/</span>
-                <span className="scr-stat-dmg-taken">{dmg.taken}</span>
+                <span className="scr-stat-dmg-taken">
+                  <span className="scr-stat-record-num-n">{dmg.taken}</span>
+                  <span className="scr-stat-record-num-unit">배 피해</span>
+                </span>
               </span>
             ) : <Num value={null} />}
           </span>

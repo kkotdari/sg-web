@@ -1279,6 +1279,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* "클랜원 전체"의 "N판(N회)" — 그 카드엔 승률이 없으니 그 칸까지 넓혀 쓴다. 괄호 몫은 단위 자로 한 뼘 띄운다. */
 .scr-sum-plays-wide { grid-column: 2 / 4; }
 .scr-sum-paren { margin-left: 3px; }
+.scr-sum-paren .scr-stat-record-num-n { min-width: 0; }
+.scr-sum-paren .scr-stat-record-num-unit { margin-left: 0; }
 .scr-sum-rate { grid-column: 3; }
 .scr-sum-apm { grid-column: 4; }
 .scr-sum-dmg { grid-column: 5; justify-self: start; }
@@ -1350,7 +1352,11 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* 데미지 한 칸 "12k(125%)/9.8k(75%)" — 준은 녹색 · 입은은 붉은색(괄호 %까지), 가운데 / 는 글자색 그대로. */
 .scr-stat-dmg { white-space: nowrap; }
 .scr-stat-dmg-sep { margin: 0 2px; color: var(--muted); }   /* / 양옆 한 뼘(요청) — 분수가 아니라 나란히 놓인 두 값이다 */
-.scr-stat-dmg-lead { color: var(--muted); margin-right: 0.3em; }   /* "평균의" — 값 앞의 흐린 머리말(라벨 "데미지"는 따로 선다) */
+/* "평균의 · 배 딜 · 배 피해"는 **단위와 같은 자**다(2026-10, 요청) — 숫자(1.1 · 0.8)만 값 자(14)로 또렷하다.
+   단위는 색을 제 것(muted)으로 쥐므로, 딜·피해 안에서는 바깥 색(녹/적)을 물려받게 한다. */
+.scr-stat-dmg-lead { color: var(--muted); margin-right: 0.3em; }
+.scr-stat-dmg .scr-stat-record-num-unit { color: inherit; }
+.scr-stat-dmg > .scr-stat-dmg-lead { color: var(--muted); }
 .scr-stat-dmg-dealt { color: var(--dmg-dealt); }
 .scr-stat-dmg-taken { color: var(--dmg-taken); }
 
@@ -1412,7 +1418,11 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
      "줄바꿈시 딜을 윗줄 나머지를 아랫줄로 · 닉네임 최소폭 증가") — 아랫줄은 종족 줄과 같은 칸이라 세로줄이 그대로 맞는다. 윗줄에 셋이 안 서므로
      이름 칸을 100 → 114 로 넓혔다. 빈 꼬리 칸은 폰에서 걷어 넷이 안폭 328(360 폭)에 꼭 든다(114+54+58+70+사이 30). */
   .scr-statcard-head { grid-template-columns: var(--stat-col-name) var(--stat-col-plays) var(--stat-col-rate) var(--stat-col-apm); }
-  .scr-statcard-head .scr-sum-dmg { grid-row: 1; grid-column: 2 / -1; justify-self: end; }
+  /* 데미지와 APM 은 **오른끝이 같은 자리**다(2026-10, 지적: "피해 오른쪽 끝이 APM 오른쪽 끝과 일치하게") — 둘 다 마지막 칸의
+     오른끝에 붙인다. 데미지는 제 폭(--stat-col-dmg)을 쥐고 있으면 글자가 상자 왼쪽에 남아 끝이 안 맞으므로 폭을 푼다.
+     APM 도 왼쪽에 붙여 두면 "98"이냐 "1,204"냐에 따라 끝이 6~7px 흔들린다. */
+  .scr-statcard-head .scr-sum-dmg { grid-row: 1; grid-column: 2 / -1; justify-self: end; min-width: 0; }
+  .scr-statcard-head .scr-sum-apm { justify-self: end; }
   .scr-statcard-head:has(.scr-sum-dmg) :is(.scr-sum-plays, .scr-sum-rate, .scr-sum-apm) { grid-row: 2; }
   /* 윗줄 제목은 **데미지 앞까지** 쓴다 — 이름 칸(114)에 묶지 않고 줄 폭 − 데미지 칸 − 사이(≈147)까지 늘어 긴 닉네임이 덜 잘린다. */
   .scr-statcard-head:has(.scr-sum-dmg) > .scr-statcard-head-title {
