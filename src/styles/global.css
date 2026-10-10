@@ -3229,7 +3229,9 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-trash-purge { --btn-icon-text-hover: var(--btn-danger-text); --btn-icon-hover-bg: var(--btn-danger-hover-bg); --btn-hover-glow: var(--btn-danger-glow); }
 .scr-trash-empty { color: var(--muted); font-size: var(--fs-caption); text-align: center; padding: 16px 0; display: flex; justify-content: center; gap: 8px; }
 
-.scr-sel-all { flex: 0 0 auto; gap: 8px; padding-left: 10px; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+/* 체크박스 왼쪽 여백은 **거의 없다**(2026-10, 요청: "체크박스의 왼쪽 여백을 줄이라는거야 전체 선택에서도 마찬가지") — 줄 체크칸도
+   전체선택도 10 씩 띄워 두어 그만큼 줄 폭을 버렸다. 체크박스를 줄 위로 올리는 판은 되물렸다(그건 요청이 아니었다). */
+.scr-sel-all { flex: 0 0 auto; gap: 8px; padding-left: 2px; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
 .scr-sel-all:has(input:checked) { color: var(--text); }
 @media (hover: hover) { .scr-sel-all:hover { color: var(--text); } }
 .scr-selbar {
@@ -3238,7 +3240,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 }
 .scr-selbar-note { font-size: var(--fs-micro, 11px); color: var(--dim); }
 .scr-selbar-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
-.scr-selcell { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 2px 0 10px; cursor: pointer; }
+.scr-selcell { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 6px 0 2px; cursor: pointer; }
 .scr-selcell.is-off { opacity: 0.3; cursor: default; }
 .scr-selcell input { cursor: inherit; }
 .scr-sel-wrap { display: flex; align-items: center; gap: 4px; min-width: 0; }
@@ -5430,18 +5432,6 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   .scr-activity-row-game .scr-activity-row-status-dur {
     font-size: var(--fs-11); padding: 1px 4px 0; gap: 3px; line-height: 1.35;
   }
-  /* ★ 고르기 모드의 체크칸은 **줄 위에 얹는다**(2026-10, 지적: "체크박스 들어가면 다 말줄임표가 돼 · 체크박스 왼쪽 공간 아깝다") —
-     옆에 나란히 서면 줄 폭을 14 + 여백 12 만큼 깎아 이름이 죄다 말줄임으로 잘렸다. 윗줄(배지 ~ 시각)은 가운데가 비어 있으니
-     체크칸을 그 왼쪽에 겹쳐 세우고 **배지만** 비켜 세운다 — 아랫줄 이름은 줄 폭을 다 쓴다. 왼쪽 여백도 0 으로 붙인다. */
-  .scr-activity-row-wrap-sel:has(> .scr-activity-row-game) { display: block; position: relative; }
-  .scr-activity-row-wrap-sel:has(> .scr-activity-row-game) > .scr-selcell {
-    position: absolute; left: 0; top: 8px; padding: 0; z-index: 1;
-  }
-  .scr-activity-row-wrap-sel:has(> .scr-activity-row-game) > .scr-activity-row-game { width: 100%; }
-  .scr-activity-row-wrap-sel:has(> .scr-activity-row-game)
-    > .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-status { margin-left: 20px; }
-  /* 다른 활동 줄은 나란히 선 채로 두되 왼쪽 여백만 줄인다(요청: 왼쪽 공간이 아깝다). */
-  .scr-activity-row-wrap-sel > .scr-selcell { padding-left: 2px; padding-right: 4px; }
 }
 .scr-activity-row-fold { display: grid; }
 .scr-activity-row-fold > * { overflow: hidden; min-height: 0; }
