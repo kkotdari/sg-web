@@ -1217,6 +1217,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
      안에 선다. 칸 폭은 제 글자 폭을 재서 잡았다("1,286회 플레이" 90 · "승률 85.7%" 75). */
   --stat-head-pad-l: 10px;   /* 헤더 줄(종족 · 종족구성)의 왼 여백 — 타이틀 줄은 받지 않는다(요청) */
   --stat-col-name: 132px;
+  --stat-col-apm: 80px;      /* 실측 78 + 두 치 */
   --stat-col-dmg: 215px;     /* 실측 213 + 두 치 */
   --stat-col-plays: 92px;
   --stat-col-rate: 77px;
@@ -1232,7 +1233,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   /* 이름 칸은 **고정 폭**이다 — 최소 폭이면 긴 닉네임이 그 줄만 밀어 세로줄이 어긋난다(요청: "항상 줄도 맞고"). 넘치는 이름은
      말줄임으로 자른다. 종족 칸이 한 줄에 하나씩이라 칸을 넉넉히(PC 150 · 폰 118) 줄 수 있다. */
   grid-template-columns:
-    var(--stat-col-name) var(--stat-col-plays) var(--stat-col-rate) minmax(0, 1fr);
+    var(--stat-col-name) var(--stat-col-plays) var(--stat-col-rate) var(--stat-col-apm) minmax(0, 1fr);
   min-width: 0;
 }
 /* 머리 줄 아래는 **선 없이 여백만** 둔다(2026-10, 요청: "아래 구분선은 제거" — 한 번 넣었다가 되물렸다). */
@@ -1255,15 +1256,21 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard-deck-name > .scr-clan-band-dot { flex: none; }
 .scr-statcard-head-title, .scr-stat-name-btn, .scr-statcard-deck-name, .scr-clan-race-name { grid-column: 1; }
 .scr-statcard-head-title > .scr-stat-name-btn { grid-column: auto; }
+/* 값이 없는 제목 줄("종족구성별 전적")은 이름 칸에 묶일 까닭이 없다 — 줄을 다 쓴다(폰에서 말줄임으로 잘렸다). */
+.scr-statcard-head > .scr-stat-name-btn:only-child { grid-column: 1 / -1; }
 .scr-statcard-sum, .scr-statcard-sum-lead, .scr-statcard-deck-rec { display: contents; }
+/* 값 칸은 **오른쪽에 붙인다**(2026-10, 지적: "플레이-승률간과 승률-APM간 갭이 달라보이는데?") — 칸 폭은 고정인데 값 길이는
+   제각각이라(7회 플레이 … 1,286회 플레이) 왼쪽에 붙이면 뒤에 남는 빈 폭이 그대로 칸 사이 간격처럼 보여 줄마다·칸마다 달랐다.
+   오른끝에 붙이면 숫자가 한 줄로 서고 남는 폭이 앞쪽으로 가, 칸 사이 간격이 고르게 보인다. 마지막 데미지만 왼쪽에 붙여
+   APM 뒤 간격을 고정한다. */
+.scr-sum-plays, .scr-sum-rate, .scr-sum-apm { justify-self: end; }
 .scr-sum-plays { grid-column: 2; }
 .scr-sum-rate { grid-column: 3; }
-/* 데미지·APM 은 승률 뒤에 **쭉 이어 선다**(요청: "우측정렬하지 않고 쭉 이어지게") — 칸머리가 고정이라 줄끼리 세로줄은 맞는다.
-   사이 간격은 앞 칸들과 **같은 --stat-col-gap** 이다(요청: "플레이 게임 데미지 APM 컬럼 사이 간격 똑같게") — 한때 14 였다. */
-.scr-statcard-sum-rest {
-  grid-column: 4; justify-self: start;
-  display: inline-flex; align-items: baseline; gap: 2px var(--stat-col-gap); min-width: 0;
-}
+.scr-sum-apm { grid-column: 4; }
+.scr-sum-dmg { grid-column: 5; justify-self: start; }
+/* APM·데미지도 **제 칸에 선다** — 묶음은 display:contents 로 풀어 둔다. 승률 뒤에 쭉 이어 서고(요청: "우측정렬하지 않고 쭉
+   이어지게") 칸 사이 간격은 앞 칸들과 같은 --stat-col-gap 이다(요청: "컬럼 사이 간격 똑같게" · 한때 14 였다). */
+.scr-statcard-sum-rest { display: contents; }
 .scr-statcard-deck-toggle { grid-column: 4; justify-self: end; }
 /* ★ PC 요약 줄은 **칸으로 선다**(2026-10, 요청: "타이틀부와 종족별 헤더부를 종족구성별 전적 카드처럼 컬럼별 세로로 줄이 맞게") —
    종족구성별 전적 줄(.scr-clan-race-*)과 같은 수로, 칸마다 min-width 를 못 박아 줄이 쌓여도 값이 한 세로줄에 선다. 고정 폭이 아니라
@@ -1356,16 +1363,18 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
     /* 폰은 종족 칸 안쪽이 326(360 폭 기준) — 이름 100 + 회 플레이 92 + 승률 74 + 사이 15 + 꺽쇠 21 = 302 로 든다. */
     /* 폰은 종족 칸 안쪽이 326(360 폭) — 왼 여백 8 + 이름 108 + 회 플레이 92 + 승률 74 + 사이 15 + 꺽쇠 21 = 318 로 든다. */
     --stat-head-pad-l: 8px;
-    --stat-col-name: 106px;
-    --stat-col-dmg: 213px;
+    --stat-col-name: 84px;
     --stat-col-plays: 92px;
-    --stat-col-rate: 74px;
-    --stat-col-gap: 5px;
+    --stat-col-rate: 72px;
+    --stat-col-apm: 74px;
+    --stat-col-dmg: 211px;
+    --stat-col-gap: 4px;
   }
-  /* 뒤 덩이(데미지·APM)만 둘째 줄로 내려 왼쪽부터 채운다 — 첫 줄은 닉네임·회 플레이·승률이 차지한다(요청). */
-  .scr-statcard-head > .scr-statcard-sum > .scr-statcard-sum-rest {
-    grid-column: 1 / -1; justify-self: start; gap: 2px 10px; flex-wrap: wrap;
-  }
+  /* 폰에서도 **APM 은 윗줄**이다(2026-10, 요청: "APM을 위로 올리자 줄바꿀때") — 아랫줄로 내려가는 것은 데미지뿐이고,
+     그 데미지는 **회 플레이 칸에 맞춰** 선다(요청: "데미지를 플레이와 맞추기").
+     그래서 윗줄에 이름·회 플레이·승률·APM 이 다 들어가야 한다 — 360 폭(안폭 328)에 맞춰 칸을 재단했다
+     (84 + 92 + 72 + 74 + 사이 16 = 338 … 이름은 아바타 18 + 6 을 품으므로 닉네임은 넉 자까지 온전히 보인다). */
+  .scr-statcard-head .scr-sum-dmg { grid-row: 2; grid-column: 2 / -1; }
   /* 폰 글자 자는 **줄이지 않는다**(2026-10, 요청: 네 곳의 세 칸이 "글자 크기도 똑같게") — 한때 머리 줄과 종족구성 줄만 clamp 로
      (10.2~13px) 눌러 한 줄에 욱여넣었다. 이제 뒤 덩이(데미지·APM)가 둘째 줄로 내려가므로 첫 줄은 그대로도 든다. */
   :is(.scr-statcard, .scr-stat-person) .scr-statcard-head .scr-stat-name-btn { font-size: var(--fs-11); }

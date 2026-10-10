@@ -258,6 +258,12 @@ export function StatSum({ stats, games = null, hideRate = false, hideDmg = false
         ) : <span className="scr-statcard-sum-item scr-sum-rate" aria-hidden />}
       </span>
       <span className="scr-statcard-sum-rest">
+        {/* APM 이 데미지보다 앞이다(2026-10, 요청: "APM 데미지 순서 바꾸기") — 짧은 APM 이 승률 바로 뒤에 붙고, 긴 데미지가 끝에 선다.
+            폰처럼 줄이 바뀌어도 APM 은 윗줄에 남고 데미지만 아랫줄로 내려간다(요청). */}
+        <span className="scr-statcard-sum-item scr-sum-apm">
+          <span className="scr-statcard-sum-label">APM</span>
+          <Num value={stats.avgApm} />
+        </span>
         {!hideDmg && (
           <span className="scr-statcard-sum-item scr-sum-dmg" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
             <span className="scr-statcard-sum-label">데미지</span>
@@ -271,10 +277,6 @@ export function StatSum({ stats, games = null, hideRate = false, hideDmg = false
             ) : <Num value={null} />}
           </span>
         )}
-        <span className="scr-statcard-sum-item scr-sum-apm">
-          <span className="scr-statcard-sum-label">APM</span>
-          <Num value={stats.avgApm} />
-        </span>
         {SHOW_KD && (
           <span className="scr-statcard-sum-item scr-sum-kd">
             <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
