@@ -11,15 +11,14 @@ interface ChangePasswordModalProps {
 
 export default function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
   const updatePassword = useAppStore((s) => s.updatePassword);
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
   const save = async () => {
-    if (!currentPassword || !newPassword) {
-      setErr("현재 비밀번호와 새 비밀번호를 모두 입력해 주세요.");
+    if (!newPassword) {
+      setErr("새 비밀번호를 입력해 주세요.");
       return;
     }
     if (newPassword.length < 4) {
@@ -37,7 +36,7 @@ export default function ChangePasswordModal({ onClose }: ChangePasswordModalProp
     setErr("");
     setBusy(true);
     try {
-      await updatePassword(currentPassword, newPassword);
+      await updatePassword(newPassword);
       onClose();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "비밀번호 변경에 실패했어요.");
@@ -57,17 +56,6 @@ export default function ChangePasswordModal({ onClose }: ChangePasswordModalProp
 
         <div className="scr-modal-body">
           <label className="scr-field">
-            <span className="scr-label">현재 비밀번호</span>
-            <input
-              type="password"
-              className="scr-input"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              autoComplete="current-password"
-              autoFocus
-            />
-          </label>
-          <label className="scr-field">
             <span className="scr-label">새 비밀번호</span>
             <input
               type="password"
@@ -76,6 +64,7 @@ export default function ChangePasswordModal({ onClose }: ChangePasswordModalProp
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder={`4~${PASSWORD_MAX_LENGTH}자`}
               autoComplete="new-password"
+              autoFocus
             />
           </label>
           <label className="scr-field">

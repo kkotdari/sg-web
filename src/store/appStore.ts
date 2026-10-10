@@ -90,7 +90,7 @@ interface AppState {
   refreshAll: () => Promise<void>;
 
   updateProfile: (patch: Partial<Omit<Member, "roles" | "status" | "createdAt">>) => Promise<void>;
-  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
   withdraw: () => Promise<void>;
 
   updateMemberStatus: (id: string, status: MemberStatus) => Promise<void>;
@@ -211,10 +211,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
     }));
   },
 
-  updatePassword: async (currentPassword, newPassword) => {
+  updatePassword: async (newPassword) => {
     const current = get().user;
     if (!current) return;
-    await api.updateMemberPassword(current.id, currentPassword, newPassword);
+    await api.updateMemberPassword(current.id, newPassword);
   },
 
   withdraw: async () => {

@@ -662,10 +662,10 @@ export const api = {
     });
   },
 
-  async updateMemberPassword(id: string, currentPassword: string, newPassword: string): Promise<Member> {
+  async updateMemberPassword(id: string, newPassword: string): Promise<Member> {
     return request<Member>(`/api/members/${id}/password`, {
       method: "PATCH",
-      body: JSON.stringify({ currentPassword, newPassword }),
+      body: JSON.stringify({ newPassword }),
     });
   },
 
