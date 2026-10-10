@@ -197,43 +197,59 @@ function dmgOf(stats?: MemberStats): { dealt: string; taken: string } | null {
   return { dealt: `${x(d)} 딜`, taken: `${x(t)} 피해` };
 }
 
+/** 종족별 헤더의 전적 — 요약 줄과 **같은 칸(.scr-sum-plays · .scr-sum-rate)**에 담아 세 종족 줄이 세로로 맞는다(2026-10, 요청). */
 function Record({ stats }: { stats?: MemberStats }) {
   const plays = stats?.plays ?? 0;
   if (plays === 0) return null;
   return (
     <>
-      <Num value={plays} unit="판" />
-      <span className="scr-statcard-deck-label">승률</span>
-      <Num value={stats!.winRate} unit="%" />
+      <span className="scr-statcard-sum-item scr-sum-plays">
+        <Num value={plays.toLocaleString()} unit="회 플레이" />
+      </span>
+      <span className="scr-statcard-sum-item scr-sum-rate">
+        <span className="scr-statcard-deck-label">승률</span>
+        <Num value={stats!.winRate} unit="%" />
+      </span>
     </>
   );
 }
 
-/** 요약 줄 — 판 | 승률 | 데미지 | APM. 칸은 배열로 세우고 사이의 | 는 그릴 때 끼운다(한 칸을 빼도 구분선이 겹치거나 남지 않는다).
- *  "클랜원 전체" 카드는 승률·데미지를 뺀다(2026-10, 요청) — 클랜끼리만 둔 내전이라 클랜 전체 승률은 늘 반반이고, 데미지도 그 경기
- *  참가자 평균의 몇 배인지라 모두를 합치면 늘 1.0배다. 종족별 줄(RaceDecks)의 승률은 뜻이 있으니 그대로 둔다. */
-export function StatSum({ stats, hideRate = false, hideDmg = false }: {
+/** 요약 줄 — (게임 |) 회 플레이 | 승률 | 데미지 | APM. 칸은 배열로 세우고 사이의 | 는 그릴 때 끼운다(한 칸을 빼도 구분선이 겹치거나
+ *  남지 않는다).
+ *  · stats.plays 는 **사람이 뛴 횟수**지 경기 수가 아니다 — 한 경기에 여럿이 들어가므로 클랜 전체로 합치면 경기 수의 몇 배다.
+ *    그래서 단위는 "판"이 아니라 **"회 플레이"**다(2026-10, 요청).
+ *  · games 를 주면 맨 앞에 "N게임" 칸이 선다 — 실제 경기 수. "클랜원 전체" 카드만 받는다(요청).
+ *  · "클랜원 전체"는 승률·데미지를 뺀다(요청) — 클랜끼리만 둔 내전이라 클랜 전체 승률은 늘 반반이고, 데미지도 그 경기 참가자 평균의
+ *    몇 배인지라 모두를 합치면 늘 1.0배다. 종족별 줄(RaceDecks)의 승률은 뜻이 있으니 그대로 둔다. */
+export function StatSum({ stats, games = null, hideRate = false, hideDmg = false }: {
   stats: MemberStats;
+  games?: number | null;
   hideRate?: boolean;
   hideDmg?: boolean;
 }) {
   const kd = kdOf(stats);
   const dmg = dmgOf(stats);
-  const items: { key: string; node: ReactNode }[] = [
+  const items: { key: string; node: ReactNode }[] = [];
+  if (games !== null) items.push({ key: "games", node: (
+    <span className="scr-statcard-sum-item scr-sum-games" title="실제 경기 수 — 아래 '회 플레이'는 그 경기에 사람이 들어간 횟수의 합이다">
+      <Num value={games > 0 ? games.toLocaleString() : null} unit="게임" />
+    </span>
+  ) });
+  items.push(
     { key: "plays", node: (
-      <span className="scr-statcard-sum-item">
-        <Num value={stats.plays > 0 ? stats.plays : null} unit="판" />
+      <span className="scr-statcard-sum-item scr-sum-plays">
+        <Num value={stats.plays > 0 ? stats.plays.toLocaleString() : null} unit="회 플레이" />
       </span>
     ) },
-  ];
+  );
   if (!hideRate) items.push({ key: "rate", node: (
-    <span className="scr-statcard-sum-item">
+    <span className="scr-statcard-sum-item scr-sum-rate">
       <span className="scr-statcard-sum-label">승률</span>
       <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
     </span>
   ) });
   if (!hideDmg) items.push({ key: "dmg", node: (
-    <span className="scr-statcard-sum-item" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
+    <span className="scr-statcard-sum-item scr-sum-dmg" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
       <span className="scr-statcard-sum-label">데미지</span>
       {dmg ? (
         <span className="scr-stat-record-num-v scr-stat-dmg">
@@ -246,7 +262,7 @@ export function StatSum({ stats, hideRate = false, hideDmg = false }: {
     </span>
   ) });
   items.push({ key: "apm", node: (
-    <span className="scr-statcard-sum-item">
+    <span className="scr-statcard-sum-item scr-sum-apm">
       <span className="scr-statcard-sum-label">APM</span>
       <Num value={stats.avgApm} />
     </span>
@@ -298,7 +314,7 @@ export function RaceDecks({ byRace, openAll }: {
             <div key={r} className="scr-statcard-deck">
               <span className="scr-statcard-deck-head">
                 <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
-                {r}
+                <span className="scr-statcard-deck-name">{r}</span>
                 {(byRace?.[r]?.plays ?? 0) > 0 && (
                   <span className="scr-statcard-head-sep" aria-hidden>|</span>
                 )}

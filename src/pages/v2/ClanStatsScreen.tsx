@@ -13,7 +13,7 @@ import { activeMemberSearchTerms, memberMatchesTerm, normalizeSearchText } from 
 import { buildLexicon, segmentChunk, splitChunks } from "../../utils/gameSearch";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { cx } from "../../utils/format";
-import type { ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
+import type { ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 const CLAN_TYPE: GameType = "0102";
 const PERIOD_ALL = "all";
@@ -60,7 +60,7 @@ function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
               <span className="scr-clan-race-name">{c.label}</span>
               <span className="scr-clan-race-sum">
                 <span className="scr-stat-record-num-v">
-                  {c.plays.toLocaleString()}<span className="scr-stat-record-num-unit">판</span>
+                  {c.plays.toLocaleString()}<span className="scr-stat-record-num-unit">회 플레이</span>
                 </span>
               </span>
               <span className="scr-clan-race-sum">
@@ -129,6 +129,8 @@ export default function ClanStatsScreen() {
     stats: Record<string, MemberStatsEntry>;
     clan: MemberStatsEntry | null;
     clanComps: ClanCompEntry[];
+    /** 편성(4:4·3:3·2:2 …)별 경기 수 — 이 합이 **실제 경기 수**다(clan.overall.plays 는 사람이 뛴 횟수라 몇 배 크다). */
+    clanFormats: ClanBreakdownEntry[];
   }
   const [view, setView] = useState<StatsView | null>(null);
   const [error, setError] = useState("");
@@ -144,7 +146,7 @@ export default function ClanStatsScreen() {
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
       : monthInputToRange(debouncedQuery.period);
-    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [] }); return; }
+    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [] }); return; }
     let cancelled = false;
     setError("");
     const byId = (res: GameResultStatsResponse) => {
@@ -159,12 +161,12 @@ export default function ClanStatsScreen() {
       if (cancelled) return;
       setView({
         ...blank, stats: byId(res), clan: res.clan ?? null,
-        clanComps: res.clanComps ?? [],
+        clanComps: res.clanComps ?? [], clanFormats: res.clanFormats ?? [],
       });
     }).catch((e) => {
       if (cancelled) return;
       setError(e instanceof Error ? e.message : "통계를 불러오지 못했어요.");
-      setView({ ...blank, stats: {}, clan: null, clanComps: [] });
+      setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [] });
     });
     return () => { cancelled = true; };
   }, [debouncedQuery, debouncedSignature]);
@@ -174,6 +176,12 @@ export default function ClanStatsScreen() {
     const byId = new Map(members.map((m) => [m.id, m]));
     return view.memberIds.map((id) => byId.get(id)).filter((m): m is Member => m !== undefined);
   }, [view, members]);
+
+  /** 실제 경기 수 — 편성별 판수(4:4·3:3·2:2 …)의 합이다. 편성은 가짓수가 적어 서버의 상위 5 에 잘릴 일이 없다. */
+  const clanGames = useMemo(
+    () => (view?.clanFormats ?? []).reduce((n, f) => n + f.plays, 0),
+    [view],
+  );
 
   const cards = useMemo(() => {
     const list = viewMembers.map((m) => {
@@ -263,7 +271,7 @@ export default function ClanStatsScreen() {
             <header className="scr-statcard-head">
               <span className="scr-stat-name-btn scr-stat-name-plain">클랜원 전체</span>
               <span className="scr-statcard-head-sep" aria-hidden>|</span>
-              <StatSum stats={view.clan.overall} hideRate hideDmg />
+              <StatSum stats={view.clan.overall} games={clanGames} hideRate hideDmg />
             </header>
             <RaceDecks byRace={view.clan.byRace} openAll={expandAll} />
           </section>
