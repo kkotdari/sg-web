@@ -14,6 +14,7 @@ import { useLockBodyScroll } from "../utils/bodyScrollLock";
 import { challengePhoto, shareThumb, type KakaoShareContent } from "../utils/kakaoShare";
 import { buildChallengeBackdrop, type ChallengeBackdrop } from "../utils/image";
 import type { Challenge } from "../types";
+import { imgSrc } from "../utils/imgSrc";
 
 const MAX_TARGETS = 4;
 const MAX_OWN_TEAM = 3;
@@ -216,7 +217,7 @@ export default function ChallengeFormModal({ onClose, onCreated, presetTargetIds
             </button>
             {photo && (
               <div className="scr-challenge-photo-preview">
-                <img src={photo.backdrop} alt="고른 편지지 배경 사진" />
+                <img src={imgSrc(photo.backdrop)} alt="고른 편지지 배경 사진" />
                 <button
                   type="button" className="scr-icon-btn scr-challenge-photo-clear"
                   onClick={() => setPhoto(null)} aria-label="배경 사진 빼기"

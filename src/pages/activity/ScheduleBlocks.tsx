@@ -10,6 +10,7 @@ import { cx, formatBytes } from "../../utils/format";
 import { pickPhoto, readAsDataUrl } from "../../utils/image";
 import { attachPopover } from "../../utils/popover";
 import type { ScheduleBlock, SchedulePhoto } from "../../types";
+import { imgSrc } from "../../utils/imgSrc";
 
 export type DraftBlock = ScheduleBlock & { key: string };
 export const withKeys = (blocks: ScheduleBlock[]): DraftBlock[] => blocks.map((b) => ({ ...b, key: b.id }));
@@ -350,7 +351,7 @@ function PhotosBlock({
                   onClick={(e) => { e.stopPropagation(); setOpen(p); }}
                   aria-label={`${p.name} 크게 보기`}
                 >
-                  <img src={p.thumbUrl ?? p.url} alt={p.name} loading="lazy" decoding="async" draggable={false} />
+                  <img src={imgSrc(p.thumbUrl ?? p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
                 </button>
                 {canEdit && (
                   <button
@@ -405,7 +406,7 @@ function MediaBlock({
           onClick={(e) => { e.stopPropagation(); setOpen(true); }}
           aria-label={`${block.name} 크게 보기`}
         >
-          <img src={block.url} alt={block.name} loading="lazy" />
+          <img src={imgSrc(block.url)} alt={block.name} loading="lazy" />
         </button>
       ) : (
         <a

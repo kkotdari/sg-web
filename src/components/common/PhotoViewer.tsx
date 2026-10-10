@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
+import { imgSrc } from "../../utils/imgSrc";
 
 interface PhotoViewerProps {
   src: string;
@@ -209,7 +210,7 @@ export default function PhotoViewer({ src, alt, onClose }: PhotoViewerProps) {
         >
           <X size={16} />
         </button>
-        <img src={src} alt={alt} className="scr-photo-large" ref={imgRef} draggable={false} onLoad={measure} />
+        <img src={imgSrc(src)} alt={alt} className="scr-photo-large" ref={imgRef} draggable={false} onLoad={measure} />
       </div>
     </div>,
     document.body,

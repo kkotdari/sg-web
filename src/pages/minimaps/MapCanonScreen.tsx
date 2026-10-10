@@ -13,6 +13,7 @@ import { downloadMinimapPng, renderMinimapCanvas } from "../../utils/minimapExpo
 import type { ReplayMapGrid } from "../../utils/replayParser";
 import { cx } from "../../utils/format";
 import type { MapCanon, MapCatalog, MapCatalogEntry } from "../../types";
+import { imgSrc } from "../../utils/imgSrc";
 
 const mapLabel = (m: MapCatalogEntry): string => cleanMapName(m.name ?? "") || "(이름 없음)";
 
@@ -62,7 +63,7 @@ function MapImageModal({
         </div>
         <div className="scr-mapimg-body">
           {err ? <div className="scr-err" role="alert">{err}</div>
-            : url ? <img className="scr-mapimg" src={url} alt={`${title} 지도`} />
+            : url ? <img className="scr-mapimg" src={imgSrc(url)} alt={`${title} 지도`} />
               : <Spinner />}
         </div>
         <div className="scr-form-actions">

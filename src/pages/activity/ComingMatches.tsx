@@ -5,6 +5,7 @@ import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
 import { formatWhen, serverMs } from "../../utils/date";
 import type { LeagueMatchActivity, LeagueMatchTeam } from "../../types";
+import { imgSrc } from "../../utils/imgSrc";
 
 export const COMING_WINDOW_MS = 7 * 24 * 3600 * 1000;
 export const COMING_GRACE_MS = 3 * 3600 * 1000;
@@ -58,7 +59,7 @@ function ComingSide({ team }: { team: LeagueMatchTeam | null }) {
         const m = p.memberId ? memberOf(p.memberId) : undefined;
         const key = `${p.memberId || p.nickname}-${i}`;
         return m?.rosterImage ? (
-          <img key={key} className="scr-coming-card" src={m.rosterImage} alt={p.nickname} draggable={false} />
+          <img key={key} className="scr-coming-card" src={imgSrc(m.rosterImage)} alt={p.nickname} draggable={false} />
         ) : (
           <span key={key} className="scr-coming-person">
             <Avatar member={m ?? { id: p.memberId, nickname: p.nickname, avatar: null }} size={30} />

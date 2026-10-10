@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { cx, avatarColor } from "../../utils/format";
+import { imgSrc } from "../../utils/imgSrc";
 
 export interface AvatarMember {
   id: string;
@@ -37,7 +38,7 @@ export default function Avatar({ member, size = 28, className, icon }: AvatarPro
   if (member.avatar && !broken) {
     return (
       <img
-        src={member.avatar}
+        src={imgSrc(member.avatar)}
         alt={member.nickname}
         className={cx("scr-avatar", className)}
         style={{ width: size, height: size, borderRadius: radius }}

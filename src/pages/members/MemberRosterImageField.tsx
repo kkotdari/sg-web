@@ -5,6 +5,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { Spinner } from "../../components/common/Feedback";
 import { useAppStore } from "../../store/appStore";
 import type { Member } from "../../types";
+import { imgSrc } from "../../utils/imgSrc";
 
 const ACCEPT = ["image/png", "image/jpeg", "image/webp"];
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -80,7 +81,7 @@ export default function MemberRosterImageField({ member }: { member: Member }) {
           type="button" className="scr-member-roster-thumb"
           onClick={() => setViewing(true)} aria-label={`${member.nickname} 로스터 이미지 크게 보기`}
         >
-          <img src={src} alt="" loading="lazy" />
+          <img src={imgSrc(src)} alt="" loading="lazy" />
         </button>
       ) : (
         <button

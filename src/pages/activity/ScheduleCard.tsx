@@ -16,6 +16,7 @@ import { showAlert } from "../../components/common/AlertDialog";
 import type { Schedule, ScheduleBlock, ScheduleFile, SchedulePhoto, ScheduleWrite, ScheduleBlockWrite } from "../../types";
 import { ActivityCard } from "./ActivityCard";
 import ScheduleBlocks, { NEW_PREFIX, withKeys, type DraftBlock } from "./ScheduleBlocks";
+import { imgSrc } from "../../utils/imgSrc";
 
 function whenTextOf(date: string, time: string | null): string {
   const day = formatWhen(date);
@@ -218,7 +219,7 @@ function SchedulePhotos({ photos }: { photos: ScheduleFile[] }) {
               onClick={(e) => { e.stopPropagation(); setOpen(f); }}
               aria-label={`${f.name} 크게 보기`}
             >
-              <img src={f.url} alt={f.name} loading="lazy" />
+              <img src={imgSrc(f.url)} alt={f.name} loading="lazy" />
             </button>
           </li>
         ))}
