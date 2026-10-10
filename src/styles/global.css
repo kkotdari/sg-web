@@ -1164,6 +1164,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   font-size: var(--fs-11); font-weight: 700; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap;
 }
 .scr-clan-race-sum { flex: none; display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.scr-clan-race-sum + .scr-clan-race-sum { min-width: 6.4em; justify-content: flex-end; }
+.scr-clan-race-stats { display: flex; flex-direction: column; gap: 6px; }
+.scr-clan-race-stats > .scr-statcard-decks { margin-top: 0; }
 
 .scr-clan-decks {
   --fs-9: 13px; --fs-10: 13px; --fs-11: 14px; --fs-micro: 14px; --fs-caption: 16px;
@@ -1274,21 +1277,18 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard .scr-stat-up-note, .scr-clan-decks .scr-stat-up-note {
   white-space: normal; word-break: keep-all; font-size: 11px; line-height: 1.35;
 }
-/* 종족 전적 줄 아래 펼친 생산·업그레이드 덱(요청: 따로 서던 '종족별 생산·업그레이드'를 접기·펼치기로 통합) */
-.scr-clan-race-deck { padding-bottom: 6px; }
-.scr-clan-race > .scr-statcard-deck-toggle { margin-left: 2px; }
 
 
 .scr-clan-dash-panels {
   display: grid; gap: 0 14px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 .scr-clan-dash-panels > .scr-clan-panel { padding: 0; border: none; border-radius: 0; background: none; }
 .scr-clan-dash-panels > .scr-clan-panel + .scr-clan-panel { border-left: 1px solid var(--line-hair); padding-left: 14px; }
 @media (min-width: 1160px) {
   .scr-clan-dash-row {
     display: grid; gap: 8px; align-items: stretch;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.8fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.3fr);
   }
 }
 
@@ -1530,7 +1530,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   --scr-up-num-w: 15px;
   display: grid; grid-template-columns: minmax(0, 1fr) var(--scr-up-num-w) var(--scr-up-num-w);
   width: 100%; max-width: 92px;
-  gap: 1px 6px; align-items: baseline;
+  gap: 1px 6px; align-items: center; line-height: 1.15;
   font-size: var(--fs-11); color: var(--text);
   font-variant-numeric: tabular-nums; text-align: right; flex: none;
 }

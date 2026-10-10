@@ -1,20 +1,19 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Users } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { currentMonthValue, monthInputToRange } from "../../utils/date";
-import MemberStatRow, { RaceMixCell, RACE_TONE } from "../stats/MemberStatRow";
+import MemberStatRow, { RaceDecks } from "../stats/MemberStatRow";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
-import { activeMemberSearchTerms, memberMatchesQuery } from "../../utils/memberSearch";
+import { activeMemberSearchTerms, memberMatchesTerm, normalizeSearchText } from "../../utils/memberSearch";
+import { buildLexicon, segmentChunk, splitChunks } from "../../utils/gameSearch";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { cx } from "../../utils/format";
-import type { BaseRace, ClanBreakdownEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
-
-const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
+import type { ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 const CLAN_TYPE: GameType = "0102";
 const PERIOD_ALL = "all";
@@ -41,58 +40,26 @@ function KpiTile({
 
 /** 종족 전적 — 줄마다 꺽쇠로 그 종족의 생산·업그레이드 덱을 펼친다(요청: 따로 서던 '종족별 생산·업그레이드'를 접기·펼치기로 통합).
  *  덱은 개인 카드와 같은 RaceMixCell · 처음엔 모두 접힌 채다. */
-function RaceRecords({ byRace }: { byRace?: Partial<Record<BaseRace, MemberStats>> }) {
-  const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
-  const toggle = (r: BaseRace): void => {
-    setOpenRaces((prev) => {
-      const next = new Set(prev);
-      if (next.has(r)) next.delete(r); else next.add(r);
-      return next;
-    });
-  };
+function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
+  if (rows.length === 0) return <p className="scr-clan-panel-empty">기록이 없어요</p>;
   return (
     <div className="scr-clan-races">
-      {RACES.map((r) => {
-        const s = byRace?.[r];
-        const open = openRaces.has(r);
-        return (
-          <Fragment key={r}>
-            <div className="scr-clan-race">
-              <span className="scr-clan-race-name">
-                <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
-                {r}
-              </span>
-              <span className="scr-clan-race-sum">
-                <span className="scr-stat-record-num-v">
-                  {(s?.plays ?? 0).toLocaleString()}<span className="scr-stat-record-num-unit">판</span>
-                </span>
-                {s && s.plays > 0 && (
-                  <span className="scr-statcard-sum-paren">
-                    (<span className="scr-statcard-sum-label">승률</span>{" "}
-                    <span className="scr-stat-record-num-v">
-                      {s.winRate}<span className="scr-stat-record-num-unit">%</span>
-                    </span>)
-                  </span>
-                )}
-              </span>
-              <button
-                type="button" className="scr-text-btn scr-statcard-deck-toggle"
-                aria-expanded={open} aria-label={`${r} 생산·업그레이드 ${open ? "접기" : "펼치기"}`}
-                onClick={() => toggle(r)}
-              >
-                {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
-              </button>
-            </div>
-            {open && (
-              <div className="scr-statcard-decks scr-clan-decks scr-clan-race-deck">
-                <div className="scr-statcard-deck">
-                  <RaceMixCell race={r} stats={s} />
-                </div>
-              </div>
-            )}
-          </Fragment>
-        );
-      })}
+      {rows.map((c) => (
+        <div key={c.label} className="scr-clan-race">
+          <span className="scr-clan-race-name">{c.label}</span>
+          <span className="scr-clan-race-sum">
+            <span className="scr-stat-record-num-v">
+              {c.plays.toLocaleString()}<span className="scr-stat-record-num-unit">판</span>
+            </span>
+          </span>
+          <span className="scr-clan-race-sum">
+            <span className="scr-statcard-sum-label">승률</span>
+            <span className="scr-stat-record-num-v">
+              {c.winRate}<span className="scr-stat-record-num-unit">%</span>
+            </span>
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -135,12 +102,22 @@ export default function ClanStatsScreen() {
   const user = useAppStore((s) => s.user);
   const suggestions = useMemo(() => activeMemberSearchTerms(members), [members]);
 
-  const [search, setSearch] = useUrlState("u");
+  const [searchApplied, setSearchApplied] = useUrlState("u");
+  const [search, setSearch] = useState(() => searchApplied);
+  useEffect(() => { setSearch(searchApplied); }, [searchApplied]);
+  const lexicon = useMemo(
+    () => buildLexicon(suggestions.flatMap((s) => s.matchTexts), []),
+    [suggestions],
+  );
   const [teamBuilder, setTeamBuilder] = useState(false);
   const matchedMembers = useMemo(() => {
+    const terms = splitChunks(searchApplied)
+      .flatMap((c) => segmentChunk(c, lexicon).map((p) => normalizeSearchText(p.text).trim()))
+      .filter(Boolean);
     return members.filter((m) =>
-      m.status !== "withdrawn" && m.status !== "suspended" && memberMatchesQuery(m, search));
-  }, [members, search]);
+      m.status !== "withdrawn" && m.status !== "suspended"
+      && (terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t))));
+  }, [members, searchApplied, lexicon]);
 
   const [period, setPeriod] = useUrlState("period", currentMonthValue());
   useEffect(() => () => {
@@ -170,7 +147,7 @@ export default function ClanStatsScreen() {
     stats: Record<string, MemberStatsEntry>;
     clan: MemberStatsEntry | null;
     clanMaps: ClanBreakdownEntry[];
-    clanFormats: ClanBreakdownEntry[];
+    clanComps: ClanCompEntry[];
   }
   const [view, setView] = useState<StatsView | null>(null);
   const [error, setError] = useState("");
@@ -186,7 +163,7 @@ export default function ClanStatsScreen() {
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
       : monthInputToRange(debouncedQuery.period);
-    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanMaps: [], clanFormats: [] }); return; }
+    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanMaps: [], clanComps: [] }); return; }
     let cancelled = false;
     setError("");
     const byId = (res: GameResultStatsResponse) => {
@@ -201,12 +178,12 @@ export default function ClanStatsScreen() {
       if (cancelled) return;
       setView({
         ...blank, stats: byId(res), clan: res.clan ?? null,
-        clanMaps: res.clanMaps ?? [], clanFormats: res.clanFormats ?? [],
+        clanMaps: res.clanMaps ?? [], clanComps: res.clanComps ?? [],
       });
     }).catch((e) => {
       if (cancelled) return;
       setError(e instanceof Error ? e.message : "통계를 불러오지 못했어요.");
-      setView({ ...blank, stats: {}, clan: null, clanMaps: [], clanFormats: [] });
+      setView({ ...blank, stats: {}, clan: null, clanMaps: [], clanComps: [] });
     });
     return () => { cancelled = true; };
   }, [debouncedQuery, debouncedSignature]);
@@ -308,15 +285,15 @@ export default function ClanStatsScreen() {
               title="맵" note="대표맵 기준 · 상위 5"
               rows={view.clanMaps} empty="기록이 없어요"
             />
-            <BreakdownPanel
-              title="편성" note="팀전·난투 기준 · 상위 5"
-              rows={view.clanFormats} empty="기록이 없어요"
-            />
           </div>
           <div className="scr-clan-cell scr-clan-cell-races">
-            <span className="scr-clan-panel-title">종족 전적</span>
-            <RaceRecords byRace={view.clan.byRace} />
+            <span className="scr-clan-panel-title">종족구성별 전적</span>
+            <CompRecords rows={view.clanComps} />
           </div>
+          </div>
+          <div className="scr-clan-race-stats scr-clan-decks">
+            <span className="scr-clan-panel-title">종족 통계</span>
+            <RaceDecks byRace={view.clan.byRace} />
           </div>
         </section>
       )}
@@ -327,8 +304,10 @@ export default function ClanStatsScreen() {
         showCount={false}
         searchValue={search}
         onSearchChange={setSearch}
-        searchPlaceholder="유저 입력 또는 @로 목록 띄우기"
+        onSearchEnter={(v) => setSearchApplied(v)}
+        searchPlaceholder="유저 입력 (스페이스로 여럿, 엔터로 검색)"
         suggestions={suggestions}
+        lexicon={lexicon}
       />
 
       {error && <div className="scr-err">{error}</div>}

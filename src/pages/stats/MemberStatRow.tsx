@@ -209,22 +209,7 @@ function Record({ stats }: { stats?: MemberStats }) {
   );
 }
 
-interface MemberStatRowProps {
-  member: Member;
-  stats: MemberStats;
-  byRace?: Partial<Record<BaseRace, MemberStats>>;
-  me?: boolean;
-}
-
-export default function MemberStatRow({
-  member, stats, byRace, me = false,
-}: MemberStatRowProps) {
-  const openMemberProfile = useAppStore((s) => s.openMemberProfile);
-  const [photoOpen, setPhotoOpen] = useState(false);
-  /* 닉네임은 PC·폰 다 **전체**다(2026-10, 요청: "4글자로 하지 말고 다 보여주기" — 한때 폰은 네 글자 고정 칸이었다). 폰은 스탯이 제 줄로
-     내려가(global.css 폰 규칙) 이름 옆에 자리를 다툴 것이 없다. 너무 긴 이름만 말줄임(.scr-stat-name-btn). 아바타는 PC·폰 같은 32. */
-  const kd = kdOf(stats);
-  const dmg = dmgOf(stats);
+export function RaceDecks({ byRace }: { byRace?: Partial<Record<BaseRace, MemberStats>> }) {
   const [openRaces, setOpenRaces] = useState<ReadonlySet<BaseRace>>(() => new Set());
   const toggleRace = (r: BaseRace): void => {
     setOpenRaces((prev) => {
@@ -233,58 +218,9 @@ export default function MemberStatRow({
       return next;
     });
   };
-
   return (
-    <section className={cx("scr-statcard", me && "scr-statcard-me")}>
-      <header className="scr-statcard-head">
-        <button
-          type="button" className="scr-stat-avatar-btn"
-          onClick={() => setPhotoOpen(true)} aria-label={`${member.nickname} 사진 보기`}
-        >
-          <Avatar member={member} size={32} />
-        </button>
-        <button
-          type="button" className="scr-stat-name-btn" title={member.nickname}
-          onClick={() => openMemberProfile(member.id)}
-        >
-          {member.nickname}
-        </button>
-        <div className="scr-statcard-sum">
-          <span className="scr-statcard-sum-item">
-            <span className="scr-statcard-sum-label">총</span>
-            <Num value={stats.plays > 0 ? stats.plays : null} unit="판" />
-            {stats.plays > 0 && (
-              <span className="scr-statcard-sum-paren">
-                (<span className="scr-statcard-sum-label">승률</span>{" "}
-                <Num value={stats.winRate} unit="%" />)
-              </span>
-            )}
-          </span>
-          <span className="scr-statcard-sum-item" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
-            {/* 라벨 "데미지"는 걷었다(2026-10, 요청: "데미지 없애고 평균의 n배 딜 / n배 피해") — 딜·피해 두 낱말이 곧 라벨이다. 값이 없을 때만 "딜/피해 –". */}
-            {dmg ? (
-              <span className="scr-stat-record-num-v scr-stat-dmg">
-                <span className="scr-stat-dmg-lead">평균의</span>
-                <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
-                <span className="scr-stat-dmg-sep">/</span>
-                <span className="scr-stat-dmg-taken">{dmg.taken}</span>
-              </span>
-            ) : <><span className="scr-statcard-sum-label">딜/피해</span><Num value={null} /></>}
-          </span>
-          <span className="scr-statcard-sum-item">
-            <span className="scr-statcard-sum-label">APM</span>
-            <Num value={stats.avgApm} />
-          </span>
-          {SHOW_KD && (
-            <span className="scr-statcard-sum-item">
-              <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
-              <Num value={kd} />
-            </span>
-          )}
-        </div>
-      </header>
-      <div className="scr-statcard-decks">
-        <div className="scr-statcard-deck-grid">
+    <div className="scr-statcard-decks">
+      <div className="scr-statcard-deck-grid">
         {RACES.map((r) => {
           const open = openRaces.has(r);
           return (
@@ -307,8 +243,75 @@ export default function MemberStatRow({
             </div>
           );
         })}
-        </div>
       </div>
+    </div>
+  );
+}
+
+interface MemberStatRowProps {
+  member: Member;
+  stats: MemberStats;
+  byRace?: Partial<Record<BaseRace, MemberStats>>;
+  me?: boolean;
+}
+
+export default function MemberStatRow({
+  member, stats, byRace, me = false,
+}: MemberStatRowProps) {
+  const openMemberProfile = useAppStore((s) => s.openMemberProfile);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  /* 닉네임은 PC·폰 다 **전체**다(2026-10, 요청: "4글자로 하지 말고 다 보여주기" — 한때 폰은 네 글자 고정 칸이었다). 폰은 스탯이 제 줄로
+     내려가(global.css 폰 규칙) 이름 옆에 자리를 다툴 것이 없다. 너무 긴 이름만 말줄임(.scr-stat-name-btn). 아바타는 PC·폰 같은 32. */
+  const kd = kdOf(stats);
+  const dmg = dmgOf(stats);
+
+  return (
+    <section className={cx("scr-statcard", me && "scr-statcard-me")}>
+      <header className="scr-statcard-head">
+        <button
+          type="button" className="scr-stat-avatar-btn"
+          onClick={() => setPhotoOpen(true)} aria-label={`${member.nickname} 사진 보기`}
+        >
+          <Avatar member={member} size={32} />
+        </button>
+        <button
+          type="button" className="scr-stat-name-btn" title={member.nickname}
+          onClick={() => openMemberProfile(member.id)}
+        >
+          {member.nickname}
+        </button>
+        <div className="scr-statcard-sum">
+          <span className="scr-statcard-sum-item">
+            <Num value={stats.plays > 0 ? stats.plays : null} unit="판" />
+          </span>
+          <span className="scr-statcard-sum-item">
+            <span className="scr-statcard-sum-label">승률</span>
+            <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
+          </span>
+          <span className="scr-statcard-sum-item" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
+            <span className="scr-statcard-sum-label">데미지</span>
+            {dmg ? (
+              <span className="scr-stat-record-num-v scr-stat-dmg">
+                <span className="scr-stat-dmg-lead">평균의</span>
+                <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
+                <span className="scr-stat-dmg-sep">/</span>
+                <span className="scr-stat-dmg-taken">{dmg.taken}</span>
+              </span>
+            ) : <Num value={null} />}
+          </span>
+          <span className="scr-statcard-sum-item">
+            <span className="scr-statcard-sum-label">APM</span>
+            <Num value={stats.avgApm} />
+          </span>
+          {SHOW_KD && (
+            <span className="scr-statcard-sum-item">
+              <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
+              <Num value={kd} />
+            </span>
+          )}
+        </div>
+      </header>
+      <RaceDecks byRace={byRace} />
       {photoOpen && member.avatar && (
         <PhotoViewer src={member.avatar} alt={member.nickname} onClose={() => setPhotoOpen(false)} />
       )}

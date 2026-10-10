@@ -266,11 +266,21 @@ export interface ClanBreakdownEntry {
   ratio: number;
 }
 
+export interface ClanCompEntry {
+  label: string;
+  plays: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+}
+
 export interface GameResultStatsResponse {
   members: MemberStatsEntry[];
   clan: MemberStatsEntry;
   clanMaps: ClanBreakdownEntry[];
   clanFormats: ClanBreakdownEntry[];
+  clanComps?: ClanCompEntry[];
 }
 
 export interface TeamRankEntry {
