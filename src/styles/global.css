@@ -5315,10 +5315,13 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   font-size: var(--fs-9); font-weight: 700; color: var(--row-dim);
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
+/* 맵 배지(.scr-activity-row-status)가 desc 밖으로 나와 여기 직접 선다(2026-10) — 배지–이름 사이는 옛 desc 의 6, 이름–오른쪽 묶음
+   사이는 옛 10 그대로가 되게 묶음 쪽에만 4 를 더 준다. */
 .scr-activity-row > .scr-activity-row-main {
-  flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px;
+  flex-direction: row; align-items: center; justify-content: flex-start; gap: 6px;
   min-width: 0; padding-left: 0; padding-right: 2px;
 }
+.scr-activity-row > .scr-activity-row-main > .scr-activity-row-badges { margin-left: 4px; }
 .scr-activity-row > .scr-activity-row-main > .scr-activity-row-desc { flex: 1 1 0; min-width: 0; }
 .scr-activity-row-badges {
   display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
@@ -5375,13 +5378,10 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-activity-row-flat { flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .scr-activity-row-play { flex: none; align-self: center; color: #4cc93b; }
 .scr-light-theme .scr-activity-row-play { color: #379a20; }
+/* 글자는 **누르지 않는다**(2026-10, 요청: "글자 좌우 압축 제거 · 글자가 잘리면 할수없이 자르기") — 한때 width:max-content 로 펼친 뒤
+   transform: scaleX(--flat) 로 줄 폭에 맞춰 눌렀다(찌그러져 보였다). 이제 그냥 줄어들다 말줄임(.scr-activity-row-em)으로 잘린다. */
 .scr-activity-row-flat-in {
-  display: flex; align-items: center; width: max-content;
-  transform: scaleX(var(--flat, 1));
-  transform-origin: left center;
-}
-.scr-activity-row-flat[data-flat-ready] > .scr-activity-row-flat-in {
-  transition: transform .12s ease-out;
+  display: flex; align-items: center; min-width: 0; max-width: 100%;
 }
 .scr-activity-row-name-main { position: relative; display: flex; align-items: center; min-width: 0; }
 .scr-activity-row-state {
@@ -5397,6 +5397,26 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   .scr-activity-row > * + * { padding-left: 8px; }
   .scr-activity-row > * { padding-right: 8px; }
   .scr-activity-row > *:last-child { padding-right: 0; }
+
+  /* ★ 폰 게임 줄은 **두 줄**(2026-10, 요청) — 윗줄에 시각 → 맵 배지(그 순서로 · NEW/UPDATE 는 오른쪽 끝) · 아랫줄에 이름.
+     옛 판은 배지가 이름 앞에 끼고 시각은 오른쪽 칸에 세로로 섰다. 시각 칸에 최소 폭을 줘 **줄마다 배지가 같은 자리**에서 시작한다.
+     묶음(.scr-activity-row-badges)은 display:contents 로 풀어 제 자식(NEW·시각)이 직접 줄에 서게 한다 — 그래야 order 가 먹는다.
+     줄 사이는 1, 위아래 여백은 11 → 7 로 좁혀 한 줄이 한 덩이로 모인다(요청: "타이트하게"). */
+  .scr-activity-row-game > .scr-activity-row-main {
+    flex-wrap: wrap; align-items: center; gap: 1px 6px;
+    padding-top: 7px; padding-bottom: 7px;
+  }
+  .scr-activity-row-game .scr-activity-row-badges { display: contents; }
+  .scr-activity-row-game .scr-activity-row-time {
+    order: 1; min-width: 5.2em; text-align: left; line-height: 1.25;
+  }
+  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-status { order: 2; }
+  .scr-activity-row-game .scr-activity-row-badges-top { order: 3; margin-left: auto; min-height: 0; }
+  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-desc { order: 4; flex: 1 0 100%; }
+  /* 배지는 한 치 작게(요청) — 글자 12 → 11 · 여백도 한 겹 줄인다. */
+  .scr-activity-row-game .scr-activity-row-status-dur {
+    font-size: var(--fs-11); padding: 1px 4px 0; gap: 3px; line-height: 1.35;
+  }
 }
 .scr-activity-row-fold { display: grid; }
 .scr-activity-row-fold > * { overflow: hidden; min-height: 0; }

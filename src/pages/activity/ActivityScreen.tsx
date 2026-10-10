@@ -1627,14 +1627,17 @@ export default function ActivityScreen() {
           />
         )}
         picked={picked}
-        className={cx(rowVoid(item) && "scr-activity-row-void", secret && "scr-activity-row-secret")}
+        className={cx(
+          item.kind === "gameResult" && "scr-activity-row-game",
+          rowVoid(item) && "scr-activity-row-void", secret && "scr-activity-row-secret",
+        )}
         disabled={secret}
         onClick={() => {
           if (item.kind === "gameResult") openGamePage(item);
           else openDetailPage(item);
         }}
+        status={rowStatusOf(item)}
         desc={<>
-          {rowStatusOf(item)}
           {rowDesc(item)}
           {notes > 0 && (
             <span className="scr-activity-row-notes" title={`댓글 ${notes}개`}>[{notes}]</span>

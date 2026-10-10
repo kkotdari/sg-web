@@ -302,9 +302,10 @@ export default function ExploreScreen() {
           {[...games].sort((a, b) => gameTime(b).localeCompare(gameTime(a))).map((g) => (
             <ListRow
               key={g.id}
+              className="scr-activity-row-game"
               onClick={() => openGame(g.id)}
+              status={<GameRowStatus game={g} />}
               desc={<>
-                <GameRowStatus game={g} />
                 <GameRowNames game={g} memberOf={memberOf} mobile={isMobile} playable={!!g.hasTruth} nameMask={maskPlayerName} />
               </>}
               side={formatAgo(gameTime(g))}

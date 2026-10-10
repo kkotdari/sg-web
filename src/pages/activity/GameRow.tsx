@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Play } from "lucide-react";
 import { cachedReplayMap } from "scplay";
 import { isMeleeGame, resolveSlotName } from "./GameResultSides";
@@ -7,36 +7,12 @@ import { cx } from "../../utils/format";
 import { isSecretGame } from "../../utils/gameAccess";
 import type { GameResult, GameResultSlot, Member } from "../../types";
 
-const FLAT_MIN = 0.5;
-
+/** 이름 줄 — 넘치면 **말줄임으로 자른다**(2026-10, 요청: "글자 좌우 압축 제거 · 글자가 잘리면 할수없이 자르기").
+ *  한때는 줄 폭을 재서 transform: scaleX(--flat) 로 글자를 좌우로 눌러 담았다(ResizeObserver + fonts.ready) — 글자가 찌그러져 보였다. */
 export function FlatLine({ children }: { children: ReactNode }) {
-  const boxRef = useRef<HTMLSpanElement>(null);
-  const inRef = useRef<HTMLSpanElement>(null);
-  useLayoutEffect(() => {
-    const box = boxRef.current;
-    const inner = inRef.current;
-    if (!box || !inner) return;
-    const fit = () => {
-      const avail = box.clientWidth;
-      const natural = inner.offsetWidth;
-      const k = natural > 0 ? Math.min(1, avail / natural) : 1;
-      box.style.setProperty("--flat", Math.max(FLAT_MIN, Math.round(k * 1000) / 1000).toString());
-    };
-    fit();
-    let raf = 0;
-    let dead = false;
-    const ro = new ResizeObserver(fit);
-    ro.observe(box);
-    (document.fonts?.ready ?? Promise.resolve()).then(() => {
-      if (dead) return;
-      fit();
-      raf = window.requestAnimationFrame(() => { if (!dead) box.dataset.flatReady = "1"; });
-    }).catch(() => {});
-    return () => { dead = true; window.cancelAnimationFrame(raf); ro.disconnect(); };
-  });
   return (
-    <span className="scr-activity-row-flat" ref={boxRef}>
-      <span className="scr-activity-row-flat-in" ref={inRef}>{children}</span>
+    <span className="scr-activity-row-flat">
+      <span className="scr-activity-row-flat-in">{children}</span>
     </span>
   );
 }
@@ -159,8 +135,10 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   </>);
 }
 
-export function ListRow({ desc, top, side, onClick, check, picked, className, disabled }: {
+export function ListRow({ desc, status, top, side, onClick, check, picked, className, disabled }: {
   desc: ReactNode;
+  /** 맵·길이 배지(GameRowStatus 따위) — desc 안이 아니라 **제 칸**에 선다. 폰 게임 줄은 이 칸을 시각 옆 윗줄로 올린다(global.css). */
+  status?: ReactNode;
   top?: ReactNode;
   side?: ReactNode;
   onClick: () => void;
@@ -179,6 +157,7 @@ export function ListRow({ desc, top, side, onClick, check, picked, className, di
         onClick={() => { if (!disabled) onClick(); }}
       >
         <span className="scr-activity-row-main">
+          {status}
           <span className="scr-activity-row-desc">{desc}</span>
           <span className="scr-activity-row-badges">
             <span className="scr-activity-row-badges-top">{top}</span>

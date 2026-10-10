@@ -273,9 +273,10 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                         key={g.id}
                         check={<RowCheck checked={picked} onChange={() => sel.toggle(key)} label="경기 선택" />}
                         picked={picked}
+                        className="scr-activity-row-game"
                         onClick={() => sel.toggle(key)}
+                        status={<GameRowStatus game={g} />}
                         desc={<>
-                          <GameRowStatus game={g} />
                           <GameRowNames game={g} memberOf={memberOf} mobile={isMobile} playable={gamePlayable(g)} />
                         </>}
                         side={formatAgo(g.gameStartedAt ?? g.date)}
