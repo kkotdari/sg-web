@@ -274,7 +274,8 @@ export default function ClanStatsScreen() {
       {view?.clan && (
         <section className="scr-clan-dash" aria-label="클랜 전체">
           <header className="scr-clan-dash-head">
-            <span className="scr-clan-dash-title">클랜 전체</span>
+            {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다.
+                화면 낭독기에는 감싼 section 의 aria-label 이 남는다. */}
             <span className="scr-clan-dash-sub">{view.memberIds.length}명</span>
             <button
               type="button" className="scr-text-btn scr-clan-dash-expand"
