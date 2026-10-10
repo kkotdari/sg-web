@@ -328,7 +328,7 @@ export function RaceDecks({ byRace, openAll }: {
           const open = openRaces.has(r);
           return (
             <div key={r} className="scr-statcard-deck">
-              <span className="scr-statcard-deck-head">
+              <span className="scr-statcard-deck-head" onClick={() => toggleRace(r)}>
                 {/* 네모 + 종족명이 **종족 머리의 제목**이다(2026-10, 지적: "네모아이콘 때문에 다 밀리는데 그러지마") — 네모가 제 칸을
                     차지하면 종족명부터 뒤가 통째로 밀린다. 한 덩이로 묶어 이름 칸에 담는다. */}
                 <span className="scr-statcard-deck-name">
@@ -341,7 +341,6 @@ export function RaceDecks({ byRace, openAll }: {
                 <button
                   type="button" className="scr-text-btn scr-statcard-deck-toggle"
                   aria-expanded={open} aria-label={open ? "접기" : "펼치기"}
-                  onClick={() => toggleRace(r)}
                 >
                   {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
                 </button>
