@@ -62,15 +62,17 @@ function RaceRecords({ byRace }: { byRace?: Partial<Record<BaseRace, MemberStats
                 <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
                 {r}
               </span>
-              <span className="scr-clan-race-plays">
-                {(s?.plays ?? 0).toLocaleString()}<span className="scr-clan-race-unit">회</span>
-              </span>
-              <span className="scr-clan-race-rate">
+              <span className="scr-clan-race-sum">
+                <span className="scr-stat-record-num-v">
+                  {(s?.plays ?? 0).toLocaleString()}<span className="scr-stat-record-num-unit">판</span>
+                </span>
                 {s && s.plays > 0 && (
-                  <>
-                    <span className="scr-clan-race-label">승률</span>
-                    {s.winRate}%
-                  </>
+                  <span className="scr-statcard-sum-paren">
+                    (<span className="scr-statcard-sum-label">승률</span>{" "}
+                    <span className="scr-stat-record-num-v">
+                      {s.winRate}<span className="scr-stat-record-num-unit">%</span>
+                    </span>)
+                  </span>
                 )}
               </span>
               <button

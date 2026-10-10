@@ -1157,22 +1157,13 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   border-top: 1px solid var(--line-hair);
 }
 .scr-clan-races > .scr-clan-race:first-child { border-top: none; padding-top: 2px; }
+.scr-clan-races { --fs-9: 13px; --fs-11: 14px; }
 .scr-clan-race-name {
   display: inline-flex; align-items: center; gap: 5px;
   flex: 1 1 auto; min-width: 0;
-  font-size: var(--fs-micro, 12px); color: var(--text-dim);
+  font-size: var(--fs-11); font-weight: 700; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap;
 }
-.scr-clan-race-plays {
-  flex: none; font-size: var(--fs-caption, 14px); font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.scr-clan-race-unit { font-size: var(--fs-10, 10px); font-weight: 500; color: var(--text-dim); margin-left: 1px; }
-.scr-clan-race-label { font-size: var(--fs-10, 10px); font-weight: 600; color: var(--text-dim); margin-right: 4px; }
-.scr-clan-race-rate {
-  flex: none; min-width: 46px; text-align: right; white-space: nowrap;
-  font-size: var(--fs-micro, 12px); font-weight: 600;
-  font-variant-numeric: tabular-nums;   /* 승률은 일반 글자색(요청) — 한때 var(--win) 이었다 */
-}
+.scr-clan-race-sum { flex: none; display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
 
 .scr-clan-decks {
   --fs-9: 13px; --fs-10: 13px; --fs-11: 14px; --fs-micro: 14px; --fs-caption: 16px;
@@ -1272,6 +1263,11 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-statcard-head > .scr-statcard-sum .scr-statcard-sum-label { font-size: 1em; }
   .scr-statcard-head > .scr-statcard-sum .scr-stat-record-num-unit { font-size: 0.786em; }
   .scr-statcard-sum > .scr-statcard-sum-item { gap: 3px; }
+  .scr-clan-race-name, .scr-clan-race-sum { font-size: clamp(10.2px, 2.85vw, 13px); }
+  .scr-clan-race-sum { gap: 3px; }
+  .scr-clan-race-sum .scr-statcard-sum-paren { margin-left: 2px; }
+  .scr-clan-race-sum .scr-stat-record-num-v, .scr-clan-race-sum .scr-statcard-sum-label { font-size: 1em; }
+  .scr-clan-race-sum .scr-stat-record-num-unit { font-size: 0.786em; }
   .scr-statcard-deck { padding-left: 8px; padding-right: 8px; }
   .scr-statcard .scr-stat-mix-row > * { padding-left: 6px; padding-right: 6px; }
 }
