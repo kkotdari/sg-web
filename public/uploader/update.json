@@ -1,0 +1,16 @@
+{
+  "version": "1.1.0",
+  "minVersion": "1.1.0",
+  "win": {
+    "url": "https://sg8.vercel.app/uploader/download/sg-uploader-setup.exe",
+    "sha512": "4ebcda858ab8238537f77feae4d9f07f52384971c0c04df02736f11876a75563a2ef8399e13b271cc9f63f98195067c9d85640e5ecfcdbe444b28da67069da5f"
+  },
+  "macArm64": {
+    "url": "https://sg8.vercel.app/uploader/download/sg-uploader-arm64.zip",
+    "sha512": "e2885dff1cdc978afb48d09e285c97d22bdad2d2bb950e42a250e9c58f73f81106de76cfb3345802b6281899598c5ee2b98c42fcd5c558a99e486f5a3881d042"
+  },
+  "macX64": {
+    "url": "https://sg8.vercel.app/uploader/download/sg-uploader-x64.zip",
+    "sha512": "83637d0800472e555fbba0bd13e9233e984a5f9ae025306a0f0bd4bd5e36932341e949776f7d373f23fd478ef392181ad2a69fc8ed062b973b8b6fab253256a4"
+  }
+}
