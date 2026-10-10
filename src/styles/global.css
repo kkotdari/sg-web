@@ -5398,20 +5398,20 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   .scr-activity-row > * { padding-right: 8px; }
   .scr-activity-row > *:last-child { padding-right: 0; }
 
-  /* ★ 폰 게임 줄은 **두 줄**(2026-10, 요청) — 윗줄에 시각 → 맵 배지(그 순서로 · NEW/UPDATE 는 오른쪽 끝) · 아랫줄에 이름.
-     옛 판은 배지가 이름 앞에 끼고 시각은 오른쪽 칸에 세로로 섰다. 시각 칸에 최소 폭을 줘 **줄마다 배지가 같은 자리**에서 시작한다.
+  /* ★ 폰 게임 줄은 **두 줄**(2026-10, 요청) — 윗줄은 **양쪽 정렬**로 맵 배지가 왼끝 · 시각이 오른끝(그 사이 오른쪽에 NEW/UPDATE) ·
+     아랫줄에 이름. 옛 판은 배지가 이름 앞에 끼고 시각은 오른쪽 칸에 세로로 섰고, 그 다음 판은 시각이 왼쪽이었다(되물렸다).
+     줄마다 배지는 왼끝 · 시각은 오른끝이라 세로줄은 저절로 맞는다 — 칸 폭을 못 박을 것이 없다.
      묶음(.scr-activity-row-badges)은 display:contents 로 풀어 제 자식(NEW·시각)이 직접 줄에 서게 한다 — 그래야 order 가 먹는다.
+     오른쪽으로 미는 것은 **NEW 칸 하나뿐**이다(auto 여백이 둘이면 남는 폭을 반씩 나눠 가져 NEW 가 한가운데로 간다).
      줄 사이는 1, 위아래 여백은 11 → 7 로 좁혀 한 줄이 한 덩이로 모인다(요청: "타이트하게"). */
   .scr-activity-row-game > .scr-activity-row-main {
     flex-wrap: wrap; align-items: center; gap: 1px 6px;
     padding-top: 7px; padding-bottom: 7px;
   }
   .scr-activity-row-game .scr-activity-row-badges { display: contents; }
-  .scr-activity-row-game .scr-activity-row-time {
-    order: 1; min-width: 5.2em; text-align: left; line-height: 1.25;
-  }
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-status { order: 2; }
-  .scr-activity-row-game .scr-activity-row-badges-top { order: 3; margin-left: auto; min-height: 0; }
+  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-status { order: 1; }
+  .scr-activity-row-game .scr-activity-row-badges-top { order: 2; margin-left: auto; min-height: 0; }
+  .scr-activity-row-game .scr-activity-row-time { order: 3; text-align: right; line-height: 1.25; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-desc { order: 4; flex: 1 0 100%; }
   /* 배지는 한 치 작게(요청) — 글자 12 → 11 · 여백도 한 겹 줄인다. */
   .scr-activity-row-game .scr-activity-row-status-dur {
