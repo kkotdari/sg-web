@@ -18,6 +18,15 @@ import type { ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, GameTy
 const CLAN_TYPE: GameType = "0102";
 const PERIOD_ALL = "all";
 
+/** 정렬 순서 — 검색창 밑의 작은 밑줄 탭(2026-10, 요청). 기본은 참여순(판 수 많은 사람부터). */
+const SORT_OPTS = [
+  { value: "plays", label: "참여" },
+  { value: "rate", label: "승률" },
+  { value: "dmg", label: "딜량" },
+  { value: "apm", label: "APM" },
+] as const;
+type SortKey = (typeof SORT_OPTS)[number]["value"];
+
 const EMPTY_STATS: MemberStats = {
   plays: 0, wins: 0, losses: 0, draws: 0, winRate: 0, bests: 0,
   avgApm: null, avgEapm: null, avgCmd: null, avgEcmd: null, avgBuild: null, truthMix: null, avgWorker5: null, mixPlays: null, mixSeconds: null, upPlays: null,
@@ -58,12 +67,13 @@ function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
           {list.map((c) => (
             <div key={c.label} className="scr-clan-race">
               <span className="scr-clan-race-name">{c.label}</span>
-              <span className="scr-clan-race-sum">
+              <span className="scr-statcard-head-sep" aria-hidden>|</span>
+              <span className="scr-statcard-sum-item scr-sum-plays">
                 <span className="scr-stat-record-num-v">
                   {c.plays.toLocaleString()}<span className="scr-stat-record-num-unit">회 플레이</span>
                 </span>
               </span>
-              <span className="scr-clan-race-sum">
+              <span className="scr-statcard-sum-item scr-sum-rate">
                 <span className="scr-statcard-sum-label">승률</span>
                 <span className="scr-stat-record-num-v">
                   {c.winRate}<span className="scr-stat-record-num-unit">%</span>
@@ -92,6 +102,7 @@ export default function ClanStatsScreen() {
   const [teamBuilder, setTeamBuilder] = useState(false);
   /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
   const [expandAll, setExpandAll] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>("plays");
   const matchedMembers = useMemo(() => {
     const terms = splitChunks(searchApplied)
       .flatMap((c) => segmentChunk(c, lexicon).map((p) => normalizeSearchText(p.text).trim()))
@@ -207,16 +218,28 @@ export default function ClanStatsScreen() {
       return 0;
     };
     const dirSign = -1;
-    type DataKey = "plays" | "rate" | "apm" | "cmd";
+    type DataKey = "plays" | "rate" | "dmg" | "apm" | "cmd";
+    /** 딜량 — 그 경기 참가자 평균의 몇 배인가(dmgDealtRel · 100 = 1.0배). 옛 경기엔 없어 그런 사람은 뒤로 보낸다. */
+    const noDmgLast = (a: (typeof list)[number], b: (typeof list)[number]) => {
+      const am = typeof a.stats.dmgDealtRel !== "number";
+      const bm = typeof b.stats.dmgDealtRel !== "number";
+      if (am && bm) return nicknameTiebreak(a, b);
+      if (am) return 1;
+      if (bm) return -1;
+      return 0;
+    };
     const compareData = (key: DataKey, a: (typeof list)[number], b: (typeof list)[number]) => {
       switch (key) {
         case "plays": return noPlaysLast(a, b) || dirSign * (a.stats.plays - b.stats.plays);
         case "rate": return noPlaysLast(a, b) || dirSign * (a.stats.winRate - b.stats.winRate);
+        case "dmg": return noDmgLast(a, b) || dirSign * ((a.stats.dmgDealtRel ?? 0) - (b.stats.dmgDealtRel ?? 0));
         case "apm": return noAvgLast(a, b, "avgApm") || dirSign * ((a.stats.avgApm ?? 0) - (b.stats.avgApm ?? 0));
         case "cmd": return noAvgLast(a, b, "avgCmd") || dirSign * ((a.stats.avgCmd ?? 0) - (b.stats.avgCmd ?? 0));
       }
     };
-    const DATA_ORDER: DataKey[] = ["plays", "rate", "apm", "cmd"];
+    /** 고른 자를 맨 앞에 두고, 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드)로 가린다. */
+    const BASE_ORDER: DataKey[] = ["plays", "rate", "apm", "cmd"];
+    const DATA_ORDER: DataKey[] = [sortKey, ...BASE_ORDER.filter((k) => k !== sortKey)];
     sorted.sort((a, b) => {
       for (const key of DATA_ORDER) {
         const c = compareData(key, a, b);
@@ -225,7 +248,7 @@ export default function ClanStatsScreen() {
       return nicknameTiebreak(a, b);
     });
     return sorted;
-  }, [viewMembers, view]);
+  }, [viewMembers, view, sortKey]);
 
 
   return (
@@ -289,6 +312,22 @@ export default function ClanStatsScreen() {
         suggestions={suggestions}
         lexicon={lexicon}
       />
+
+      <div className="scr-stats-sort">
+        <span className="scr-stats-sort-label">정렬</span>
+        <div className="scr-line-tabs scr-stats-sort-tabs" role="tablist" aria-label="정렬 순서">
+          {SORT_OPTS.map((o) => (
+            <button
+              key={o.value} type="button" role="tab"
+              aria-selected={o.value === sortKey}
+              className={cx("scr-line-tab-btn", o.value === sortKey && "is-on")}
+              onClick={() => setSortKey(o.value)}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {error && <div className="scr-err">{error}</div>}
 

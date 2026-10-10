@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
@@ -197,10 +197,17 @@ function dmgOf(stats?: MemberStats): { dealt: string; taken: string } | null {
   return { dealt: `${x(d)} 딜`, taken: `${x(t)} 피해` };
 }
 
-/** 종족별 헤더의 전적 — 요약 줄과 **같은 칸(.scr-sum-plays · .scr-sum-rate)**에 담아 세 종족 줄이 세로로 맞는다(2026-10, 요청). */
+/** 종족별 헤더의 전적 — 요약 줄과 **같은 칸(.scr-sum-plays · .scr-sum-rate)**에 담아, 통계의 네 곳(종족구성별 전적 · 클랜원 전체
+ *  타이틀과 헤더 · 개인 타이틀과 헤더)이 한 세로줄에 선다(2026-10, 요청). 경기가 없으면 칸만 비운다 — 안 그리면 그 줄의 칸 폭이
+ *  0 이 되어 뒤 칸이 밀린다. */
 function Record({ stats }: { stats?: MemberStats }) {
   const plays = stats?.plays ?? 0;
-  if (plays === 0) return null;
+  if (plays === 0) {
+    return (<>
+      <span className="scr-statcard-sum-item scr-sum-plays" aria-hidden />
+      <span className="scr-statcard-sum-item scr-sum-rate" aria-hidden />
+    </>);
+  }
   return (
     <>
       <span className="scr-statcard-sum-item scr-sum-plays">
@@ -214,11 +221,15 @@ function Record({ stats }: { stats?: MemberStats }) {
   );
 }
 
-/** 요약 줄 — (게임 |) 회 플레이 | 승률 | 데미지 | APM. 칸은 배열로 세우고 사이의 | 는 그릴 때 끼운다(한 칸을 빼도 구분선이 겹치거나
- *  남지 않는다).
+/** 요약 줄 — **앞 덩이**(회 플레이 · 승률)와 **뒤 덩이**(데미지 · APM)로 갈린다(2026-10, 요청: "닉네임 플레이횟수 승률이 한덩이고
+ *  나머지가 한덩이 · 나머지 한덩이를 우측정렬 · 중간 | 제거"). 사이에 끼우던 가는 | 는 모두 걷었다 — 남은 구분선은 이름 뒤의 굵은
+ *  | (.scr-statcard-head-sep) 하나뿐이다.
+ *  칸은 제 이름(.scr-sum-*)으로 바깥 글(.scr-statcard-head / -deck-head / .scr-clan-race)의 **같은 세로 칸**에 꽂힌다 — 묶음 두 개는
+ *  display:contents 로 풀어 제 자식이 바로 칸에 서게 한다(global.css).
  *  · stats.plays 는 **사람이 뛴 횟수**지 경기 수가 아니다 — 한 경기에 여럿이 들어가므로 클랜 전체로 합치면 경기 수의 몇 배다.
- *    그래서 단위는 "판"이 아니라 **"회 플레이"**다(2026-10, 요청).
- *  · games 를 주면 맨 앞에 "N게임" 칸이 선다 — 실제 경기 수. "클랜원 전체" 카드만 받는다(요청).
+ *    그래서 단위는 "판"이 아니라 **"회 플레이"**다(요청).
+ *  · games(실제 경기 수)는 **승률 칸 자리**에 선다 — "클랜원 전체"는 승률이 없고(아래), 네 곳의 세 칸을 한 세로줄에 세우려면
+ *    셋째 칸을 비워 둘 수 없다. 한때는 맨 앞이었다.
  *  · "클랜원 전체"는 승률·데미지를 뺀다(요청) — 클랜끼리만 둔 내전이라 클랜 전체 승률은 늘 반반이고, 데미지도 그 경기 참가자 평균의
  *    몇 배인지라 모두를 합치면 늘 1.0배다. 종족별 줄(RaceDecks)의 승률은 뜻이 있으니 그대로 둔다. */
 export function StatSum({ stats, games = null, hideRate = false, hideDmg = false }: {
@@ -229,58 +240,48 @@ export function StatSum({ stats, games = null, hideRate = false, hideDmg = false
 }) {
   const kd = kdOf(stats);
   const dmg = dmgOf(stats);
-  const items: { key: string; node: ReactNode }[] = [];
-  if (games !== null) items.push({ key: "games", node: (
-    <span className="scr-statcard-sum-item scr-sum-games" title="실제 경기 수 — 아래 '회 플레이'는 그 경기에 사람이 들어간 횟수의 합이다">
-      <Num value={games > 0 ? games.toLocaleString() : null} unit="게임" />
-    </span>
-  ) });
-  items.push(
-    { key: "plays", node: (
-      <span className="scr-statcard-sum-item scr-sum-plays">
-        <Num value={stats.plays > 0 ? stats.plays.toLocaleString() : null} unit="회 플레이" />
-      </span>
-    ) },
-  );
-  if (!hideRate) items.push({ key: "rate", node: (
-    <span className="scr-statcard-sum-item scr-sum-rate">
-      <span className="scr-statcard-sum-label">승률</span>
-      <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
-    </span>
-  ) });
-  if (!hideDmg) items.push({ key: "dmg", node: (
-    <span className="scr-statcard-sum-item scr-sum-dmg" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
-      <span className="scr-statcard-sum-label">데미지</span>
-      {dmg ? (
-        <span className="scr-stat-record-num-v scr-stat-dmg">
-          <span className="scr-stat-dmg-lead">평균의</span>
-          <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
-          <span className="scr-stat-dmg-sep">/</span>
-          <span className="scr-stat-dmg-taken">{dmg.taken}</span>
-        </span>
-      ) : <Num value={null} />}
-    </span>
-  ) });
-  items.push({ key: "apm", node: (
-    <span className="scr-statcard-sum-item scr-sum-apm">
-      <span className="scr-statcard-sum-label">APM</span>
-      <Num value={stats.avgApm} />
-    </span>
-  ) });
-  if (SHOW_KD) items.push({ key: "kd", node: (
-    <span className="scr-statcard-sum-item">
-      <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
-      <Num value={kd} />
-    </span>
-  ) });
   return (
     <div className="scr-statcard-sum">
-      {items.map((it, i) => (
-        <Fragment key={it.key}>
-          {i > 0 && <span className="scr-statcard-sum-sep" aria-hidden>|</span>}
-          {it.node}
-        </Fragment>
-      ))}
+      <span className="scr-statcard-sum-lead">
+        <span className="scr-statcard-sum-item scr-sum-plays">
+          <Num value={stats.plays > 0 ? stats.plays.toLocaleString() : null} unit="회 플레이" />
+        </span>
+        {!hideRate ? (
+          <span className="scr-statcard-sum-item scr-sum-rate">
+            <span className="scr-statcard-sum-label">승률</span>
+            <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
+          </span>
+        ) : games !== null ? (
+          <span className="scr-statcard-sum-item scr-sum-rate" title="실제 경기 수 — '회 플레이'는 그 경기에 사람이 들어간 횟수의 합이다">
+            <Num value={games > 0 ? games.toLocaleString() : null} unit="게임" />
+          </span>
+        ) : <span className="scr-statcard-sum-item scr-sum-rate" aria-hidden />}
+      </span>
+      <span className="scr-statcard-sum-rest">
+        {!hideDmg && (
+          <span className="scr-statcard-sum-item scr-sum-dmg" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
+            <span className="scr-statcard-sum-label">데미지</span>
+            {dmg ? (
+              <span className="scr-stat-record-num-v scr-stat-dmg">
+                <span className="scr-stat-dmg-lead">평균의</span>
+                <span className="scr-stat-dmg-dealt">{dmg.dealt}</span>
+                <span className="scr-stat-dmg-sep">/</span>
+                <span className="scr-stat-dmg-taken">{dmg.taken}</span>
+              </span>
+            ) : <Num value={null} />}
+          </span>
+        )}
+        <span className="scr-statcard-sum-item scr-sum-apm">
+          <span className="scr-statcard-sum-label">APM</span>
+          <Num value={stats.avgApm} />
+        </span>
+        {SHOW_KD && (
+          <span className="scr-statcard-sum-item scr-sum-kd">
+            <span className="scr-statcard-sum-label" title="잡은 인구 ÷ 잃은 인구">K/D</span>
+            <Num value={kd} />
+          </span>
+        )}
+      </span>
     </div>
   );
 }
@@ -315,9 +316,7 @@ export function RaceDecks({ byRace, openAll }: {
               <span className="scr-statcard-deck-head">
                 <i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />
                 <span className="scr-statcard-deck-name">{r}</span>
-                {(byRace?.[r]?.plays ?? 0) > 0 && (
-                  <span className="scr-statcard-head-sep" aria-hidden>|</span>
-                )}
+                <span className="scr-statcard-head-sep" aria-hidden>|</span>
                 <span className="scr-statcard-deck-rec">
                   <Record stats={byRace?.[r]} />
                 </span>
