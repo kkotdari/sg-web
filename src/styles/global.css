@@ -1189,9 +1189,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   font-size: 14px;
   display: flex; flex-direction: column; gap: 8px;
   padding: 12px 10px 14px;
-  border-bottom: 1px solid var(--line-soft);
 }
-.scr-stat-cards > .scr-statcard:last-child { border-bottom: none; }
 .scr-statcard-me { background-color: var(--stat-me-tint); border-radius: var(--radius-sm, 8px); }
 
 .scr-statcard-head { display: flex; align-items: baseline; gap: 6px 10px; min-width: 0; flex-wrap: wrap; }
