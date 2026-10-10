@@ -162,11 +162,13 @@ export function RaceMixCell({ race, stats }: { race: BaseRace; stats?: MemberSta
   );
 }
 
+/** 숫자 한 칸 — 값과 단위를 **따로** 감싼다. 값 칸에 폭을 주고 오른쪽에 붙이면 단위가 줄마다 같은 자리에 선다
+ *  (2026-10, 요청: "라벨도 줄이 맞고 단위도 줄이 맞게 하기 — 그래야 양옆 갭을 통일하기 좋음"). */
 function Num({ value, unit }: { value: number | string | null; unit?: string }) {
   const empty = value === null || value === "-";
   return (
     <span className="scr-stat-record-num-v">
-      {empty ? "-" : value}
+      <span className="scr-stat-record-num-n">{empty ? "-" : value}</span>
       {!empty && unit && <span className="scr-stat-record-num-unit">{unit}</span>}
     </span>
   );
@@ -211,10 +213,11 @@ function Record({ stats }: { stats?: MemberStats }) {
   return (
     <>
       <span className="scr-statcard-sum-item scr-sum-plays">
-        <Num value={plays.toLocaleString()} unit="회 플레이" />
+        <span className="scr-statcard-sum-label">플레이</span>
+        <Num value={plays.toLocaleString()} unit="회" />
       </span>
       <span className="scr-statcard-sum-item scr-sum-rate">
-        <span className="scr-statcard-deck-label">승률</span>
+        <span className="scr-statcard-sum-label">승률</span>
         <Num value={stats!.winRate} unit="%" />
       </span>
     </>
@@ -243,8 +246,12 @@ export function StatSum({ stats, games = null, hideRate = false, hideDmg = false
   return (
     <div className="scr-statcard-sum">
       <span className="scr-statcard-sum-lead">
+        {/* 라벨이 **맨 앞**에 선다(2026-10, 요청: "플레이 19회에서 플레이를 라벨로 왼쪽으로 이동 · 라벨들끼리는 데이터 길이와
+            관계없이 세로로 정렬") — 값이 길든 짧든 칸의 왼끝은 늘 라벨이라, 칸 사이 간격이 줄마다 같아 보인다.
+            한때는 "19회 플레이"처럼 값이 먼저여서 남는 폭이 칸 사이 간격처럼 들쭉날쭉했다. */}
         <span className="scr-statcard-sum-item scr-sum-plays">
-          <Num value={stats.plays > 0 ? stats.plays.toLocaleString() : null} unit="회 플레이" />
+          <span className="scr-statcard-sum-label">플레이</span>
+          <Num value={stats.plays > 0 ? stats.plays.toLocaleString() : null} unit="회" />
         </span>
         {!hideRate ? (
           <span className="scr-statcard-sum-item scr-sum-rate">
@@ -252,8 +259,9 @@ export function StatSum({ stats, games = null, hideRate = false, hideDmg = false
             <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
           </span>
         ) : games !== null ? (
-          <span className="scr-statcard-sum-item scr-sum-rate" title="실제 경기 수 — '회 플레이'는 그 경기에 사람이 들어간 횟수의 합이다">
-            <Num value={games > 0 ? games.toLocaleString() : null} unit="게임" />
+          <span className="scr-statcard-sum-item scr-sum-rate" title="실제 경기 수 — '플레이'는 그 경기에 사람이 들어간 횟수의 합이다">
+            <span className="scr-statcard-sum-label">게임</span>
+            <Num value={games > 0 ? games.toLocaleString() : null} unit="판" />
           </span>
         ) : <span className="scr-statcard-sum-item scr-sum-rate" aria-hidden />}
       </span>

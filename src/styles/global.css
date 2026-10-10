@@ -1216,12 +1216,13 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
      다 밀리는데 그러지마 — 네모아이콘+종족명이 종족헤더의 타이틀이야" · "사이사이 | 제거"). 표지는 이름과 한 덩이로 묶여 이름 칸
      안에 선다. 칸 폭은 제 글자 폭을 재서 잡았다("1,286회 플레이" 90 · "승률 85.7%" 75). */
   --stat-head-pad-l: 10px;   /* 헤더 줄(종족 · 종족구성)의 왼 여백 — 타이틀 줄은 받지 않는다(요청) */
+  /* 라벨 + 값 + 단위 꼴의 제 글자 폭(실측 PC: 플레이 93 · 승률 80 · APM 75 · 데미지 201)에 두 치씩 얹었다. */
   --stat-col-name: 132px;
-  --stat-col-apm: 80px;      /* 실측 78 + 두 치 */
-  --stat-col-dmg: 215px;     /* 실측 213 + 두 치 */
-  --stat-col-plays: 92px;
-  --stat-col-rate: 77px;
-  --stat-col-gap: 6px;
+  --stat-col-plays: 95px;
+  --stat-col-rate: 82px;
+  --stat-col-apm: 77px;
+  --stat-col-dmg: 203px;
+  --stat-col-gap: 15px;   /* 요청: 지금의 2.5배 — 6 → 15 */
   font-size: 14px;
   display: flex; flex-direction: column; gap: 8px;
   padding: 12px 0 14px;
@@ -1245,6 +1246,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
    타이틀 줄과 세로줄이 어긋난다(지적: "테프저헤더 쪽은 데이터들이 오른쪽으로 좀 밀렸어"). 이름만 들여 서고 값은 맞는다. */
 .scr-statcard-deck-head, .scr-clan-race {
   padding-left: var(--stat-head-pad-l);
+  /* 이 줄들은 APM·데미지가 없으니 칸도 넷뿐이다 — 빈 칸을 잡아 두면 폰에서 꺽쇠가 밀려 줄이 넘친다. */
   grid-template-columns:
     calc(var(--stat-col-name) - var(--stat-head-pad-l) - 1px)
     var(--stat-col-plays) var(--stat-col-rate) minmax(0, 1fr);
@@ -1259,11 +1261,11 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* 값이 없는 제목 줄("종족구성별 전적")은 이름 칸에 묶일 까닭이 없다 — 줄을 다 쓴다(폰에서 말줄임으로 잘렸다). */
 .scr-statcard-head > .scr-stat-name-btn:only-child { grid-column: 1 / -1; }
 .scr-statcard-sum, .scr-statcard-sum-lead, .scr-statcard-deck-rec { display: contents; }
-/* 값 칸은 **오른쪽에 붙인다**(2026-10, 지적: "플레이-승률간과 승률-APM간 갭이 달라보이는데?") — 칸 폭은 고정인데 값 길이는
-   제각각이라(7회 플레이 … 1,286회 플레이) 왼쪽에 붙이면 뒤에 남는 빈 폭이 그대로 칸 사이 간격처럼 보여 줄마다·칸마다 달랐다.
-   오른끝에 붙이면 숫자가 한 줄로 서고 남는 폭이 앞쪽으로 가, 칸 사이 간격이 고르게 보인다. 마지막 데미지만 왼쪽에 붙여
-   APM 뒤 간격을 고정한다. */
-.scr-sum-plays, .scr-sum-rate, .scr-sum-apm { justify-self: end; }
+/* 모든 값 칸은 **라벨로 시작해 왼끝에 붙는다**(2026-10, 요청: "라벨들끼리는 데이터길이와 관계없이 세로로 정렬되게") —
+   칸 폭은 고정인데 값 길이는 제각각(7 … 1,286)이라, 값이 앞에 서면 남는 빈 폭이 그대로 칸 사이 간격처럼 보여 줄마다 달랐다
+   (지적: "각 컬럼들 사이 갭이 달라보이는게 문제야"). 라벨이 왼끝을 잡으면 남는 폭은 늘 칸 **안쪽 끝**에 몰려 간격이 한결같다.
+   오른끝 붙임·가운데 붙임도 거쳐 봤지만 둘 다 남는 폭이 칸 사이로 새어 나왔다. */
+.scr-sum-plays, .scr-sum-rate, .scr-sum-apm { justify-self: start; }
 .scr-sum-plays { grid-column: 2; }
 .scr-sum-rate { grid-column: 3; }
 .scr-sum-apm { grid-column: 4; }
@@ -1284,6 +1286,18 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard-sum-item.scr-sum-dmg { min-width: var(--stat-col-dmg); }
 .scr-statcard-sum-item { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; }
 .scr-statcard-sum-paren { display: inline; color: var(--muted); white-space: nowrap; }
+/* 값과 단위는 **라벨보다 한 치 작다**(2026-10, 요청: "라벨만 크고 단위랑 데이터는 작게 보여서 구분 잘되게" ·
+   "단위랑 데이터 크기 단위에 맞춰서 축소") — 값을 단위와 같은 자로 내려 라벨(14)과 갈린다. */
+.scr-statcard-sum-item .scr-stat-record-num-v { font-size: var(--fs-9); }
+/* 숫자는 제 폭(--stat-num-w)을 쥐고 **오른쪽에 붙는다** — 그래야 7 이든 1,286 이든 뒤따르는 단위가 줄마다 같은 자리에 선다
+   (요청: "라벨도 줄이 맞고 단위도 줄이 맞게"). 라벨은 칸마다 같은 글자라 저절로 맞는다. */
+.scr-statcard-sum-item .scr-stat-record-num-n {
+  display: inline-block; text-align: right; min-width: var(--stat-num-w, 0);
+  font-variant-numeric: tabular-nums;
+}
+.scr-sum-plays { --stat-num-w: 34px; }
+.scr-sum-rate { --stat-num-w: 32px; }
+.scr-sum-apm { --stat-num-w: 34px; }
 .scr-statcard-sum-label {
   /* ★ 라벨은 값과 **같은 크기**(2026-10, 요청: "통계 개인카드쪽 타이틀 부분도 마찬가지 — 라벨이랑 데이터 크기 통일(단위만 작게)") — 옛 판은
      라벨만 11px(값 14)이었다. 단위(.scr-stat-record-num-unit · --fs-9)만 작다. 라벨은 색(muted)으로만 값과 갈린다. */
@@ -1307,10 +1321,10 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 /* ⚠ 목록 판의 `.scr-stats-list-panel-v2 .scr-stat-name-btn { text-align: center; font-size: var(--fs-body) }`(아래)가 같은 무게(0,2,0)로 뒤에
    있어 카드의 왼쪽 맞춤을 조용히 덮었다(지적: 폰에서 "닉네임이 한가운데" · PC 도 10em 칸 안에서 가운데였다). 한 겹 더 짚어(0,3,0) 못 박는다. */
-/* 머리 제목(닉네임·카드 이름)은 값보다 **한 스텝 작다**(2026-10, 요청: "헤더의 타이틀 글자 크기 1스텝 축소" · 16 → 14).
+/* 글자는 **세 단**이다(2026-10, 요청) — 타이틀의 제목·닉네임 16 > 라벨과 카드 헤더의 제목(테란 · 테2프1저1) 14 > 값·단위 13.
    ⚠ 목록 판의 .scr-stats-list-panel-v2 .scr-stat-name-btn 의 var(--fs-body)(아래 · 0,2,0)를 덮으려면 0,3,0 이어야 한다. */
 :is(.scr-statcard, .scr-stat-person) .scr-statcard-head .scr-stat-name-btn {
-  text-align: left; font-size: var(--fs-11);
+  text-align: left; font-size: var(--fs-caption);
 }
 /* 클랜 전체 두 장의 제목은 글자일 뿐이다 — 누를 것이 없으니 손가락 커서·호버 빛을 걷는다(2026-10, 요청).
    .scr-stat-name-btn 의 cursor·:hover 가 아래(1390 줄대)에 있어 같은 무게로는 못 덮는다 — 두 겹으로 짚는다(0,2,0 · 0,3,0). */
@@ -1362,13 +1376,14 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-statcard, .scr-stat-person {
     /* 폰은 종족 칸 안쪽이 326(360 폭 기준) — 이름 100 + 회 플레이 92 + 승률 74 + 사이 15 + 꺽쇠 21 = 302 로 든다. */
     /* 폰은 종족 칸 안쪽이 326(360 폭) — 왼 여백 8 + 이름 108 + 회 플레이 92 + 승률 74 + 사이 15 + 꺽쇠 21 = 318 로 든다. */
+    /* 폰은 안폭이 328(360 폭)뿐이라 숫자 칸도 한 치씩 좁힌다 — 이름 80 + 플레이 91 + 승률 72 + APM 71 + 사이 12 = 326. */
     --stat-head-pad-l: 8px;
-    --stat-col-name: 84px;
-    --stat-col-plays: 92px;
+    --stat-col-name: 80px;
+    --stat-col-plays: 91px;
     --stat-col-rate: 72px;
-    --stat-col-apm: 74px;
-    --stat-col-dmg: 211px;
-    --stat-col-gap: 4px;
+    --stat-col-apm: 71px;
+    --stat-col-dmg: 199px;
+    --stat-col-gap: 10px;
   }
   /* 폰에서도 **APM 은 윗줄**이다(2026-10, 요청: "APM을 위로 올리자 줄바꿀때") — 아랫줄로 내려가는 것은 데미지뿐이고,
      그 데미지는 **회 플레이 칸에 맞춰** 선다(요청: "데미지를 플레이와 맞추기").
@@ -1377,7 +1392,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-statcard-head .scr-sum-dmg { grid-row: 2; grid-column: 2 / -1; }
   /* 폰 글자 자는 **줄이지 않는다**(2026-10, 요청: 네 곳의 세 칸이 "글자 크기도 똑같게") — 한때 머리 줄과 종족구성 줄만 clamp 로
      (10.2~13px) 눌러 한 줄에 욱여넣었다. 이제 뒤 덩이(데미지·APM)가 둘째 줄로 내려가므로 첫 줄은 그대로도 든다. */
-  :is(.scr-statcard, .scr-stat-person) .scr-statcard-head .scr-stat-name-btn { font-size: var(--fs-11); }
+  :is(.scr-statcard, .scr-stat-person) .scr-statcard-head .scr-stat-name-btn { font-size: var(--fs-caption); }
   .scr-statcard-sum-item { gap: 3px; }
   :is(.scr-statcard, .scr-stat-person) .scr-stat-mix-row > * { padding-left: 6px; padding-right: 6px; }
 }

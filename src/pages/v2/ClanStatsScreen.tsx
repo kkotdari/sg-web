@@ -68,14 +68,17 @@ function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
             <div key={c.label} className="scr-clan-race">
               <span className="scr-clan-race-name">{c.label}</span>
               <span className="scr-statcard-sum-item scr-sum-plays">
+                <span className="scr-statcard-sum-label">플레이</span>
                 <span className="scr-stat-record-num-v">
-                  {c.plays.toLocaleString()}<span className="scr-stat-record-num-unit">회 플레이</span>
+                  <span className="scr-stat-record-num-n">{c.plays.toLocaleString()}</span>
+                  <span className="scr-stat-record-num-unit">회</span>
                 </span>
               </span>
               <span className="scr-statcard-sum-item scr-sum-rate">
                 <span className="scr-statcard-sum-label">승률</span>
                 <span className="scr-stat-record-num-v">
-                  {c.winRate}<span className="scr-stat-record-num-unit">%</span>
+                  <span className="scr-stat-record-num-n">{c.winRate}</span>
+                  <span className="scr-stat-record-num-unit">%</span>
                 </span>
               </span>
             </div>
