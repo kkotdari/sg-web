@@ -65,7 +65,7 @@ export function GameRowStatus({ game }: { game: GameResult }) {
 const sideOutcome = (result: GameResult["result"], side: 1 | 2): "승" | "무" | "패" | null =>
   (result === "draw" ? "무" : result === "team1" ? (side === 1 ? "승" : "패") : result === "team2" ? (side === 2 ? "승" : "패") : null);
 const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
-  (text ? <span className="scr-activity-row-wl" aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
+  (text ? <span className={text === "패" ? "scr-activity-row-wl is-loss" : "scr-activity-row-wl"} aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
 
 export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   game: GameResult;
