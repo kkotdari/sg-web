@@ -6,7 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { currentMonthValue, monthInputToRange } from "../../utils/date";
-import MemberStatRow, { RaceDecks, StatColHead, StatSum } from "../stats/MemberStatRow";
+import MemberStatRow, { RaceDecks, StatSum } from "../stats/MemberStatRow";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { activeMemberSearchTerms, memberMatchesTerm, normalizeSearchText } from "../../utils/memberSearch";
@@ -70,13 +70,13 @@ function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
               <span className="scr-statcard-sum-item scr-sum-plays">
                 <span className="scr-stat-record-num-v">
                   <span className="scr-stat-record-num-n">{c.plays.toLocaleString()}</span>
-                  <span className="scr-stat-record-num-unit">회</span>
+                  <span className="scr-stat-record-num-unit">판</span>
                 </span>
               </span>
               <span className="scr-statcard-sum-item scr-sum-rate">
                 <span className="scr-stat-record-num-v">
                   <span className="scr-stat-record-num-n">{c.winRate}</span>
-                  <span className="scr-stat-record-num-unit">%</span>
+                  <span className="scr-stat-record-num-unit">% 승</span>
                 </span>
               </span>
             </div>
@@ -277,12 +277,7 @@ export default function ClanStatsScreen() {
           <header className="scr-clan-dash-head">
             {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다.
                 화면 낭독기에는 감싼 section 의 aria-label 이 남는다. */}
-            {/* 총 경기 수는 **머리로 올렸다**(2026-10) — 승률 칸에 세워 두면 그 아래 종족 줄의 승률과 칸 뜻이 어긋나,
-                칸 이름 줄(StatColHead) 하나로 덮을 수가 없다. */}
-            <span className="scr-clan-dash-sub">
-              {view.memberIds.length}명
-              {clanGames > 0 && <> · {clanGames.toLocaleString()}게임</>}
-            </span>
+            <span className="scr-clan-dash-sub">{view.memberIds.length}명</span>
             <button
               type="button" className="scr-text-btn scr-clan-dash-expand"
               aria-pressed={expandAll}
@@ -295,12 +290,11 @@ export default function ClanStatsScreen() {
             </button>
           </header>
 
-          <StatColHead apm />
           <CompRecords rows={view.clanComps} />
           <section className="scr-statcard scr-clan-statcard">
             <header className="scr-statcard-head">
               <span className="scr-stat-name-btn scr-stat-name-plain">클랜원 전체</span>
-              <StatSum stats={view.clan.overall} hideRate hideDmg />
+              <StatSum stats={view.clan.overall} games={clanGames} hideRate hideDmg />
             </header>
             <RaceDecks byRace={view.clan.byRace} openAll={expandAll} />
           </section>
@@ -334,8 +328,6 @@ export default function ClanStatsScreen() {
           ))}
         </div>
       </div>
-
-      <StatColHead apm dmg />
 
       {error && <div className="scr-err">{error}</div>}
 

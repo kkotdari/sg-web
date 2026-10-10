@@ -1202,7 +1202,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stat-cards { display: flex; flex-direction: column; }
 /* .scr-statcard 는 **클랜 전체의 두 장**(종족구성별 전적 · 클랜원 전체)이고, .scr-stat-person 은 개인 줄이다 — 개인 줄은 더는 카드로
    감싸지 않지만(2026-10, 요청) 글자 자·여백·칸 폭은 똑같이 쓰므로 아래 규칙을 함께 받는다. 본인 강조 바탕(.scr-statcard-me)은 걷었다. */
-.scr-statcard, .scr-stat-person, .scr-stat-colhead {
+.scr-statcard, .scr-stat-person {
   --fs-9: 13px;
   --fs-10: 13px;
   --fs-11: 14px;
@@ -1218,12 +1218,14 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   --stat-head-pad-l: 10px;   /* 헤더 줄(종족 · 종족구성)의 왼 여백 — 타이틀 줄은 받지 않는다(요청) */
   /* 라벨이 칸 이름 줄로 빠져 칸은 **값 + 단위** 폭이면 된다(실측 PC: 플레이 53 · 승률 46 · APM 41 · 데미지 171 ·
      아바타+닉네임 137). 칸 이름(플레이 34 · 승률 23 · APM 27 · 데미지 34 · 13px)은 모두 그보다 좁아 넘치지 않는다. */
+  /* 새 단위 꼴의 제 글자 폭(실측: 플레이 52 · 승률 58 · APM 70 · 데미지 171 · 아바타+닉네임 137)에 두어 치씩 얹었다.
+     PC 안폭 680 에 합 620(칸 500 + 사이 120)으로 든다. */
   --stat-col-name: 140px;
   --stat-col-plays: 55px;
-  --stat-col-rate: 48px;
-  --stat-col-apm: 43px;
+  --stat-col-rate: 60px;
+  --stat-col-apm: 72px;
   --stat-col-dmg: 173px;
-  --stat-col-gap: 15px;   /* 요청: 지금의 2.5배 — 6 → 15 */
+  --stat-col-gap: 30px;   /* 요청: 2.5배(6 → 15) 뒤 다시 2배 */
   font-size: 14px;
 }
 .scr-statcard, .scr-stat-person {
@@ -1232,7 +1234,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 /* 네 곳이 함께 쓰는 칸 짜임 — 표지 | 이름 | 굵은 | | 회 플레이 | 승률 | 나머지. 묶음(.scr-statcard-sum 과 그 앞 덩이,
    .scr-statcard-deck-rec)은 display:contents 로 풀어 제 자식이 바로 칸에 선다. */
-.scr-statcard-head, .scr-statcard-deck-head, .scr-clan-race, .scr-stat-colhead {
+.scr-statcard-head, .scr-statcard-deck-head, .scr-clan-race {
   display: grid; align-items: baseline; column-gap: var(--stat-col-gap); row-gap: 6px;
   /* 이름 칸은 **고정 폭**이다 — 최소 폭이면 긴 닉네임이 그 줄만 밀어 세로줄이 어긋난다(요청: "항상 줄도 맞고"). 넘치는 이름은
      말줄임으로 자른다. 종족 칸이 한 줄에 하나씩이라 칸을 넉넉히(PC 150 · 폰 118) 줄 수 있다. */
@@ -1242,13 +1244,10 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 /* 머리 줄 아래는 **선 없이 여백만** 둔다(2026-10, 요청: "아래 구분선은 제거" — 한 번 넣었다가 되물렸다). */
 .scr-statcard-head, .scr-statcard-deck-head { padding-bottom: 4px; }
-/* 칸 이름 줄 — 줄마다 되풀이하던 라벨을 여기 한 번만 세운다(2026-10, 요청). 되풀이되는 글자이므로 **작고 흐리게** 물러서고,
-   주인공인 값이 가장 또렷하다(요청: "글자 크기 3단을 뒤집기"). */
-.scr-stat-colhead {
-  padding-bottom: 2px; margin-bottom: -2px;
-  font-size: var(--fs-10); font-weight: 700; color: var(--text-dim); letter-spacing: 0.02em;
-}
-.scr-stat-colhead > .scr-statcard-sum-item { white-space: nowrap; }
+/* 줄에는 **라벨이 없다**(2026-10, 요청) — 칸 이름 줄도 걷었다. 칸의 뜻은 단위가 짊어진다(회 · 판 · % 승 · APM).
+   단위는 값보다 한 스텝 작다(요청 · 값 14 → 단위 12). APM 은 숫자 뒤에 글자가 붙으므로 한 뼘 띄운다. */
+.scr-statcard-sum-item .scr-stat-record-num-unit { font-size: 12px; }
+.scr-sum-apm .scr-stat-record-num-unit { margin-left: 3px; }
 /* **타이틀 줄과 헤더 줄을 가른다**(2026-10, 요청: "헤더만 좌측 패딩주고 타이틀은 패딩 안준다니까 · 헤더랑 타이틀 구분해").
      타이틀(.scr-statcard-head · 닉네임 · 클랜원 전체 · 종족구성별 전적) → 여백 없음, 카드 왼끝에 붙는다.
      헤더(.scr-statcard-deck-head 종족 줄 · .scr-clan-race 종족구성 줄) → 왼 여백 --stat-head-pad-l.
@@ -1277,6 +1276,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
    오른끝 붙임·가운데 붙임도 거쳐 봤지만 둘 다 남는 폭이 칸 사이로 새어 나왔다. */
 .scr-sum-plays, .scr-sum-rate, .scr-sum-apm { justify-self: start; }
 .scr-sum-plays { grid-column: 2; }
+/* "클랜원 전체"의 "N판(N회)" — 그 카드엔 승률이 없으니 그 칸까지 넓혀 쓴다. 괄호 몫은 단위 자로 한 뼘 띄운다. */
+.scr-sum-plays-wide { grid-column: 2 / 4; }
+.scr-sum-paren { margin-left: 3px; }
 .scr-sum-rate { grid-column: 3; }
 .scr-sum-apm { grid-column: 4; }
 .scr-sum-dmg { grid-column: 5; justify-self: start; }
@@ -1333,8 +1335,10 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
    있어 카드의 왼쪽 맞춤을 조용히 덮었다(지적: 폰에서 "닉네임이 한가운데" · PC 도 10em 칸 안에서 가운데였다). 한 겹 더 짚어(0,3,0) 못 박는다. */
 /* 글자는 **세 단**이다(2026-10, 요청) — 타이틀의 제목·닉네임 16 > 라벨과 카드 헤더의 제목(테란 · 테2프1저1) 14 > 값·단위 13.
    ⚠ 목록 판의 .scr-stats-list-panel-v2 .scr-stat-name-btn 의 var(--fs-body)(아래 · 0,2,0)를 덮으려면 0,3,0 이어야 한다. */
+/* 음수 여백(.scr-stat-name-btn 의 margin: -2px -4px)은 칸 밖으로 삐져나와 폰에서 7px 넘쳤다 — 좌우는 0 으로 둔다. */
 :is(.scr-statcard, .scr-stat-person) .scr-statcard-head .scr-stat-name-btn {
   text-align: left; font-size: var(--fs-caption);
+  margin-left: 0; margin-right: 0; padding-left: 0; padding-right: 4px;
 }
 /* 클랜 전체 두 장의 제목은 글자일 뿐이다 — 누를 것이 없으니 손가락 커서·호버 빛을 걷는다(2026-10, 요청).
    .scr-stat-name-btn 의 cursor·:hover 가 아래(1390 줄대)에 있어 같은 무게로는 못 덮는다 — 두 겹으로 짚는다(0,2,0 · 0,3,0). */
@@ -1388,18 +1392,22 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
     /* 폰은 종족 칸 안쪽이 326(360 폭) — 왼 여백 8 + 이름 108 + 회 플레이 92 + 승률 74 + 사이 15 + 꺽쇠 21 = 318 로 든다. */
     /* 폰은 안폭이 328(360 폭)뿐이라 숫자 칸도 한 치씩 좁힌다 — 이름 80 + 플레이 91 + 승률 72 + APM 71 + 사이 12 = 326. */
     --stat-head-pad-l: 8px;
-    --stat-col-name: 104px;
-    --stat-col-plays: 55px;
-    --stat-col-rate: 48px;
-    --stat-col-apm: 43px;
-    --stat-col-dmg: 173px;
+    /* 폰 안폭은 328(360 폭) — 칸 넷(100+54+58+70=282)에 사이 넷(빈 꼬리 칸 앞까지 세어 4×10=40)을 더해 322 로 든다.
+       그래서 칸 사이는 PC 처럼 30 까지 못 벌린다. */
+    --stat-col-name: 100px;
+    --stat-col-plays: 54px;
+    --stat-col-rate: 58px;
+    --stat-col-apm: 70px;
+    --stat-col-dmg: 171px;
     --stat-col-gap: 10px;
   }
   /* 폰에서도 **APM 은 윗줄**이다(2026-10, 요청: "APM을 위로 올리자 줄바꿀때") — 아랫줄로 내려가는 것은 데미지뿐이고,
      그 데미지는 **회 플레이 칸에 맞춰** 선다(요청: "데미지를 플레이와 맞추기").
      그래서 윗줄에 이름·회 플레이·승률·APM 이 다 들어가야 한다 — 360 폭(안폭 328)에 맞춰 칸을 재단했다
      (84 + 92 + 72 + 74 + 사이 16 = 338 … 이름은 아바타 18 + 6 을 품으므로 닉네임은 넉 자까지 온전히 보인다). */
-  .scr-statcard-head .scr-sum-dmg, .scr-stat-colhead .scr-sum-dmg { grid-row: 2; grid-column: 2 / -1; }
+  /* 아랫줄로 내려간 데미지는 **오른끝을 APM 오른끝에 맞춘다**(2026-10, 요청) — 칸 2~4(플레이~APM)를 쓰고 끝에 붙인다.
+     한때는 왼끝을 플레이에 맞췄다. */
+  .scr-statcard-head .scr-sum-dmg { grid-row: 2; grid-column: 2 / 5; justify-self: end; }
   /* 폰 글자 자는 **줄이지 않는다**(2026-10, 요청: 네 곳의 세 칸이 "글자 크기도 똑같게") — 한때 머리 줄과 종족구성 줄만 clamp 로
      (10.2~13px) 눌러 한 줄에 욱여넣었다. 이제 뒤 덩이(데미지·APM)가 둘째 줄로 내려가므로 첫 줄은 그대로도 든다. */
   :is(.scr-statcard, .scr-stat-person) .scr-statcard-head .scr-stat-name-btn { font-size: var(--fs-caption); }
