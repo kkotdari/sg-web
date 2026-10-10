@@ -213,11 +213,9 @@ function Record({ stats }: { stats?: MemberStats }) {
   return (
     <>
       <span className="scr-statcard-sum-item scr-sum-plays">
-        <span className="scr-statcard-sum-label">플레이</span>
         <Num value={plays.toLocaleString()} unit="회" />
       </span>
       <span className="scr-statcard-sum-item scr-sum-rate">
-        <span className="scr-statcard-sum-label">승률</span>
         <Num value={stats!.winRate} unit="%" />
       </span>
     </>
@@ -231,13 +229,12 @@ function Record({ stats }: { stats?: MemberStats }) {
  *  display:contents 로 풀어 제 자식이 바로 칸에 서게 한다(global.css).
  *  · stats.plays 는 **사람이 뛴 횟수**지 경기 수가 아니다 — 한 경기에 여럿이 들어가므로 클랜 전체로 합치면 경기 수의 몇 배다.
  *    그래서 단위는 "판"이 아니라 **"회 플레이"**다(요청).
- *  · games(실제 경기 수)는 **승률 칸 자리**에 선다 — "클랜원 전체"는 승률이 없고(아래), 네 곳의 세 칸을 한 세로줄에 세우려면
- *    셋째 칸을 비워 둘 수 없다. 한때는 맨 앞이었다.
+ *  · 실제 경기 수(N게임)는 머리("20명 · 212게임")로 올렸다 — 승률 칸에 세우면 그 아래 종족 줄의 승률과 칸 뜻이 어긋나
+ *    칸 이름 줄 하나로 덮을 수가 없다. 한때는 맨 앞이었고, 그 뒤 승률 칸 자리였다.
  *  · "클랜원 전체"는 승률·데미지를 뺀다(요청) — 클랜끼리만 둔 내전이라 클랜 전체 승률은 늘 반반이고, 데미지도 그 경기 참가자 평균의
  *    몇 배인지라 모두를 합치면 늘 1.0배다. 종족별 줄(RaceDecks)의 승률은 뜻이 있으니 그대로 둔다. */
-export function StatSum({ stats, games = null, hideRate = false, hideDmg = false }: {
+export function StatSum({ stats, hideRate = false, hideDmg = false }: {
   stats: MemberStats;
-  games?: number | null;
   hideRate?: boolean;
   hideDmg?: boolean;
 }) {
@@ -246,35 +243,27 @@ export function StatSum({ stats, games = null, hideRate = false, hideDmg = false
   return (
     <div className="scr-statcard-sum">
       <span className="scr-statcard-sum-lead">
-        {/* 라벨이 **맨 앞**에 선다(2026-10, 요청: "플레이 19회에서 플레이를 라벨로 왼쪽으로 이동 · 라벨들끼리는 데이터 길이와
-            관계없이 세로로 정렬") — 값이 길든 짧든 칸의 왼끝은 늘 라벨이라, 칸 사이 간격이 줄마다 같아 보인다.
-            한때는 "19회 플레이"처럼 값이 먼저여서 남는 폭이 칸 사이 간격처럼 들쭉날쭉했다. */}
+        {/* 라벨은 줄마다 되풀이하지 않는다(2026-10, 요청) — 목록 맨 위의 칸 이름 줄(StatColHead)이 대신한다.
+            줄에는 값과 단위만 남아, 라벨과 값 사이에 끼던 빈 폭(실측 5~30px · 칸 사이 간격보다 넓은 줄도 있었다)이 사라진다. */}
         <span className="scr-statcard-sum-item scr-sum-plays">
-          <span className="scr-statcard-sum-label">플레이</span>
           <Num value={stats.plays > 0 ? stats.plays.toLocaleString() : null} unit="회" />
         </span>
-        {!hideRate ? (
-          <span className="scr-statcard-sum-item scr-sum-rate">
-            <span className="scr-statcard-sum-label">승률</span>
-            <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
-          </span>
-        ) : games !== null ? (
-          <span className="scr-statcard-sum-item scr-sum-rate" title="실제 경기 수 — '플레이'는 그 경기에 사람이 들어간 횟수의 합이다">
-            <span className="scr-statcard-sum-label">게임</span>
-            <Num value={games > 0 ? games.toLocaleString() : null} unit="판" />
-          </span>
-        ) : <span className="scr-statcard-sum-item scr-sum-rate" aria-hidden />}
+        {!hideRate
+          ? (
+            <span className="scr-statcard-sum-item scr-sum-rate">
+              <Num value={stats.plays > 0 ? stats.winRate : null} unit="%" />
+            </span>
+          )
+          : <span className="scr-statcard-sum-item scr-sum-rate" aria-hidden />}
       </span>
       <span className="scr-statcard-sum-rest">
         {/* APM 이 데미지보다 앞이다(2026-10, 요청: "APM 데미지 순서 바꾸기") — 짧은 APM 이 승률 바로 뒤에 붙고, 긴 데미지가 끝에 선다.
             폰처럼 줄이 바뀌어도 APM 은 윗줄에 남고 데미지만 아랫줄로 내려간다(요청). */}
         <span className="scr-statcard-sum-item scr-sum-apm">
-          <span className="scr-statcard-sum-label">APM</span>
           <Num value={stats.avgApm} />
         </span>
         {!hideDmg && (
           <span className="scr-statcard-sum-item scr-sum-dmg" title="딜(녹색) / 피해(붉은색) — 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(유닛+건물 · 체력+실드 · 합의 비율 · 1.0배 = 평균)">
-            <span className="scr-statcard-sum-label">데미지</span>
             {dmg ? (
               <span className="scr-stat-record-num-v scr-stat-dmg">
                 <span className="scr-stat-dmg-lead">평균의</span>
@@ -292,6 +281,21 @@ export function StatSum({ stats, games = null, hideRate = false, hideDmg = false
           </span>
         )}
       </span>
+    </div>
+  );
+}
+
+/** 칸 이름 줄 — 줄마다 라벨을 되풀이하는 대신 **목록 맨 위에 한 번만** 세운다(2026-10, 요청).
+ *  줄들과 같은 칸 짜임(global.css)을 써서 아래 모든 줄 — 카드 제목 줄과 그 안의 종족 줄 — 을 한꺼번에 덮는다.
+ *  펼치는 종족 줄도 플레이·승률이 제목 줄과 같은 칸이라 따로 라벨이 필요 없다. */
+export function StatColHead({ apm = false, dmg = false }: { apm?: boolean; dmg?: boolean }) {
+  return (
+    <div className="scr-stat-colhead">
+      <span />
+      <span className="scr-statcard-sum-item scr-sum-plays">플레이</span>
+      <span className="scr-statcard-sum-item scr-sum-rate">승률</span>
+      {apm && <span className="scr-statcard-sum-item scr-sum-apm">APM</span>}
+      {dmg && <span className="scr-statcard-sum-item scr-sum-dmg">데미지</span>}
     </div>
   );
 }
