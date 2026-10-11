@@ -916,8 +916,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   }
   @media (prefers-reduced-motion: reduce) { .scr-header { transition: none; } }
   .scr-rail-hotzone {
-    /* 폭 16 → 6(2026-10-09, 지적: "다른 버튼 누르려다가 자꾸 나옴") — 여는 것도 140ms 머문 뒤다(useRail railEnterSoon). */
-    display: block; position: fixed; left: 0; top: 0; bottom: 0; width: 6px; z-index: 29;
+    /* 폭 16 → 6(2026-10-09, 지적: "다른 버튼 누르려다가 자꾸 나옴") → 14(2026-10-10, 지적: "레일 메뉴 꺼내기가 너무 어려운 거 같아 다시 영역을 좀 넓혀주고 대신 윗부분은
+       제외해줘(브래드크럼 부분)") — 위 72px(브레드크럼 줄 · 뒤로 단추)는 비운다. 여는 것은 그대로 140ms 머문 뒤다(useRail railEnterSoon). */
+    display: block; position: fixed; left: 0; top: 72px; bottom: 0; width: 14px; z-index: 29;
     color: var(--muted);
   }
   .scr-rail-hotzone::after {
