@@ -6,15 +6,20 @@ export interface Selection {
   setMany: (keys: Iterable<string>, picked: boolean) => void;
   keepOnly: (keys: Iterable<string>) => void;
   clear: () => void;
+  /** 선택 모드(폰) — 줄을 길게 누르거나 하나라도 고르면 켜지고, '선택종료'(exit)로만 꺼진다. 켜진 동안 줄 누름은 열기가 아니라 고르기다. */
+  mode: boolean;
+  exit: () => void;
 }
 
 export function useSelection(): Selection {
   const [picked, setPicked] = useState<ReadonlySet<string>>(() => new Set());
+  const [mode, setMode] = useState(false);
 
   const clear = useCallback(() => {
     setPicked((prev) => (prev.size === 0 ? prev : new Set()));
   }, []);
   const toggle = useCallback((key: string) => {
+    setMode(true);
     setPicked((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -23,6 +28,7 @@ export function useSelection(): Selection {
     });
   }, []);
   const setMany = useCallback((keys: Iterable<string>, value: boolean) => {
+    if (value) setMode(true);
     setPicked((prev) => {
       const next = new Set(prev);
       for (const k of keys) {
@@ -41,5 +47,10 @@ export function useSelection(): Selection {
     });
   }, []);
 
-  return { picked, toggle, setMany, keepOnly, clear };
+  const exit = useCallback(() => {
+    setMode(false);
+    setPicked((prev) => (prev.size === 0 ? prev : new Set()));
+  }, []);
+
+  return { picked, toggle, setMany, keepOnly, clear, mode, exit };
 }

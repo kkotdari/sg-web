@@ -252,6 +252,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                   total={games.length} count={pickedGames.length}
                   onSelectAll={() => sel.setMany(games.map((g) => String(g.id)), true)}
                   onClear={sel.clear}
+                  mode={sel.mode} onExit={sel.exit}
                 >
                   <button
                     type="button" className="scr-pill-btn"
@@ -275,6 +276,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                         picked={picked}
                         className="scr-activity-row-game"
                         onClick={() => sel.toggle(key)}
+                        onLongPress={isMobile ? () => sel.toggle(key) : undefined}
                         status={<GameRowStatus game={g} />}
                         desc={<>
                           <GameRowNames game={g} memberOf={memberOf} mobile={isMobile} playable={gamePlayable(g)} />

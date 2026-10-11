@@ -751,6 +751,7 @@ function ActivityGroupPage({
           onSelectAll={() => selection.setMany(selectable.map(rowKeyOf), true)}
           onClear={selection.clear}
           note={selectable.length < filtered.length ? selectionNote : undefined}
+          mode={selection.mode} onExit={selection.exit}
         >
           <SelectionActions
             picked={pickedItems} onDelete={onDeleteItems} onHide={onHideItems}
@@ -939,8 +940,8 @@ export default function ActivityScreen() {
   const isAdmin = !!user && isAdminRole(user.roles);
   const sel = useSelection();
   const selection = user && openGroupKey ? sel : null;
-  const selClear = sel.clear;
-  useEffect(() => { selClear(); }, [selClear, openGroupKey, gameItem, detailItem]);
+  const selExit = sel.exit;
+  useEffect(() => { selExit(); }, [selExit, openGroupKey, gameItem, detailItem]);
   const canPick = useCallback((it: DisplayItem): boolean => {
     if (it.kind === "gameResult" && isSecretGame(it.gameResult)) return false;
     if (isAdmin) return deletableOf(it);
@@ -1641,11 +1642,17 @@ export default function ActivityScreen() {
           item.kind === "gameResult" && "scr-activity-row-game",
           rowVoid(item) && "scr-activity-row-void", secret && "scr-activity-row-secret",
         )}
-        disabled={secret}
+        disabled={secret && !(isMobile && selection?.mode)}
         onClick={() => {
+          /* 폰 선택 모드에서는 줄 전체가 고르기다(Selection.tsx ★) — 못 고르는 줄은 그대로 둔다. */
+          if (isMobile && selection?.mode) { if (pickable) selection.toggle(key); return; }
           if (item.kind === "gameResult") openGamePage(item);
           else openDetailPage(item);
         }}
+        onLongPress={isMobile && selection ? () => {
+          if (pickable) selection.toggle(key);
+          else selection.setMany([], true);
+        } : undefined}
         status={rowStatusOf(item)}
         desc={<>
           {rowDesc(item)}

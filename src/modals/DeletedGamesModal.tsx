@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X, RotateCcw, Trash2 } from "lucide-react";
 import ModalHash from "../utils/modalHash";
@@ -12,6 +12,8 @@ import { cx } from "../utils/format";
 import { formatAgo, serverMs } from "../utils/date";
 import { RowCheck, SelectionBar } from "../components/common/Selection";
 import { useSelection } from "../hooks/useSelection";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { useLongPress } from "../hooks/useLongPress";
 import { batchSummary, runBatch } from "../utils/batch";
 import type { DeletedGameResult } from "../types";
 
@@ -33,6 +35,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
   const [confirm, setConfirm] = useState<{ kind: Action; game: DeletedGameResult } | null>(null);
   const [confirmErr, setConfirmErr] = useState<string | null>(null);
   const sel = useSelection();
+  const isMobile = useIsMobile();
   const [bulk, setBulk] = useState<{ kind: Action; games: DeletedGameResult[] } | null>(null);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
 
@@ -132,6 +135,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                   total={filtered.length} count={pickedRows.length}
                   onSelectAll={() => sel.setMany(filtered.map((g) => String(g.id)), true)}
                   onClear={sel.clear}
+                  mode={sel.mode} onExit={sel.exit}
                 >
                   <button
                     type="button" className="scr-pill-btn"
@@ -160,7 +164,10 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                       className={cx("scr-trash-row scr-trash-row-sel", busy && "is-busy", picked && "is-picked")}
                     >
                       <RowCheck checked={picked} onChange={() => sel.toggle(key)} label={`${g.matchNo} 선택`} />
-                      <div className="scr-trash-main">
+                      <TrashMain
+                        onClick={isMobile && sel.mode ? () => sel.toggle(key) : undefined}
+                        onLongPress={isMobile ? () => sel.toggle(key) : undefined}
+                      >
                         <div className="scr-trash-top">
                           <span className="scr-trash-no">{g.matchNo}</span>
                           <span className="scr-trash-map">{g.mapCanonName || g.mapName || "(맵 미상)"}</span>
@@ -171,7 +178,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                           {g.deletedBy?.nickname ?? "알 수 없음"} 삭제 · {formatAgo(serverMs(g.deletedAt))}
                           {g.replay ? " · 리플레이 있음" : " · 리플레이 없음"}
                         </div>
-                      </div>
+                      </TrashMain>
                       <div className="scr-trash-actions">
                         <button
                           type="button" className="scr-rect-btn scr-trash-restore"
@@ -242,4 +249,10 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
     </div>,
     document.body,
   );
+}
+
+/** 휴지통 줄의 본문 — 폰은 길게 눌러 선택 모드로, 선택 모드에서는 눌러 고른다(Selection.tsx ★). */
+function TrashMain({ onClick, onLongPress, children }: { onClick?: () => void; onLongPress?: () => void; children: ReactNode }) {
+  const hold = useLongPress(onLongPress);
+  return <div className="scr-trash-main" onClick={onClick} {...hold}>{children}</div>;
 }

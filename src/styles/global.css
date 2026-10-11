@@ -3325,6 +3325,14 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 }
 .scr-selbar-note { font-size: var(--fs-micro, 11px); color: var(--dim); }
 .scr-selbar-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+/* 폰 선택 바 — 체크박스 없이 글자 버튼(전체선택/선택해제 · 선택 모드면 선택종료) · 줄은 길게 눌러 선택 모드(2026-10-11 · Selection.tsx ★).
+   길게 누르는 동안 글자 고르기·iOS 말풍선이 뜨지 않게 줄 본문의 고르기를 막는다. */
+.scr-selbar-m { gap: 4px; }
+.scr-sel-all-m, .scr-sel-exit { font-size: 12px; white-space: nowrap; }
+.scr-sel-all-m { margin-left: -10px; }
+@media (max-width: 1159px) {
+  .scr-activity-row, .scr-scrap-main, .scr-trash-main { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+}
 .scr-selcell { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 6px 0 2px; cursor: pointer; }
 .scr-selcell.is-off { opacity: 0.3; cursor: default; }
 .scr-selcell input { cursor: inherit; }

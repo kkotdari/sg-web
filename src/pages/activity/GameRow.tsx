@@ -4,6 +4,7 @@ import { cachedReplayMap } from "scplay";
 import { isMeleeGame, resolveSlotName } from "./GameResultSides";
 import { cleanMapName } from "../../utils/mapName";
 import { cx } from "../../utils/format";
+import { useLongPress } from "../../hooks/useLongPress";
 import { isSecretGame } from "../../utils/gameAccess";
 import type { GameResult, GameResultSlot, Member } from "../../types";
 
@@ -135,7 +136,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   </>);
 }
 
-export function ListRow({ desc, status, top, side, onClick, check, picked, className, disabled }: {
+export function ListRow({ desc, status, top, side, onClick, check, picked, className, disabled, onLongPress }: {
   desc: ReactNode;
   /** 맵·길이 배지(GameRowStatus 따위) — desc 안이 아니라 **제 칸**에 선다. 폰 게임 줄은 이 칸을 시각 옆 윗줄로 올린다(global.css). */
   status?: ReactNode;
@@ -146,12 +147,16 @@ export function ListRow({ desc, status, top, side, onClick, check, picked, class
   picked?: boolean;
   className?: string | false;
   disabled?: boolean;
+  /** 길게 누르기(폰 선택 모드로 들어가기) — 없으면 안 붙는다. */
+  onLongPress?: () => void;
 }) {
+  const hold = useLongPress(onLongPress);
   return (
     <div className={cx("scr-activity-row-wrap", !!check && "scr-activity-row-wrap-sel", picked && "is-picked")}>
       {check}
       <button
         type="button"
+        {...hold}
         className={cx("scr-activity-row", className, picked && "is-picked")}
         aria-disabled={disabled ? true : undefined}
         onClick={() => { if (!disabled) onClick(); }}

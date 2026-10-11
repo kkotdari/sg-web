@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { navigateTo, wasPushed } from "../../utils/route";
 import { createPortal } from "react-dom";
 import { Pencil, Trash2, ArrowLeft } from "lucide-react";
@@ -7,6 +7,8 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { RowCheck, SelectionBar } from "../../components/common/Selection";
 import { showToast } from "../../components/common/Toast";
 import { useSelection } from "../../hooks/useSelection";
+import { useIsMobile } from "../../hooks/useIsMobile";
+import { useLongPress } from "../../hooks/useLongPress";
 import { batchSummary, runBatch } from "../../utils/batch";
 import { cx } from "../../utils/format";
 import KakaoShareButton from "../../components/common/KakaoShareButton";
@@ -27,6 +29,7 @@ export default function ScrapScreen() {
   const editRef = useRef<HTMLInputElement | null>(null);
   const [confirmDel, setConfirmDel] = useState<SceneScrap | null>(null);
   const sel = useSelection();
+  const isMobile = useIsMobile();
   const selClear = sel.clear;
   const pickedRows = items ? items.filter((r) => sel.picked.has(String(r.id))) : [];
   const [bulkConfirm, setBulkConfirm] = useState<SceneScrap[] | null>(null);
@@ -122,6 +125,7 @@ export default function ScrapScreen() {
           total={items.length} count={pickedRows.length}
           onSelectAll={() => sel.setMany(items.map((r) => String(r.id)), true)}
           onClear={sel.clear}
+          mode={sel.mode} onExit={sel.exit}
         >
           <button
             type="button" className="scr-pill-btn"
@@ -146,15 +150,15 @@ export default function ScrapScreen() {
             return (
             <li key={row.id} className={cx("scr-scrap-row", picked && "is-picked")}>
               <RowCheck checked={picked} onChange={() => sel.toggle(key)} label={`${row.title} 선택`} />
-              <button
-                type="button" className="scr-scrap-main"
-                onClick={() => open(row)}
+              <ScrapMain
+                onClick={() => (isMobile && sel.mode ? sel.toggle(key) : open(row))}
+                onLongPress={isMobile ? () => sel.toggle(key) : undefined}
                 title={row.title}
               >
                 <span className="scr-scrap-title">{row.title}</span>
                 {row.subtitle && <span className="scr-scrap-sub">{row.subtitle}</span>}
                 <span className="scr-scrap-when">{formatWhen(row.createdAt, { clock: true })}</span>
-              </button>
+              </ScrapMain>
               <div className="scr-scrap-acts">
                 <button
                   type="button" className="scr-icon-btn"
@@ -248,5 +252,17 @@ export default function ScrapScreen() {
         </div>
       ), document.body)}
     </div>
+  );
+}
+
+/** 스크랩 줄의 본문 단추 — 폰은 길게 눌러 선택 모드로(useLongPress · Selection.tsx ★). */
+function ScrapMain({ onClick, onLongPress, title, children }: {
+  onClick: () => void; onLongPress?: () => void; title: string; children: ReactNode;
+}) {
+  const hold = useLongPress(onLongPress);
+  return (
+    <button type="button" className="scr-scrap-main" onClick={onClick} title={title} {...hold}>
+      {children}
+    </button>
   );
 }
