@@ -940,6 +940,7 @@ export default function ActivityScreen() {
   const isAdmin = !!user && isAdminRole(user.roles);
   const sel = useSelection();
   const selection = user && openGroupKey ? sel : null;
+  const selClear = sel.clear;   // 일괄 지우기·숨기기 뒤 — 고른 것만 풀고 선택 모드는 둔다
   const selExit = sel.exit;
   useEffect(() => { selExit(); }, [selExit, openGroupKey, gameItem, detailItem]);
   const canPick = useCallback((it: DisplayItem): boolean => {
