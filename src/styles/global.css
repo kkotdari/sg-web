@@ -3330,6 +3330,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-selbar-m { gap: 4px; }
 .scr-sel-all-m, .scr-sel-exit { font-size: 12px; white-space: nowrap; }
 .scr-sel-all-m { margin-left: -10px; }
+.scr-sel-hint { font-size: 12px; color: var(--dim); white-space: nowrap; padding: 6px 0; }
 @media (max-width: 1159px) {
   .scr-activity-row, .scr-scrap-main, .scr-trash-main { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 }
