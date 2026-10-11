@@ -177,7 +177,7 @@ export interface DeletedGameResult extends GameResult {
 export type NewGameResult = Omit<GameResult, "id" | "matchNo" | "createdBy" | "replay" | "mapHash"> & {
   replay: ReplayUpload | null;
   mapData: ReplayMapGrid | null;
-  chats?: { frame: number; text: string }[];
+  chats?: { frame: number; text: string; name?: string }[];
 };
 
 export interface GameResultPage {

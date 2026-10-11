@@ -294,14 +294,17 @@ export const api = {
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}`));
   },
 
-  async getGameUnitTracks(id: number): Promise<{ motion: string | null }> {
+  /** 자취 + 경기 채팅 — 채팅은 재생기 중계 자막의 gg 선언·노엘 외침 재료(2026-10-10 · 말한 사람을 아는 줄만 · 프레임 → 초는 fastest 42ms). */
+  async getGameUnitTracks(id: number): Promise<{ motion: string | null; chats?: { sec: number; name: string; text: string }[] }> {
+    type Res = { motion?: string | null; chats?: { frame: number; text: string; name?: string | null }[] };
     const res = extShareCtx
-      ? await request<{ motion?: string | null }>(
+      ? await request<Res>(
         `/api/restricted/share/lists/${extShareCtx.listId}/games/${id}/unit-tracks`,
         { headers: { "X-Ext-Pass": extShareCtx.pass } },
       )
-      : await request<{ motion?: string | null }>(`/api/game-results/${id}/unit-tracks`);
-    return { motion: res.motion ?? null };
+      : await request<Res>(`/api/game-results/${id}/unit-tracks`);
+    const chats = (res.chats ?? []).flatMap((c) => (c.name ? [{ sec: (c.frame * 42) / 1000, name: c.name, text: c.text }] : []));
+    return { motion: res.motion ?? null, ...(chats.length > 0 ? { chats } : {}) };
   },
 
   async getGameResultStats(params: GameResultStatsParams = {}): Promise<GameResultStatsResponse> {
@@ -365,7 +368,7 @@ export const api = {
     mapName: string | null;
     durationSeconds: number | null;
     mapData: ReplayMapGrid | null;
-    chats?: { frame: number; text: string }[];
+    chats?: { frame: number; text: string; name?: string }[];
     players: {
       playerName: string;
       race: string | null;
@@ -613,7 +616,7 @@ export const api = {
     gameResultId: number,
     body: {
       mapData?: ReplayMapGrid | null;
-      chats?: { frame: number; text: string }[];
+      chats?: { frame: number; text: string; name?: string }[];
       mapName?: string | null;
       gameStartedAt?: string | null;
       durationSeconds?: number | null;

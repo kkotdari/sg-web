@@ -101,7 +101,8 @@ export interface ParsedReplay {
   teamSplitUncertain: boolean;
   ffa: boolean;
   mapGrid: ReplayMapGrid | null;
-  chats: { frame: number; text: string }[];
+  /** 경기 채팅 — name 은 말한 사람의 게임 이름(2026-10-10 · 재생기 중계 자막 gg 선언·노엘 외침). */
+  chats: { frame: number; text: string; name?: string }[];
   startSpots: [number, number][];
 }
 
@@ -933,14 +934,14 @@ export async function parseReplayFile(file: File): Promise<ParsedReplay> {
     mapGrid: await readMapGrid(res),
     chats: (() => {
       const seen = new Set<string>();
-      const out: { frame: number; text: string }[] = [];
+      const out: { frame: number; text: string; name?: string }[] = [];
       for (const slot of [...team1, ...team2]) {
         for (const c of slot.signals?.chats ?? []) {
           const frame = c.frame ?? 0;
           const key = `${frame} ${c.text}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          out.push({ frame, text: c.text });
+          out.push({ frame, text: c.text, ...(slot.rawName ? { name: slot.rawName } : {}) });
         }
       }
       out.sort((a, b) => a.frame - b.frame || (a.text < b.text ? -1 : a.text > b.text ? 1 : 0));
