@@ -942,7 +942,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 /* ★ PC 화면 폭은 **1080 하나**(2026-10-11, 요청: "게임목록·일정목록·너나와목록 1080으로 · 활동목록도" → "목록, 래더, 통계, 운영메뉴 화면들도 1080으로 통일하고
    게임상세, 리그만 1920 사용하기") — 뿌리 자(--content-max · --list-content-max)를 PC 에서 1080 으로 올려 머리 줄·옆 레일·떠 있는 단추 자리도 함께 따른다.
-   옛 통계 720(2026-10 "720 까지만")은 걷었다. 리그 1440 → 1920 · 게임 상세 1920. 모델(도록) 1440 은 요청 밖이라 그대로. 1160 아래(폰·태블릿)는 860 그대로. */
+   옛 통계 720(2026-10 "720 까지만")은 걷었다. 리그 1440 → 1920 · 게임 상세 1920 · 모델(도록)도 1080(같은 날 요청). 1160 아래(폰·태블릿)는 860 그대로. */
 @media (min-width: 1160px) {
   :root { --content-max: 1080px; --list-content-max: 1080px; }
 }
@@ -950,10 +950,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-league-screen { max-width: 1920px; margin-left: auto; margin-right: auto; width: 100%; }
   .scr-main:has(.scr-league-screen) { max-width: 1920px; }
 }
-@media (min-width: 1160px) {
-  .scr-model-screen { max-width: 1440px; margin-left: auto; margin-right: auto; width: 100%; }
-  .scr-main:has(.scr-model-screen) { max-width: 1440px; }
-}
+/* (걷어냄 · 2026-10-11, 요청: "도록 화면도 맞추고") 모델 도록의 1440 — 이제 다른 화면과 같은 1080(뿌리 자). */
 @media (min-width: 1160px) {
   .scr-main:has(.scr-game-page-card) { max-width: 1920px; }
 }
