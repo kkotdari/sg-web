@@ -952,7 +952,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 /* (걷어냄 · 2026-10-11, 요청: "도록 화면도 맞추고") 모델 도록의 1440 — 이제 다른 화면과 같은 1080(뿌리 자). */
 @media (min-width: 1160px) {
-  .scr-main:has(.scr-game-page-card) { max-width: 1920px; }
+  /* 게임 상세는 **폭 상한 없음 · 좌우 여백만**(2026-10-11, 요청: "게임 상세화면의 최대폭은 제한 없애고 대신 좌우에 적당한 패딩만") — 옛 1920 상한 · 여백 20 → 40. */
+  .scr-main:has(.scr-game-page-card) { max-width: none; --main-pad-x: 40px; }
 }
 
 .scr-scrolltop {
