@@ -1123,7 +1123,8 @@ export default function ActivityScreen() {
     }
   };
 
-  const feed = useMemo<ActivityItem[]>(() => {
+  /** 탭(내전·공방)으로 거르기 **전**의 전부 — 묶음 차례(새 소식 순)는 이것으로 잰다(아래 groupedSections). */
+  const feedAll = useMemo<ActivityItem[]>(() => {
     const items: ActivityItem[] = [
       ...challenges.map(challengeItem),
       ...gameResults.map(gameResultItem),
@@ -1131,9 +1132,11 @@ export default function ActivityScreen() {
       ...leagueMatches.map(leagueMatchItem),
       ...schedules.map(scheduleItem),
     ];
-    const sorted = items.sort((a, b) => sortMsOf(b) - sortMsOf(a));
-    return sorted.filter((it) => inGameTab(it, gameTab, memberOf));
-  }, [challenges, gameResults, rankShifts, leagueMatches, schedules, gameTab, memberOf]);
+    return items.sort((a, b) => sortMsOf(b) - sortMsOf(a));
+  }, [challenges, gameResults, rankShifts, leagueMatches, schedules]);
+  const feed = useMemo<ActivityItem[]>(
+    () => feedAll.filter((it) => inGameTab(it, gameTab, memberOf)),
+    [feedAll, gameTab, memberOf]);
 
   const feedRef = useRef<DisplayItem[]>([]);
   feedRef.current = feed;
@@ -1287,11 +1290,18 @@ export default function ActivityScreen() {
     const buckets = new Map<ActivityGroupKey, ActivityItem[]>();
     for (const g of GROUP_DEFS) buckets.set(g.key, []);
     for (const item of feed) buckets.get(groupKeyOf(item))!.push(item);
+    /* ★ 새 소식 순 차례는 **탭과 무관하게** 잰다(2026-10-11, 지적: "게임목록 탭 내전·공방 선택 시 게임목록과 일정목록 순서가 바뀌는 문제") — 거른 목록으로 재면
+       공방에만 새 게임이 있을 때 내전 탭에서는 게임 묶음이 새 소식을 잃어 일정 아래로 내려갔다. 목록(items)은 그대로 거른 것. */
+    const freshOf = new Map<ActivityGroupKey, number>();
+    for (const it of feedAll) {
+      if (rowFlagsOf(it).length === 0) continue;
+      const k = groupKeyOf(it);
+      freshOf.set(k, Math.max(freshOf.get(k) ?? 0, it.time));
+    }
     const withFlags = GROUP_DEFS
       .map((g, order) => {
         const items = buckets.get(g.key)!;
-        let freshAt = 0;
-        for (const it of items) { if (rowFlagsOf(it).length > 0) freshAt = Math.max(freshAt, it.time); }
+        const freshAt = freshOf.get(g.key) ?? 0;
         return { ...g, order, items, freshAt };
       })
       .filter((s) => s.items.length > 0 && s.key !== "league");
@@ -1301,7 +1311,7 @@ export default function ActivityScreen() {
       return a.order - b.order;
     });
     return withFlags;
-  }, [feed]);
+  }, [feed, feedAll]);
 
   const homePreview = useMemo(() => groupedSections.map((section) => ({
     ...section,
