@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft, Lock, Play } from "lucide-react";
 import { SCENE_LINK_KEYS9 } from "scplay";
 import GuestGameStory from "./GuestGameStory";
 import { LoadingMark, Spinner } from "../../components/common/Feedback";
 import { api, setExtShareContext } from "../../api/client";
 import { isMeleeGame } from "../activity/GameResultSides";
-import { GameRowNames, GameRowStatus, ListRow } from "../activity/GameRow";
-import { useIsMobile } from "../../hooks/useIsMobile";
+import { GameRowStatus, ListRow } from "../activity/GameRow";
 import { formatAgo } from "../../utils/date";
-import { guestAliasOf } from "../../utils/maskName";
-import type { ExtShareList, GameResult, GameResultSlot } from "../../types";
+import type { ExtShareList, GameResult } from "../../types";
 
 const PASS_KEY = "stargate_extshare_pass";
 const PATH = "/explore";
@@ -35,21 +33,13 @@ function writePass(listId: number, pass: string): void {
   }
 }
 
-function lineupTitle(
-  g: { matchType?: string | null; team1: GameResultSlot[]; team2: GameResultSlot[] },
-  nameOf: (s: GameResultSlot) => string,
-): string {
-  const n1 = g.team1.filter((s) => !s.observer).map(nameOf).filter(Boolean);
-  const n2 = g.team2.filter((s) => !s.observer).map(nameOf).filter(Boolean);
-  if (n1.length + n2.length === 0) return "";
-  if (isMeleeGame(g)) return [...n1, ...n2].join(" vs ");
-  return [n1.join(", "), n2.join(", ")].filter(Boolean).join(" vs ");
-}
-
-/* 손님 모드 — 제목의 이름도 가명(Player1…)으로. */
+/* 손님 모드의 게임 제목은 **판 크기만**(2026-10-12, 요청: "제목은 4:4 경기 이렇게만 표시") — 팀전 "4:4 경기" · 개인전(밀리) "1:1:1 경기". 이름(가명)은 상세의 로스터에만. */
 function gameTitleOf(g: GameResult): string {
-  const alias = guestAliasOf(g);
-  return lineupTitle(g, (s) => alias(s.rawName || "", s)) || "이름 없는 판";
+  const n1 = g.team1.filter((s) => !s.observer).length;
+  const n2 = g.team2.filter((s) => !s.observer).length;
+  if (n1 + n2 === 0) return "경기";
+  if (isMeleeGame(g)) return `${Array.from({ length: n1 + n2 }, () => "1").join(":")} 경기`;
+  return `${n1}:${n2} 경기`;
 }
 
 function gameTime(g: GameResult): string {
@@ -113,7 +103,6 @@ export default function ExploreScreen() {
   const [route, setRoute] = useState<Route>(routeFromUrl);
   const { list: listId, game: openId } = route;
   const memberOf = useCallback(() => undefined, []);
-  const isMobile = useIsMobile();
 
   const nav = useCallback((r: Route, push: boolean): void => {
     writeUrl(r, push);
@@ -315,7 +304,8 @@ export default function ExploreScreen() {
               onClick={() => openGame(g.id)}
               status={<GameRowStatus game={g} />}
               desc={<>
-                <GameRowNames game={g} memberOf={memberOf} mobile={isMobile} playable={!!g.hasTruth} nameMask={guestAliasOf(g)} />
+                <span className="scr-activity-row-names"><span className="scr-activity-row-em">{gameTitleOf(g)}</span></span>
+                {g.hasTruth && <Play size={12} className="scr-activity-row-play" aria-label="재생 가능" fill="currentColor" />}
               </>}
               side={formatAgo(gameTime(g))}
             />

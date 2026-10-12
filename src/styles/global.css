@@ -3016,13 +3016,10 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
   .scr-screen { gap: 4px; }
   /* 모바일 로고 자리를 걷는다(2026-10-09, 요청) — 로고는 서랍 메뉴 머리(.scr-drawer-brand)로 갔다. 머리띠가 0 이 되므로 안전 영역(노치)은
      본문이 직접 진다(14 + safe-top · 제목은 translateY(-6)라 눈에는 8). 손님 화면(.scr-extshare)은 서랍이 없어 로고 자리를 그대로 둔다. */
-  .scr-app:not(.scr-extshare) .scr-header,
-  body.scr-gamepage-open .scr-app.scr-extshare .scr-header { padding-top: 0; }
-  .scr-app:not(.scr-extshare) .scr-header-inner,
-  body.scr-gamepage-open .scr-app.scr-extshare .scr-header-inner { display: none; }
-  .scr-app:not(.scr-extshare) .scr-main,
-  body.scr-gamepage-open .scr-app.scr-extshare .scr-main { padding-top: calc(14px + var(--safe-top)); }
-  /* ↑ 손님 게임 상세도 회원 게임 페이지처럼 로고 머리띠를 걷는다(2026-10-12 요청) — 목록 화면은 서랍이 없어 그대로. */
+  /* 손님 화면(.scr-extshare)도 목록·상세 다 걷는다(2026-10-12, 요청: "손님 모드 게임 상세 …" → "목록 화면도 회원 페이지랑 동일하게") — 로그인은 탭바 단추에 있다. */
+  .scr-app .scr-header { padding-top: 0; }
+  .scr-app .scr-header-inner { display: none; }
+  .scr-app .scr-main { padding-top: calc(14px + var(--safe-top)); }
   .scr-brand-text { display: none; }
   .scr-brand-logo-img { height: 13px; }
   .scr-user-chip { display: none; }
