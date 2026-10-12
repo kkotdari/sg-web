@@ -4,6 +4,7 @@ import { X, Trash2, Pencil, Plus, Lock } from "lucide-react";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import ExtShareGamePickModal from "./ExtShareGamePickModal";
 import { api } from "../api/client";
 import { showAlert } from "../components/common/AlertDialog";
 import { showToast } from "../components/common/Toast";
@@ -33,6 +34,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
   const [draft, setDraft] = useState<Record<number, { name: string; password: string }>>({});
   const [editing, setEditing] = useState<number | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [addGamesOpen, setAddGamesOpen] = useState(false);
   const memberOf = useAppStore((s) => s.memberOf);
   const isMobile = useIsMobile();
   const sel = useSelection();
@@ -244,8 +246,15 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
 
           {pick !== null && (
             <>
-              <div className="scr-notice-edit-label scr-extshare-adm-hint">
-                게임 목록에서 경기를 고른 뒤 '공개'를 누르면 이 목록에 담겨요.
+              {/* 게임 담기는 여기 + 로(2026-10-12, 요청: "목록에서 공개 누르는 게 아니라 제어판 외부 공개 관리에서 목록 선택 후 + 버튼으로") */}
+              <div className="scr-extshare-adm-games-head">
+                <div className="scr-notice-edit-label">게임{games ? ` (${games.length})` : ""}</div>
+                <button
+                  type="button" className="scr-rect-btn"
+                  onClick={() => setAddGamesOpen(true)} disabled={busy || games === null}
+                >
+                  <Plus size={12} /> 추가
+                </button>
               </div>
               {games && games.length > 0 && (
                 <SelectionBar
@@ -291,6 +300,19 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
           )}
         </div>
       </div>
+      {addGamesOpen && pick !== null && games && (
+        <ExtShareGamePickModal
+          listId={pick}
+          listName={lists?.find((l) => l.id === pick)?.name ?? ""}
+          have={new Set(games.map((g) => g.id))}
+          onClose={() => setAddGamesOpen(false)}
+          onDone={() => {
+            setAddGamesOpen(false);
+            void refreshGames().catch((e: Error) => showAlert(e.message));
+            void reload().catch((e: Error) => showAlert(e.message));
+          }}
+        />
+      )}
       {confirmDel && (
         <ConfirmDialog
           title="목록 삭제"

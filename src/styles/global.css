@@ -7176,23 +7176,19 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   input.scr-extshare-adm-name { flex: 1 1 100%; }
   input.scr-extshare-adm-pass { flex: 1 1 auto; }
 }
-.scr-notice-edit-label.scr-extshare-adm-hint { font-size: var(--fs-micro); font-weight: 600; }
 .scr-extshare-lock { display: inline-flex; align-items: center; }
-.scr-extshare-pick {
-  display: flex; flex-direction: column; margin: 4px 0 10px;
-  border-top: 1px solid var(--line-hair); max-height: 50vh; overflow-y: auto;
+/* 외부 공개 관리 + → 게임 담기 창(2026-10-12) — 게임 목록 줄 그대로 · 이미 담긴 줄은 흐리게 '담김'. */
+.scr-modal.scr-extshare-add { height: min(78vh, 720px); }
+.scr-extshare-add > .scr-redo-pick-body { flex: 1 1 auto; }
+.scr-extshare-add-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.scr-extshare-add-list .scr-activity-row-wrap:has(.is-in) { opacity: 0.5; }
+.scr-extshare-add-in {
+  font-size: var(--fs-micro); font-weight: 700; color: var(--text-dim);
+  padding: 0 6px; border: 1px solid var(--line); border-radius: 6px;
 }
-.scr-extshare-pick-item {
-  display: flex; align-items: center; gap: 8px; padding: 10px 6px;
-  border-bottom: 1px solid var(--line-hair); cursor: pointer; font-size: var(--fs-body);
-}
-.scr-extshare-pick-item.is-on { background: var(--lighting-picked-bg); }
-@media (hover: hover) { .scr-extshare-pick-item:not(.is-on):hover { background: var(--lighting-hover-bg); } }
-.scr-extshare-pick-name {
-  flex: 1 1 auto; min-width: 0; font-weight: 600;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.scr-extshare-pick-meta { flex: 0 0 auto; font-size: var(--fs-caption); color: var(--text-dim); }
+.scr-extshare-add-more { align-self: center; margin: 8px 0; min-width: 96px; }
+.scr-extshare-adm-games-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.scr-extshare-adm-games-head > .scr-notice-edit-label { margin-bottom: 0; }
 
 .scr-modal.scr-tb-modal {
   max-width: 560px;
