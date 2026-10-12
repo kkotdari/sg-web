@@ -313,13 +313,17 @@ export default function ExploreScreen() {
         </div>
       ))}
 
+      {/* 회원 게임 페이지와 같은 감싸개(.scr-activity-group-page · display contents)로 싼다(2026-10-12, 지적: "손님 모드 모바일 꽉 안 차") — 폰에서 재생기 틀을
+          뷰포트 폭으로 펴는 규칙(scplay replay.css '.scr-activity-group-page .scr-motion-frame { width: 100vw }')이 이 감싸개에만 걸린다. */}
       {open && (
-        <div className="scr-game-page-card scr-extshare-detail">
-          <GuestGameStory
-            headSlot={headSlot9}
-            gameResult={open} team1={open.team1} team2={open.team2} result={open.result}
-            memberOf={memberOf} extShare
-          />
+        <div className="scr-activity-group-page">
+          <div className="scr-game-page-card scr-extshare-detail">
+            <GuestGameStory
+              headSlot={headSlot9}
+              gameResult={open} team1={open.team1} team2={open.team2} result={open.result}
+              memberOf={memberOf} extShare
+            />
+          </div>
         </div>
       )}
       {busy && listId !== null && games !== null && <Spinner size={16} />}
