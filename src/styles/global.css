@@ -2330,8 +2330,8 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 @media (max-width: 1159px) {
   .scr-activity-game-tab, .scr-line-tab-btn { padding-left: 10px; padding-right: 10px; }
   .scr-activity-game-tab::after, .scr-line-tab-btn::after { left: 6px; right: 6px; }
-  .scr-activity-game-tab:first-child, .scr-line-tab-btn:first-child { padding-left: 0; }
-  .scr-activity-game-tab:first-child::after, .scr-line-tab-btn:first-child::after { left: 0; }
+  /* (걷음 2026-10-12, 요청: "내전 공방 탭이랑 길게 눌러서 선택 글자 왼쪽 패딩을 PC 에서처럼 모바일에도 좀 줘야 할 듯") 첫 탭 왼쪽 여백 0 — 이제 첫 탭도 10px 라
+     글자가 목록 줄 안 글자(줄 좌우 여백 10px)와 같은 x 에 선다. */
 }
 @media (hover: hover) { .scr-activity-clan-only:hover { color: var(--text); } }
 .scr-filter-head-row { display: flex; align-items: baseline; gap: 10px; width: 100%; }
@@ -3329,14 +3329,14 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
    길게 누르는 동안 글자 고르기·iOS 말풍선이 뜨지 않게 줄 본문의 고르기를 막는다. */
 .scr-selbar-m { gap: 4px; }
 .scr-sel-all-m, .scr-sel-exit { font-size: 12px; white-space: nowrap; }
-.scr-sel-all-m { margin-left: -10px; }
+.scr-sel-all-m { margin-left: 0; }   /* −10 → 0(2026-10-12 · 위 탭과 같은 요청) — 글자 단추의 안 여백 10px 이 곧 왼쪽 여백(목록 줄 글자와 같은 x) */
 /* 고르기 전용 목록(팀 짜기 · 다시 분석 고르기 · 맵 묶기)도 폰은 같은 꼴(2026-10-12, 요청: "전체 선택 있는 곳 … 모두 모바일은 같은 방식") — 줄 체크칸을 숨기고 줄(label)을 눌러
    고른다(고른 줄은 is-on 바탕) · 전체 선택은 글자 단추(SelectAllToggle). 그 머리 줄 안이라 왼쪽 당김은 없다. */
 .scr-sel-all-pick { margin-left: 0; }
 @media (max-width: 1159px) {
   .scr-tb-pick > input[type="checkbox"], .scr-redo-pick-row > input[type="checkbox"], .scr-minimap-map-row > input[type="checkbox"] { display: none; }
 }
-.scr-sel-hint { font-size: 12px; color: var(--dim); white-space: nowrap; padding: 6px 0; }
+.scr-sel-hint { font-size: 12px; color: var(--dim); white-space: nowrap; padding: 6px 10px; }   /* 왼쪽 0 → 10px(2026-10-12 · 위 탭과 같은 요청) */
 @media (max-width: 1159px) {
   .scr-activity-row, .scr-scrap-main, .scr-trash-main { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 }
