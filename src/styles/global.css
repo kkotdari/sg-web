@@ -3330,6 +3330,12 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-selbar-m { gap: 4px; }
 .scr-sel-all-m, .scr-sel-exit { font-size: 12px; white-space: nowrap; }
 .scr-sel-all-m { margin-left: -10px; }
+/* 고르기 전용 목록(팀 짜기 · 다시 분석 고르기 · 맵 묶기)도 폰은 같은 꼴(2026-10-12, 요청: "전체 선택 있는 곳 … 모두 모바일은 같은 방식") — 줄 체크칸을 숨기고 줄(label)을 눌러
+   고른다(고른 줄은 is-on 바탕) · 전체 선택은 글자 단추(SelectAllToggle). 그 머리 줄 안이라 왼쪽 당김은 없다. */
+.scr-sel-all-pick { margin-left: 0; }
+@media (max-width: 1159px) {
+  .scr-tb-pick > input[type="checkbox"], .scr-redo-pick-row > input[type="checkbox"], .scr-minimap-map-row > input[type="checkbox"] { display: none; }
+}
 .scr-sel-hint { font-size: 12px; color: var(--dim); white-space: nowrap; padding: 6px 0; }
 @media (max-width: 1159px) {
   .scr-activity-row, .scr-scrap-main, .scr-trash-main { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -5503,7 +5509,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-activity-row-state-loss { color: var(--loss); }
 .scr-activity-row-state-draw { color: var(--muted); }
 @media (max-width: 1159px) {
-  .scr-activity-rows { --scr-row-pad-x: 4px; border-radius: 3px; }
+  .scr-activity-rows { --scr-row-pad-x: 10px; border-radius: 3px; }   /* 4 → 10px(2026-10-12, 요청: "활동 목록(각 목록 페이지도) 로우의 좌우 패딩 좀 넣어 줘 모바일에서") · PC 14 */
   .scr-activity-row > * + * { padding-left: 8px; }
   .scr-activity-row > * { padding-right: 8px; }
   .scr-activity-row > *:last-child { padding-right: 0; }

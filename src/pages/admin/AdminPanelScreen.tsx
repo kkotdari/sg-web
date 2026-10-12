@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import Select from "../../components/common/Select";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import { SelectAllToggle } from "../../components/common/Selection";
 import ReplayBatchButton from "../../components/common/ReplayBatchButton";
 import VersionManageModal from "../../modals/VersionManageModal";
 import ExtShareManageModal from "../../modals/ExtShareManageModal";
@@ -523,13 +524,10 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     value={pickQuery}
                     onChange={(e) => setPickQuery(e.target.value)}
                   />
-                  <label className="scr-redo-pick-all">
-                    <input type="checkbox" checked={allShownPicked} onChange={toggleAllShown} />
-                    <span>
-                      전체 선택
-                      {pickQuery.trim() ? ` (검색된 ${pickFiltered.length}건)` : ` (${pickFiltered.length}건)`}
-                    </span>
-                  </label>
+                  <SelectAllToggle
+                    className="scr-redo-pick-all" all={allShownPicked} count={picked.size} onToggle={toggleAllShown}
+                    suffix={pickQuery.trim() ? ` (검색된 ${pickFiltered.length}건)` : ` (${pickFiltered.length}건)`}
+                  />
                   <div className="scr-redo-pick-list">
                     {pickFiltered.map((r) => (
                       <label key={r.id} className={cx("scr-redo-pick-row", picked.has(r.id) && "is-on")}>

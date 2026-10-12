@@ -4,6 +4,7 @@ import { Trash2, Link2Off, ImageDown, Pencil, Plus } from "lucide-react";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Select from "../../components/common/Select";
 import { Spinner } from "../../components/common/Feedback";
+import { SelectAllToggle } from "../../components/common/Selection";
 import { api } from "../../api/client";
 import { showAlert } from "../../components/common/AlertDialog";
 import { showToast } from "../../components/common/Toast";
@@ -222,10 +223,7 @@ export default function MapCanonScreen() {
             </button>
           )}
           {unmapped.length > 0 && (
-            <label className="scr-minimap-all">
-              <input type="checkbox" checked={allPicked} onChange={toggleAll} disabled={busy} />
-              전체 선택
-            </label>
+            <SelectAllToggle className="scr-minimap-all" all={allPicked} count={picked.size} onToggle={toggleAll} disabled={busy} />
           )}
         </div>
         <div className="scr-minimap-maps">

@@ -4,6 +4,7 @@ import { X, Shuffle, Users } from "lucide-react";
 import ModalHash from "../utils/modalHash";
 import Avatar from "../components/common/Avatar";
 import { Spinner } from "../components/common/Feedback";
+import { SelectAllToggle } from "../components/common/Selection";
 import { api } from "../api/client";
 import { showAlert } from "../components/common/AlertDialog";
 import { useAppStore } from "../store/appStore";
@@ -161,13 +162,10 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
               <div className="scr-tb-pickhead">
                 <span className="scr-tb-picked">{picked.size}명 선택</span>
                 {pickable.length > 0 && (
-                  <label className="scr-tb-all">
-                    <input
-                      type="checkbox" checked={allPicked}
-                      onChange={() => setPicked(allPicked ? new Set() : new Set(pickable.map((r) => r.member.id)))}
-                    />
-                    전체 선택
-                  </label>
+                  <SelectAllToggle
+                    className="scr-tb-all" all={allPicked} count={picked.size}
+                    onToggle={() => setPicked(allPicked ? new Set() : new Set(pickable.map((r) => r.member.id)))}
+                  />
                 )}
               </div>
 
