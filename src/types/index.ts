@@ -167,6 +167,8 @@ export interface GameResult {
   viewCount?: number;
   hasTruth?: boolean | null;
   hidden?: boolean;
+  /** 내전(참가자 전원이 회원)인가 — 서버가 실어 준다(비공개 판은 팀이 비어 슬롯으로 못 가른다 · 2026-10-12). 옛 서버면 없다. */
+  clan?: boolean;
 }
 
 export interface DeletedGameResult extends GameResult {

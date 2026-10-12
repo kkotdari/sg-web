@@ -507,8 +507,11 @@ const previewMaxOf = (k: ActivityGroupKey): number =>
 
 const SEARCHABLE_GROUPS = new Set<ActivityGroupKey>(["league", "call", "gameResult"]);
 
+/* ★ 내전·공방은 **서버가 실어 준 clan** 으로 가른다(2026-10-12, 지적: "활동 화면과 게임 목록에서 내전·공방 목록이 달라 — 원래 공방에 있던 게 내전에") — 비공개(숨긴) 판은
+   팀을 비워 내려와 옛 셈(슬롯 전원이 회원)이 빈 목록에서 늘 참이라 공방 판이 내전 탭에 들었다. 게임 목록(서버 membersOnly)과 같은 셈이다. 옛 서버(clan 없음)만 슬롯으로 잰다. */
 function isClanGame(item: ActivityItem, memberOf: (id: string) => Member | undefined): boolean {
   if (item.kind !== "gameResult") return true;
+  if (typeof item.gameResult.clan === "boolean") return item.gameResult.clan;
   const slots = [...item.gameResult.team1, ...item.gameResult.team2];
   return slots.every((slot) => !!memberOf(slot.memberId));
 }
