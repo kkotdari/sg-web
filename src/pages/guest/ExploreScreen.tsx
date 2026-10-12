@@ -8,7 +8,7 @@ import { isMeleeGame } from "../activity/GameResultSides";
 import { GameRowNames, GameRowStatus, ListRow } from "../activity/GameRow";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { formatAgo } from "../../utils/date";
-import { maskPlayerName } from "../../utils/maskName";
+import { guestAliasOf } from "../../utils/maskName";
 import type { ExtShareList, GameResult, GameResultSlot } from "../../types";
 
 const PASS_KEY = "stargate_extshare_pass";
@@ -46,9 +46,10 @@ function lineupTitle(
   return [n1.join(", "), n2.join(", ")].filter(Boolean).join(" vs ");
 }
 
-/* 손님 모드 — 제목의 이름도 가린다(요청: 첫·끝 글자만 남기고 반각 동그라미). */
+/* 손님 모드 — 제목의 이름도 가명(Player1…)으로. */
 function gameTitleOf(g: GameResult): string {
-  return lineupTitle(g, (s) => maskPlayerName(s.rawName || "")) || "이름 없는 판";
+  const alias = guestAliasOf(g);
+  return lineupTitle(g, (s) => alias(s.rawName || "", s)) || "이름 없는 판";
 }
 
 function gameTime(g: GameResult): string {
@@ -234,6 +235,12 @@ export default function ExploreScreen() {
     document.title = open ? `${gameTitleOf(open)} — ${SITE}` : current ? `${current.name} — ${SITE}` : `${TITLE} — ${SITE}`;
   }, [open, current]);
 
+  useEffect(() => {
+    if (!open) return undefined;
+    document.body.classList.add("scr-gamepage-open");
+    return () => document.body.classList.remove("scr-gamepage-open");
+  }, [open]);
+
   /* 게임 제목 줄의 머리 칸 — GuestGameStory 가 시각·맵·승패·등록자를 여기에 포털로 그린다(2026-10-09). */
   const [headSlot9, setHeadSlot9] = useState<HTMLDivElement | null>(null);
   return (
@@ -246,12 +253,14 @@ export default function ExploreScreen() {
         </div>
       ) : (
         <div className="scr-v2-toolbar scr-v2-toolbar-crumb">
-          <div className="scr-v2-toolbar-title-row scr-crumb">
+          {/* 게임 상세는 회원 게임 페이지와 같은 꼴(2026-10-12, 요청: "손님 모드 게임 상세 타이틀과 헤더 부분과 로고 지우기 등 회원 페이지랑 동일하게") —
+              제목 없이 뒤로 + 머리 칸 · 카드는 scr-game-page-card · body.scr-gamepage-open(탭바·폰 머리띠 걷음). */}
+          <div className={open ? "scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle" : "scr-v2-toolbar-title-row scr-crumb"}>
             <button type="button" className="scr-crumb-back" onClick={goBack}>
               <ArrowLeft size={14} />
               <span>{open ? "목록" : "전체 목록"}</span>
             </button>
-            <h1 className="scr-title scr-crumb-title">{open ? gameTitleOf(open) : current?.name ?? TITLE}</h1>
+            {!open && <h1 className="scr-title scr-crumb-title">{current?.name ?? TITLE}</h1>}
             {open && <div className="scr-crumb-meta" ref={setHeadSlot9} />}
           </div>
         </div>
@@ -306,7 +315,7 @@ export default function ExploreScreen() {
               onClick={() => openGame(g.id)}
               status={<GameRowStatus game={g} />}
               desc={<>
-                <GameRowNames game={g} memberOf={memberOf} mobile={isMobile} playable={!!g.hasTruth} nameMask={maskPlayerName} />
+                <GameRowNames game={g} memberOf={memberOf} mobile={isMobile} playable={!!g.hasTruth} nameMask={guestAliasOf(g)} />
               </>}
               side={formatAgo(gameTime(g))}
             />
@@ -315,7 +324,7 @@ export default function ExploreScreen() {
       ))}
 
       {open && (
-        <div className="scr-extshare-detail">
+        <div className="scr-game-page-card scr-extshare-detail">
           <GuestGameStory
             headSlot={headSlot9}
             gameResult={open} team1={open.team1} team2={open.team2} result={open.result}

@@ -73,11 +73,11 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   memberOf: (id: string) => Member | undefined;
   mobile: boolean;
   playable: boolean;
-  /** 보이는 이름만 바꾸는 손 — 손님 모드의 가리기(maskPlayerName). 자료는 그대로다. */
-  nameMask?: (name: string) => string;
+  /** 보이는 이름만 바꾸는 손 — 손님 모드의 가명(guestAliasOf · Player1…). 자료는 그대로다. 가명은 폰 줄 자르기(clipRowName)를 안 탄다 — 번호가 잘린다. */
+  nameMask?: (name: string, slot: GameResultSlot) => string;
 }) {
   const nameOf = (s: GameResultSlot, all: GameResultSlot[]): string =>
-    (nameMask ?? ((n) => n))(resolveSlotName(s, all, memberOf));
+    (nameMask ? nameMask(resolveSlotName(s, all, memberOf), s) : resolveSlotName(s, all, memberOf));
   if (isSecretGame(game)) {
     return (
       <span className="scr-activity-row-names">
@@ -92,7 +92,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
     slots.flatMap((s, i) => [
       ...(i > 0 ? [<span className="scr-activity-row-slash" key={`s${i}`} aria-hidden>/</span>] : []),
       <span className="scr-activity-row-em" key={`n${i}`}>
-        {clipRowName(nameOf(s, slots), mobile)}
+        {(nameMask ? nameOf(s, slots) : clipRowName(nameOf(s, slots), mobile))}
       </span>,
     ]);
   if (isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 })) {
@@ -108,7 +108,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
                 </span>
               )] : []),
               <span className="scr-activity-row-em" key={`n${i}`}>
-                {clipRowName(nameOf(s, all), mobile)}
+                {(nameMask ? nameOf(s, all) : clipRowName(nameOf(s, all), mobile))}
               </span>,
               <OutcomeBadge key={`w${i}`} text={sideOutcome(game.result, i < game.team1.length ? 1 : 2)} />,
             ])}
