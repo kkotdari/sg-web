@@ -6443,9 +6443,6 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
   padding: 1px 4px; border-radius: 3px;
 }
 .scr-minimap-mark-label-out.scr-minimap-mark-hit .scr-race-badge { color: inherit; }
-.scr-story-player {
-  display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%;
-}
 .scr-story-line { display: flex; align-items: center; gap: 12px; width: 100%; }
 .scr-story-play {
   flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%;

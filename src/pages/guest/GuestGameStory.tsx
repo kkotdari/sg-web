@@ -180,7 +180,9 @@ export default function GuestGameStory({ gameResult, team1, team2, result, membe
       </>,
       headSlot,
     ) : null;
-    const mapBlock = storyMap && (<div className="scr-story-player" {...stopBubble}>
+    /* 재생기 감싸개는 회원 게임 페이지(GameResultStory)와 같은 맨 div(2026-10-12, 지적: "손님 모드에서 재생기가 폭을 다 안 쓰고 양쪽이 남아") — 옛 .scr-story-player 는
+       세로 flex 의 align-items center 라 재생기가 제 내용 폭으로 줄어 가운데 섰다. */
+    const mapBlock = storyMap && (<div {...stopBubble}>
 
       <ReplayModule
         grid={storyMap} endSec={endSecVal}
