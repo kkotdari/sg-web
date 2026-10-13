@@ -9,14 +9,14 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "share-thumbs": "node scripts/make-share-thumbs.cjs",
-    "scplay": "npm uninstall scplay --no-audit --no-fund && npm install github:kkotdari/scplay --no-audit --no-fund"
+    "scplay": "npm uninstall scplay --no-audit --no-fund && npm install github:kkotdari/scplay#dist --no-audit --no-fund"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.6.13",
     "lucide-react": "^0.469.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "scplay": "github:kkotdari/scplay",
+    "scplay": "github:kkotdari/scplay#dist",
     "screp-js": "^0.3.0",
     "zustand": "^5.0.2"
   },
