@@ -689,6 +689,12 @@ function ActivityGroupPage({
   }, [base, searchTerms, serverGames, serverSearch, searchable, memberOf]);
 
   const selectable = useMemo(() => filtered.filter(canPick), [filtered, canPick]);
+  /* ★ 안내(selectionNote)는 **비밀 경기 말고** 못 고르는 줄이 있을 때만(2026-10-13, 지적: 공방 탭에 "알림·리그 경기는 여기서 지울 수 없어요") — 게임 목록에서
+     못 고르는 줄은 대개 숨긴 경기인데, 운영자 글귀가 엉뚱한 까닭(알림·리그)을 댔다. 비밀 줄은 제 꼴('비밀')과 눌렀을 때의 풍선이 이미 말한다. */
+  const noteBlocked = useMemo(
+    () => filtered.some((it) => !canPick(it) && !(it.kind === "gameResult" && isSecretGame(it.gameResult))),
+    [filtered, canPick],
+  );
   const pickedSet = selection?.picked;
   const pickedItems = useMemo(
     () => (pickedSet ? selectable.filter((it) => pickedSet.has(rowKeyOf(it))) : []),
@@ -753,7 +759,7 @@ function ActivityGroupPage({
           total={selectable.length} count={pickedItems.length}
           onSelectAll={() => selection.setMany(selectable.map(rowKeyOf), true)}
           onClear={selection.clear}
-          note={selectable.length < filtered.length ? selectionNote : undefined}
+          note={noteBlocked ? selectionNote : undefined}
           mode={selection.mode} onExit={selection.exit}
         >
           <SelectionActions
