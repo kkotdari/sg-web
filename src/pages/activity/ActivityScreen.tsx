@@ -48,7 +48,7 @@ import {
 import { hasAppUpdatePreloadErrorOccurred } from "../../utils/appUpdate";
 import type {
   ActivityFeedItem, Challenge, ActivityTargetType, GameResult, GameResultSlot,
-  ActivityNotice, LeagueMatchActivity, Member, RankingShift, Schedule,
+  LeagueMatchActivity, Member, RankingShift, Schedule,
 } from "../../types";
 
 const PAGE_SIZE = 100;
@@ -106,15 +106,6 @@ type DisplayItem = ActivityItem;
 
 function sortMsOf(it: ActivityItem): number {
   return it.kind === "challenge" || it.kind === "schedule" ? it.sortTime : it.time;
-}
-
-function rankShiftItem(shift: RankingShift): RankingShiftItem {
-  return {
-    kind: "rankingShift",
-    time: serverMs(shift.createdAt),
-    withClock: true,
-    shift,
-  };
 }
 
 function challengeItem(c: Challenge): ChallengeItem {
@@ -212,17 +203,6 @@ const GROUP_ITEM_KIND: Record<ActivityGroupKey, string> = {
   call: "challenge",
   gameResult: "gameResult",
 };
-
-function rankShiftOfNotice(notice: ActivityNotice | null | undefined): RankingShift | null {
-  if (!notice || notice.kind !== "rankingShift") return null;
-  return {
-    id: notice.id,
-    reason: notice.payload.reason ?? "daily",
-    createdAt: notice.createdAt,
-    matchIds: notice.payload.matchIds ?? [],
-    sections: notice.payload.sections ?? [],
-  } as RankingShift;
-}
 
 function gameParamOf(): string | null {
   const r = parseRoute();
@@ -471,8 +451,9 @@ export const GameResultCard = memo(function GameResultCard({ item, memberOf, onD
   );
 });
 
+/* (걷어냄 · 2026-10-13, 요청: 알림 묶음 걷어 내기 — "알림이 뭐야? 그런 기능 본 적이 없어" → "2") 알림(랭킹 변동 · rankingShift) 묶음.
+   서버는 그대로 만들지만 활동 화면에 싣지 않는다(feedAll · 상세 링크). 타입·카드(RankingShiftCard)는 남겨 둔다. */
 const GROUP_DEFS: { key: ActivityGroupKey; label: string }[] = [
-  { key: "notice", label: "알림" },
   { key: "schedule", label: "일정" },
   { key: "league", label: "리그" },
   { key: "call", label: "너 나와!" },
@@ -959,7 +940,7 @@ export default function ActivityScreen() {
     if (isAdmin) return deletableOf(it);
     return it.kind === "gameResult" && canManageGame(it.gameResult, user);
   }, [isAdmin, user]);
-  const selectionNote = isAdmin ? "알림·리그 경기는 여기서 지울 수 없어요." : "내가 뛴 게임만 고를 수 있어요.";
+  const selectionNote = isAdmin ? "리그 경기는 여기서 지울 수 없어요." : "내가 뛴 게임만 고를 수 있어요.";
   const memberOf = useAppStore((s) => s.memberOf);
   const [gameTabRaw, setGameTabRaw] = useUrlState("tab");
   const gameTab: GameTab = gameTabRaw === "pub" ? "pub" : "clan";
@@ -1012,13 +993,6 @@ export default function ActivityScreen() {
     [feedItems],
   );
   const gameResults = useMemo(() => feedItems.flatMap((it) => it.gameResults), [feedItems]);
-  const rankShifts = useMemo(
-    () => feedItems.flatMap((it) => {
-      const made = rankShiftOfNotice(it.notice);
-      return made ? [made] : [];
-    }),
-    [feedItems],
-  );
   const leagueMatches = useMemo(
     () => feedItems.flatMap((it) => (it.leagueMatch ? [it.leagueMatch] : [])),
     [feedItems],
@@ -1141,12 +1115,11 @@ export default function ActivityScreen() {
     const items: ActivityItem[] = [
       ...challenges.map(challengeItem),
       ...gameResults.map(gameResultItem),
-      ...rankShifts.map(rankShiftItem),
       ...leagueMatches.map(leagueMatchItem),
       ...schedules.map(scheduleItem),
     ];
     return items.sort((a, b) => sortMsOf(b) - sortMsOf(a));
-  }, [challenges, gameResults, rankShifts, leagueMatches, schedules]);
+  }, [challenges, gameResults, leagueMatches, schedules]);
   const feed = useMemo<ActivityItem[]>(
     () => feedAll.filter((it) => inGameTab(it, gameTab, memberOf)),
     [feedAll, gameTab, memberOf]);
@@ -1186,12 +1159,10 @@ export default function ActivityScreen() {
     api.getActivityItem(GROUP_ITEM_KIND[group9], id9)
       .then((row) => {
         if (cancelled) return;
-        const shift9 = rankShiftOfNotice(row.notice);
         const made = row.challenge ? challengeItem(row.challenge)
           : row.schedule ? scheduleItem(row.schedule)
-            : row.leagueMatch ? leagueMatchItem(row.leagueMatch)
-              : shift9 ? rankShiftItem(shift9) : null;
-        if (made) setDetailItem(made);
+            : row.leagueMatch ? leagueMatchItem(row.leagueMatch) : null;   // 알림(랭킹 변동)은 걷었다(위 GROUP_DEFS)
+        if (made) setDetailItem(made); else setItemMiss(true);
       })
       .catch(() => { if (!cancelled) setItemMiss(true); });
     return () => { cancelled = true; };
