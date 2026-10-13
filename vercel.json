@@ -1,4 +1,12 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "feat/**": false,
+      "fix/**": false,
+      "style/**": false,
+      "claude/**": false
+    }
+  },
   "ignoreCommand": "[ \"$VERCEL_GIT_COMMIT_REF\" != \"main\" ]",
   "installCommand": "npm ci --no-audit --no-fund",
   "headers": [
