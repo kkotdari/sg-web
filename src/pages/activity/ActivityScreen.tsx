@@ -828,6 +828,7 @@ export default function ActivityScreen() {
     for (const k9 of SCENE_LINK_KEYS9) params.delete(k9);
     params.delete("u");
     params.delete("q");
+    params.delete("tab");   // 게임 목록의 공방/내전 탭은 목록 주소의 것 — 상세 주소엔 안 싣는다(뒤로 가면 목록 주소에서 되살아난다)
     navigateTo(
       pathOf({ screen: "activity", group: "gameResult", item: item.gameResult.matchNo || String(item.gameResult.id) }),
       { search: params.toString(), notify: false },
@@ -907,6 +908,7 @@ export default function ActivityScreen() {
     for (const k9 of SCENE_LINK_KEYS9) params.delete(k9);
     params.delete("u");
     params.delete("q");
+    params.delete("tab");   // 게임 목록의 공방/내전 탭은 목록 주소의 것 — 상세 주소엔 안 싣는다(뒤로 가면 목록 주소에서 되살아난다)
     navigateTo(pathOf({ screen: "activity", group: group9, item: String(id9) }), { search: params.toString(), notify: false });
     pushedDetailRef.current = true;
   };
