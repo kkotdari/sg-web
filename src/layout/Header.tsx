@@ -130,7 +130,7 @@ export default function Header({
   const { railOpen, railEnter, railEnterSoon, railLeave } = useRail();
   const profileAnchorRef = useRef<HTMLButtonElement>(null);
   const profileDropRef = useRef<HTMLDivElement>(null);
-  const isNarrowHeader = useIsNarrow(1159);
+  const isNarrowHeader = useIsNarrow(960);
   useLayoutEffect(() => {
     if (!profileMenuOpen || !profileAnchorRef.current || !profileDropRef.current) return;
     return attachPopover(profileAnchorRef.current, profileDropRef.current, { growToContent: true, maxWidth: 200 });

@@ -93,7 +93,7 @@ export default function RivalryMap({
 
   const [arrowScale, setArrowScale] = useState(1);
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1160px)");
+    const mq = window.matchMedia("(min-width: 961px)");
     const update = () => setArrowScale(mq.matches ? 560 / 760 : 1);
     update();
     mq.addEventListener("change", update);

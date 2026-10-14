@@ -762,7 +762,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   0% { transform: translate(-50%, -50%) rotateY(0deg); animation-timing-function: cubic-bezier(0.6, 0, 0.4, 1); }
   40%, 100% { transform: translate(-50%, -50%) rotateY(1080deg); }
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-brand { transform: translateY(-6px); }
 }
 .scr-brand-text { font-size: var(--fs-body); color: var(--muted); letter-spacing: 0.02em; white-space: nowrap; }
@@ -865,7 +865,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-v2-primary-row { display: flex; justify-content: center; margin-bottom: 12px; }
 .scr-members-screen-v2 .scr-v2-primary-row { margin-bottom: 30px; }
 .scr-rail-hotzone { display: none; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   :root { --rail-w: 0px; --rail-col: 176px; }
   .scr-app { padding-left: var(--rail-w); }
   .scr-app.scr-app-fallback-scroll { padding-left: 0; }
@@ -928,14 +928,14 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-rail-hotzone:hover::after { opacity: 0.7; }
   .scr-rail-hotzone-open::after, .scr-rail-hotzone-open:hover::after { opacity: 0; }
 }
-@media (min-width: 1160px) and (hover: hover) {
+@media (min-width: 961px) and (hover: hover) {
   .scr-nav-desktop .scr-nav-tab:hover,
   .scr-header-inner .scr-text-btn:hover,
   .scr-user-chip:hover { background: rgba(var(--overlay-rgb), 0.06); }
   .scr-modal { left: calc(50% + var(--rail-w) / 2); }
 }
 
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-members-screen-v2, .scr-stats-screen-v2 {
     max-width: var(--list-content-max); margin-left: auto; margin-right: auto; width: 100%;
   }
@@ -943,15 +943,15 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* ★ PC 화면 폭은 **1080 하나**(2026-10-11, 요청: "게임목록·일정목록·너나와목록 1080으로 · 활동목록도" → "목록, 래더, 통계, 운영메뉴 화면들도 1080으로 통일하고
    게임상세, 리그만 1920 사용하기") — 뿌리 자(--content-max · --list-content-max)를 PC 에서 1080 으로 올려 머리 줄·옆 레일·떠 있는 단추 자리도 함께 따른다.
    옛 통계 720(2026-10 "720 까지만")은 걷었다. 리그 1440 → 1920 · 게임 상세 1920 · 모델(도록)도 1080(같은 날 요청). 1160 아래(폰·태블릿)는 860 그대로. */
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   :root { --content-max: 1080px; --list-content-max: 1080px; }
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-league-screen { max-width: 1920px; margin-left: auto; margin-right: auto; width: 100%; }
   .scr-main:has(.scr-league-screen) { max-width: 1920px; }
 }
 /* (걷어냄 · 2026-10-11, 요청: "도록 화면도 맞추고") 모델 도록의 1440 — 이제 다른 화면과 같은 1080(뿌리 자). */
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   /* 게임 상세는 **폭 상한 없음 · 좌우 여백만**(2026-10-11, 요청: "게임 상세화면의 최대폭은 제한 없애고 대신 좌우에 적당한 패딩만") — 옛 1920 상한 · 여백 20 → 40. */
   .scr-main:has(.scr-game-page-card) { max-width: none; --main-pad-x: 40px; }
 }
@@ -1071,7 +1071,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   width: max-content; min-width: 100%; box-sizing: border-box;
 }
 .scr-stat-row:last-child { border-bottom: none; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-stat-row { grid-template-columns: var(--scr-stat-name-w) repeat(5, minmax(190px, 1fr)); }
 }
 .scr-stat-row > * { display: flex; align-items: center; padding: 14px 14px; box-sizing: border-box; }
@@ -1293,7 +1293,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
    종족구성별 전적 줄(.scr-clan-race-*)과 같은 수로, 칸마다 min-width 를 못 박아 줄이 쌓여도 값이 한 세로줄에 선다. 고정 폭이 아니라
    **최소 폭**이라 이름이나 값이 길면 그 줄만 밀린다(이름 바로 뒤에 붙여 쓰라던 요청과 어긋나지 않는다).
    폰은 건드리지 않는다 — 머리가 두 줄이고 글자 자가 clamp 라 칸을 못 박으면 되레 줄이 터진다(아래 1159 규칙에서 되돌린다). */
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
 }
 /* ⚠ .scr-statcard-sum-item 의 min-width:0 이 **아래에** 있어 같은 무게로는 못 덮는다 — 한 겹 더 짚는다(0,2,0).
    회 플레이·승률은 칸(grid)이 폭을 쥐므로 여기선 데미지만 — 제 글자 폭(실측 213)에 꼭 맞춰야 뒤의 APM 앞 간격이 앞 칸들과 같아진다.
@@ -1322,7 +1322,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* PC 아바타는 **닉네임 글자 높이와 같다**(2026-10, 요청: "타이틀의 아바타 크기(높이)를 글자와 같게 맞춰서 글자 아래 추가로 더 뜨게
    만들지 않기") — 여태 28(아래 .scr-stats-list-panel-v2 규칙이 위 32 를 같은 무게로 덮어 왔다)이 머리 줄을 글자보다 높여 글자 아래에
    빈 띠를 냈다. 닉네임은 16px → 줄 상자 20px. 한 겹 더 짚어(0,4,0) 뒤에 선 28/18 규칙에 안 밀린다. 폰은 건드리지 않는다. */
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-stats-list-panel-v2 .scr-stat-person .scr-stat-avatar-btn .scr-avatar {
     width: 20px !important; height: 20px !important;
   }
@@ -1392,7 +1392,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-statcard-deck > .scr-stat-mix-cell > .scr-stat-points-empty { grid-row: 1 / -1; }
 :is(.scr-statcard, .scr-stat-person) .scr-stat-upgrades, .scr-clan-decks .scr-stat-upgrades { --scr-up-num-w: 25px; max-width: 104px; }
 :is(.scr-statcard, .scr-stat-person) .scr-stat-mix-cell, .scr-clan-decks .scr-stat-mix-cell { --scr-toplist-w: 124px; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   /* 폰 칸 수 — 기점은 (덱 테두리 1 + 덱 안 여백 8) = 9 · 표지 칸은 아바타 18 + 6. 첫 줄에 닉네임·회 플레이·승률이 다 든다(요청). */
   .scr-statcard, .scr-stat-person {
     /* 폰은 종족 칸 안쪽이 326(360 폭 기준) — 이름 100 + 회 플레이 92 + 승률 74 + 사이 15 + 꺽쇠 21 = 302 로 든다. */
@@ -1446,7 +1446,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 .scr-clan-dash-panels > .scr-clan-panel { padding: 0; border: none; border-radius: 0; background: none; }
 .scr-clan-dash-panels > .scr-clan-panel + .scr-clan-panel { border-left: 1px solid var(--line-hair); padding-left: 14px; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-clan-dash-row {
     display: grid; gap: 8px; align-items: stretch;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.3fr);
@@ -1855,7 +1855,7 @@ html:not(.scr-light-theme) .scr-donut-band-delta { fill: #fff; opacity: 0.66; }
     var(--scr-stat-name-w) + var(--scr-stat-record-w) + 3 * var(--scr-stat-race-w));
 }
 .scr-stats-list-panel-v2 .scr-stat-table-nomedal .scr-stat-row { --scr-stat-rank-w: 62px; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-stat-record-item .scr-value-bar-track-wrap,
   .scr-stat-record-item .scr-stat-bar-track-wrap { max-width: 100px; }
 }
@@ -1940,7 +1940,7 @@ html:not(.scr-light-theme) .scr-stats-list-panel-v2 .scr-stat-name-cell, html:no
 .scr-stats-list-panel-v2 .scr-stat-bar-row { gap: 4px; }
 .scr-stats-list-panel-v2 .scr-stat-bar-track-wrap { min-height: 0; height: 18px; }
 .scr-stats-list-panel-v2 .scr-stat-bar-top { display: flex; justify-content: center; gap: 0; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-stat-row { --scr-stat-name-w: 82px; }
   .scr-stat-name-cell {
     flex-direction: column; justify-content: center; gap: 4px;
@@ -2057,7 +2057,7 @@ html:not(.scr-light-theme) .scr-stats-list-panel-v2 .scr-stat-name-cell, html:no
 
 .scr-rank-bar-fill-plays { background: var(--bar-plays); }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
 }
 
 html.scr-page-bg:not(.scr-light-theme) {
@@ -2072,7 +2072,7 @@ html.scr-page-bg:not(.scr-light-theme) .scr-main::before {
     var(--page-bg-image) center / cover no-repeat,
     var(--void);
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   html.scr-page-bg:not(.scr-light-theme) .scr-main::before { background: var(--void); }
   html.scr-page-bg.scr-page-bg-mobile:not(.scr-light-theme) .scr-main::before {
     background:
@@ -2107,7 +2107,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
   color: var(--dim); font-weight: 400; font-size: var(--fs-micro); margin-left: auto;
   min-width: var(--scr-count-w); text-align: right; font-variant-numeric: tabular-nums;
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-list-count { display: none; }
 }
 .scr-game-result-list-panel { padding: 0; }
@@ -2116,7 +2116,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 .scr-filter-bar { display: flex; flex-direction: column; width: 100%; }
 .scr-filter-inline-stack { display: flex; flex-direction: row; align-items: center; gap: 8px; width: 100%; margin-bottom: 14px; }
 .scr-filter-panel { flex: 0 0 auto; max-width: 100%; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-filter-panel { justify-content: space-between; }
   .scr-filter-panel:has(> .scr-filter-item:only-child) { justify-content: center; }
   
@@ -2226,7 +2226,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 .scr-search-filter-float input.scr-list-search-input::placeholder { color: var(--muted); font-size: var(--fs-caption); }
 .scr-search-filter-float .scr-search-chip-box { padding-top: 4px; padding-bottom: 4px; }
 .scr-search-filter-float .scr-search-chip { font-size: var(--fs-micro); padding: 3px 3px 3px 7px; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-filter-inline-stack { flex-direction: column; align-items: stretch; gap: 16px; }
   .scr-filter-panel { width: 100%; justify-content: space-between; }
   .scr-filter-panel:has(> .scr-filter-item:only-child) { justify-content: center; }
@@ -2327,7 +2327,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
   .scr-activity-game-tab:hover:not(.is-on), .scr-line-tab-btn:hover:not(.is-on) { color: var(--text); }
 }
 .scr-activity-game-tab:focus-visible, .scr-line-tab-btn:focus-visible { outline: 2px solid var(--point); outline-offset: -2px; border-radius: 6px; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-activity-game-tab, .scr-line-tab-btn { padding-left: 10px; padding-right: 10px; }
   .scr-activity-game-tab::after, .scr-line-tab-btn::after { left: 6px; right: 6px; }
   /* (걷음 2026-10-12, 요청: "내전 공방 탭이랑 길게 눌러서 선택 글자 왼쪽 패딩을 PC 에서처럼 모바일에도 좀 줘야 할 듯") 첫 탭 왼쪽 여백 0 — 이제 첫 탭도 10px 라
@@ -2373,7 +2373,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 .scr-light-theme .scr-sentence-select .scr-cselect-open { background: rgba(0,0,0,0.08); }
 .scr-stat-filters { display: flex; flex-direction: column; gap: 6px; width: 100%; margin: 6px 0 2px; }
 .scr-stat-filter-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; min-width: 0; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-stat-filters { flex-direction: row; flex-wrap: wrap; align-items: flex-end; gap: 6px 10px; }
   .scr-stat-filter-row { display: contents; }
 }
@@ -2387,7 +2387,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
   font-size: var(--fs-11); font-weight: 700; color: var(--dim);
   white-space: nowrap; padding-left: 2px;
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-stat-filter-row { justify-content: space-between; }
   .scr-stat-filter-row:has(> .scr-stat-filter-group:only-child) { justify-content: center; }
 }
@@ -2567,7 +2567,7 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
   background: transparent; border: none; padding: 4px; margin: -4px; color: var(--dim); flex-shrink: 0; cursor: pointer;
 }
 @media (hover: hover) { .scr-activity-post-menu-btn:hover { color: var(--text); } }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-game-result-list-panel-v2 .scr-game-result-row {
     grid-template-columns: 148px auto 148px; gap: 4px 10px;
   }
@@ -2593,7 +2593,7 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
     inset 0 0 0 1px rgba(255, 255, 255, 0.5),
     0 1px 6px rgba(0, 0, 0, 0.08);
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-game-result-list-panel-v2 .scr-game-result-trow { padding-left: 100px; padding-right: 100px; }
 }
 .scr-game-result-trow-topline {
@@ -2603,7 +2603,7 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
 .scr-game-result-trow-map { color: var(--muted); min-width: 0; white-space: normal; overflow-wrap: anywhere; text-align: center; }
 .scr-game-result-trow-dur { color: var(--dim); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .scr-game-result-trow-topmeta { position: absolute; top: 12px; right: 12px; z-index: 2; display: flex; align-items: center; gap: 8px; font-size: var(--fs-caption); }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-game-result-trow-topmeta { right: 20px; }
 }
 .scr-activity-notes { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(var(--overlay-rgb), 0.08); }
@@ -2965,7 +2965,7 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
 }
 .scr-replay-review-leave-name { font-weight: 600; }
 .scr-replay-review-leave-dim { color: var(--muted); }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-modal-match .scr-form-actions {
     padding-bottom: calc(var(--mobile-footer-h, 69px) + var(--scr-float-bottom, 6px) + 10px);
   }
@@ -2975,13 +2975,13 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
 .scr-replay-mapping-result-btns { display: flex; gap: 8px; }
 .scr-replay-mapping-result-btns .scr-result-btn { min-width: 72px; }
 
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-avatar-pick .scr-avatar { width: 84px !important; height: 84px !important; }
   .scr-avatar-pick .scr-avatar-fallback { font-size: var(--fs-hero-1) !important; }
   .scr-member-detail-name { font-size: var(--fs-subhead); }
   .scr-member-detail-tag { font-size: var(--fs-body); }
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-team-grid { grid-template-areas: "b1 bd b2" "t1 t1 t1" "vs vs vs" "t2 t2 t2"; gap: 12px 8px; }
   .scr-team-grid-noresult { grid-template-areas: "t1 t1 t1" "vs vs vs" "t2 t2 t2"; }
   .scr-team-grid-vs { justify-self: center; padding: 2px 0; }
@@ -3027,7 +3027,7 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
   .scr-user-chip { transform: translateY(6px); }
   .scr-brand { transform: none; }
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-title { font-size: var(--fs-title); }
 
 
@@ -3052,14 +3052,14 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-scroll::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
 .scr-nav { scrollbar-width: none; }
 .scr-nav::-webkit-scrollbar { display: none; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   html, #scroll-root { scrollbar-width: none; }
   html::-webkit-scrollbar, #scroll-root::-webkit-scrollbar { width: 0; }
 }
 
 .scr-modal-match { max-width: 640px; height: auto; }
 .scr-modal-match-compact { height: auto; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-modal-overlay:has(> .scr-modal-match) { padding: 0; }
   .scr-modal-match, .scr-modal-match-compact {
     max-width: none; width: 100%; height: 100dvh; max-height: 100dvh;
@@ -3088,7 +3088,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-rank-detail-value { font-size: var(--fs-9); font-weight: 400; fill: var(--text); text-anchor: middle; }
 .scr-rank-detail-axis-label { font-size: var(--fs-9); fill: var(--dim); text-anchor: middle; }
 
-@media (min-width: 1160px) { .scr-modal.scr-modal-rank-trend { max-width: 460px; } }
+@media (min-width: 961px) { .scr-modal.scr-modal-rank-trend { max-width: 460px; } }
 .scr-modal-rank-trend .scr-modal-body { padding-bottom: 18px; }
 
 .scr-rank-detail-history { margin-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.28); padding-top: 12px; }
@@ -3218,7 +3218,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick { z-index: 300; }
 .scr-redo-pick-foot { flex: none; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-redo-pick {
     top: auto;
     bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px);
@@ -3273,7 +3273,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick-count { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
 
 .scr-trash { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-trash {
     top: auto;
     bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px);
@@ -3334,11 +3334,11 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 /* 고르기 전용 목록(팀 짜기 · 다시 분석 고르기 · 맵 묶기)도 폰은 같은 꼴(2026-10-12, 요청: "전체 선택 있는 곳 … 모두 모바일은 같은 방식") — 줄 체크칸을 숨기고 줄(label)을 눌러
    고른다(고른 줄은 is-on 바탕) · 전체 선택은 글자 단추(SelectAllToggle). 그 머리 줄 안이라 왼쪽 당김은 없다. */
 .scr-sel-all-pick { margin-left: 0; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-tb-pick > input[type="checkbox"], .scr-redo-pick-row > input[type="checkbox"], .scr-minimap-map-row > input[type="checkbox"] { display: none; }
 }
 .scr-sel-hint { font-size: 12px; color: var(--dim); white-space: nowrap; padding: 6px 10px; }   /* 왼쪽 0 → 10px(2026-10-12 · 위 탭과 같은 요청) */
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-activity-row, .scr-scrap-main, .scr-trash-main { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 }
 .scr-selcell { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 6px 0 2px; cursor: pointer; }
@@ -3563,13 +3563,13 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-drawer-actions .scr-rect-btn { justify-content: flex-start; --btn-outline-border: transparent; --btn-outline-bg: transparent; }
 .scr-drawer-actions .scr-rect-btn { font-size: var(--fs-subhead); }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-nav-desktop { display: none !important; }
   .scr-user .scr-text-btn { display: none; }
   .scr-user-name { max-width: 50vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .scr-mobile-tabbar { display: flex; }
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-scrolltop {
     right: 20px;
     bottom: calc(var(--scr-float-bottom) + var(--mobile-footer-h) + 12px);
@@ -3591,7 +3591,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
       height .26s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-main {
     padding-bottom: calc(10px + var(--mobile-footer-h) + 28px + env(safe-area-inset-bottom, 0px));
   }
@@ -3665,7 +3665,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 @keyframes scr-pop-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 .scr-df-pop { animation: scr-pop-in .14s ease; }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-df-pop { left: 50% !important; transform: translateX(-50%); }
   @keyframes scr-pop-in { from { opacity: 0; transform: translateX(-50%) scale(0.98); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
 }
@@ -3772,7 +3772,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 }
 
 .scr-members-sublist-count { color: var(--dim); font-weight: 600; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-member-row-tag { font-size: var(--fs-caption); }
 }
 
@@ -3809,7 +3809,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-detail-row dt { color: var(--dim); width: 64px; flex-shrink: 0; }
 .scr-detail-row dd { margin: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-label { font-size: var(--fs-caption); }
 }
 
@@ -3998,7 +3998,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-challenge-result-when { flex: 1 1 auto; min-width: 0; }
 .scr-challenge-time-edit-cell { flex: 0 1 auto; min-width: 0; width: fit-content; max-width: 100%; }
 .scr-challenge-time-edit-cell > .scr-challenge-time-edit-input { width: auto; max-width: 100%; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-scrolltop {
     right: calc(50% - var(--content-max) / 2 - 68px - var(--rail-w) / 2);
     bottom: var(--scr-float-bottom-pc);
@@ -4008,7 +4008,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 
 .scr-challenge-card-body { position: relative; display: flex; flex-direction: column; gap: 10px; }
 .scr-roster-matchup { display: flex; align-items: flex-start; width: 100%; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-roster-matchup { max-width: 560px; margin: 0 auto; }
 }
 .scr-challenge-arrow-row {
@@ -4031,7 +4031,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 
 .scr-roster-side { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .scr-roster-side-target { flex: 1.15 1 0; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-roster-side-target { flex: 1 1 0; }
 }
 .scr-roster-block {
@@ -4068,7 +4068,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   font-size: var(--fs-body); font-weight: 600; color: var(--text); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto;
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-roster-side:not(.scr-roster-side-target) {
     display: grid; grid-template-columns: 100%;
     justify-content: end; justify-items: start; row-gap: 6px;
@@ -4593,7 +4593,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-comment-text { margin: 0; font-size: var(--fs-body); color: var(--text); line-height: 1.4; word-break: break-word; }
 .scr-comment-actions { flex-shrink: 0; display: flex; flex-direction: row; align-items: center; gap: 6px; }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-member-row-name { font-size: var(--fs-caption); }
   .scr-member-row-tag { font-size: var(--fs-micro); }
   .scr-drawer-actions .scr-rect-btn { font-size: var(--fs-body); }
@@ -4605,7 +4605,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   .scr-challenge-form-modal .scr-hint { font-size: var(--fs-caption); }
 }
 
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-stats-list-panel-v2 .scr-stat-row {
     --scr-stat-name-w: 240px;
     --scr-stat-col-w: 100px;
@@ -4628,7 +4628,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   }
 }
 .scr-stat-row-head { font-size: var(--fs-body); }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-stats-list-panel-v2 .scr-stat-row-head { font-size: var(--fs-caption); }
   .scr-stats-list-panel-v2 .scr-stat-sort-btn svg,
   .scr-stats-list-panel-v2 .scr-stat-row-head .scr-infotip svg {
@@ -4641,7 +4641,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-filter-panel .scr-filter-month-input { font-size: var(--fs-caption); }
 .scr-filter-panel .scr-filter-select .scr-cselect-trigger { font-size: var(--fs-caption); }
 .scr-chip-name { font-size: var(--fs-body); }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-user-name { font-size: var(--fs-caption); }
 }
 .scr-title { font-size: var(--fs-title); }
@@ -4656,7 +4656,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-team-outcome { font-size: var(--fs-body); }
 .scr-challenge-form-modal .scr-hint { font-size: var(--fs-caption); }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   :root {
     --fs-8: var(--mobile-fs-8);
     --fs-9: var(--mobile-fs-9);
@@ -4676,10 +4676,10 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   }
 }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-title { font-size: 24px; }
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-title { font-size: var(--fs-headline); }
 }
 
@@ -5174,7 +5174,7 @@ html.scr-light-theme .scr-league-bracket-rail-chip { background: rgba(0,0,0,0.05
 }
 html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62); }
 .scr-rivalry-overlay-body { width: min(560px, 100%); }
-@media (min-width: 1160px) { .scr-rivalry-overlay-body { width: min(760px, 100%); } }
+@media (min-width: 961px) { .scr-rivalry-overlay-body { width: min(760px, 100%); } }
 .scr-rivalry-overlay-head {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
 }
@@ -5189,7 +5189,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   display: flex; align-items: center; justify-content: center;
 }
 .scr-rivalry-wrap { position: relative; width: 100%; max-width: 560px; margin: 0 auto; aspect-ratio: 1; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-rivalry-wrap, .scr-rivalry-overlay-loading { max-width: 760px; }
 }
 .scr-rivalry-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -5226,7 +5226,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-rivalry-card:focus, .scr-rivalry-card:focus-visible { outline: none; }
 .scr-rivalry-card-selected { transform: translate(-50%, -50%) scale(calc(var(--rivalry-chip-mult, 1) * 1.18)); z-index: 2; }
 .scr-rivalry-card-dim { opacity: 0.25; }
-@media (min-width: 1160px) { .scr-rivalry-wrap { --rivalry-chip-mult: 1.5; } }
+@media (min-width: 961px) { .scr-rivalry-wrap { --rivalry-chip-mult: 1.5; } }
 .scr-rivalry-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; font-size: var(--fs-micro); color: var(--muted); }
 .scr-rivalry-legend-item { display: inline-flex; align-items: center; }
 .scr-rivalry-legend-arrow { display: inline-block; width: 16px; height: 2px; color: rgba(96,190,120,1); background: currentColor; position: relative; margin-right: 5px; }
@@ -5304,7 +5304,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 }
 .scr-activity-detail-modal > .scr-activity-detail-head > * { pointer-events: auto; }
 .scr-activity-detail-modal .scr-activity-card { --card-head-pad-l: 8px; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-activity-detail-modal {
     --scr-detail-pad-x: 8px; --scr-detail-pad-y: 8px;
     width: calc(100vw - 32px); max-width: none;
@@ -5368,7 +5368,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   font-family: inherit; font-size: var(--fs-caption); font-weight: 600; color: var(--muted);
   cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent;
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-modal-page:not(.scr-modal-fit) .scr-modal-back { display: inline-flex; }
   .scr-modal-page:not(.scr-modal-fit) .scr-modal-close-x { display: none; }
 }
@@ -5509,7 +5509,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-activity-row-state-win { color: var(--win); }
 .scr-activity-row-state-loss { color: var(--loss); }
 .scr-activity-row-state-draw { color: var(--muted); }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-activity-rows { --scr-row-pad-x: 10px; border-radius: 3px; }   /* 4 → 10px(2026-10-12, 요청: "활동 목록(각 목록 페이지도) 로우의 좌우 패딩 좀 넣어 줘 모바일에서") · PC 14 */
   .scr-activity-row > * + * { padding-left: 8px; }
   .scr-activity-row > * { padding-right: 8px; }
@@ -5549,7 +5549,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-activity-row-fold-closing { animation: scr-row-close .2s ease-in forwards; }
 @keyframes scr-row-open { from { grid-template-rows: 0fr; } to { grid-template-rows: 1fr; } }
 @keyframes scr-row-close { from { grid-template-rows: 1fr; } to { grid-template-rows: 0fr; } }
-@media (prefers-reduced-motion: reduce), (max-width: 1159px) {
+@media (prefers-reduced-motion: reduce), (max-width: 960px) {
   .scr-activity-row-fold-open { animation: none; }
   .scr-activity-row-fold-closing { animation: none; grid-template-rows: 0fr; }
 }
@@ -5582,7 +5582,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   --feed-trow-pad-x: 8px;
 }
 /* PC 는 좌우 패딩 없음(2026-10-09, 요청: "scr-game-page-card pc에서 좌우패딩 제거") — 판이 카드 폭을 다 쓴다. */
-@media (min-width: 1160px) { .scr-game-page-card { --feed-trow-pad-x: 0px; padding-left: 0; padding-right: 0; } }
+@media (min-width: 961px) { .scr-game-page-card { --feed-trow-pad-x: 0px; padding-left: 0; padding-right: 0; } }
 .scr-game-page-card > * { margin: 0; }
 .scr-game-page-card .scr-roster-name { font-size: var(--fs-caption); }
 .scr-game-page-card .scr-roster-matchup .scr-roster-side { flex: 1 1 0; }
@@ -5608,7 +5608,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   --card-bleed: 0px;
   --card-pad-b: 16px;
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   :root { --card-pad-x: 0px; --card-pad-bx: 0px; --card-head-pad-l: 0px; }
 }
 .scr-activity-card {
@@ -5747,7 +5747,7 @@ html.scr-light-theme .scr-activity-card-comment .scr-comment-mention { color: #1
   padding: 0 !important; gap: 10px;
 }
 .scr-activity-game-result-body { --feed-trow-pad-x: 8px; }
-@media (min-width: 1160px) { .scr-activity-game-result-body { --feed-trow-pad-x: 0px; } }
+@media (min-width: 961px) { .scr-activity-game-result-body { --feed-trow-pad-x: 0px; } }
 .scr-activity-game-result-body .scr-game-result-list-panel-v2 .scr-game-result-trow, .scr-light-theme .scr-activity-game-result-body .scr-game-result-list-panel-v2 .scr-game-result-trow {
   background: transparent; border: none; box-shadow: none;
   backdrop-filter: none; -webkit-backdrop-filter: none;
@@ -5805,7 +5805,7 @@ html.scr-light-theme .scr-activity-card-comment .scr-comment-mention { color: #1
   transition: bottom .26s cubic-bezier(0.16, 1, 0.3, 1),
     left .26s cubic-bezier(0.7, 0, 0.84, 0);
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   body.scr-gamepage-open .scr-activity-add-fab-wrap { display: none; }
   html.scr-tabbar-mini .scr-activity-add-fab-wrap,
   body.scr-gamepage-open .scr-activity-add-fab-wrap {
@@ -5819,7 +5819,7 @@ html.scr-light-theme .scr-activity-card-comment .scr-comment-mention { color: #1
     width: 44px; height: 44px; font-size: var(--fs-11);
   }
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-activity-add-fab-wrap {
     left: calc(50% - var(--content-max) / 2 - 68px + var(--rail-w) / 2);
     bottom: var(--scr-float-bottom-pc);
@@ -6000,7 +6000,7 @@ input.scr-schedule-title { font-weight: 800; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .scr-schedule-file-drop { width: 26px; height: 26px; flex-shrink: 0; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-modal-overlay:has(> .scr-schedule-form-modal) { padding: 0; }
   .scr-modal.scr-schedule-form-modal {
     max-width: none; width: 100%; height: 100dvh; max-height: 100dvh;
@@ -6049,7 +6049,7 @@ input.scr-schedule-title { font-weight: 800; }
   display: flex; flex-direction: column; min-width: 140px;
 }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-modal.scr-modal:not(.scr-modal-confirm):not(.scr-modal-fit) {
     inset: 0; transform: none;
     width: auto; max-width: none; height: auto; max-height: none;
@@ -6073,7 +6073,7 @@ input.scr-schedule-title { font-weight: 800; }
   .scr-photo-close { top: calc(10px + var(--safe-top)); right: 12px; }
 }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-activity-add-fab-wrap-hidden { visibility: hidden; pointer-events: none; }
 }
 
@@ -6208,7 +6208,7 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
   image-rendering: pixelated; cursor: crosshair; touch-action: none;
 }
 .scr-terrain-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 10px; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-terrain-modal {
     top: auto;
     bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px);
@@ -6226,7 +6226,7 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 }
 .scr-light-theme .scr-story-mapwait { background: rgba(0, 0, 0, 0.035); }
 
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-roster-matchup.scr-story-matchup-wide { max-width: 820px; }
   .scr-story-matchup-wide > .scr-roster-side:first-child {
     justify-items: end; padding-right: 12px;
@@ -6239,16 +6239,16 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
   flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px;
   min-width: 0;
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-activity-detail-modal { --scr-detail-pad-x: 8px; }
 }
 .scr-activity-group-page .scr-activity-card-head { display: none; }
 .scr-activity-group-page .scr-story-by { display: none; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-activity-group-page .scr-activity-card-head,
   .scr-activity-detail-full .scr-activity-card-head { display: none; }
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-story-mid .scr-challenge-arrow-row { transform: scale(1.15); margin-bottom: 2px; }
 }
 .scr-minimap-frame { width: 100%; }
@@ -6348,7 +6348,7 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
   color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000, 0 1px 1px #000;
   pointer-events: none;
 }
-@media (min-width: 1160px) { .scr-minimap-arrow-label { font-size: 15px; } }
+@media (min-width: 961px) { .scr-minimap-arrow-label { font-size: 15px; } }
 .scr-minimap-mark-caption {
   position: absolute; transform: translate(-50%, 14px); z-index: 6;
   display: flex; flex-direction: column; align-items: center; gap: 1px;
@@ -6356,7 +6356,7 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
   color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000, 0 1px 1px #000;
   pointer-events: none;
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-minimap-mark-caption { font-size: 15px; transform: translate(-50%, 18px); }
 }
 .scr-minimap-mark-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
@@ -6387,7 +6387,7 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 .scr-minimap-vigor-pip-on { background: rgba(255, 255, 255, 0.95); }
 
 .scr-minimap-mark-label-out { font-size: 11px; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-minimap-mark-base { --scr-mm-av: 2; }
   .scr-minimap-mark-label-out { font-size: 16px; }
   .scr-minimap-mark-skull { font-size: 22px; }
@@ -6400,7 +6400,7 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 .scr-minimap-mark-face.scr-minimap-mark-face-trophy {
   font-size: 28px;
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-minimap-mark-face.scr-minimap-mark-face-trophy { font-size: 30px; }
 }
 .scr-minimap-mark-label-out.scr-minimap-mark-downed { opacity: 0.72; }
@@ -6421,7 +6421,7 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 .scr-minimap-mark-on .scr-minimap-mark-face {
   left: -13px; top: -13px; font-size: 19px;
 }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-minimap-arrow-mark { font-size: 22px; }
   .scr-minimap-arrow-mark.scr-minimap-mark-home { font-size: 22px; }
   .scr-minimap-arrow-mark-neck { font-size: 14px; }
@@ -6450,7 +6450,7 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
   content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
   border: 4px solid transparent; border-top-color: #ffffff;
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-minimap-bubble { font-size: 11px; max-width: 160px; padding: 4px 8px; border-radius: 11px; }
 }
 .scr-minimap-mark-label-out.scr-minimap-mark-hit {
@@ -6541,7 +6541,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 .scr-minimap-caption-bottom .scr-story-cap { margin-bottom: var(--scr-cap-pull-y); }
 .scr-minimap-caption-left .scr-story-cap { margin-left: var(--scr-cap-pull-x); }
 .scr-minimap-caption-right .scr-story-cap { margin-right: var(--scr-cap-pull-x); }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-minimap-caption { --scr-cap-pull-x: 12%; --scr-cap-pull-y: 18%; }
 }
 .scr-story-cap {
@@ -6568,7 +6568,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
   opacity: 0;
 }
 .scr-story-cap-line[data-on="true"] { visibility: visible; opacity: 1; }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-story-cap { width: calc((100% + var(--scr-cap-inset, 0px) * 2) * 2 / 3); font-size: var(--fs-subhead); }
   .scr-story-cap-time { font-size: var(--fs-body); }
 }
@@ -6622,7 +6622,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 .scr-minimap-mark-base.scr-minimap-mark-introbig .scr-avatar {
   transform: translate(-50%, -50%) scale(1.08);
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-minimap-mark-base.scr-minimap-mark-introbig .scr-avatar {
     transform: translate(-50%, -50%) scale(1.3);
   }
@@ -6699,7 +6699,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 .scr-ladder-num .scr-stat-delta { margin-left: 0; }
 .scr-ladder-row .scr-stat-delta { font-size: var(--fs-9); }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-ladder-row {
     grid-template-columns: 58px minmax(0, 1fr) 66px 48px 56px;
     padding: 11px 4px; gap: 0 5px;
@@ -6829,7 +6829,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
   align-content: start;
 }
-@media (min-width: 1160px) {
+@media (min-width: 961px) {
   .scr-model-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 .scr-model-colors {
@@ -7016,7 +7016,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
   width: max-content; max-width: min(calc(100vw - 24px), 440px);
   pointer-events: none;
 }
-@media (min-width: 1160px) and (hover: hover) {
+@media (min-width: 961px) and (hover: hover) {
   .scr-toastwrap { left: calc(50% + var(--rail-w) / 2); }
 }
 .scr-toast {
@@ -7111,7 +7111,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 }
 .scr-v2-toolbar-crumb { border-bottom: 1px solid var(--line); padding-bottom: 6px; min-height: 0; margin-top: -6px; }
 .scr-v2-toolbar-crumb + * { margin-top: 4px; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-v2-toolbar-crumb { padding-bottom: 4px; }
   .scr-v2-toolbar-crumb + * { margin-top: 4px; }
 }
@@ -7140,7 +7140,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 }
 .scr-game-crumb-by > span { overflow: hidden; text-overflow: ellipsis; }
 .scr-story-maphead { align-items: center; }
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-v2-toolbar-title-row.scr-crumb:has(> .scr-crumb-meta:not(:empty)) { flex-wrap: wrap; row-gap: 3px; }
   .scr-crumb-meta { flex: 1 0 100%; }
   .scr-crumb-meta::before { content: none; }
@@ -7469,7 +7469,7 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 input.scr-sb-list-title { font-weight: 700; }
 .scr-schedule-title.scr-sb-line, .scr-sb-list-title.scr-sb-line { padding-left: 0; }
 
-@media (max-width: 1159px) {
+@media (max-width: 960px) {
   .scr-extshare .scr-story-map { gap: 4px; }
 }
 
