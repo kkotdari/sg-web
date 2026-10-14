@@ -948,6 +948,14 @@ export default function ActivityScreen() {
 
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const fabHidden = useEditableFocused();
+  /* ★ 등록 ↔ 선택 끝내기가 **바뀔 때만** 튀어나오는 전환(2026-10-13, 요청: "변할 때 트랜지션 가능? 좀 티나게") — 처음 그릴 때는 안 탄다. */
+  const [fabSwap, setFabSwap] = useState(false);
+  const fabModeRef = useRef(sel.mode);
+  useEffect(() => {
+    if (fabModeRef.current === sel.mode) return;
+    fabModeRef.current = sel.mode;
+    setFabSwap(true);
+  }, [sel.mode]);
   useEffect(() => {
     if (fabHidden) setAddMenuOpen(false);
   }, [fabHidden]);
@@ -1805,16 +1813,16 @@ export default function ActivityScreen() {
         {/* ★ 선택 중에는 **선택 끝내기**(2026-10-13, 요청: "선택 중에 등록 버튼을 선택 끝내기로 변경") — 폰 선택 모드(sel.mode)에서 등록 대신 선택 모드를 닫는다. 둥근 단추라 두 줄. */}
         {sel.mode ? (
           <button
-            type="button"
-            className="scr-activity-add-fab scr-circle-btn scr-activity-add-fab-exit"
+            type="button" key="fab-exit"
+            className={cx("scr-activity-add-fab scr-circle-btn scr-activity-add-fab-exit", fabSwap && "scr-fab-swap")}
             onClick={() => { setAddMenuOpen(false); sel.exit(); }}
           >
             <span>선택<br />끝내기</span>
           </button>
         ) : (
           <button
-            type="button"
-            className="scr-activity-add-fab scr-circle-btn"
+            type="button" key="fab-add"
+            className={cx("scr-activity-add-fab scr-circle-btn", fabSwap && "scr-fab-swap")}
             onClick={directAdd ?? (() => setAddMenuOpen((v) => !v))}
             aria-expanded={directAdd ? undefined : addMenuOpen}
           >

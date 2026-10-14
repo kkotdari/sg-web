@@ -5826,7 +5826,21 @@ html.scr-light-theme .scr-activity-card-comment .scr-comment-mention { color: #1
   }
 }
 /* 선택 중의 '선택 끝내기'(2026-10-13) — 둥근 단추 안 두 줄 · 글자를 조금 줄여 원 안에 든다. */
-.scr-activity-add-fab-exit { font-size: var(--fs-11, 11px); line-height: 1.15; }
+.scr-activity-add-fab-exit {
+  font-size: var(--fs-11, 11px); line-height: 1.15;
+  /* 라이팅(채움) 단추 색(2026-10-13, 요청: "색도 라이팅 버튼 색") — 흰 바탕·짙은 글자·은은한 빛. 유리(블러) 바탕은 걷는다. */
+  color: var(--btn-fill-text); background: var(--btn-fill-bg); box-shadow: var(--btn-fill-glow);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+/* 등록 ↔ 선택 끝내기 전환(2026-10-13, 요청: "좀 티나게") — 작게 접혔다가 한 번 크게 튄 뒤 제자리. 바뀔 때만 붙는다(ActivityScreen fabSwap). */
+@keyframes scr-fab-swap {   /* 회전은 걷었다(같은 날 "회전은 없어도 될 듯") — 크기만 튄다 */
+  0% { transform: scale(0.4); opacity: 0; }
+  55% { transform: scale(1.18); opacity: 1; }
+  80% { transform: scale(0.95); }
+  100% { transform: none; }
+}
+.scr-fab-swap { animation: scr-fab-swap 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+@media (prefers-reduced-motion: reduce) { .scr-fab-swap { animation: none; } }
 .scr-activity-add-backdrop { position: fixed; inset: 0; z-index: 89; background: transparent; }
 .scr-menu-pop-backdrop { z-index: 499; }
 .scr-activity-add-menu {
