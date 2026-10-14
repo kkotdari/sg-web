@@ -41,6 +41,7 @@ import { useEditableFocused } from "../../hooks/useEditableFocused";
 import { useSelection, type Selection } from "../../hooks/useSelection";
 import { RowCheck, SelectionBar } from "../../components/common/Selection";
 import { batchSummary, runBatch } from "../../utils/batch";
+import { gameResultShareContent } from "./gameShare";
 import { canManageGame, isSecretGame } from "../../utils/gameAccess";
 import {
   buildReplayDrafts, type ReplayDraft,
@@ -239,18 +240,32 @@ function bulkDeleteMessageOf(items: DisplayItem[]): string {
 }
 
 const HIDE_FORMS = { did: "숨겼어요", couldNot: "숨기지 못했어요" };
+const SCRAP_FORMS = { did: "스크랩했어요", couldNot: "스크랩하지 못했어요" };
 
-function SelectionActions({ picked, onDelete, onHide }: {
+/* ★ 선택 막대 단추 = **스크랩 · 숨김 · 삭제**(2026-10-14, 요청: "게임 목록 선택 모드에 스크랩/숨김/삭제로 버튼 변경 · 버튼 모양 둥근 네모 컴팩트") —
+   알약(.scr-pill-btn) → 컴팩트 네모(.scr-compact-rect-btn). 스크랩은 고른 게임마다 **처음(0초) 장면 스크랩**을 하나씩 담는다(재생 화면의 장면 스크랩과
+   같은 API · 같은 '스크랩한 장면' 목록). 스크랩·숨김은 게임만 골랐을 때 켜진다. */
+function SelectionActions({ picked, onDelete, onHide, onScrap, scrapBusy }: {
   picked: DisplayItem[];
   onDelete: (items: DisplayItem[]) => void;
   onHide: (items: DisplayItem[]) => void;
+  onScrap: (items: DisplayItem[]) => void;
+  scrapBusy: boolean;
 }) {
   const games = picked.filter((it) => it.kind === "gameResult");
   const onlyGames = picked.length > 0 && games.length === picked.length;
   return (
     <>
       <button
-        type="button" className="scr-pill-btn"
+        type="button" className="scr-compact-rect-btn"
+        disabled={!onlyGames || scrapBusy}
+        onClick={() => onScrap(games)}
+        title={onlyGames ? "고른 게임을 처음부터 보는 장면으로 스크랩해요" : "게임만 골랐을 때 켜져요"}
+      >
+        {scrapBusy ? "스크랩 중…" : "스크랩"}
+      </button>
+      <button
+        type="button" className="scr-compact-rect-btn"
         disabled={!onlyGames}
         onClick={() => onHide(games)}
         title={onlyGames ? "고른 게임을 숨겨요" : "게임만 골랐을 때 켜져요"}
@@ -258,7 +273,7 @@ function SelectionActions({ picked, onDelete, onHide }: {
         숨김
       </button>
       <button
-        type="button" className="scr-pill-btn"
+        type="button" className="scr-compact-rect-btn"
         disabled={picked.length === 0}
         onClick={() => onDelete(picked)}
         title={picked.length === 0 ? "고른 것이 없어요" : undefined}
@@ -526,7 +541,7 @@ function GameTabs({ value, onChange }: { value: GameTab; onChange: (next: GameTa
 function ActivityGroupPage({
   groupKey, label, items, memberOf, members, renderRow, onBack,
   gameTab, onGameTabChange,
-  selection, canPick, onDeleteItems, onHideItems, refreshKey,
+  selection, canPick, onDeleteItems, onHideItems, onScrapItems, scrapBusy, refreshKey,
 }: {
   groupKey: ActivityGroupKey;
   label: string;
@@ -537,6 +552,8 @@ function ActivityGroupPage({
   canPick: (it: DisplayItem) => boolean;
   onDeleteItems: (items: DisplayItem[]) => void;
   onHideItems: (items: DisplayItem[]) => void;
+  onScrapItems: (items: DisplayItem[]) => void;
+  scrapBusy: boolean;
   refreshKey: number;
   gameTab: GameTab;
   onGameTabChange: (next: GameTab) => void;
@@ -738,6 +755,7 @@ function ActivityGroupPage({
         >
           <SelectionActions
             picked={pickedItems} onDelete={onDeleteItems} onHide={onHideItems}
+            onScrap={onScrapItems} scrapBusy={scrapBusy}
           />
         </SelectionBar>
       )}
@@ -1498,6 +1516,23 @@ export default function ActivityScreen() {
     showToast(batchSummary("", done.length, failed.length, "개", HIDE_FORMS), { kind: failed.length > 0 ? "warn" : "ok" });
   }, [upsertGameResult, selClear]);
 
+  /** 고른 게임마다 처음(0초) 장면 스크랩(위 SelectionActions ★) — 묻지 않고 바로 담는다(되돌리기는 스크랩 화면의 지우기). 제목·부제는 공유 글과 같은
+   *  자(gameResultShareContent) · 고리는 장면 시각 없는 게임 주소(그 게임을 마지막으로 본 시각이 붙지 않게). */
+  const [scrapBusy, setScrapBusy] = useState(false);
+  const runBulkScrap = useCallback(async (items: DisplayItem[]) => {
+    const games = items.flatMap((it) => (it.kind === "gameResult" ? [it.gameResult] : []));
+    if (games.length === 0 || scrapBusy) return;
+    setScrapBusy(true);
+    const { done, failed } = await runBatch(games, async (g) => {
+      const c9 = gameResultShareContent(g, memberOf);
+      const key9 = String(g.matchNo || g.id);
+      await api.createSceneScrap({ title: c9.title, subtitle: c9.description ?? "", link: `${window.location.origin}/games/${key9}`, gameNo: key9 });
+    });
+    setScrapBusy(false);
+    if (done.length > 0) selClear();
+    showToast(batchSummary("", done.length, failed.length, "개", SCRAP_FORMS), { kind: failed.length > 0 ? "warn" : "ok" });
+  }, [memberOf, scrapBusy, selClear]);
+
   const renderCard = (item: DisplayItem) => (
     item.kind === "schedule" ? (
       <div
@@ -1802,6 +1837,8 @@ export default function ActivityScreen() {
           canPick={canPick}
           onDeleteItems={askBulkDelete}
           onHideItems={askBulkHide}
+          onScrapItems={(items) => void runBulkScrap(items)}
+          scrapBusy={scrapBusy}
           refreshKey={groupRefreshKey}
         />
       )}

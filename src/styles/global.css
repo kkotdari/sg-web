@@ -442,9 +442,9 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
 /* 버튼 꼴 여섯 종류 — 크기·패딩·모서리·배치만 쥔다. 색·투명도·글로우는 html.color-lighting 이 준 --btn-* 변수를 읽는다(위 색 스킴 절).
    아이콘·글자는 선택이다(둘 다, 하나만 모두 된다). 자리 잡기(fixed 위치·크기 전환)는 .scr-scrolltop·.scr-activity-add-fab 같은 제자리 클래스가 따로 진다.
    1. 동그라미 .scr-circle-btn         52px 원 · 유리 역할(등록 FAB · 맨 위로)
-   2. 알약     .scr-pill-btn           999px · 패딩 4px 10px · 글자 12 · 채움(선택 막대 삭제·숨김 · 알림 배너)
+   2. 알약     .scr-pill-btn           999px · 패딩 4px 10px · 글자 12 · 채움(알림 배너)
    3. 네모     .scr-rect-btn           모서리 6px · 패딩 6px 12px · 높이 32 · 글자 caption(폼·모달 등 옛 기본 버튼 전부)
-   4. 컴팩트 네모 .scr-compact-rect-btn  모서리 6px · 사방 패딩 4px 6px · 높이는 내용대로(스크랩 · 사용법 · 상성 보기 · 월 선택 · 팀 구성하기 · 작은 토글)
+   4. 컴팩트 네모 .scr-compact-rect-btn  모서리 6px · 사방 패딩 4px 6px · 높이는 내용대로(선택 막대 스크랩·숨김·삭제 · 스크랩 · 사용법 · 상성 보기 · 월 선택 · 팀 구성하기 · 작은 토글)
    5. 아이콘     .scr-icon-btn           30px 원 · 바탕 없음 · 글자색 muted → 호버에 빛 바탕(모달 닫기 X · 지우기 · 사진 닫기…)
    6. 글자       .scr-text-btn           글자만 · 패딩 6px 10px · 모서리 8px · 호버에 빛 바탕(헤더의 테마·앱 설치 · 로그인 화면의 손님·회원가입)
    색 역할 — 네모·컴팩트 네모·알약의 **기본은 프라이머리(채움)** 다(요청: "기본적인 버튼은 모두 라이팅 테마 프라이머리"). 취소·닫기·나중에처럼
