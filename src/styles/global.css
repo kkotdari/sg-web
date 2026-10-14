@@ -5825,6 +5825,8 @@ html.scr-light-theme .scr-activity-card-comment .scr-comment-mention { color: #1
     bottom: var(--scr-float-bottom-pc);
   }
 }
+/* 선택 중의 '선택 끝내기'(2026-10-13) — 둥근 단추 안 두 줄 · 글자를 조금 줄여 원 안에 든다. */
+.scr-activity-add-fab-exit { font-size: var(--fs-11, 11px); line-height: 1.15; }
 .scr-activity-add-backdrop { position: fixed; inset: 0; z-index: 89; background: transparent; }
 .scr-menu-pop-backdrop { z-index: 499; }
 .scr-activity-add-menu {

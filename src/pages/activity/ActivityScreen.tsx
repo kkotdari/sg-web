@@ -1802,7 +1802,16 @@ export default function ActivityScreen() {
         "scr-activity-add-fab-wrap scr-activity-add-wrap",
         fabHidden && "scr-activity-add-fab-wrap-hidden",
       )}>
-        {(
+        {/* ★ 선택 중에는 **선택 끝내기**(2026-10-13, 요청: "선택 중에 등록 버튼을 선택 끝내기로 변경") — 폰 선택 모드(sel.mode)에서 등록 대신 선택 모드를 닫는다. 둥근 단추라 두 줄. */}
+        {sel.mode ? (
+          <button
+            type="button"
+            className="scr-activity-add-fab scr-circle-btn scr-activity-add-fab-exit"
+            onClick={() => { setAddMenuOpen(false); sel.exit(); }}
+          >
+            <span>선택<br />끝내기</span>
+          </button>
+        ) : (
           <button
             type="button"
             className="scr-activity-add-fab scr-circle-btn"
@@ -1812,7 +1821,7 @@ export default function ActivityScreen() {
             {parsingReplays ? <Spinner size={18} /> : "등록"}
           </button>
         )}
-        {!groupPage && addMenuOpen && (
+        {!groupPage && addMenuOpen && !sel.mode && (
           <>
             <div className="scr-activity-add-backdrop" onClick={() => setAddMenuOpen(false)} aria-hidden />
             <div className="scr-activity-add-menu scr-activity-add-menu-up" role="menu">
