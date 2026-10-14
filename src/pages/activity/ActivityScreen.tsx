@@ -526,7 +526,7 @@ function GameTabs({ value, onChange }: { value: GameTab; onChange: (next: GameTa
 function ActivityGroupPage({
   groupKey, label, items, memberOf, members, renderRow, onBack,
   gameTab, onGameTabChange,
-  selection, canPick, selectionNote, onDeleteItems, onHideItems, refreshKey,
+  selection, canPick, onDeleteItems, onHideItems, refreshKey,
 }: {
   groupKey: ActivityGroupKey;
   label: string;
@@ -535,7 +535,6 @@ function ActivityGroupPage({
   members: Member[];
   selection: Selection | null;
   canPick: (it: DisplayItem) => boolean;
-  selectionNote: string;
   onDeleteItems: (items: DisplayItem[]) => void;
   onHideItems: (items: DisplayItem[]) => void;
   refreshKey: number;
@@ -670,12 +669,6 @@ function ActivityGroupPage({
   }, [base, searchTerms, serverGames, serverSearch, searchable, memberOf]);
 
   const selectable = useMemo(() => filtered.filter(canPick), [filtered, canPick]);
-  /* ★ 안내(selectionNote)는 **비밀 경기 말고** 못 고르는 줄이 있을 때만(2026-10-13, 지적: 공방 탭에 "알림·리그 경기는 여기서 지울 수 없어요") — 게임 목록에서
-     못 고르는 줄은 대개 숨긴 경기인데, 운영자 글귀가 엉뚱한 까닭(알림·리그)을 댔다. 비밀 줄은 제 꼴('비밀')과 눌렀을 때의 풍선이 이미 말한다. */
-  const noteBlocked = useMemo(
-    () => filtered.some((it) => !canPick(it) && !(it.kind === "gameResult" && isSecretGame(it.gameResult))),
-    [filtered, canPick],
-  );
   const pickedSet = selection?.picked;
   const pickedItems = useMemo(
     () => (pickedSet ? selectable.filter((it) => pickedSet.has(rowKeyOf(it))) : []),
@@ -740,7 +733,7 @@ function ActivityGroupPage({
           total={selectable.length} count={pickedItems.length}
           onSelectAll={() => selection.setMany(selectable.map(rowKeyOf), true)}
           onClear={selection.clear}
-          note={noteBlocked ? selectionNote : undefined}
+          /* 안내 줄(selectionNote)은 안 띄운다(2026-10-13, 요청: "안내 문구도 굳이 안 보여 주기") — 못 고르는 줄은 눌렀을 때의 풍선(disabledTitle)이 말한다. */
           mode={selection.mode} onExit={selection.exit}
         >
           <SelectionActions
@@ -1799,7 +1792,6 @@ export default function ActivityScreen() {
           onBack={closeGroup}
           selection={selection}
           canPick={canPick}
-          selectionNote={selectionNote}
           onDeleteItems={askBulkDelete}
           onHideItems={askBulkHide}
           refreshKey={groupRefreshKey}
