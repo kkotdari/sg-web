@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Building2, Flag, Map as MapIcon, Search, Sparkles, Swords, X } from "lucide-react";
+import { Building2, Flag, Map as MapIcon, Search, Sparkles, Swords, Users, X } from "lucide-react";
 import Avatar from "./Avatar";
 import { attachPopover } from "../../utils/popover";
 import { Spinner } from "./Feedback";
@@ -15,6 +15,7 @@ const TAG_ICON: Record<string, ReactNode> = {
   건물: <Building2 size={14} />,
   스킬: <Sparkles size={14} />,
   맵: <MapIcon size={14} />,
+  유형: <Users size={14} />,
 };
 
 type SuggestItem = {

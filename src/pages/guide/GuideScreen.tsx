@@ -49,6 +49,8 @@ export default function GuideScreen({ onClose }: { onClose?: () => void } = {}) 
           <Q q="크리스 투혼">크리스가 <b>투혼</b>에서 뛴 경기</Q>
           <Q q="Carrier">원어로 쳐도 같습니다 — 자동완성도 <b>carr</b>만 치면 뜹니다</Q>
           <Q q="저그">그 판에 <b>저그를 고른 사람</b>이 있었던 경기 — 종족도 그냥 칩니다</Q>
+          <Q q="2:3">팀 인원이 <b>2 대 3</b>인 경기 — <b>3:2</b>도 같이 걸립니다(<code>2대3</code> · <code>2vs3</code>도 됩니다 · 개인전은 빠집니다)</Q>
+          <Q q="4:4 투혼">투혼에서 한 <b>4:4</b> 경기 — 다른 조건과 띄어 써서 함께 겁니다</Q>
         </div>
 
         <h3 className="scr-guide-h3">한 사람에게 몰아 묻기 — <b>붙여 씁니다</b></h3>
