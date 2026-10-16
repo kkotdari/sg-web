@@ -21,6 +21,9 @@ import { versionNumber } from "../../utils/appVersion";
 import { playCreak } from "../../utils/sfx";
 import { fmt, gameNow, todayStr } from "../../utils/date";
 
+/** 제어판의 삭제 관리(삭제된 경기 — 복원·완전 삭제) 줄을 보이나 — 숨김(2026-10-16, 나중에 되살릴 예정 · true 면 되살아난다). */
+const SHOW_DELETED_GAMES = false;
+
 interface AdminPanelScreenProps {
   isAdmin: boolean;
 }
@@ -421,20 +424,23 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   </button>
                 </div>
 
-                <div className="scr-adm-row">
-                  <div className="scr-adm-row-text">
-                    <span className="scr-adm-row-title">삭제된 경기</span>
-                    <span className="scr-adm-row-desc">
-                      지운 경기를 복원하거나 완전히 지웁니다. 지운 경기는 등록기가 같은 리플레이를 올려도 다시 등록되지 않아요.
-                    </span>
+                {/* 삭제 관리(삭제된 경기 복원·완전 삭제) — 숨김(2026-10-16 요청: "삭제관리 메뉴 숨김처리 · 나중에 되살릴 예정"). SHOW_DELETED_GAMES 를 true 로 돌리면 되살아난다. */}
+                {SHOW_DELETED_GAMES && (
+                  <div className="scr-adm-row">
+                    <div className="scr-adm-row-text">
+                      <span className="scr-adm-row-title">삭제된 경기</span>
+                      <span className="scr-adm-row-desc">
+                        지운 경기를 복원하거나 완전히 지웁니다. 지운 경기는 등록기가 같은 리플레이를 올려도 다시 등록되지 않아요.
+                      </span>
+                    </div>
+                    <button
+                      type="button" className="scr-rect-btn scr-adm-row-btn"
+                      onClick={() => setDeletedGamesOpen(true)}
+                    >
+                      열기
+                    </button>
                   </div>
-                  <button
-                    type="button" className="scr-rect-btn scr-adm-row-btn"
-                    onClick={() => setDeletedGamesOpen(true)}
-                  >
-                    열기
-                  </button>
-                </div>
+                )}
 
                 <div className="scr-adm-row">
                   <div className="scr-adm-row-text">
