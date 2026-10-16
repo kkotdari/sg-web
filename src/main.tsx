@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./styles/global.css";
 import "scplay/styles.css";
+import "scplay/fonts.css";   // 재생기 글꼴(나눔스퀘어 네오 + AGA Rasheeq) — 재생기 안에서만 쓴다
 import App from "./App";
 import { markAppUpdatePreloadError } from "./utils/appUpdate";
 import { setReplayBgm, setReplayChrome, setReplayMapFetcher } from "scplay";
