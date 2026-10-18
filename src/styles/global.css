@@ -4896,7 +4896,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   font-size: var(--fs-micro); color: #5a616b; white-space: nowrap; opacity: 0.85;
 }
 .scr-league-bracket-badge-btn:hover .scr-league-bracket-badge-add { opacity: 1; }
-.scr-league-match-modal { display: flex; flex-direction: column; gap: 12px; }
+.scr-league-match-modal { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
 .scr-league-match-vs {
   display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
   font-size: var(--fs-caption); font-weight: 700; color: var(--text); text-align: center;
@@ -4910,6 +4910,36 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   min-height: 84px; max-height: 240px; line-height: 1.5; font-family: inherit;
 }
 .scr-league-match-note { margin: 4px 0 0; font-size: var(--fs-micro); color: var(--dim); }
+/* 세트 목록(경기 결과 입력창) — 세트마다 [N세트 | 게임 고르기 | 빼기] 한 줄, 그 아래 이긴 쪽 두 단추, 펼치면 후보 게임 목록. */
+.scr-league-sets-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.scr-league-sets { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.scr-league-set { display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+.scr-league-set-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.scr-league-set-no { flex: 0 0 auto; font-size: var(--fs-micro); font-weight: 800; color: var(--dim); }
+.scr-league-set-game {
+  flex: 1 1 auto; min-width: 0; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: transparent; color: var(--text); font: inherit; font-size: var(--fs-micro); text-align: left; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.scr-league-set-game.is-empty { color: var(--muted); }
+.scr-league-set-x { flex: 0 0 auto; width: 26px; height: 26px; }
+.scr-league-set-win { display: flex; gap: 6px; }
+.scr-league-set-win > button { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.scr-league-set-pick {
+  display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto;
+  padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel);
+}
+.scr-league-set-pick-empty { display: flex; align-items: center; gap: 6px; padding: 8px; font-size: var(--fs-micro); color: var(--muted); }
+.scr-league-set-cand {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: none; border-radius: 5px;
+  background: transparent; color: var(--text); font: inherit; font-size: var(--fs-micro); text-align: left; cursor: pointer;
+}
+.scr-league-set-cand:disabled { opacity: 0.45; cursor: default; }
+.scr-league-set-cand.is-on { background: var(--btn-fill-bg, rgba(var(--overlay-rgb), 0.12)); }
+@media (hover: hover) { .scr-league-set-cand:not(:disabled):hover { background: var(--btn-icon-hover-bg, rgba(var(--overlay-rgb), 0.1)); } }
+.scr-league-set-cand-main { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr-league-set-cand-tag { flex: 0 0 auto; color: var(--dim); font-weight: 700; }
+.scr-league-set-cand-none { color: var(--muted); justify-content: center; }
 .scr-league-bracket-team-card-win { box-shadow: 0 0 0 2px var(--league-advance) inset; }
 .scr-league-bracket-team-card {
   display: flex; align-items: center; gap: 7px; padding: 6px 15px; width: 100%; height: 100%;

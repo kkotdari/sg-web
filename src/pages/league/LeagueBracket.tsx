@@ -5,12 +5,13 @@ import { Spinner } from "../../components/common/Feedback";
 import Select from "../../components/common/Select";
 import Avatar from "../../components/common/Avatar";
 import RosterFace from "./RosterFace";
+import LeagueMatchSets from "./LeagueMatchSets";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { api } from "../../api/client";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { cx } from "../../utils/format";
 import { formatWhen } from "../../utils/date";
-import type { League, LeagueMatch, LeagueMatchSide, LeagueTeam } from "../../types";
+import type { League, LeagueMatch, LeagueMatchSet, LeagueMatchSide, LeagueTeam } from "../../types";
 
 function cellOf(present: boolean): { w: number; h: number; gap: number } {
   const w = present ? 160 : 110;
@@ -210,6 +211,7 @@ function MatchEditModal({
   const [a, setA] = useState(() => (match.setsWonA === null ? "" : String(match.setsWonA)));
   const [b, setB] = useState(() => (match.setsWonB === null ? "" : String(match.setsWonB)));
   const [note, setNote] = useState(() => match.note);
+  const [sets, setSets] = useState<LeagueMatchSet[]>(() => match.sets ?? []);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -223,6 +225,15 @@ function MatchEditModal({
     ? (canScore ? null : "두 자리가 다 차야 결과를 넣을 수 있어요.")
     : "대진을 확정해야 결과를 넣을 수 있어요.";
 
+  // 세트의 이긴 쪽이 바뀌면 몇 대 몇을 그 수로 채운다(손으로 고칠 수 있다).
+  const changeSets = (next: LeagueMatchSet[]): void => {
+    setSets(next);
+    if (!next.some((x) => x.winner)) return;
+    setA(String(next.filter((x) => x.winner === "a").length));
+    setB(String(next.filter((x) => x.winner === "b").length));
+  };
+  const setsKey = (list: LeagueMatchSet[]): string => JSON.stringify(list.map((x) => [x.gameResultId, x.winner]));
+
   const save = async () => {
     setErr("");
     setBusy(true);
@@ -231,6 +242,9 @@ function MatchEditModal({
       const nextWhen = when ? new Date(when).toISOString() : null;
       if (nextWhen !== (match.scheduledAt ? new Date(match.scheduledAt).toISOString() : null)) {
         next = await api.setLeagueMatchSchedule(league.id, match.id, nextWhen);
+      }
+      if (canScore && setsKey(sets) !== setsKey(match.sets ?? [])) {
+        next = await api.setLeagueMatchSets(league.id, match.id, sets);
       }
       if (canScore) {
         const filled = a !== "" && b !== "";
@@ -273,6 +287,13 @@ function MatchEditModal({
             onChange={(e) => setWhen(e.target.value)}
           />
         </label>
+
+        {canScore && match.sets !== undefined && (
+          <LeagueMatchSets
+            league={league} match={match} sets={sets} onChange={changeSets}
+            nameA={nameOf(teamA, "A")} nameB={nameOf(teamB, "B")} disabled={busy}
+          />
+        )}
 
         <div className="scr-field">
           <span className="scr-label">결과 <span className="scr-label-optional">(몇 대 몇)</span></span>

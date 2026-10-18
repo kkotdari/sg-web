@@ -443,6 +443,12 @@ export interface LeagueMatchSubstitution {
   note: string;
 }
 
+/** 경기 한 판의 세트 — 그 세트로 친 게임 결과(고른 것이 있으면)와 이긴 쪽. */
+export interface LeagueMatchSet {
+  gameResultId: number | null;
+  winner: LeagueMatchSide | null;
+}
+
 export interface LeagueMatch {
   id: number;
   round: number;
@@ -456,6 +462,8 @@ export interface LeagueMatch {
   winnerTeamId: number | null;
   note: string;
   substitutions: LeagueMatchSubstitution[];
+  /** 옛 서버면 없다. */
+  sets?: LeagueMatchSet[];
 }
 
 export interface League {

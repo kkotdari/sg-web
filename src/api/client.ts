@@ -7,7 +7,7 @@ import type {
   ReplayNameClassificationEntry, ReplayNameKind, ReplayNameMappingEntry, ReplayNameMappingKind,
   Challenge, ChallengeCreatePayload, ChallengeResult,
   League, LeagueListItem, LeagueCreatePayload, LeagueUpdatePayload,
-  LeagueMatchSide, LeaguePoolKind, LeagueTeamCompositionEntry,
+  LeagueMatchSide, LeagueMatchSet, LeaguePoolKind, LeagueTeamCompositionEntry,
   Schedule, ScheduleWrite,
   SceneScrap,
   ExtShareList, ExtShareAddResult,
@@ -921,6 +921,12 @@ export const api = {
       method: "PUT", body: JSON.stringify({ setsWonA, setsWonB }),
     });
   },
+  async setLeagueMatchSets(leagueId: number, matchId: number, sets: LeagueMatchSet[]): Promise<League> {
+    return request<League>(`/api/leagues/${leagueId}/matches/${matchId}/sets`, {
+      method: "PUT", body: JSON.stringify({ sets }),
+    });
+  },
+
   async setLeagueMatchNote(leagueId: number, matchId: number, note: string): Promise<League> {
     return request<League>(`/api/leagues/${leagueId}/matches/${matchId}/note`, {
       method: "PUT", body: JSON.stringify({ note }),
