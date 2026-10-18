@@ -6,6 +6,7 @@ import Select from "../../components/common/Select";
 import Avatar from "../../components/common/Avatar";
 import RosterFace from "./RosterFace";
 import LeagueMatchSets from "./LeagueMatchSets";
+import PillTabs from "../../components/common/PillTabs";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { api } from "../../api/client";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
@@ -212,6 +213,9 @@ function MatchEditModal({
   const [b, setB] = useState(() => (match.setsWonB === null ? "" : String(match.setsWonB)));
   const [note, setNote] = useState(() => match.note);
   const [sets, setSets] = useState<LeagueMatchSet[]>(() => match.sets ?? []);
+  /* 결과는 두 길로 넣는다(요청: "탭으로 수기 입력 · 게임 결과 선택 두 개 구분") — 수기 입력은 몇 대 몇 + 메모, 게임 결과 선택은 세트마다
+     게임을 이어 이긴 쪽·몇 대 몇이 따라온다. 세트가 이미 있으면 그 탭으로 연다. */
+  const [tab, setTab] = useState<"manual" | "games">(() => ((match.sets?.length ?? 0) > 0 ? "games" : "manual"));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -289,12 +293,24 @@ function MatchEditModal({
         </label>
 
         {canScore && match.sets !== undefined && (
-          <LeagueMatchSets
-            league={league} match={match} sets={sets} onChange={changeSets}
-            nameA={nameOf(teamA, "A")} nameB={nameOf(teamB, "B")} disabled={busy}
+          <PillTabs
+            options={[{ value: "manual", label: "수기 입력" }, { value: "games", label: "게임 결과 선택" }]}
+            value={tab} onChange={setTab} aria-label="결과 넣는 방식"
           />
         )}
-
+        {canScore && match.sets !== undefined && tab === "games" ? (
+          <>
+            <LeagueMatchSets
+              league={league} match={match} sets={sets} onChange={changeSets}
+              nameA={nameOf(teamA, "A")} nameB={nameOf(teamB, "B")} disabled={busy}
+              onOpenGame={onClose}
+            />
+            <p className="scr-league-match-note">
+              결과 {a !== "" && b !== "" ? `${a} : ${b}` : "—"} <span className="scr-label-optional">(세트의 이긴 쪽으로 채워져요)</span>
+            </p>
+          </>
+        ) : (
+        <>
         <div className="scr-field">
           <span className="scr-label">결과 <span className="scr-label-optional">(몇 대 몇)</span></span>
           <div className="scr-league-match-score">
@@ -327,6 +343,8 @@ function MatchEditModal({
             placeholder={"예)\n1세트 홍탑 승\n2세트 타센 승\n3세트 팀전 A 승"}
           />
         </label>
+        </>
+        )}
 
         {err && <div className="scr-err" role="alert">{err}</div>}
         <div className="scr-form-actions">

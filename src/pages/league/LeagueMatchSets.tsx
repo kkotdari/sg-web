@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Play, Plus, X } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import { api } from "../../api/client";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
 import { cleanMapName } from "../../utils/mapName";
+import { navigateTo, pathOf } from "../../utils/route";
 import type { GameResult, GameResultSlot, League, LeagueMatch, LeagueMatchSet, LeagueMatchSide } from "../../types";
 
 /* 경기 결과 입력창의 세트 목록(요청: "리그 결과 입력창에서 세트 추가하고 게임 결과 중 해당 매치 게임을 선택 가능하게").
@@ -30,11 +31,13 @@ const NO_GAME = "게임 고르기";
 const PICK_LIMIT = 60;
 
 export default function LeagueMatchSets({
-  league, match, sets, onChange, nameA, nameB, disabled,
+  league, match, sets, onChange, nameA, nameB, disabled, onOpenGame,
 }: {
   league: League; match: LeagueMatch; sets: LeagueMatchSet[];
   onChange: (next: LeagueMatchSet[]) => void;
   nameA: string; nameB: string; disabled: boolean;
+  /** 이은 게임의 재생 단추를 누르면 그 게임 상세로 간다 — 그 전에 부르는 것(창 닫기). */
+  onOpenGame?: () => void;
 }) {
   const members = useAppStore((s) => s.members);
   const memberOf = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
@@ -146,6 +149,18 @@ export default function LeagueMatchSets({
                   >
                     {g ? labelOf(g) : s.gameResultId !== null ? `게임 #${s.gameResultId}` : NO_GAME}
                   </button>
+                  {s.gameResultId !== null && (
+                    <button
+                      type="button" className="scr-icon-btn scr-league-set-play" aria-label={`${i + 1}세트 게임 보기`} title="게임 상세 보기"
+                      onClick={() => {
+                        const id = s.gameResultId as number;
+                        onOpenGame?.();
+                        navigateTo(pathOf({ screen: "activity", group: "gameResult", item: g?.matchNo || String(id) }));
+                      }}
+                    >
+                      <Play size={13} />
+                    </button>
+                  )}
                   <button
                     type="button" className="scr-icon-btn scr-league-set-x" aria-label={`${i + 1}세트 빼기`} disabled={disabled}
                     onClick={() => { setOpen(null); onChange(sets.filter((_, k) => k !== i)); }}

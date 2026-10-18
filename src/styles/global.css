@@ -4910,6 +4910,11 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   min-height: 84px; max-height: 240px; line-height: 1.5; font-family: inherit;
 }
 .scr-league-match-note { margin: 4px 0 0; font-size: var(--fs-micro); color: var(--dim); }
+/* 결과 넣는 방식 탭(수기 입력 · 게임 결과 선택) — 알약 탭 기본색은 밝은 바탕 기준이라 창 바탕에서 안 고른 쪽 글자가 묻혔다(필터 창과 같은 덮개). */
+.scr-league-match-modal .scr-pill-tabs { height: 32px; background: rgba(255, 255, 255, 0.08); }
+.scr-light-theme .scr-league-match-modal .scr-pill-tabs { background: rgba(0, 0, 0, 0.06); }
+.scr-league-match-modal .scr-pill-tab-btn:not(.scr-pill-tab-btn-active) { color: var(--muted); }
+@media (hover: hover) { .scr-league-match-modal .scr-pill-tab-btn:hover:not(.scr-pill-tab-btn-active) { color: var(--text); } }
 /* 세트 목록(경기 결과 입력창) — 세트마다 [N세트 | 게임 고르기 | 빼기] 한 줄, 그 아래 이긴 쪽 두 단추, 펼치면 후보 게임 목록. */
 .scr-league-sets-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .scr-league-sets { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -4922,7 +4927,8 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .scr-league-set-game.is-empty { color: var(--muted); }
-.scr-league-set-x { flex: 0 0 auto; width: 26px; height: 26px; }
+.scr-league-set-x, .scr-league-set-play { flex: 0 0 auto; width: 26px; height: 26px; }
+.scr-league-set-play { color: var(--timeline-blue); }
 .scr-league-set-win { display: flex; gap: 6px; }
 .scr-league-set-win > button { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .scr-league-set-pick {
