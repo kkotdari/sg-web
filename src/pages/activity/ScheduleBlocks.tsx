@@ -527,6 +527,8 @@ function ListBlock({
    그래서 단추가 화면에 보이면 미리 받아 둔다 — 화면에 뜬 사진은 브라우저 캐시에서 바로 온다. 누를 땐 손에 든 File 로 곧장 공유한다.
    동영상도 미리 받는다(요청: "동영상도 사진첩 저장 한 번에") — 손가락이 닿는 순간(pointerdown)에도 받기를 당긴다.
    그래도 다 받기 전에 누르면(큰 동영상을 막 띄운 참) 옛 두 번째 누름이 남는다. */
+const EAGER_MAX = 6;
+
 function useSaver(photos: SchedulePhoto[], zipName: string) {
   const album = canSaveToAlbum();
   const [busy, setBusy] = useState<string | null>(null);
@@ -547,7 +549,10 @@ function useSaver(photos: SchedulePhoto[], zipName: string) {
     }
     return prep.current;
   };
-  const eager = album && photos.length > 0;
+  /* ★ 미리 받기는 몇 장일 때만(EAGER_MAX) — 사진 목록이 화면에 보이기만 해도 원본을 **전부** 받아 들고 있었다. 수십~수백 장이면
+     수백 MB 를 받아 메모리에 쥐어, 폰이 통째로 무거워졌다(지적: "소팅이 아직도 느려 · 시작하기까지도 느리고 · 사진이 많아질수록").
+     많으면 저장 단추에 손가락이 닿는 순간(onPress) 받기 시작한다 — 늦으면 옛 두 번째 누름이 남는다. */
+  const eager = album && photos.length > 0 && photos.length <= EAGER_MAX;
   useEffect(() => {
     const el = btn.current;
     if (!eager || !el || typeof IntersectionObserver === "undefined") return;
@@ -623,7 +628,7 @@ const SORT_SLOP = 6;
 const SORT_MS = 160;
 /* 손가락은 오래 눌러야 끌기가 된다(요청: "바로 드래그 아니고 오래 눌러야 드래그 모드 · 스크롤하다가 드래그가 돼 버림") —
    LONG_PRESS_MS 안에 손가락이 SORT_SLOP 넘게 움직이면 끌기가 아니라 쓸어 넘기기(스크롤)로 보고 놓는다. 마우스는 끌면 바로 끈다. */
-const LONG_PRESS_MS = 380;
+const LONG_PRESS_MS = 250;
 
 type CellAct = { pick: (i: number) => void; ref: (id: string) => (el: HTMLButtonElement | null) => void };
 
