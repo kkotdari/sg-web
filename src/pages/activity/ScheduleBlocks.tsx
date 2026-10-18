@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
-  ChevronDown, ChevronLeft, ChevronRight, GripVertical, Image as ImageIcon, List as ListIcon, Paperclip,
-  Plus, Trash2, Type, X,
+  ChevronDown, ChevronLeft, ChevronRight, Download, GripVertical, Image as ImageIcon, List as ListIcon, Paperclip,
+  Play, Plus, Trash2, Type, X,
 } from "lucide-react";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { showAlert } from "../../components/common/AlertDialog";
@@ -11,6 +11,7 @@ import { pickPhoto, readAsDataUrl } from "../../utils/image";
 import { attachPopover } from "../../utils/popover";
 import type { ScheduleBlock, SchedulePhoto } from "../../types";
 import { imgSrc } from "../../utils/imgSrc";
+import { canSaveToAlbum, downloadFiles, fetchMedia, isVideoItem, MAX_VIDEO_BYTES, shareToAlbum } from "../../utils/media";
 
 export type DraftBlock = ScheduleBlock & { key: string };
 export const withKeys = (blocks: ScheduleBlock[]): DraftBlock[] => blocks.map((b) => ({ ...b, key: b.id }));
@@ -289,6 +290,49 @@ function ListBlock({
   );
 }
 
+function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string }) {
+  const album = canSaveToAlbum();
+  const [busy, setBusy] = useState<string | null>(null);
+  const ready = useRef<File[] | null>(null);
+  const [armed, setArmed] = useState(false);
+  useEffect(() => { ready.current = null; setArmed(false); }, [photos]);
+  const share = async (files: File[]): Promise<void> => {
+    try {
+      await shareToAlbum(files);
+      ready.current = null; setArmed(false);
+    } catch (err) {
+      const name = (err as { name?: string }).name;
+      if (name === "AbortError") return;
+      if (name === "NotAllowedError") { ready.current = files; setArmed(true); return; }
+      throw err;
+    }
+  };
+  const run = async (): Promise<void> => {
+    if (busy) return;
+    if (ready.current) { await share(ready.current); return; }
+    setBusy(`0 / ${photos.length}`);
+    try {
+      const files = await fetchMedia(photos, (d, t) => setBusy(`${d} / ${t}`));
+      if (album && navigator.canShare({ files })) await share(files);
+      else await downloadFiles(files, title.trim() || "사진");
+    } catch (err) {
+      showAlert(err instanceof Error && err.message ? err.message : "내려받지 못했어요.");
+    } finally {
+      setBusy(null);
+    }
+  };
+  const label = album ? (armed ? "사진첩에 저장" : "전체 사진첩에 저장") : "전체 다운로드";
+  return (
+    <button
+      type="button" className={cx("scr-sb-saveall", armed && "scr-sb-saveall-armed")} disabled={busy !== null}
+      onClick={(e) => { e.stopPropagation(); void run(); }} aria-label={label} title={label}
+    >
+      <Download size={13} aria-hidden />
+      <span>{busy ?? (armed ? "눌러서 저장" : album ? "사진첩에 저장" : "전체 다운로드")}</span>
+    </button>
+  );
+}
+
 function PhotosBlock({
   block, canEdit, grip, onChange, onAdd, onDelete,
 }: {
@@ -298,23 +342,25 @@ function PhotosBlock({
 }) {
   const strip = useRef<HTMLDivElement | null>(null);
   const [at, setAt] = useState(0);
-  const [open, setOpen] = useState<SchedulePhoto | null>(null);
+  const [open, setOpen] = useState<number | null>(null);
   const n = block.photos.length;
   const idx = Math.min(at, Math.max(0, n - 1));
-  const go = (i: number): void => {
+  const go = (i: number, smooth = true): void => {
     const el = strip.current;
     if (!el) return;
     const to = Math.max(0, Math.min(n - 1, i));
-    el.scrollTo({ left: to * el.clientWidth, behavior: "smooth" });
+    el.scrollTo({ left: to * el.clientWidth, behavior: smooth ? "smooth" : "auto" });
   };
   const onScroll = (): void => {
     const el = strip.current;
     if (!el || !el.clientWidth) return;
     setAt(Math.round(el.scrollLeft / el.clientWidth));
   };
+  const shown = open === null ? null : block.photos[Math.min(open, n - 1)] ?? null;
+  const view = (i: number): void => { setOpen(i); go(i, false); };
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
-      {(canEdit || block.title) && (
+      {(canEdit || block.title || n > 0) && (
         <div className="scr-sb-photos-head">
           {canEdit ? (
             <input
@@ -325,10 +371,10 @@ function PhotosBlock({
           ) : (
             <div className="scr-sb-line scr-sb-list-title">{block.title}</div>
           )}
+          {n > 0 && <SaveAllBtn photos={block.photos} title={block.title} />}
           {canEdit && (
             <>
               {grip}
-              <IconBtn label="사진 더하기" onClick={onAdd}><Plus size={14} /></IconBtn>
               <IconBtn label="사진 목록 삭제" onClick={onDelete} danger><X size={14} /></IconBtn>
             </>
           )}
@@ -344,14 +390,21 @@ function PhotosBlock({
               else if (e.key === "ArrowRight") { e.preventDefault(); go(idx + 1); }
             }}
           >
-            {block.photos.map((p) => (
+            {block.photos.map((p, i) => (
               <div key={p.id} className="scr-sb-slide">
                 <button
                   type="button" className="scr-sb-slide-img"
-                  onClick={(e) => { e.stopPropagation(); setOpen(p); }}
+                  onClick={(e) => { e.stopPropagation(); view(i); }}
                   aria-label={`${p.name} 크게 보기`}
                 >
-                  <img src={imgSrc(p.thumbUrl ?? p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
+                  {isVideoItem(p) ? (
+                    <>
+                      <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
+                      <span className="scr-sb-slide-play" aria-hidden><Play size={22} /></span>
+                    </>
+                  ) : (
+                    <img src={imgSrc(p.thumbUrl ?? p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
+                  )}
                 </button>
                 {canEdit && (
                   <button
@@ -388,7 +441,19 @@ function PhotosBlock({
           )}
         </div>
       )}
-      {open && <PhotoViewer src={open.url} alt={open.name} onClose={() => setOpen(null)} />}
+      {canEdit && (
+        <button type="button" className="scr-sb-photos-add" onClick={(e) => { e.stopPropagation(); onAdd(); }}>
+          <Plus size={14} aria-hidden /> 사진 추가
+        </button>
+      )}
+      {shown && open !== null && (
+        <PhotoViewer
+          src={shown.url} alt={shown.name} video={isVideoItem(shown)} onClose={() => setOpen(null)}
+          onPrev={open > 0 ? () => view(open - 1) : undefined}
+          onNext={open < n - 1 ? () => view(open + 1) : undefined}
+          counter={n > 1 ? `${open + 1} / ${n}` : undefined}
+        />
+      )}
     </div>
   );
 }
@@ -511,8 +576,11 @@ export default function ScheduleBlocks({
     if (!into && latest.current.length >= MAX_BLOCKS) { showAlert(`요소는 ${MAX_BLOCKS}개까지예요.`); return; }
     const room = MAX_PHOTOS - (into?.photos.length ?? 0);
     if (room <= 0) { showAlert(`사진 목록 하나에는 ${MAX_PHOTOS}장까지 담아요.`); return; }
-    const picked = list.slice(0, room);
-    if (picked.length < list.length) showAlert(`사진 목록 하나에는 ${MAX_PHOTOS}장까지라 ${picked.length}장만 넣었어요.`);
+    const fit = list.filter((f) => !(f.type.startsWith("video/") && f.size > MAX_VIDEO_BYTES));
+    if (fit.length < list.length) showAlert(`동영상은 하나에 ${Math.round(MAX_VIDEO_BYTES / 1024 / 1024)}MB까지예요. 큰 동영상은 빼고 넣었어요.`);
+    const picked = fit.slice(0, room);
+    if (picked.length < fit.length) showAlert(`사진 목록 하나에는 ${MAX_PHOTOS}장까지라 ${picked.length}장만 넣었어요.`);
+    if (picked.length === 0) return;
     const made: SchedulePhoto[] = picked.map((f) => ({ id: newId(), ...pickPhoto(f) }));
     const now = latest.current;
     if (into) onChange(now.map((b) => (b.key === target ? { ...b, photos: [...b.photos, ...made] } : b)));
@@ -738,7 +806,7 @@ export default function ScheduleBlocks({
             <button type="button" role="menuitem" className="scr-menu-pop-opt" onClick={() => { summonKeyboard(); pick((at) => insertAt(at, emptyBlock("list"))); }}>
               <ListIcon size={14} aria-hidden /> 목록
             </button>
-            <button type="button" role="menuitem" className="scr-menu-pop-opt" onClick={() => pick((at) => pickPhotos(null, at))}>
+            <button type="button" role="menuitem" className="scr-menu-pop-opt" onClick={() => { summonKeyboard(); pick((at) => insertAt(at, emptyBlock("photos"))); }}>
               <ImageIcon size={14} aria-hidden /> 사진
             </button>
             <button type="button" role="menuitem" className="scr-menu-pop-opt" onClick={() => pick((at) => pickFiles(at))}>
@@ -751,7 +819,7 @@ export default function ScheduleBlocks({
       {canEdit && (
         <>
           <input
-            ref={photoRef} type="file" accept="image/*" multiple hidden
+            ref={photoRef} type="file" accept="image/*,video/*" multiple hidden
             onChange={(e) => { void addPhotos(photoTarget.current.key, photoTarget.current.at, e.target.files); e.target.value = ""; }}
           />
           <input

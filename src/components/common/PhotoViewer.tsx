@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { imgSrc } from "../../utils/imgSrc";
 
@@ -8,6 +8,10 @@ interface PhotoViewerProps {
   src: string;
   alt: string;
   onClose: () => void;
+  video?: boolean;
+  onPrev?: () => void;
+  onNext?: () => void;
+  counter?: string;
 }
 
 type Pt = { x: number; y: number };
@@ -20,6 +24,7 @@ const TAP_MS = 300;
 const TAP_SLOP = 24;
 const DRAG_SLOP = 8;
 const SETTLE_MS = 200;
+const SWIPE_PX = 60;
 const HOME: Zoom = { s: 1, tx: 0, ty: 0 };
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
@@ -49,7 +54,7 @@ function zoomAt(c: Pt, z: Zoom, p: Pt, next: number): Zoom {
   return { s: next, tx: p.x - c.x - k * (p.x - c.x - z.tx), ty: p.y - c.y - k * (p.y - c.y - z.ty) };
 }
 
-export default function PhotoViewer({ src, alt, onClose }: PhotoViewerProps) {
+export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, counter }: PhotoViewerProps) {
   useLockBodyScroll();
   const frameRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -62,6 +67,9 @@ export default function PhotoViewer({ src, alt, onClose }: PhotoViewerProps) {
   const lastTap = useRef<{ t: number; p: Pt } | null>(null);
   const origin = useRef<Pt>({ x: 0, y: 0 });
   const moved = useRef(false);
+  const multi = useRef(false);
+  const nav = useRef({ onPrev, onNext });
+  nav.current = { onPrev, onNext };
 
   const measure = (): void => {
     const img = imgRef.current;
@@ -116,6 +124,15 @@ export default function PhotoViewer({ src, alt, onClose }: PhotoViewerProps) {
   }, [src]);
 
   useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "ArrowLeft" && nav.current.onPrev) { e.preventDefault(); nav.current.onPrev(); }
+      else if (e.key === "ArrowRight" && nav.current.onNext) { e.preventDefault(); nav.current.onNext(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
     const el = frameRef.current;
     const img = imgRef.current;
     if (!el || !img) return undefined;
@@ -131,7 +148,7 @@ export default function PhotoViewer({ src, alt, onClose }: PhotoViewerProps) {
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, []);
+  }, [video]);
 
   const pair = (): [Pt, Pt] | null => {
     const [a, b] = [...pointers.current.values()];
@@ -141,17 +158,18 @@ export default function PhotoViewer({ src, alt, onClose }: PhotoViewerProps) {
     const ab = pair();
     pinch.current = ab ? { d: dist(ab[0], ab[1]), m: mid(ab[0], ab[1]) } : null;
     moved.current = true;
+    multi.current = true;
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
-    if ((e.target as Element).closest(".scr-photo-close")) return;
+    if ((e.target as Element).closest(".scr-photo-close, .scr-photo-nav, video")) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     unbake();
     if (base.current.w === 0) measure();
     const p = { x: e.clientX, y: e.clientY };
     pointers.current.set(e.pointerId, p);
-    if (pointers.current.size === 1) { origin.current = p; moved.current = false; } else beginPinch();
+    if (pointers.current.size === 1) { origin.current = p; moved.current = false; multi.current = false; } else beginPinch();
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>): void => {
     const img = imgRef.current;
@@ -183,6 +201,12 @@ export default function PhotoViewer({ src, alt, onClose }: PhotoViewerProps) {
     pinch.current = null;
     if (pointers.current.size > 0) return;
     const p = { x: e.clientX, y: e.clientY };
+    const dx = p.x - origin.current.x;
+    const dy = p.y - origin.current.y;
+    if (!multi.current && z.current.s <= 1 && Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      const go = dx < 0 ? nav.current.onNext : nav.current.onPrev;
+      if (go) { lastTap.current = null; z.current = HOME; paint(false); go(); return; }
+    }
     const now = Date.now();
     const tap = lastTap.current;
     const c = centreOf(img, z.current);
@@ -210,8 +234,23 @@ export default function PhotoViewer({ src, alt, onClose }: PhotoViewerProps) {
         >
           <X size={16} />
         </button>
-        <img src={imgSrc(src)} alt={alt} className="scr-photo-large" ref={imgRef} draggable={false} onLoad={measure} />
+        {video ? (
+          <video key={src} src={imgSrc(src)} className="scr-photo-large scr-photo-video" controls autoPlay playsInline />
+        ) : (
+          <img src={imgSrc(src)} alt={alt} className="scr-photo-large" ref={imgRef} draggable={false} onLoad={measure} />
+        )}
       </div>
+      {onPrev && (
+        <button type="button" className="scr-photo-nav scr-photo-prev" aria-label="이전" onClick={(e) => { e.stopPropagation(); onPrev(); }}>
+          <ChevronLeft size={22} />
+        </button>
+      )}
+      {onNext && (
+        <button type="button" className="scr-photo-nav scr-photo-next" aria-label="다음" onClick={(e) => { e.stopPropagation(); onNext(); }}>
+          <ChevronRight size={22} />
+        </button>
+      )}
+      {counter && <div className="scr-photo-counter" aria-hidden>{counter}</div>}
     </div>,
     document.body,
   );
