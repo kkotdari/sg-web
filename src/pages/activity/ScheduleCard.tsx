@@ -20,7 +20,7 @@ import { imgSrc } from "../../utils/imgSrc";
 
 function whenTextOf(date: string, time: string | null): string {
   const day = formatWhen(date);
-  return time ? `${day} ${time}` : `${day} · 시간 미정`;
+  return time ? `${day} ${time}` : day;
 }
 function whenText(schedule: Schedule): string {
   return whenTextOf(schedule.scheduledDate, schedule.scheduledTime);
@@ -36,17 +36,15 @@ const savedAtText = (iso: string): string => {
 };
 
 function ScheduleHead({
-  head, canEdit, editing, busy, saveState, savedAt, menu, onChange, onToggle,
+  head, canEdit, editing, saveState, savedAt, menu, onChange,
 }: {
   head: Head;
   canEdit: boolean;
   editing: boolean;
-  busy: boolean;
   saveState: SaveState;
   savedAt: string;
   menu: ReactNode;
   onChange: (part: Partial<Head>) => void;
-  onToggle: () => void;
 }) {
   const [whenOpen, setWhenOpen] = useState(false);
   return (
@@ -68,16 +66,6 @@ function ScheduleHead({
           >
             {saveState === "failed" ? "저장 안 됨" : `마지막 저장: ${savedAtText(savedAt)}`}
           </span>
-        )}
-        {canEdit && (
-          <button
-            type="button"
-            className={cx("scr-schedule-edit-btn", editing && "scr-schedule-edit-btn-on")}
-            aria-pressed={editing} disabled={busy}
-            onClick={(e) => { e.stopPropagation(); onToggle(); }}
-          >
-            {editing ? "편집끝내기" : "편집하기"}
-          </button>
         )}
         {menu}
       </div>
@@ -277,6 +265,17 @@ const isEphemeral = (b: ScheduleBlock): boolean =>
   || (b.kind === "photos" && b.photos.length === 0);
 const isNew = (id: string): boolean => id.startsWith(NEW_PREFIX);
 
+/** 저장될 내용의 지문 — 키(화면용)는 빼고 서버가 남기는 꼴로 줄인다. 마지막 저장본과 같으면 자동 저장을 건너뛴다(요청: "자동 저장은 변경이 있을 때만"). */
+const snapOf = (d: Draft): string => JSON.stringify([
+  d.title.trim(), d.date, d.time || "",
+  d.blocks.filter((b) => !isEphemeral(b)).map((b) => {
+    const n = normBlock(b);
+    const lv = n.levels ?? [];
+    return [n.kind, isNew(n.id) ? "new" : n.id, n.title, n.text, n.items, lv.some((x) => x) ? lv : [],
+      n.photos.map((p) => p.id), !!n.collapsed, n.indent ?? 0, n.kind === "photo" || n.kind === "file" ? n.name : ""];
+  }),
+]);
+
 const countNewPhotos = (d: Draft): number =>
   d.blocks.reduce((n, b) => n + (b.kind === "photos" ? b.photos.filter((p) => isNew(p.id)).length : 0), 0);
 const PHOTO_BATCH_BYTES = 12_000_000;
@@ -436,7 +435,6 @@ export default function ScheduleCard({
   const readBlocks = useMemo(() => withKeys(schedule.blocks ?? []), [schedule.blocks]);
 
   const [editing, setEditing] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [savedAt, setSavedAt] = useState(schedule.updatedAt);
   const [shield, setShield] = useState<{ done: number; total: number } | null>(null);
@@ -476,6 +474,7 @@ export default function ScheduleCard({
   const removed = useRef(new Set<string>());
   const base = useRef(new Map<string, DraftBlock>());
   const editVer = useRef(0);
+  const savedSnap = useRef("");
   const savedVer = useRef(0);
   const lastEditAt = useRef(0);
   const dirtySince = useRef(0);
@@ -506,10 +505,12 @@ export default function ScheduleCard({
     const server = draftOf(s, d.blocks);
     setDraft(dirty() ? merge(server, d, touched.current, removed.current, base.current) : keepLocal(server, d));
     base.current = new Map(server.blocks.map((b) => [b.key, b]));
+    savedSnap.current = snapOf(server);
   };
 
   const enter = (): void => {
     const d = draftOf(schedule);
+    savedSnap.current = snapOf(d);
     touched.current.clear();
     removed.current.clear();
     base.current = new Map(d.blocks.map((b) => [b.key, b]));
@@ -528,8 +529,9 @@ export default function ScheduleCard({
   const edit = (part: Partial<Head>): void => {
     const d = draftRef.current;
     if (!d) return;
-    for (const k of HEAD_KEYS) if (part[k] !== undefined && part[k] !== d[k]) touched.current.add(k);
-    markEdited();
+    let changed = false;
+    for (const k of HEAD_KEYS) if (part[k] !== undefined && part[k] !== d[k]) { touched.current.add(k); changed = true; }
+    if (changed) markEdited();
     setDraft({ ...d, ...part });
   };
 
@@ -537,13 +539,14 @@ export default function ScheduleCard({
     const d = draftRef.current;
     if (!d) return;
     const prev = new Map(d.blocks.map((b) => [b.key, b]));
+    let changed = next.length !== d.blocks.length || next.some((b, i) => b.key !== d.blocks[i].key);
     for (const b of next) {
       const p = prev.get(b.key);
-      if (!p || !sameBlock(p, b)) touched.current.add(b.key);
+      if (!p || !sameBlock(p, b)) { touched.current.add(b.key); changed = true; }
     }
     const kept = new Set(next.map((b) => b.key));
     for (const p of d.blocks) if (!kept.has(p.key) && !isNew(p.id)) removed.current.add(p.id);
-    markEdited();
+    if (changed) markEdited();
     setDraft({ ...d, blocks: next });
     if (countNewPhotos({ ...d, blocks: next }) > countNewPhotos(d)) void save();
   };
@@ -551,6 +554,11 @@ export default function ScheduleCard({
   const save = async (): Promise<boolean> => {
     const d = draftRef.current;
     if (!d || saving.current || !d.title.trim() || !d.date) return false;
+    if (snapOf(d) === savedSnap.current) {
+      savedVer.current = editVer.current;
+      setSaveState("saved");
+      return true;
+    }
     saving.current = true;
     const ver = editVer.current;
     const sent = d;
@@ -617,17 +625,19 @@ export default function ScheduleCard({
     }
   };
 
-  const done = async (): Promise<void> => {
-    const d = draftRef.current;
-    if (!d) return;
-    if (!d.title.trim() || !d.date) { showAlert("제목과 날짜는 비울 수 없어요."); return; }
-    setBusy(true);
-    while (saving.current) await new Promise((r) => { setTimeout(r, 60); });
-    while (dirty()) { if (!(await save())) { setBusy(false); return; } }
-    setBusy(false);
-    setEditing(false);
-    setDraft(null);
-  };
+  /* 편집 모드는 따로 없다(2026-10-18, 요청: "편집 모드 없이 항상 편집 모드로") — 고칠 수 있는 사람에게는 카드가 늘 편집 상태다.
+     저장은 그대로 자동(바뀐 것이 있을 때만)이다. */
+  useEffect(() => { if (canEdit && !editing) enter(); }, [canEdit]);
+  /* 늘 편집 상태라 목록의 카드마다 남의 고침을 4초마다 물어 왔다 — 화면에 보이는 카드만 묻는다. 저장은 보이든 말든 한다. */
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const onScreen = useRef(false);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") { onScreen.current = true; return undefined; }
+    const io = new IntersectionObserver(([en]) => { onScreen.current = !!en?.isIntersecting; });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => { if (editing) absorb(schedule); }, [schedule, editing]);
 
@@ -641,7 +651,7 @@ export default function ScheduleCard({
         if (typingNow() || sortingNow()) return;
         const rush = draftRef.current ? countNewPhotos(draftRef.current) > 0 : false;
         if (rush || now - lastEditAt.current >= SAVE_IDLE_MS || now - dirtySince.current >= SAVE_MAX_MS) void save();
-      } else if (now - lastRefreshAt.current >= REFRESH_MS) {
+      } else if (onScreen.current && now - lastRefreshAt.current >= REFRESH_MS) {
         void refresh();
       }
     };
@@ -671,11 +681,11 @@ export default function ScheduleCard({
       timeText={timeText}
       comment={footer}
     >
-      <div className="scr-schedule-card">
+      <div className="scr-schedule-card" ref={cardRef}>
         <ScheduleHead
-          head={head} canEdit={canEdit} editing={editing} busy={busy} saveState={saveState} savedAt={savedAt}
+          head={head} canEdit={canEdit} editing={editing} saveState={saveState} savedAt={savedAt}
           menu={<ScheduleActionsMenu schedule={schedule} canDelete={canDelete} onDeleted={onDeleted} />}
-          onChange={edit} onToggle={() => { if (editing) void done(); else enter(); }}
+          onChange={edit}
         />
 
         {schedule.content && <p className="scr-schedule-content">{schedule.content}</p>}

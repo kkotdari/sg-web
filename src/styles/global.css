@@ -7303,7 +7303,12 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   margin-top: auto; padding: 10px 0 14px;
 }
 
-.scr-sb { display: flex; flex-direction: column; gap: 24px; }
+.scr-sb { display: flex; flex-direction: column; }
+/* 요소 사이 띄움(2026-10-18, 요청: "줄간격 예전보다 줄여야 할 듯 · 스텝별로 다르게") — 옛 24px 는 사이에 + 단추가 앉을 자리였다(걷었다).
+   맨 바깥 요소끼리 14px, 들여 쓴(하위) 요소는 위 요소에 붙어 1단 6px · 2단 이상 4px. */
+.scr-sb > .scr-sb-item + .scr-sb-item { margin-top: 14px; }
+.scr-sb > .scr-sb-item + .scr-sb-item[data-indent="1"] { margin-top: 6px; }
+.scr-sb > .scr-sb-item + .scr-sb-item[data-indent="2"], .scr-sb > .scr-sb-item + .scr-sb-item[data-indent="3"] { margin-top: 4px; }
 .scr-sb-item { position: relative; padding-left: calc(var(--sb-indent, 0) * 24px); }
 @media (max-width: 640px) { .scr-sb-item { padding-left: calc(var(--sb-indent, 0) * 14px); } }
 .scr-sb-item[style*="--sb-indent"]::before {
@@ -7327,10 +7332,14 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-sb-tools {
   position: absolute; top: 0; right: 0;
   display: flex; gap: 2px;
-  opacity: 0.35; transition: opacity .15s;
 }
-.scr-sb-block:hover .scr-sb-tools, .scr-sb-tools:focus-within { opacity: 1; }
-@media (hover: none) { .scr-sb-tools { opacity: 0.75; } }
+/* 들여쓰기·끌기·삭제 단추는 늘 띄우지 않는다(2026-10-18, 요청: "항상 표시하지 말고 요소 위에 마우스 가져가면 표시") —
+   그 요소 위에 올렸을 때·그 안에 커서가 있을 때(폰은 이쪽)·끄는 동안만 보인다. 자리는 그대로 비워 둬 글자가 안 밀린다. */
+.scr-sb-handles { display: inline-flex; align-items: center; gap: 2px; }
+.scr-sb-tools, .scr-sb-handles { opacity: 0; pointer-events: none; transition: opacity .15s; }
+.scr-sb-block:hover .scr-sb-tools, .scr-sb-block:hover .scr-sb-handles,
+.scr-sb-block:focus-within .scr-sb-tools, .scr-sb-block:focus-within .scr-sb-handles,
+.scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; }
 .scr-sb-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; padding: 0;
@@ -7343,7 +7352,7 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 
 .scr-sb-text {
   margin: 0; padding: 0; border: 1px solid transparent;
-  font-size: var(--fs-caption); line-height: 1.6; color: var(--text);
+  font-size: var(--fs-caption); line-height: 1.5; color: var(--text);
   white-space: pre-wrap; word-break: break-word;
 }
 .scr-sb-block-edit .scr-sb-text,
@@ -7378,15 +7387,18 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
   font-size: var(--fs-body); font-weight: 700; color: var(--text);
   line-height: 1.5;
 }
-.scr-sb-list-head { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
+.scr-sb-list-head { display: flex; align-items: center; gap: 2px; margin-bottom: 2px; }
 .scr-sb-list-head > .scr-sb-list-title { flex: 1 1 auto; min-width: 0; width: auto; }
 .scr-sb-list-head > .scr-sb-icon { flex: 0 0 auto; }
 .scr-sb-list-count {
   flex: 0 0 auto; padding: 0 2px;
   font-size: var(--fs-caption); font-weight: 700; color: var(--dim);
 }
-.scr-sb-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
-.scr-sb-list-item { display: flex; align-items: center; gap: 6px; min-height: 26px; }
+.scr-sb-list { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0; list-style: none; }
+.scr-sb-list-item { display: flex; align-items: center; gap: 6px; min-height: 24px; }
+.scr-sb-list-item.scr-sb-lv1 { min-height: 22px; }
+.scr-sb-list-item.scr-sb-lv2 { min-height: 21px; }
+.scr-sb-list-item.scr-sb-lv0 + .scr-sb-list-item.scr-sb-lv0 { margin-top: 2px; }
 .scr-sb-list-dot {
   flex: 0 0 auto; width: 4px; height: 4px; margin-left: 3px;
   border-radius: 50%; background: var(--muted);
@@ -7461,7 +7473,7 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-block-edit .scr-sb-slide-save { right: 44px; }
 .scr-sb-slide-save.is-armed { background: var(--timeline-blue); }
 @media (hover: hover) { .scr-sb-slide-save:not(:disabled):hover { background: rgba(0, 0, 0, 0.8); } }
-.scr-sb-photos-head { display: flex; align-items: center; gap: 2px; margin-bottom: 6px; }
+.scr-sb-photos-head { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
 .scr-sb-photos-head > .scr-sb-list-title { flex: 1 1 auto; min-width: 0; width: auto; }
 .scr-sb-photos-head > .scr-sb-icon, .scr-sb-photos-head > .scr-sb-grip { flex: 0 0 auto; }
 .scr-sb-slide-count {
@@ -7504,16 +7516,16 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
    밝은 화면에서 혼자 무겁게 떴다. 흰 반투명 + 진한 글자로 바꾼다. 전체 다운로드 알약은 테두리·글자를 테마 글자색에 맞춘다. */
 html.scr-light-theme .scr-sb-slide-save, html.scr-light-theme .scr-sb-slide-x, html.scr-light-theme .scr-sb-slide-nav,
 html.scr-light-theme .scr-sb-slide-count, html.scr-light-theme .scr-sb-slide-play {
-  background: rgba(255, 255, 255, 0.82); color: #1d2430; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.82); color: #000; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 html.scr-light-theme .scr-sb-slide-dot { background: rgba(0, 0, 0, 0.25); }
-html.scr-light-theme .scr-sb-slide-dot-on { background: #1d2430; }
+html.scr-light-theme .scr-sb-slide-dot-on { background: #000; }
 html.scr-light-theme .scr-sb-saveall {
-  color: #2a3140; border-color: rgba(0, 0, 0, 0.14); background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  color: #000; border-color: rgba(0, 0, 0, 0.14); background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
-@media (hover: hover) { html.scr-light-theme .scr-sb-saveall:not(:disabled):hover { background: #f3f5f8; border-color: rgba(0, 0, 0, 0.22); color: #111; } }
-html.scr-light-theme .scr-sb-order-n, html.scr-light-theme .scr-sb-order-play { background: rgba(255, 255, 255, 0.85); color: #1d2430; }
-html.scr-light-theme .scr-photo-nav, html.scr-light-theme .scr-photo-counter { background: rgba(255, 255, 255, 0.85); color: #1d2430; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }
+@media (hover: hover) { html.scr-light-theme .scr-sb-saveall:not(:disabled):hover { background: #f0f0f0; border-color: rgba(0, 0, 0, 0.22); color: #111; } }
+html.scr-light-theme .scr-sb-order-n, html.scr-light-theme .scr-sb-order-play { background: rgba(255, 255, 255, 0.85); color: #000; }
+html.scr-light-theme .scr-photo-nav, html.scr-light-theme .scr-photo-counter { background: rgba(255, 255, 255, 0.85); color: #000; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }
 @media (hover: hover) {
   html.scr-light-theme .scr-sb-slide-save:not(:disabled):hover, html.scr-light-theme .scr-sb-slide-nav:not(:disabled):hover { background: #fff; }
   html.scr-light-theme .scr-sb-slide-x:hover { background: var(--loss); color: #fff; }
@@ -7527,9 +7539,24 @@ html.scr-light-theme .scr-photo-nav, html.scr-light-theme .scr-photo-counter { b
 .scr-sb-file-row > .scr-sb-file { flex: 0 1 auto; min-width: 0; margin-right: 0; }
 .scr-sb-block-edit .scr-sb-file-row { padding-right: 104px; }
 .scr-sb-file-row > .scr-sb-icon { flex: 0 0 auto; }
-.scr-sb-order { position: relative; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+/* 썸네일 칸은 늘 보인다(요청: "앨범도 아래 그리드 항상 표시 · 좌우 여백은 자동으로 같게") — 칸이 56px 이상에서 줄 폭을
+   똑같이 나눠 가져(minmax(56px, 1fr)) 양 끝이 위 슬라이드 끝과 맞고 칸 사이도 같다. 칸은 정사각. */
+.scr-sb-order {
+  position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px;
+  margin-top: 6px;
+}
+.scr-sb-order-view .scr-sb-order-cell { cursor: pointer; touch-action: manipulation; }
+.scr-sb-order-addcell { display: flex; align-items: center; justify-content: center; aspect-ratio: 1 / 1; }
+.scr-sb-order-add {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--line-hair, var(--line)); background: var(--panel-raised); color: var(--text);
+}
+@media (hover: hover) { .scr-sb-order-add:hover { background: color-mix(in srgb, var(--text) 12%, var(--panel-raised)); } }
+html.scr-light-theme .scr-sb-order-add { background: #fff; border-color: rgba(0, 0, 0, 0.14); color: #000; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
+@media (hover: hover) { html.scr-light-theme .scr-sb-order-add:hover { background: #f0f0f0; } }
 .scr-sb-order-cell {
-  position: relative; flex: 0 0 auto; width: 56px; height: 56px; padding: 0; overflow: hidden;
+  position: relative; width: 100%; height: auto; aspect-ratio: 1 / 1; padding: 0; overflow: hidden;
   border: 1px solid var(--line); border-radius: 6px; background: var(--panel); cursor: grab;
   touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }

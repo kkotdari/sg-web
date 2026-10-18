@@ -142,15 +142,18 @@ function useAutoGrow(value: string, active: boolean): React.RefObject<HTMLTextAr
   return ref;
 }
 
+type FoldProps = { fold?: [boolean, () => void]; hasKids?: boolean };
+
 function TextBlock({
-  block, canEdit, grip, onChange, onDelete, nav = NO_NAV,
+  block, canEdit, grip, onChange, onDelete, nav = NO_NAV, fold, hasKids,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
   onChange: (patch: { title?: string; text?: string; collapsed?: boolean }) => void; onDelete: () => void;
   nav?: BlockNav;
-}) {
+} & FoldProps) {
   const [editing, setEditing] = useState(false);
-  const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+  const ownFold = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+  const [folded, toggle] = fold ?? ownFold;
   const open = canEdit && editing && !folded;
   const ref = useAutoGrow(block.text, open);
   const titleRef = useRef<HTMLInputElement | null>(null);
@@ -191,7 +194,7 @@ function TextBlock({
       if (nav.mergeBack()) e.preventDefault();
     }
   };
-  const fold = block.text ? <FoldBtn folded={folded} onToggle={() => { setEditing(false); toggle(); }} what="글" /> : null;
+  const foldBtn = block.text || hasKids ? <FoldBtn folded={folded} onToggle={() => { setEditing(false); toggle(); }} what="글" /> : null;
   const preview = block.text.split("\n", 1)[0];
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
@@ -219,12 +222,12 @@ function TextBlock({
               if (open && ref.current) { placeCaret(ref.current, 0); caretTo.current = null; } else setEditing(true);
             }}
           />
-          {fold}
+          {foldBtn}
         </div>
       ) : block.title || folded ? (
         <div className="scr-sb-list-head">
           <div className={cx("scr-sb-line scr-sb-list-title", !block.title && "scr-sb-folded-preview")}>{block.title || preview}</div>
-          {fold}
+          {foldBtn}
         </div>
       ) : null}
       {folded ? null : open ? (
@@ -253,7 +256,7 @@ function TextBlock({
           {block.text ? linkify(block.text) : "\u200b"}
         </p>
       ) : null}
-      {!canEdit && !block.title && !folded && fold && <div className="scr-sb-fold-corner">{fold}</div>}
+      {!canEdit && !block.title && !folded && foldBtn && <div className="scr-sb-fold-corner">{foldBtn}</div>}
       {canEdit && (
         <div className="scr-sb-tools">
           {grip}
@@ -265,13 +268,14 @@ function TextBlock({
 }
 
 function ListBlock({
-  block, canEdit, grip, onChange, onDelete, nav = NO_NAV,
+  block, canEdit, grip, onChange, onDelete, nav = NO_NAV, fold,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
   onChange: (patch: { title?: string; items?: string[]; levels?: number[]; collapsed?: boolean }) => void; onDelete: () => void;
   nav?: BlockNav;
-}) {
-  const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+} & FoldProps) {
+  const ownFold = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+  const [folded, toggle] = fold ?? ownFold;
   const open = !folded;
   const levels = block.items.map((_, i) => block.levels?.[i] ?? 0);
   const [focused, setFocused] = useState<number | null>(null);
@@ -532,10 +536,11 @@ const SORT_SLOP = 6;
 const SORT_MS = 160;
 
 function PhotoOrder({
-  photos, at, onPick, onReorder,
+  photos, at, onPick, onReorder, sortable, onAdd,
 }: {
   photos: SchedulePhoto[]; at: number;
   onPick: (i: number) => void; onReorder: (next: SchedulePhoto[]) => void;
+  sortable: boolean; onAdd?: () => void;
 }) {
   const wrap = useRef<HTMLDivElement | null>(null);
   const cells = useRef(new Map<string, HTMLButtonElement>());
@@ -657,7 +662,7 @@ function PhotoOrder({
     press.current?.stop();
   }, []);
   const onDown = (e: React.PointerEvent<HTMLButtonElement>, id: string): void => {
-    if (e.button !== 0 || press.current) return;
+    if (!sortable || e.button !== 0 || press.current) return;
     const r = e.currentTarget.getBoundingClientRect();
     press.current = {
       id, pointerId: e.pointerId, x: e.clientX, y: e.clientY, grabX: e.clientX - r.left, grabY: e.clientY - r.top,
@@ -674,7 +679,7 @@ function PhotoOrder({
   };
 
   return (
-    <div className={cx("scr-sb-order", dragId && "scr-sb-order-sorting")} ref={wrap} aria-label="끌어서 순서 바꾸기">
+    <div className={cx("scr-sb-order", dragId && "scr-sb-order-sorting", !sortable && "scr-sb-order-view")} ref={wrap} aria-label={sortable ? "끌어서 순서 바꾸기" : "사진 고르기"}>
       {order.map((id, i) => {
         const p = byId.get(id)!;
         return (
@@ -682,9 +687,9 @@ function PhotoOrder({
             key={id} type="button"
             ref={(el) => { if (el) cells.current.set(id, el); else cells.current.delete(id); }}
             className={cx("scr-sb-order-cell", photos[at]?.id === id && "scr-sb-order-on", id === dragId && "scr-sb-order-drag")}
-            aria-label={`${i + 1}번째 ${p.name} — 끌어서 옮기기`}
+            aria-label={sortable ? `${i + 1}번째 ${p.name} — 끌어서 옮기기` : `${i + 1}번째 ${p.name} 보기`}
             onPointerDown={(e) => onDown(e, id)}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); if (!sortable) onPick(i); }}
           >
             {isVideoItem(p) ? (
               <>
@@ -698,18 +703,29 @@ function PhotoOrder({
           </button>
         );
       })}
+      {onAdd && (
+        <span className="scr-sb-order-addcell">
+          <button
+            type="button" className="scr-sb-order-add" aria-label="사진 추가" title="사진 추가"
+            onClick={(e) => { e.stopPropagation(); onAdd(); }}
+          >
+            <Plus size={18} />
+          </button>
+        </span>
+      )}
     </div>
   );
 }
 
 function PhotosBlock({
-  block, canEdit, grip, onChange, onAdd, onDelete,
+  block, canEdit, grip, onChange, onAdd, onDelete, fold, hasKids,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
   onChange: (patch: { title?: string; photos?: SchedulePhoto[]; collapsed?: boolean }) => void;
   onAdd: () => void; onDelete: () => void;
-}) {
-  const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+} & FoldProps) {
+  const ownFold = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+  const [folded, toggle] = fold ?? ownFold;
   const strip = useRef<HTMLDivElement | null>(null);
   const [at, setAt] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
@@ -746,11 +762,13 @@ function PhotosBlock({
           )}
           {folded && n > 0 && <span className="scr-sb-list-count" aria-hidden>{n}</span>}
           {n > 0 && !folded && <SaveAllBtn photos={block.photos} title={block.title} />}
-          {n > 0 && <FoldBtn folded={folded} onToggle={toggle} what="사진 목록" />}
+          {(n > 0 || hasKids) && <FoldBtn folded={folded} onToggle={toggle} what="사진 목록" />}
           {canEdit && (
             <>
-              {grip}
-              <IconBtn label="사진 목록 삭제" onClick={onDelete} danger><X size={14} /></IconBtn>
+              <span className="scr-sb-handles">
+                {grip}
+                <IconBtn label="사진 목록 삭제" onClick={onDelete} danger><X size={14} /></IconBtn>
+              </span>
             </>
           )}
         </div>
@@ -824,16 +842,12 @@ function PhotosBlock({
           )}
         </div>
       )}
-      {canEdit && n > 1 && !folded && (
+      {!folded && (canEdit || n > 1) && (
         <PhotoOrder
           photos={block.photos} at={idx} onPick={(i) => go(i, false)}
           onReorder={(next) => onChange({ photos: next })}
+          sortable={canEdit} onAdd={canEdit ? onAdd : undefined}
         />
-      )}
-      {canEdit && !folded && (
-        <button type="button" className="scr-sb-photos-add" onClick={(e) => { e.stopPropagation(); onAdd(); }}>
-          <Plus size={14} aria-hidden /> 사진 추가
-        </button>
       )}
       {shown && open !== null && (
         <PhotoViewer
@@ -849,15 +863,16 @@ function PhotosBlock({
 }
 
 function MediaBlock({
-  block, canEdit, grip, onChange, onDelete,
+  block, canEdit, grip, onChange, onDelete, fold,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
   onChange: (patch: { collapsed?: boolean }) => void; onDelete: () => void;
-}) {
+} & FoldProps) {
   const [open, setOpen] = useState(false);
-  const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+  const ownFold = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+  const [folded, toggle] = fold ?? ownFold;
   const photo = block.kind === "photo";
-  const fold = <FoldBtn folded={folded} onToggle={toggle} what={photo ? "사진" : "파일"} />;
+  const foldBtn = <FoldBtn folded={folded} onToggle={toggle} what={photo ? "사진" : "파일"} />;
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
       {folded || photo ? (
@@ -865,7 +880,7 @@ function MediaBlock({
           <div className="scr-sb-line scr-sb-list-title scr-sb-folded-preview">
             {photo ? <ImageIcon size={13} aria-hidden /> : <Paperclip size={13} aria-hidden />} {block.name}
           </div>
-          {fold}
+          {foldBtn}
         </div>
       ) : null}
       {folded ? null : photo ? (
@@ -886,7 +901,7 @@ function MediaBlock({
             <span className="scr-sb-file-name">{block.name}</span>
             {block.size > 0 && <span className="scr-sb-file-size">{formatBytes(block.size)}</span>}
           </a>
-          {fold}
+          {foldBtn}
         </div>
       )}
       {canEdit && (
@@ -930,12 +945,21 @@ export default function ScheduleBlocks({
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
   const listRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<{
-    key: string; pointerId: number; grabY: number; grabTop: number; lastY: number; raf: number;
+    key: string; pointerId: number; grabY: number; grabTop: number; lastY: number; raf: number; kids: string[];
   } | null>(null);
   const flipFrom = useRef<Map<string, number> | null>(null);
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [preview, setPreview] = useState<string[] | null>(null);
   const previewRef = useRef<string[] | null>(null);
+  const [viewFold, setViewFold] = useState<Record<string, boolean>>({});
+  const foldedOf = (b: DraftBlock): boolean => (canEdit ? !!b.collapsed : viewFold[b.key] ?? !!b.collapsed);
+  /** i 번째 요소 아래로 이어지는 더 깊은 들여쓰기 요소 수 — 그 요소에 딸린 하위 요소다(요청: "글 다음 사진이 들여쓰기 되면 사진은 글에 포함"). */
+  const kidsAt = (list: DraftBlock[], i: number): number => {
+    const base = list[i]?.indent ?? 0;
+    let j = i + 1;
+    while (j < list.length && (list[j].indent ?? 0) > base) j += 1;
+    return j - i - 1;
+  };
 
   const patch = (key: string, part: Partial<ScheduleBlock>): void =>
     onChange(blocks.map((b) => (b.key === key ? { ...b, ...part } : b)));
@@ -1050,6 +1074,11 @@ export default function ScheduleBlocks({
       if (i > from && bottom > mid) to = i;
     }
     if (to === from) return;
+    if (to > from) {
+      const byKey = new Map(latest.current.map((b) => [b.key, b]));
+      while (to + 1 < keys.length && !rowRefs.current.get(keys[to + 1])
+        && (byKey.get(keys[to + 1])?.indent ?? 0) > (byKey.get(keys[to])?.indent ?? 0)) to += 1;
+    }
     const from_ = new Map<string, number>();
     for (const [k, row] of rowRefs.current) from_.set(k, row.getBoundingClientRect().top);
     flipFrom.current = from_;
@@ -1088,10 +1117,18 @@ export default function ScheduleBlocks({
     if (!el || drag.current) return;
     e.preventDefault();
     e.stopPropagation();
+    const now = latest.current;
+    const at = now.findIndex((b) => b.key === key);
+    const kids = now.slice(at + 1, at + 1 + kidsAt(now, at)).map((b) => b.key);
     drag.current = {
       key, pointerId: e.pointerId, grabY: e.clientY, grabTop: el.getBoundingClientRect().top,
-      lastY: e.clientY, raf: 0,
+      lastY: e.clientY, raf: 0, kids,
     };
+    if (kids.length > 0) {
+      const keys = now.map((b) => b.key).filter((k) => !kids.includes(k));
+      previewRef.current = keys;
+      setPreview(keys);
+    }
     setDragKey(key);
     sorting += 1;
     window.addEventListener("pointermove", moveDrag);
@@ -1108,8 +1145,9 @@ export default function ScheduleBlocks({
     cancelAnimationFrame(d.raf);
     drag.current = null;
     sorting = Math.max(0, sorting - 1);
-    const keys = previewRef.current;
+    const shown = previewRef.current;
     previewRef.current = null;
+    const keys = shown && shown.flatMap((k) => (k === d.key ? [k, ...d.kids] : [k]));
     if (keys) {
       const now = latest.current;
       const byKey = new Map(now.map((b) => [b.key, b]));
@@ -1338,7 +1376,7 @@ export default function ScheduleBlocks({
     if (to !== (b.indent ?? 0)) patch(key, { indent: to });
   };
   const gripFor = (b: DraftBlock): ReactNode => (
-    <>
+    <span className="scr-sb-handles">
       <IconBtn label="요소 내어쓰기" onClick={() => indentBy(b.key, -1)}><IndentDecrease size={13} /></IconBtn>
       <IconBtn label="요소 들여쓰기" onClick={() => indentBy(b.key, 1)}><IndentIncrease size={13} /></IconBtn>
       <span
@@ -1348,7 +1386,7 @@ export default function ScheduleBlocks({
       >
         <GripVertical size={13} />
       </span>
-    </>
+    </span>
   );
   const onIndentKey = (e: React.KeyboardEvent): void => {
     if (!canEdit || e.defaultPrevented || e.key !== "Tab" || composing(e)) return;
@@ -1366,11 +1404,28 @@ export default function ScheduleBlocks({
       onKeyDown={(e) => { onNavKey(e); onIndentKey(e); }}
       onKeyDownCapture={onSlashKey}
     >
-      {(preview ? preview.map((k) => blocks.find((b) => b.key === k)).filter((b): b is DraftBlock => !!b) : blocks).map((b) => {
+      {(() => {
+        const list = preview ? preview.map((k) => blocks.find((b) => b.key === k)).filter((b): b is DraftBlock => !!b) : blocks;
+        const out: { b: DraftBlock; kids: number }[] = [];
+        let hideBelow: number | null = null;
+        list.forEach((b, i) => {
+          const ind = b.indent ?? 0;
+          if (hideBelow !== null && ind > hideBelow) return;
+          hideBelow = null;
+          const kids = kidsAt(list, i);
+          out.push({ b, kids });
+          if (kids > 0 && foldedOf(b)) hideBelow = ind;
+        });
+        return out;
+      })().map(({ b, kids }) => {
         const grip = gripFor(b);
+        const fold: [boolean, () => void] = [foldedOf(b), () => {
+          if (canEdit) patch(b.key, { collapsed: !b.collapsed });
+          else setViewFold((v) => ({ ...v, [b.key]: !foldedOf(b) }));
+        }];
         return (
           <div
-            key={b.key} data-block={b.key}
+            key={b.key} data-block={b.key} data-indent={b.indent ?? 0}
             className={cx("scr-sb-item", dragKey === b.key && "scr-sb-item-lifted")}
             style={b.indent ? ({ "--sb-indent": b.indent } as React.CSSProperties) : undefined}
             ref={(el) => { if (el) rowRefs.current.set(b.key, el); else rowRefs.current.delete(b.key); }}
@@ -1379,21 +1434,24 @@ export default function ScheduleBlocks({
               <TextBlock
                 block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
                 onChange={(part) => patch(b.key, part)} nav={canEdit ? navFor(b) : NO_NAV}
+                fold={fold} hasKids={kids > 0}
               />
             ) : b.kind === "list" ? (
               <ListBlock
                 block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
                 onChange={(part) => patch(b.key, part)} nav={canEdit ? navFor(b) : NO_NAV}
+                fold={fold} hasKids={kids > 0}
               />
             ) : b.kind === "photos" ? (
               <PhotosBlock
                 block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
                 onChange={(part) => patch(b.key, part)} onAdd={() => pickPhotos(b.key)}
+                fold={fold} hasKids={kids > 0}
               />
             ) : (
               <MediaBlock
                 block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
-                onChange={(part) => patch(b.key, part)}
+                onChange={(part) => patch(b.key, part)} fold={fold} hasKids={kids > 0}
               />
             )}
           </div>
