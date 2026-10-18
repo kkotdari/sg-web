@@ -81,12 +81,13 @@ type BlockNav = {
   slash: (anchor: HTMLElement, part: FocusPart, row?: number) => void;
   splitText: (before: string, after: string) => void;
   mergeBack: () => boolean;
+  mergeUp: () => boolean;
   exitList: (items: string[], levels: number[]) => void;
   removeSelf: () => void;
   indent: (by: number) => void;
 };
 const NO_NAV: BlockNav = {
-  focus: null, slash: () => {}, splitText: () => {}, mergeBack: () => false, exitList: () => {}, removeSelf: () => {}, indent: () => {},
+  focus: null, slash: () => {}, splitText: () => {}, mergeBack: () => false, mergeUp: () => false, exitList: () => {}, removeSelf: () => {}, indent: () => {},
 };
 const placeCaret = (el: HTMLInputElement | HTMLTextAreaElement, caret: number | "end"): void => {
   el.focus();
@@ -206,7 +207,11 @@ function TextBlock({
             }}
             onKeyDown={(e) => {
               if (composing(e)) return;
-              if (e.key === "Backspace" && !block.title && !block.text) { e.preventDefault(); nav.removeSelf(); return; }
+              const t = e.currentTarget;
+              if (e.key === "Backspace" && t.selectionStart === 0 && t.selectionEnd === 0) {
+                if (nav.mergeUp()) e.preventDefault();
+                return;
+              }
               if (e.key !== "Enter") return;
               e.preventDefault();
               if (folded) toggle();
@@ -393,7 +398,11 @@ function ListBlock({
             }}
             onKeyDown={(e) => {
               if (composing(e)) return;
-              if (e.key === "Backspace" && !block.title && block.items.length === 0) { e.preventDefault(); nav.removeSelf(); return; }
+              const t = e.currentTarget;
+              if (e.key === "Backspace" && t.selectionStart === 0 && t.selectionEnd === 0) {
+                if (nav.mergeUp()) e.preventDefault();
+                return;
+              }
               if (e.key === "Enter") { e.preventDefault(); focusRow(0, 0); }
               else if (e.key === "ArrowDown") { e.preventDefault(); focusRow(0, e.currentTarget.selectionStart ?? 0); }
             }}
@@ -1194,9 +1203,57 @@ export default function ScheduleBlocks({
       if (prev.kind === "list" && !prev.collapsed) {
         const lines = cur.text.split("\n").map((x) => x.trim()).filter(Boolean);
         const lv = prev.items.map((_, k) => prev.levels?.[k] ?? 0);
+        const base = prev.items.length ? Math.min(MAX_LEVEL, lv[lv.length - 1] + 1) : 0;
         onChange(now.filter((x) => x.key !== b.key).map((x) => (x.key === prev.key
-          ? { ...x, items: [...prev.items, ...lines], levels: [...lv, ...lines.map(() => 0)] } : x)));
+          ? { ...x, items: [...prev.items, ...lines], levels: [...lv, ...lines.map(() => base)] } : x)));
         focusOn(prev.key, "item", 0, prev.items.length);
+        return true;
+      }
+      return false;
+    },
+    mergeUp: () => {
+      const now = latest.current;
+      const i = now.findIndex((x) => x.key === b.key);
+      const cur = now[i];
+      const prev = now[i - 1];
+      if (!cur || (cur.kind !== "text" && cur.kind !== "list")) return false;
+      const lines = cur.kind === "text"
+        ? [cur.title, cur.text].filter((x) => x !== "")
+        : [cur.title, ...cur.items].filter((x) => x !== "");
+      const curLv = cur.kind === "list" ? [0, ...cur.items.map((_, k) => cur.levels?.[k] ?? 0)] : null;
+      if (!prev) {
+        if (lines.length > 0) return false;
+        onChange(now.filter((x) => x.key !== b.key));
+        focusEnd(now[i + 1]);
+        return true;
+      }
+      if (lines.length === 0) {
+        onChange(now.filter((x) => x.key !== b.key));
+        focusEnd(prev);
+        return true;
+      }
+      if (prev.kind === "list" && !prev.collapsed) {
+        const lv = prev.items.map((_, k) => prev.levels?.[k] ?? 0);
+        const base = prev.items.length ? Math.min(MAX_LEVEL, lv[lv.length - 1] + 1) : 0;
+        const flat = cur.kind === "text" ? lines.flatMap((x) => x.split("\n")).filter((x) => x.trim()) : lines;
+        const add = cur.kind === "text" ? flat.map(() => base)
+          : [cur.title, ...cur.items].map((x, k) => [x, curLv![k]] as const).filter(([x]) => x !== "")
+            .map(([, n], k) => (k === 0 && cur.title ? base : Math.min(MAX_LEVEL, base + (cur.title ? 1 : 0) + n)));
+        onChange(now.filter((x) => x.key !== b.key).map((x) => (x.key === prev.key
+          ? { ...x, items: [...prev.items, ...flat], levels: [...lv, ...add] } : x)));
+        focusOn(prev.key, "item", 0, prev.items.length);
+        return true;
+      }
+      const under = Math.min(MAX_INDENT, (prev.indent ?? 0) + 1);
+      if ((cur.indent ?? 0) < under) {
+        patch(b.key, { indent: under });
+        return true;
+      }
+      if (prev.kind === "text" && !prev.collapsed) {
+        const sep = prev.text ? "\n" : "";
+        onChange(now.filter((x) => x.key !== b.key)
+          .map((x) => (x.key === prev.key ? { ...x, text: prev.text + sep + lines.join("\n") } : x)));
+        focusOn(prev.key, "body", prev.text.length + sep.length);
         return true;
       }
       return false;
