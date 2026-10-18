@@ -649,7 +649,9 @@ const OrderCell = memo(function OrderCell({ p, i, on, sortable, act }: {
           <span className="scr-sb-order-play" aria-hidden><Play size={12} /></span>
         </>
       ) : (
-        <img src={imgSrc(p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
+        /* 칸은 그리드용 작은 썸네일(240px) — 1200px 썸네일을 칸마다 풀어 쥐면 장수가 늘수록 끌기가 무거웠고, 집을 때 Sortable 이
+           칸을 복제하며 큰 그림을 또 풀었다(지적: "사진을 선택하고 옮길 때 그 사진을 로드하느라 느린 것 같기도"). */
+        <img src={imgSrc(p.gridUrl ?? p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
       )}
       <span className="scr-sb-order-n" aria-hidden>{i + 1}</span>
     </button>

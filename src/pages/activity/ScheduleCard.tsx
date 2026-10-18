@@ -375,7 +375,7 @@ function adoptServerMedia(mine: Draft, server: Draft): Draft | null {
       let hit = false;
       const photos = b.photos.map((p) => {
         const q = sp.get(p.id);
-        if (!q || (!p.file && p.url === q.url && p.thumbUrl === q.thumbUrl)) return p;
+        if (!q || (!p.file && p.url === q.url && p.thumbUrl === q.thumbUrl && p.gridUrl === q.gridUrl)) return p;
         hit = true;
         return q;
       });
