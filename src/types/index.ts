@@ -580,6 +580,8 @@ export interface ScheduleBlock {
   collapsed?: boolean;
   indent?: number;
   levels?: number[];
+  /** 화면만 쓰는 표식 — 아직 비어 있는 새 제목 요소(저장하지 않는다 · 제목 글자가 생기면 title 로 안다). */
+  heading?: boolean;
 }
 
 export interface Schedule {

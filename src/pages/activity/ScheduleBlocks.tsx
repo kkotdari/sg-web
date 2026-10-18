@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
-  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GripVertical, Image as ImageIcon,
+  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GripVertical, Heading, Image as ImageIcon,
   IndentDecrease, IndentIncrease, List as ListIcon, Paperclip,
   Play, Plus, Trash2, Type, X,
 } from "lucide-react";
@@ -15,7 +15,31 @@ import { imgSrc } from "../../utils/imgSrc";
 import { canSaveToAlbum, downloadFiles, fetchMedia, isVideoItem, MAX_VIDEO_BYTES, shareToAlbum } from "../../utils/media";
 
 export type DraftBlock = ScheduleBlock & { key: string };
-export const withKeys = (blocks: ScheduleBlock[]): DraftBlock[] => blocks.map((b) => ({ ...b, key: b.id }));
+/** 제목 요소 — 글 요소 중 제목 줄만 가진 것(노션의 제목 블록). 새로 만든 빈 제목은 heading 표식으로 안다. */
+export const isHeading = (b: ScheduleBlock): boolean => b.kind === "text" && (!!b.title || !!b.heading);
+/** ★ 제목을 따로 떼어 낸다(2026-10-18, 요청: "모든 제목 요소를 텍스트 요소로 분리 — 글·사진·목록·파일의 제목이 아닌 별도 요소, 노션처럼").
+ *  옛 꼴(목록·사진의 title, 제목+본문 글)은 읽을 때 [제목 요소] + [한 단 들여 쓴 본체]로 편다 — 접힘은 제목이 가진다(접으면 본체가 딸려 숨는다).
+ *  떼어 낸 제목의 id 는 원래 id + "h"(글은 본문이 + "t")로 결정적이라 다시 읽어도 같다. 서버는 다음 저장 때 이 꼴로 받는다. */
+export const splitTitles = (blocks: ScheduleBlock[]): ScheduleBlock[] => blocks.flatMap((b) => {
+  const title = b.title.trim();
+  const ind = b.indent ?? 0;
+  const under = Math.min(3, ind + 1);
+  if (b.kind === "text") {
+    if (!title || !b.text) return [b];
+    return [
+      { ...b, text: "" },
+      { ...b, id: `${b.id}t`, title: "", collapsed: false, indent: under },
+    ];
+  }
+  if ((b.kind === "list" || b.kind === "photos") && title) {
+    return [
+      { ...b, id: `${b.id}h`, kind: "text", title: b.title, text: "", items: [], levels: [], photos: [] },
+      { ...b, title: "", collapsed: false, indent: under },
+    ];
+  }
+  return [b];
+});
+export const withKeys = (blocks: ScheduleBlock[]): DraftBlock[] => splitTitles(blocks).map((b) => ({ ...b, key: b.id }));
 
 const URL_RE = /(https?:\/\/[^\s<>]+)/g;
 const TRAIL = /[.,;:!?)\]}'"]+$/;
@@ -79,15 +103,14 @@ type FocusReq = { key: string; part: FocusPart; row?: number; caret: number | "e
 type BlockNav = {
   focus: FocusReq | null;
   slash: (anchor: HTMLElement, part: FocusPart, row?: number) => void;
-  splitText: (before: string, after: string) => void;
-  mergeBack: () => boolean;
-  mergeUp: () => boolean;
+  split: (before: string, after: string) => void;
+  merge: (content: string, row?: number) => boolean;
   exitList: (items: string[], levels: number[]) => void;
   removeSelf: () => void;
   indent: (by: number) => void;
 };
 const NO_NAV: BlockNav = {
-  focus: null, slash: () => {}, splitText: () => {}, mergeBack: () => false, mergeUp: () => false, exitList: () => {}, removeSelf: () => {}, indent: () => {},
+  focus: null, slash: () => {}, split: () => {}, merge: () => false, exitList: () => {}, removeSelf: () => {}, indent: () => {},
 };
 const placeCaret = (el: HTMLInputElement | HTMLTextAreaElement, caret: number | "end"): void => {
   el.focus();
@@ -151,19 +174,21 @@ function TextBlock({
   onChange: (patch: { title?: string; text?: string; collapsed?: boolean }) => void; onDelete: () => void;
   nav?: BlockNav;
 } & FoldProps) {
+  /* 제목도 글 요소다 — 글자 칸은 하나고 모양(CSS)만 다르다(요청: "제목은 글 요소랑 다를 것 없는데 css 만 다른 것").
+     제목의 글은 title 에, 글의 글은 text 에 담는다(서버 꼴 그대로). 나누기·잇기·들여쓰기·/ 메뉴는 똑같다. */
+  const heading = isHeading(block);
+  const value = heading ? block.title : block.text;
+  const setValue = (v: string): void => onChange(heading ? { title: v } : { text: v });
   const [editing, setEditing] = useState(false);
   const ownFold = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
   const [folded, toggle] = fold ?? ownFold;
-  const open = canEdit && editing && !folded;
-  const ref = useAutoGrow(block.text, open);
-  const titleRef = useRef<HTMLInputElement | null>(null);
+  const open = canEdit && editing;
+  const ref = useAutoGrow(value, open);
   const caretTo = useRef<number | "end" | null>(null);
   useEffect(() => {
     const f = nav.focus;
     if (!f || !canEdit) return;
-    if (f.part === "title") { if (titleRef.current) placeCaret(titleRef.current, f.caret); return; }
     caretTo.current = f.caret;
-    if (folded) toggle();
     setEditing(true);
     if (ref.current) { placeCaret(ref.current, f.caret); caretTo.current = null; }
   }, [nav.focus?.n]);
@@ -172,95 +197,57 @@ function TextBlock({
     placeCaret(ref.current, caretTo.current);
     caretTo.current = null;
   }, [open]);
-  const onBodyKey = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+  /* 노션처럼(요청: "완전 유연화") — Enter 는 커서 자리에서 나누고(Shift+Enter 는 줄바꿈), 맨 앞 Backspace 는 위 요소에 잇는다.
+     Tab 은 요소째 들여 쓴다(딸린 하위 요소도 함께). */
+  const onEdgeKey = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (composing(e)) return;
     const el = e.currentTarget;
-    const c = el.selectionStart ?? 0;
-    const same = c === el.selectionEnd;
+    const s0 = el.selectionStart ?? 0;
+    const s1 = el.selectionEnd ?? s0;
     if (e.key === "Tab") { e.preventDefault(); nav.indent(e.shiftKey ? -1 : 1); return; }
-    if (e.key === "Enter" && !e.shiftKey && same) {
-      const v = el.value;
-      const ls = v.lastIndexOf("\n", c - 1) + 1;
-      const found = v.indexOf("\n", c);
-      const le = found < 0 ? v.length : found;
-      if (ls > 0 && ls === le && c === ls) {
-        e.preventDefault();
-        nav.splitText(v.slice(0, ls - 1), v.slice(le === v.length ? le : le + 1));
-      }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      nav.split(el.value.slice(0, s0), el.value.slice(s1));
       return;
     }
-    if (e.key === "Backspace" && same && c === 0) {
-      if (block.title) { e.preventDefault(); if (titleRef.current) placeCaret(titleRef.current, "end"); return; }
-      if (nav.mergeBack()) e.preventDefault();
+    if (e.key === "Backspace" && s0 === 0 && s1 === 0) {
+      if (nav.merge(el.value)) e.preventDefault();
     }
   };
-  const foldBtn = block.text || hasKids ? <FoldBtn folded={folded} onToggle={() => { setEditing(false); toggle(); }} what="글" /> : null;
-  const preview = block.text.split("\n", 1)[0];
+  const foldBtn = hasKids ? <FoldBtn folded={folded} onToggle={() => { setEditing(false); toggle(); }} what={heading ? "제목" : "글"} /> : null;
+  const look = cx("scr-sb-text", heading && "scr-sb-heading");
   return (
-    <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
-      {canEdit ? (
-        <div className="scr-sb-list-head">
-          <input
-            ref={titleRef}
-            className="scr-sb-line scr-sb-list-title" value={block.title} placeholder="글 제목 (선택)"
-            onChange={(e) => {
-              const v = e.target.value;
-              onChange({ title: v });
-              if (v === "/" && !block.title && !block.text) nav.slash(e.currentTarget, "title");
-            }}
-            onKeyDown={(e) => {
-              if (composing(e)) return;
-              const t = e.currentTarget;
-              if (e.key === "Backspace" && t.selectionStart === 0 && t.selectionEnd === 0) {
-                if (nav.mergeUp()) e.preventDefault();
-                return;
-              }
-              if (e.key !== "Enter") return;
-              e.preventDefault();
-              if (folded) toggle();
-              caretTo.current = 0;
-              if (open && ref.current) { placeCaret(ref.current, 0); caretTo.current = null; } else setEditing(true);
-            }}
-          />
-          {foldBtn}
-        </div>
-      ) : block.title || folded ? (
-        <div className="scr-sb-list-head">
-          <div className={cx("scr-sb-line scr-sb-list-title", !block.title && "scr-sb-folded-preview")}>{block.title || preview}</div>
-          {foldBtn}
-        </div>
-      ) : null}
-      {folded ? null : open ? (
+    <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit", hasKids && "scr-sb-has-fold")}>
+      {open ? (
         <textarea
-          ref={ref} className="scr-sb-text scr-sb-textarea" value={block.text} autoFocus rows={1}
-          placeholder="글을 쓰거나 / 로 요소 추가"
+          ref={ref} className={cx(look, "scr-sb-textarea")} value={value} autoFocus rows={1}
+          placeholder={heading ? "제목" : undefined}
           onChange={(e) => {
             const v = e.target.value;
-            onChange({ text: v });
-            if (v === "/" && !block.text) nav.slash(e.currentTarget, "body");
+            setValue(v);
+            if (v === "/" && !value) nav.slash(e.currentTarget, heading ? "title" : "body");
           }}
-          onKeyDown={onBodyKey}
+          onKeyDown={onEdgeKey}
           onBlur={() => setEditing(false)}
         />
-      ) : block.text || canEdit ? (
+      ) : value || canEdit ? (
         <p
-          className={cx("scr-sb-text", canEdit && "scr-sb-editable", !block.text && "scr-sb-empty")}
+          className={cx(look, canEdit && "scr-sb-editable", !value && "scr-sb-empty")}
           role={canEdit ? "button" : undefined} tabIndex={canEdit ? 0 : undefined}
-          aria-label={canEdit && !block.text ? "내용 적기" : undefined}
-          data-ph={canEdit && !block.text ? "글을 쓰거나 / 로 요소 추가" : undefined}
+          aria-label={canEdit && !value ? (heading ? "제목 적기" : "내용 적기") : undefined}
           onClick={canEdit ? (e) => { e.stopPropagation(); setEditing(true); } : undefined}
           onKeyDown={canEdit ? (e) => {
             if (e.key === "Enter") { e.preventDefault(); setEditing(true); }
           } : undefined}
         >
-          {block.text ? linkify(block.text) : "\u200b"}
+          {value ? linkify(value) : "\u200b"}
         </p>
       ) : null}
-      {!canEdit && !block.title && !folded && foldBtn && <div className="scr-sb-fold-corner">{foldBtn}</div>}
+      {foldBtn && <div className="scr-sb-fold-corner">{foldBtn}</div>}
       {canEdit && (
         <div className="scr-sb-tools">
           {grip}
-          <IconBtn label="글 삭제" onClick={onDelete} danger><Trash2 size={13} /></IconBtn>
+          <IconBtn label={heading ? "제목 삭제" : "글 삭제"} onClick={onDelete} danger><Trash2 size={13} /></IconBtn>
         </div>
       )}
     </div>
@@ -274,9 +261,8 @@ function ListBlock({
   onChange: (patch: { title?: string; items?: string[]; levels?: number[]; collapsed?: boolean }) => void; onDelete: () => void;
   nav?: BlockNav;
 } & FoldProps) {
-  const ownFold = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
-  const [folded, toggle] = fold ?? ownFold;
-  const open = !folded;
+  void fold;
+  const open = true;
   const levels = block.items.map((_, i) => block.levels?.[i] ?? 0);
   const [focused, setFocused] = useState<number | null>(null);
   const shift = (i: number, by: number): void => {
@@ -290,7 +276,82 @@ function ListBlock({
   };
 
   const rows = useRef(new Map<number, HTMLInputElement>());
-  const titleRef = useRef<HTMLInputElement | null>(null);
+  /* ★ 여러 줄 고르기(PC · 요청: "목록 중간에서도 마우스로 여러 줄 선택") — 한 줄 글자 칸은 이웃 줄과 선택을 나눌 수 없어,
+     줄 밖으로 끌어 다른 줄에 닿으면(또는 Shift+클릭) 줄 단위로 고른다. 고른 줄은 Delete·Backspace 로 지우고, Tab·Shift+Tab 으로
+     단을 바꾸고, Ctrl/⌘+C·X 로 복사·잘라내기(단은 앞 칸 두 개씩), Esc 로 푼다. */
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const [sel, setSel] = useState<{ a: number; b: number } | null>(null);
+  const selLo = sel ? Math.min(sel.a, sel.b) : -1;
+  const selHi = sel ? Math.max(sel.a, sel.b) : -1;
+  const rowAt = (x: number, y: number): number | null => {
+    const el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-row]");
+    if (!el || !listRef.current?.contains(el)) return null;
+    return Number(el.dataset.row);
+  };
+  const onRowDown = (e: React.PointerEvent, i: number): void => {
+    if (!canEdit || e.pointerType !== "mouse" || e.button !== 0 || i >= block.items.length) return;
+    if (e.shiftKey && focused !== null && focused !== i) {
+      e.preventDefault();
+      setSel({ a: focused, b: i });
+      (document.activeElement as HTMLElement | null)?.blur();
+      listRef.current?.focus();
+      return;
+    }
+    setSel(null);
+    const move = (ev: PointerEvent): void => {
+      const r = rowAt(ev.clientX, ev.clientY);
+      if (r === null || r >= block.items.length) return;
+      if (r !== i) {
+        ev.preventDefault();
+        window.getSelection()?.removeAllRanges();
+        setSel({ a: i, b: r });
+        if (document.activeElement !== listRef.current) {
+          (document.activeElement as HTMLElement | null)?.blur();
+          listRef.current?.focus();
+        }
+      } else setSel((v) => (v ? { a: i, b: i } : v));
+    };
+    const up = (): void => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  useEffect(() => {
+    if (!sel) return undefined;
+    const off = (ev: PointerEvent): void => { if (!listRef.current?.contains(ev.target as Node)) setSel(null); };
+    window.addEventListener("pointerdown", off);
+    return () => window.removeEventListener("pointerdown", off);
+  }, [sel]);
+  const copySel = (): void => {
+    const text = block.items.slice(selLo, selHi + 1).map((x, k) => `${"  ".repeat(levels[selLo + k] ?? 0)}${x}`).join("\n");
+    void navigator.clipboard?.writeText(text).catch(() => {});
+  };
+  const dropSel = (): void => {
+    onChange({
+      items: block.items.filter((_, k) => k < selLo || k > selHi),
+      levels: levels.filter((_, k) => k < selLo || k > selHi),
+    });
+    const to = Math.max(0, selLo - 1);
+    setSel(null);
+    if (block.items.length - (selHi - selLo + 1) > 0) focusAt.current = { row: to, caret: "end" };
+  };
+  const onSelKey = (e: React.KeyboardEvent<HTMLUListElement>): void => {
+    if (!sel || e.target !== listRef.current) return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (e.key === "Escape") { e.preventDefault(); setSel(null); focusRow(sel.b, "end"); return; }
+    if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); dropSel(); return; }
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const by = e.shiftKey ? -1 : 1;
+      onChange({ levels: levels.map((n, k) => (k < selLo || k > selHi ? n : Math.max(0, Math.min(k === 0 ? 0 : MAX_LEVEL, n + by)))) });
+      return;
+    }
+    if (mod && (e.key === "c" || e.key === "C")) { e.preventDefault(); copySel(); return; }
+    if (mod && (e.key === "x" || e.key === "X")) { e.preventDefault(); copySel(); dropSel(); return; }
+    if (mod && (e.key === "a" || e.key === "A")) { e.preventDefault(); setSel({ a: 0, b: block.items.length - 1 }); }
+  };
   const focusEl = (el: HTMLInputElement | null | undefined, caret: number | "end"): void => {
     if (!el) return;
     el.focus();
@@ -310,9 +371,7 @@ function ListBlock({
   useEffect(() => {
     const f = nav.focus;
     if (!f || !canEdit) return;
-    if (folded) toggle();
-    if (f.part === "title") { focusAt.current = null; if (titleRef.current) placeCaret(titleRef.current, f.caret); return; }
-    focusAt.current = { row: f.row ?? Math.max(0, shown.length - 1), caret: f.caret };
+    focusAt.current = { row: f.row ?? (f.caret === 0 ? 0 : Math.max(0, shown.length - 1)), caret: f.caret };
     focusRow(focusAt.current.row, f.caret);
   }, [nav.focus?.n]);
 
@@ -338,7 +397,7 @@ function ListBlock({
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
       const caret = el.selectionStart ?? 0;
       const to = i + (e.key === "ArrowUp" ? -1 : 1);
-      if (to < 0) { e.preventDefault(); focusEl(titleRef.current, caret); return; }
+      if (to < 0) return;
       if (to >= shown.length) return;
       e.preventDefault();
       focusRow(to, caret);
@@ -373,6 +432,7 @@ function ListBlock({
       const next = [...block.items];
       const lv = [...levels];
       if (i === 0) {
+        if (nav.merge(el.value, 0)) return;
         if (el.value) return;
         next.splice(0, 1);
         lv.splice(0, 1);
@@ -390,40 +450,15 @@ function ListBlock({
 
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
-      <div className="scr-sb-list-head">
-        {canEdit ? (
-          <input
-            ref={titleRef}
-            className="scr-sb-line scr-sb-list-title" value={block.title} placeholder="목록 제목"
-            onChange={(e) => {
-              const v = e.target.value;
-              onChange({ title: v });
-              if (v === "/" && !block.title && block.items.length === 0) nav.slash(e.currentTarget, "title");
-            }}
-            onKeyDown={(e) => {
-              if (composing(e)) return;
-              const t = e.currentTarget;
-              if (e.key === "Backspace" && t.selectionStart === 0 && t.selectionEnd === 0) {
-                if (nav.mergeUp()) e.preventDefault();
-                return;
-              }
-              if (e.key === "Enter") { e.preventDefault(); focusRow(0, 0); }
-              else if (e.key === "ArrowDown") { e.preventDefault(); focusRow(0, e.currentTarget.selectionStart ?? 0); }
-            }}
-          />
-        ) : (
-          <div className="scr-sb-line scr-sb-list-title">{block.title}</div>
-        )}
-        {!open && block.items.length > 0 && (
-          <span className="scr-sb-list-count" aria-hidden>{block.items.length}</span>
-        )}
-        <FoldBtn folded={folded} onToggle={toggle} what="목록" />
-      </div>
       {open && (
-        <ul className="scr-sb-list">
+        <ul
+          className={cx("scr-sb-list", sel && "scr-sb-list-selecting")} ref={listRef}
+          tabIndex={canEdit ? -1 : undefined} onKeyDown={onSelKey}
+        >
           {shown.map((it, i) => (
             <li
-              key={i} className={cx("scr-sb-list-item", `scr-sb-lv${levels[i] ?? 0}`)}
+              key={i} data-row={i} onPointerDown={(e) => onRowDown(e, i)}
+              className={cx("scr-sb-list-item", `scr-sb-lv${levels[i] ?? 0}`, i >= selLo && i <= selHi && "scr-sb-row-sel")}
               style={(levels[i] ?? 0) > 0 ? { paddingLeft: `${(levels[i] ?? 0) * 18}px` } : undefined}
             >
               <span className="scr-sb-list-dot" aria-hidden />
@@ -749,20 +784,11 @@ function PhotosBlock({
   const view = (i: number): void => { setPlaying(null); setOpen(i); go(i, false); };
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
-      {(canEdit || block.title || n > 0) && (
+      {(canEdit || n > 0) && (
         <div className="scr-sb-photos-head">
-          {canEdit ? (
-            <input
-              className="scr-sb-line scr-sb-list-title" value={block.title} placeholder="사진 목록 제목"
-              onChange={(e) => onChange({ title: e.target.value })}
-              onKeyDown={(e) => { if (e.key === "Enter" && !composing(e)) e.currentTarget.blur(); }}
-            />
-          ) : (
-            <div className="scr-sb-line scr-sb-list-title">{block.title}</div>
-          )}
-          {folded && n > 0 && <span className="scr-sb-list-count" aria-hidden>{n}</span>}
-          {n > 0 && !folded && <SaveAllBtn photos={block.photos} title={block.title} />}
-          {(n > 0 || hasKids) && <FoldBtn folded={folded} onToggle={toggle} what="사진 목록" />}
+          {block.title ? <div className="scr-sb-line scr-sb-list-title">{block.title}</div> : <span className="scr-sb-photos-gap" />}
+          {n > 0 && <SaveAllBtn photos={block.photos} title={block.title || "사진"} />}
+          {hasKids && <FoldBtn folded={folded} onToggle={toggle} what="사진 목록" />}
           {canEdit && (
             <>
               <span className="scr-sb-handles">
@@ -773,7 +799,7 @@ function PhotosBlock({
           )}
         </div>
       )}
-      {n > 0 && !folded && (
+      {n > 0 && (
         <div className="scr-sb-slides-wrap">
           <div
             className="scr-sb-slides" ref={strip} onScroll={onScroll} tabIndex={0}
@@ -842,7 +868,7 @@ function PhotosBlock({
           )}
         </div>
       )}
-      {!folded && (canEdit || n > 1) && (
+      {(canEdit || n > 1) && (
         <PhotoOrder
           photos={block.photos} at={idx} onPick={(i) => go(i, false)}
           onReorder={(next) => onChange({ photos: next })}
@@ -863,7 +889,7 @@ function PhotosBlock({
 }
 
 function MediaBlock({
-  block, canEdit, grip, onChange, onDelete, fold,
+  block, canEdit, grip, onChange, onDelete, fold, hasKids,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
   onChange: (patch: { collapsed?: boolean }) => void; onDelete: () => void;
@@ -872,18 +898,10 @@ function MediaBlock({
   const ownFold = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
   const [folded, toggle] = fold ?? ownFold;
   const photo = block.kind === "photo";
-  const foldBtn = <FoldBtn folded={folded} onToggle={toggle} what={photo ? "사진" : "파일"} />;
+  const foldBtn = hasKids ? <FoldBtn folded={folded} onToggle={toggle} what={photo ? "사진" : "파일"} /> : null;
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
-      {folded || photo ? (
-        <div className="scr-sb-list-head">
-          <div className="scr-sb-line scr-sb-list-title scr-sb-folded-preview">
-            {photo ? <ImageIcon size={13} aria-hidden /> : <Paperclip size={13} aria-hidden />} {block.name}
-          </div>
-          {foldBtn}
-        </div>
-      ) : null}
-      {folded ? null : photo ? (
+      {photo ? (
         <button
           type="button" className="scr-sb-photo"
           onClick={(e) => { e.stopPropagation(); setOpen(true); }}
@@ -1205,95 +1223,70 @@ export default function ScheduleBlocks({
       const now = latest.current;
       const i = now.findIndex((x) => x.key === b.key);
       const cur = now[i];
-      const replace = !!cur && cur.kind === "text" && !cur.title.trim() && (!cur.text || cur.text === "/")
+      const replace = !!cur && cur.kind === "text" && (!cur.title || cur.title === "/") && (!cur.text || cur.text === "/")
         && (part === "body" || part === "title");
       setSlotOn(0);
       setSlot({ at: replace ? i : i + 1, key: b.key, part, row, replace });
     },
-    splitText: (before, after) => {
+    split: (before, after) => {
       const now = latest.current;
       const i = now.findIndex((x) => x.key === b.key);
       if (i < 0) return;
-      const added = textAfter(now[i], after);
-      const next = now.map((x) => (x.key === b.key ? { ...x, text: before } : x));
+      const cur = now[i];
+      const kids = kidsAt(now, i);
+      const added: DraftBlock = { ...emptyBlock("text"), text: after, indent: kids > 0 ? (now[i + 1].indent ?? 0) : (cur.indent ?? 0) };
+      const next = now.map((x) => (x.key !== b.key ? x
+        : isHeading(cur) ? { ...x, title: before, heading: true } : { ...x, text: before }));
       next.splice(i + 1, 0, added);
       onChange(next);
       focusOn(added.key, "body", 0);
     },
-    mergeBack: () => {
+    /* 맨 앞 Backspace — 이 요소(목록이면 그 첫 줄)의 글을 바로 위 요소 끝에 잇는다(요청: "위의 제목에 이어져야 하고 아래 요소들은
+       한 단계 앞으로"). 이 요소가 없어지면 딸려 있던 하위 요소는 위 요소의 하위가 되도록 단을 옮긴다(둘의 단 차만큼).
+       위가 사진·파일이면 글을 이을 데가 없어 빈 요소일 때만 지운다. */
+    merge: (content, row) => {
       const now = latest.current;
       const i = now.findIndex((x) => x.key === b.key);
       const cur = now[i];
       const prev = now[i - 1];
-      if (!cur || !prev || cur.kind !== "text" || cur.title.trim()) return false;
-      if (!cur.text) {
-        onChange(now.filter((x) => x.key !== b.key));
-        focusEnd(prev);
-        return true;
+      if (!cur || !prev) return false;
+      if (content && prev.kind !== "text" && prev.kind !== "list") return false;
+      let next: DraftBlock[];
+      let gone = true;
+      if (row !== undefined && cur.kind === "list") {
+        const items = cur.items.filter((_, k) => k !== row);
+        const lv = cur.items.map((_, k) => cur.levels?.[k] ?? 0).filter((_, k) => k !== row);
+        gone = items.length === 0;
+        next = gone ? now.filter((x) => x.key !== b.key) : now.map((x) => (x.key === b.key ? { ...x, items, levels: lv } : x));
+      } else next = now.filter((x) => x.key !== b.key);
+      if (gone) {
+        const kidKeys = new Set(now.slice(i + 1, i + 1 + kidsAt(now, i)).map((x) => x.key));
+        const by = (prev.indent ?? 0) - (cur.indent ?? 0);
+        if (by !== 0 && kidKeys.size > 0) {
+          next = next.map((x) => (kidKeys.has(x.key)
+            ? { ...x, indent: Math.max(0, Math.min(MAX_INDENT, (x.indent ?? 0) + by)) } : x));
+        }
       }
-      if (prev.kind === "text" && !prev.collapsed) {
-        const sep = prev.text ? "\n" : "";
-        onChange(now.filter((x) => x.key !== b.key)
-          .map((x) => (x.key === prev.key ? { ...x, text: prev.text + sep + cur.text } : x)));
-        focusOn(prev.key, "body", prev.text.length + sep.length);
-        return true;
-      }
-      if (prev.kind === "list" && !prev.collapsed) {
-        const lines = cur.text.split("\n").map((x) => x.trim()).filter(Boolean);
+      let after: () => void = () => focusEnd(prev);
+      if (prev.kind === "text" && isHeading(prev)) {
+        const t = prev.title;
+        next = next.map((x) => (x.key === prev.key ? { ...x, title: t + content.replace(/\n+/g, " ") } : x));
+        after = () => focusOn(prev.key, "title", t.length);
+      } else if (prev.kind === "text") {
+        const t = prev.text;
+        next = next.map((x) => (x.key === prev.key ? { ...x, text: t + content } : x));
+        after = () => focusOn(prev.key, "body", t.length);
+      } else if (prev.kind === "list" && content) {
         const lv = prev.items.map((_, k) => prev.levels?.[k] ?? 0);
-        const base = prev.items.length ? Math.min(MAX_LEVEL, lv[lv.length - 1] + 1) : 0;
-        onChange(now.filter((x) => x.key !== b.key).map((x) => (x.key === prev.key
-          ? { ...x, items: [...prev.items, ...lines], levels: [...lv, ...lines.map(() => base)] } : x)));
-        focusOn(prev.key, "item", 0, prev.items.length);
-        return true;
+        const lines = content.split("\n").filter((x) => x.trim());
+        next = next.map((x) => (x.key === prev.key ? {
+          ...x, items: [...prev.items, ...lines], levels: [...lv, ...lines.map(() => lv[lv.length - 1] ?? 0)],
+        } : x));
+        after = () => focusOn(prev.key, "item", 0, prev.items.length);
       }
-      return false;
-    },
-    mergeUp: () => {
-      const now = latest.current;
-      const i = now.findIndex((x) => x.key === b.key);
-      const cur = now[i];
-      const prev = now[i - 1];
-      if (!cur || (cur.kind !== "text" && cur.kind !== "list")) return false;
-      const lines = cur.kind === "text"
-        ? [cur.title, cur.text].filter((x) => x !== "")
-        : [cur.title, ...cur.items].filter((x) => x !== "");
-      const curLv = cur.kind === "list" ? [0, ...cur.items.map((_, k) => cur.levels?.[k] ?? 0)] : null;
-      if (!prev) {
-        if (lines.length > 0) return false;
-        onChange(now.filter((x) => x.key !== b.key));
-        focusEnd(now[i + 1]);
-        return true;
-      }
-      if (lines.length === 0) {
-        onChange(now.filter((x) => x.key !== b.key));
-        focusEnd(prev);
-        return true;
-      }
-      if (prev.kind === "list" && !prev.collapsed) {
-        const lv = prev.items.map((_, k) => prev.levels?.[k] ?? 0);
-        const base = prev.items.length ? Math.min(MAX_LEVEL, lv[lv.length - 1] + 1) : 0;
-        const flat = cur.kind === "text" ? lines.flatMap((x) => x.split("\n")).filter((x) => x.trim()) : lines;
-        const add = cur.kind === "text" ? flat.map(() => base)
-          : [cur.title, ...cur.items].map((x, k) => [x, curLv![k]] as const).filter(([x]) => x !== "")
-            .map(([, n], k) => (k === 0 && cur.title ? base : Math.min(MAX_LEVEL, base + (cur.title ? 1 : 0) + n)));
-        onChange(now.filter((x) => x.key !== b.key).map((x) => (x.key === prev.key
-          ? { ...x, items: [...prev.items, ...flat], levels: [...lv, ...add] } : x)));
-        focusOn(prev.key, "item", 0, prev.items.length);
-        return true;
-      }
-      const under = Math.min(MAX_INDENT, (prev.indent ?? 0) + 1);
-      if ((cur.indent ?? 0) < under) {
-        return indentTo(b.key, under);
-      }
-      if (prev.kind === "text" && !prev.collapsed) {
-        const sep = prev.text ? "\n" : "";
-        onChange(now.filter((x) => x.key !== b.key)
-          .map((x) => (x.key === prev.key ? { ...x, text: prev.text + sep + lines.join("\n") } : x)));
-        focusOn(prev.key, "body", prev.text.length + sep.length);
-        return true;
-      }
-      return false;
+      onChange(next);
+      after();
+      return true;
     },
     exitList: (items, levels) => {
       const now = latest.current;
@@ -1315,6 +1308,7 @@ export default function ScheduleBlocks({
     indent: (by) => indentBy(b.key, by),
   });
   const SLASH_OPTS = [
+    { kind: "heading" as const, label: "제목", icon: <Heading size={14} aria-hidden /> },
     { kind: "text" as const, label: "글", icon: <Type size={14} aria-hidden /> },
     { kind: "list" as const, label: "목록", icon: <ListIcon size={14} aria-hidden /> },
     { kind: "photos" as const, label: "사진", icon: <ImageIcon size={14} aria-hidden /> },
@@ -1338,11 +1332,13 @@ export default function ScheduleBlocks({
     const src = latest.current.find((x) => x.key === sl.key);
     if (kind === "file") { onChange(next); pickFiles(at); return; }
     if (next.length >= MAX_BLOCKS) { onChange(next); showAlert(`요소는 ${MAX_BLOCKS}개까지예요.`); return; }
-    const made: DraftBlock = { ...emptyBlock(kind), indent: src?.indent ?? 0 };
+    const made: DraftBlock = kind === "heading"
+      ? { ...emptyBlock("text"), heading: true, indent: src?.indent ?? 0 }
+      : { ...emptyBlock(kind), indent: src?.indent ?? 0 };
     next.splice(at, 0, made);
     summonKeyboard();
     onChange(next);
-    focusOn(made.key, kind === "text" ? "body" : "title", 0);
+    focusOn(made.key, kind === "heading" ? "title" : kind === "list" ? "item" : "body", 0, kind === "list" ? 0 : undefined);
   };
   const onSlashKey = (e: React.KeyboardEvent): void => {
     if (!slot) return;
@@ -1476,7 +1472,7 @@ export default function ScheduleBlocks({
           onClick={(e) => { e.stopPropagation(); openComposer(); }}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); openComposer(); } }}
         >
-          글을 쓰거나 / 로 요소 추가
+          <span className="scr-sb-composer-hint">+</span>
         </div>
       )}
       {canEdit && slot !== null && createPortal(

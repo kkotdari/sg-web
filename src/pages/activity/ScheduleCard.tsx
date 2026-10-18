@@ -15,7 +15,7 @@ import { readAsDataUrl } from "../../utils/image";
 import { showAlert } from "../../components/common/AlertDialog";
 import type { Schedule, ScheduleBlock, ScheduleFile, SchedulePhoto, ScheduleWrite, ScheduleBlockWrite } from "../../types";
 import { ActivityCard } from "./ActivityCard";
-import ScheduleBlocks, { NEW_PREFIX, sortingNow, withKeys, type DraftBlock } from "./ScheduleBlocks";
+import ScheduleBlocks, { NEW_PREFIX, sortingNow, splitTitles, withKeys, type DraftBlock } from "./ScheduleBlocks";
 import { imgSrc } from "../../utils/imgSrc";
 
 function whenTextOf(date: string, time: string | null): string {
@@ -238,7 +238,7 @@ const HEAD_KEYS = ["title", "date", "time"] as const;
 const headOf = (s: Schedule): Head => ({ title: s.title, date: s.scheduledDate, time: s.scheduledTime ?? "" });
 const draftOf = (s: Schedule, prev: DraftBlock[] = []): Draft => {
   const keyOf = new Map(prev.map((b) => [b.id, b.key]));
-  return { ...headOf(s), blocks: (s.blocks ?? []).map((b) => ({ ...b, key: keyOf.get(b.id) ?? b.id })) };
+  return { ...headOf(s), blocks: splitTitles(s.blocks ?? []).map((b) => ({ ...b, key: keyOf.get(b.id) ?? b.id })) };
 };
 const serverKeyOf = (s: Schedule): string =>
   JSON.stringify([s.title, s.scheduledDate, s.scheduledTime, s.blocks ?? []]);
@@ -261,7 +261,7 @@ const normBlock = (b: ScheduleBlock): ScheduleBlock => {
 };
 const equivalent = (mine: ScheduleBlock, server: ScheduleBlock): boolean => sameBlock(normBlock(mine), server);
 const isEphemeral = (b: ScheduleBlock): boolean =>
-  (b.kind === "text" && !b.text.trim() && !b.title.trim()) || (b.kind === "list" && !b.title.trim())
+  (b.kind === "text" && !b.text.trim() && !b.title.trim()) || (b.kind === "list" && !b.title.trim() && !b.items.some((x) => x.trim()))
   || (b.kind === "photos" && b.photos.length === 0);
 const isNew = (id: string): boolean => id.startsWith(NEW_PREFIX);
 

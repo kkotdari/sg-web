@@ -7340,6 +7340,12 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-sb-block:hover .scr-sb-tools, .scr-sb-block:hover .scr-sb-handles,
 .scr-sb-block:focus-within .scr-sb-tools, .scr-sb-block:focus-within .scr-sb-handles,
 .scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; }
+@media (hover: hover) { .scr-sb-block-edit > .scr-sb-text { padding-right: 104px; } }
+/* 폰은 올림(hover)이 없다 — 단추 줄을 글 위에 겹치지 않고, 그 요소를 고치는 동안에만 아래에 한 줄로 낸다. */
+@media (hover: none) {
+  .scr-sb-block > .scr-sb-tools { position: static; justify-content: flex-end; display: none; margin-top: 2px; }
+  .scr-sb-block:focus-within > .scr-sb-tools { display: flex; }
+}
 .scr-sb-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; padding: 0;
@@ -7375,12 +7381,19 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 }
 .scr-sb-textarea:focus, .scr-sb-textarea:focus-visible { outline: none; }
 .scr-sb-empty { color: var(--muted); }
-.scr-sb-empty[data-ph]::before { content: attr(data-ph); color: var(--muted); opacity: 0.7; }
+/* 제목 요소 — 글·목록·사진 위에 따로 서는 굵은 한 줄(노션의 제목 블록). */
+.scr-sb-text.scr-sb-heading { font-size: calc(var(--fs-caption) * 1.08); font-weight: 800; line-height: 1.4; }
+.scr-sb-photos-gap { flex: 1 1 auto; }
+.scr-sb-has-fold > .scr-sb-text { padding-right: 28px; }
+.scr-sb-has-fold > .scr-sb-fold-corner { position: absolute; top: 0; right: 0; margin: 0; }
+.scr-sb-block-edit.scr-sb-has-fold > .scr-sb-fold-corner { right: 104px; }
+/* 맨 아래 이어 쓰기 자리(요청: "'글을 쓰거나 / 로 요소 추가' 는 필요 없을 듯") — 글자 없이 빈 띠만 두고, 올리면 + 가 옅게 뜬다. */
 .scr-sb-composer {
-  margin-top: 6px; padding: 6px 4px; border-radius: 6px;
-  color: var(--muted); opacity: 0.7; font-size: 13.5px; cursor: text;
+  margin-top: 4px; min-height: 22px; padding: 2px 4px; border-radius: 6px;
+  color: var(--muted); font-size: 13px; cursor: text;
 }
-@media (hover: hover) { .scr-sb-composer:hover { opacity: 1; background: color-mix(in srgb, var(--text) 5%, transparent); } }
+.scr-sb-composer-hint { opacity: 0; transition: opacity .15s; }
+@media (hover: hover) { .scr-sb-composer:hover .scr-sb-composer-hint { opacity: 0.6; } }
 .scr-sb-composer:focus-visible { outline: 2px solid var(--timeline-blue); outline-offset: 1px; }
 .scr-sb-slot-on { background: color-mix(in srgb, var(--text) 10%, transparent); }
 .scr-sb-list-title {
@@ -7406,6 +7419,9 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-lv1 > .scr-sb-list-dot { width: 5px; height: 5px; background: transparent; box-shadow: inset 0 0 0 1px var(--muted); }
 .scr-sb-lv2 > .scr-sb-list-dot { border-radius: 1px; }
 .scr-sb-lv-btns { display: inline-flex; flex: 0 0 auto; gap: 1px; }
+.scr-sb-list:focus { outline: none; }
+.scr-sb-row-sel { background: color-mix(in srgb, var(--timeline-blue) 22%, transparent); border-radius: 4px; }
+.scr-sb-list-selecting .scr-sb-list-text { user-select: none; -webkit-user-select: none; }
 .scr-sb-list-text {
   flex: 1 1 auto; min-width: 0;
   font-size: var(--fs-caption); line-height: 1.5; color: var(--text); word-break: break-word;
