@@ -56,6 +56,22 @@ function IconBtn({
   );
 }
 
+function useFold(block: ScheduleBlock, canEdit: boolean, onFold: (collapsed: boolean) => void): [boolean, () => void] {
+  const saved = !!block.collapsed;
+  const [mine, setMine] = useState<boolean | null>(null);
+  useEffect(() => { setMine(null); }, [saved]);
+  const folded = canEdit ? saved : mine ?? saved;
+  return [folded, () => (canEdit ? onFold(!folded) : setMine(!folded))];
+}
+
+function FoldBtn({ folded, onToggle, what }: { folded: boolean; onToggle: () => void; what: string }) {
+  return (
+    <IconBtn label={folded ? `${what} 펴기` : `${what} 접기`} expanded={!folded} onClick={onToggle}>
+      {folded ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+    </IconBtn>
+  );
+}
+
 export const NEW_PREFIX = "new:";
 const newId = (): string => `${NEW_PREFIX}${Math.random().toString(36).slice(2)}`;
 const emptyBlock = (kind: ScheduleBlock["kind"]): DraftBlock => {
@@ -63,7 +79,6 @@ const emptyBlock = (kind: ScheduleBlock["kind"]): DraftBlock => {
   return { id, key: id, kind, text: "", title: "", items: [], url: "", name: "", size: 0, photos: [] };
 };
 const MAX_BLOCKS = 40;
-const MAX_PHOTOS = 50;
 const composing = (e: React.KeyboardEvent): boolean => e.nativeEvent.isComposing || e.keyCode === 229;
 
 let keyboardProxy: HTMLInputElement | null = null;
@@ -102,11 +117,14 @@ function TextBlock({
   block, canEdit, grip, onChange, onDelete,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
-  onChange: (patch: { title?: string; text?: string }) => void; onDelete: () => void;
+  onChange: (patch: { title?: string; text?: string; collapsed?: boolean }) => void; onDelete: () => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const open = canEdit && editing;
+  const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+  const open = canEdit && editing && !folded;
   const ref = useAutoGrow(block.text, open);
+  const fold = block.text ? <FoldBtn folded={folded} onToggle={() => { setEditing(false); toggle(); }} what="글" /> : null;
+  const preview = block.text.split("\n", 1)[0];
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
       {canEdit ? (
@@ -117,14 +135,19 @@ function TextBlock({
             onKeyDown={(e) => {
               if (composing(e) || e.key !== "Enter") return;
               e.preventDefault();
+              if (folded) toggle();
               if (open) { ref.current?.focus(); ref.current?.setSelectionRange(0, 0); } else setEditing(true);
             }}
           />
+          {fold}
         </div>
-      ) : block.title ? (
-        <div className="scr-sb-list-head"><div className="scr-sb-line scr-sb-list-title">{block.title}</div></div>
+      ) : block.title || folded ? (
+        <div className="scr-sb-list-head">
+          <div className={cx("scr-sb-line scr-sb-list-title", !block.title && "scr-sb-folded-preview")}>{block.title || preview}</div>
+          {fold}
+        </div>
       ) : null}
-      {open ? (
+      {folded ? null : open ? (
         <textarea
           ref={ref} className="scr-sb-text scr-sb-textarea" value={block.text} autoFocus rows={1}
           onChange={(e) => onChange({ text: e.target.value })}
@@ -143,6 +166,7 @@ function TextBlock({
           {block.text ? linkify(block.text) : "\u200b"}
         </p>
       ) : null}
+      {!canEdit && !block.title && !folded && fold && <div className="scr-sb-fold-corner">{fold}</div>}
       {canEdit && (
         <div className="scr-sb-tools">
           {grip}
@@ -157,9 +181,10 @@ function ListBlock({
   block, canEdit, grip, onChange, onDelete,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
-  onChange: (patch: { title?: string; items?: string[] }) => void; onDelete: () => void;
+  onChange: (patch: { title?: string; items?: string[]; collapsed?: boolean }) => void; onDelete: () => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
+  const open = !folded;
 
   const rows = useRef(new Map<number, HTMLInputElement>());
   const titleRef = useRef<HTMLInputElement | null>(null);
@@ -249,9 +274,7 @@ function ListBlock({
         {!open && block.items.length > 0 && (
           <span className="scr-sb-list-count" aria-hidden>{block.items.length}</span>
         )}
-        <IconBtn label={open ? "목록 접기" : "목록 펴기"} expanded={open} onClick={() => setOpen((v) => !v)}>
-          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </IconBtn>
+        <FoldBtn folded={folded} onToggle={toggle} what="목록" />
       </div>
       {open && (
         <ul className="scr-sb-list">
@@ -333,13 +356,85 @@ function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string 
   );
 }
 
+function PhotoOrder({
+  photos, at, onPick, onReorder,
+}: {
+  photos: SchedulePhoto[]; at: number;
+  onPick: (i: number) => void; onReorder: (next: SchedulePhoto[]) => void;
+}) {
+  const wrap = useRef<HTMLDivElement | null>(null);
+  const press = useRef<{ id: string; pointerId: number; x: number; y: number; moved: boolean } | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const latest = useRef(photos);
+  latest.current = photos;
+  const onDown = (e: React.PointerEvent<HTMLButtonElement>, id: string): void => {
+    if (e.button !== 0) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    press.current = { id, pointerId: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+  };
+  const onMove = (e: React.PointerEvent<HTMLButtonElement>): void => {
+    const pr = press.current;
+    if (!pr || pr.pointerId !== e.pointerId) return;
+    if (!pr.moved) {
+      if (Math.hypot(e.clientX - pr.x, e.clientY - pr.y) < 6) return;
+      pr.moved = true;
+      setDragId(pr.id);
+    }
+    const cells = Array.from(wrap.current?.querySelectorAll<HTMLElement>("[data-pid]") ?? []);
+    const hit = cells.find((c) => {
+      const r = c.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    });
+    const to = hit ? latest.current.findIndex((p) => p.id === hit.dataset.pid) : -1;
+    const from = latest.current.findIndex((p) => p.id === pr.id);
+    if (to < 0 || from < 0 || to === from) return;
+    const next = [...latest.current];
+    const [it] = next.splice(from, 1);
+    next.splice(to, 0, it);
+    latest.current = next;
+    onReorder(next);
+  };
+  const onUp = (e: React.PointerEvent<HTMLButtonElement>): void => {
+    const pr = press.current;
+    if (!pr || pr.pointerId !== e.pointerId) return;
+    press.current = null;
+    setDragId(null);
+    if (!pr.moved) onPick(latest.current.findIndex((p) => p.id === pr.id));
+  };
+  return (
+    <div className="scr-sb-order" ref={wrap} aria-label="끌어서 순서 바꾸기">
+      {photos.map((p, i) => (
+        <button
+          key={p.id} type="button" data-pid={p.id}
+          className={cx("scr-sb-order-cell", i === at && "scr-sb-order-on", p.id === dragId && "scr-sb-order-drag")}
+          aria-label={`${i + 1}번째 ${p.name} — 끌어서 옮기기`}
+          onPointerDown={(e) => onDown(e, p.id)} onPointerMove={onMove} onPointerUp={onUp}
+          onPointerCancel={() => { press.current = null; setDragId(null); }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {isVideoItem(p) ? (
+            <>
+              <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
+              <span className="scr-sb-order-play" aria-hidden><Play size={12} /></span>
+            </>
+          ) : (
+            <img src={imgSrc(p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
+          )}
+          <span className="scr-sb-order-n" aria-hidden>{i + 1}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function PhotosBlock({
   block, canEdit, grip, onChange, onAdd, onDelete,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
-  onChange: (patch: { title?: string; photos?: SchedulePhoto[] }) => void;
+  onChange: (patch: { title?: string; photos?: SchedulePhoto[]; collapsed?: boolean }) => void;
   onAdd: () => void; onDelete: () => void;
 }) {
+  const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
   const strip = useRef<HTMLDivElement | null>(null);
   const [at, setAt] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
@@ -371,7 +466,9 @@ function PhotosBlock({
           ) : (
             <div className="scr-sb-line scr-sb-list-title">{block.title}</div>
           )}
-          {n > 0 && <SaveAllBtn photos={block.photos} title={block.title} />}
+          {folded && n > 0 && <span className="scr-sb-list-count" aria-hidden>{n}</span>}
+          {n > 0 && !folded && <SaveAllBtn photos={block.photos} title={block.title} />}
+          {n > 0 && <FoldBtn folded={folded} onToggle={toggle} what="사진 목록" />}
           {canEdit && (
             <>
               {grip}
@@ -380,7 +477,7 @@ function PhotosBlock({
           )}
         </div>
       )}
-      {n > 0 && (
+      {n > 0 && !folded && (
         <div className="scr-sb-slides-wrap">
           <div
             className="scr-sb-slides" ref={strip} onScroll={onScroll} tabIndex={0}
@@ -441,7 +538,13 @@ function PhotosBlock({
           )}
         </div>
       )}
-      {canEdit && (
+      {canEdit && n > 1 && !folded && (
+        <PhotoOrder
+          photos={block.photos} at={idx} onPick={(i) => go(i)}
+          onReorder={(next) => onChange({ photos: next })}
+        />
+      )}
+      {canEdit && !folded && (
         <button type="button" className="scr-sb-photos-add" onClick={(e) => { e.stopPropagation(); onAdd(); }}>
           <Plus size={14} aria-hidden /> 사진 추가
         </button>
@@ -459,13 +562,26 @@ function PhotosBlock({
 }
 
 function MediaBlock({
-  block, canEdit, grip, onDelete,
-}: { block: ScheduleBlock; canEdit: boolean; grip: ReactNode; onDelete: () => void }) {
+  block, canEdit, grip, onChange, onDelete,
+}: {
+  block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
+  onChange: (patch: { collapsed?: boolean }) => void; onDelete: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
   const photo = block.kind === "photo";
+  const fold = <FoldBtn folded={folded} onToggle={toggle} what={photo ? "사진" : "파일"} />;
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
-      {photo ? (
+      {folded || photo ? (
+        <div className="scr-sb-list-head">
+          <div className="scr-sb-line scr-sb-list-title scr-sb-folded-preview">
+            {photo ? <ImageIcon size={13} aria-hidden /> : <Paperclip size={13} aria-hidden />} {block.name}
+          </div>
+          {fold}
+        </div>
+      ) : null}
+      {folded ? null : photo ? (
         <button
           type="button" className="scr-sb-photo"
           onClick={(e) => { e.stopPropagation(); setOpen(true); }}
@@ -474,14 +590,17 @@ function MediaBlock({
           <img src={imgSrc(block.url)} alt={block.name} loading="lazy" />
         </button>
       ) : (
-        <a
-          className="scr-sb-file" href={imgSrc(block.url)} download={block.name}
-          target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}
-        >
-          <Paperclip size={13} aria-hidden />
-          <span className="scr-sb-file-name">{block.name}</span>
-          {block.size > 0 && <span className="scr-sb-file-size">{formatBytes(block.size)}</span>}
-        </a>
+        <div className="scr-sb-file-row">
+          <a
+            className="scr-sb-file" href={imgSrc(block.url)} download={block.name}
+            target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}
+          >
+            <Paperclip size={13} aria-hidden />
+            <span className="scr-sb-file-name">{block.name}</span>
+            {block.size > 0 && <span className="scr-sb-file-size">{formatBytes(block.size)}</span>}
+          </a>
+          {fold}
+        </div>
       )}
       {canEdit && (
         <div className="scr-sb-tools">
@@ -574,12 +693,8 @@ export default function ScheduleBlocks({
     if (list.length === 0) return;
     const into = target ? latest.current.find((b) => b.key === target) : undefined;
     if (!into && latest.current.length >= MAX_BLOCKS) { showAlert(`요소는 ${MAX_BLOCKS}개까지예요.`); return; }
-    const room = MAX_PHOTOS - (into?.photos.length ?? 0);
-    if (room <= 0) { showAlert(`사진 목록 하나에는 ${MAX_PHOTOS}장까지 담아요.`); return; }
-    const fit = list.filter((f) => !(f.type.startsWith("video/") && f.size > MAX_VIDEO_BYTES));
-    if (fit.length < list.length) showAlert(`동영상은 하나에 ${Math.round(MAX_VIDEO_BYTES / 1024 / 1024)}MB까지예요. 큰 동영상은 빼고 넣었어요.`);
-    const picked = fit.slice(0, room);
-    if (picked.length < fit.length) showAlert(`사진 목록 하나에는 ${MAX_PHOTOS}장까지라 ${picked.length}장만 넣었어요.`);
+    const picked = list.filter((f) => !(f.type.startsWith("video/") && f.size > MAX_VIDEO_BYTES));
+    if (picked.length < list.length) showAlert(`동영상은 하나에 ${Math.round(MAX_VIDEO_BYTES / 1024 / 1024)}MB까지예요. 큰 동영상은 빼고 넣었어요.`);
     if (picked.length === 0) return;
     const made: SchedulePhoto[] = picked.map((f) => ({ id: newId(), ...pickPhoto(f) }));
     const now = latest.current;
@@ -783,7 +898,10 @@ export default function ScheduleBlocks({
                 onChange={(part) => patch(b.key, part)} onAdd={() => pickPhotos(b.key)}
               />
             ) : (
-              <MediaBlock block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)} />
+              <MediaBlock
+                block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
+                onChange={(part) => patch(b.key, part)}
+              />
             )}
           </div>
         );

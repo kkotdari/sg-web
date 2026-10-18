@@ -257,7 +257,8 @@ const serverKeyOf = (s: Schedule): string =>
 const sameBlock = (a: ScheduleBlock, b: ScheduleBlock): boolean =>
   a.kind === b.kind && a.text === b.text && a.title === b.title && a.url === b.url
   && a.items.length === b.items.length && a.items.every((x, i) => x === b.items[i])
-  && a.photos.length === b.photos.length && a.photos.every((x, i) => x.id === b.photos[i].id);
+  && a.photos.length === b.photos.length && a.photos.every((x, i) => x.id === b.photos[i].id)
+  && !!a.collapsed === !!b.collapsed;
 const startsWith = (xs: string[], prefix: string[]): boolean =>
   prefix.length <= xs.length && prefix.every((x, i) => x === xs[i]);
 const normBlock = (b: ScheduleBlock): ScheduleBlock => ({
@@ -280,8 +281,9 @@ async function payloadOf(d: Draft, expectedUpdatedAt: string): Promise<Outgoing>
   let bytes = 0;
   const blocks: ScheduleBlockWrite[] = [];
   for (const b of d.blocks) {
-    if (b.kind === "text") { blocks.push({ kind: "text", id: b.id, title: b.title, text: b.text }); continue; }
-    if (b.kind === "list") { blocks.push({ kind: "list", id: b.id, title: b.title, items: b.items }); continue; }
+    const collapsed = !!b.collapsed;
+    if (b.kind === "text") { blocks.push({ kind: "text", id: b.id, title: b.title, text: b.text, collapsed }); continue; }
+    if (b.kind === "list") { blocks.push({ kind: "list", id: b.id, title: b.title, items: b.items, collapsed }); continue; }
     if (b.kind === "photos") {
       const photos: Extract<ScheduleBlockWrite, { kind: "photos" }>["photos"] = [];
       for (const p of b.photos) {
@@ -290,10 +292,10 @@ async function payloadOf(d: Draft, expectedUpdatedAt: string): Promise<Outgoing>
         bytes += p.size;
         photos.push({ file: { name: p.name, data: p.file ? await readAsDataUrl(p.file) : p.url } });
       }
-      blocks.push({ kind: "photos", id: b.id, title: b.title, photos });
+      blocks.push({ kind: "photos", id: b.id, title: b.title, photos, collapsed });
       continue;
     }
-    blocks.push(isNew(b.id) ? { kind: b.kind, file: { name: b.name, data: b.url } } : { kind: b.kind, id: b.id });
+    blocks.push(isNew(b.id) ? { kind: b.kind, file: { name: b.name, data: b.url }, collapsed } : { kind: b.kind, id: b.id, collapsed });
   }
   return {
     payload: { title: d.title.trim(), scheduledDate: d.date, scheduledTime: d.time || null, expectedUpdatedAt, blocks },

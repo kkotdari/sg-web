@@ -7462,6 +7462,30 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-saveall:disabled { cursor: progress; opacity: 0.7; }
 .scr-sb-saveall-armed { border-color: var(--timeline-blue); color: var(--timeline-blue); }
 @media (hover: hover) { .scr-sb-saveall:not(:disabled):hover { color: var(--text); border-color: var(--text); } }
+.scr-sb-folded-preview { color: var(--muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr-sb-folded-preview > svg { vertical-align: -2px; }
+.scr-sb-fold-corner { display: flex; justify-content: flex-end; margin-top: -4px; }
+.scr-sb-file-row { display: flex; align-items: center; gap: 4px; }
+.scr-sb-file-row > .scr-sb-file { flex: 0 1 auto; min-width: 0; margin-right: 0; }
+.scr-sb-block-edit .scr-sb-file-row { padding-right: 52px; }
+.scr-sb-file-row > .scr-sb-icon { flex: 0 0 auto; }
+.scr-sb-order { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.scr-sb-order-cell {
+  position: relative; flex: 0 0 auto; width: 56px; height: 56px; padding: 0; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--panel); cursor: grab;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.scr-sb-order-cell img, .scr-sb-order-cell video { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.scr-sb-order-on { border-color: var(--timeline-blue); box-shadow: 0 0 0 1px var(--timeline-blue); }
+.scr-sb-order-drag { opacity: 0.55; cursor: grabbing; transform: scale(0.94); }
+.scr-sb-order-n {
+  position: absolute; left: 3px; top: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center;
+}
+.scr-sb-order-play {
+  position: absolute; right: 3px; bottom: 3px; display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff;
+}
 .scr-sb-photos-add {
   display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
   margin-top: 6px; padding: 10px; border: 1px dashed var(--line); border-radius: 8px;

@@ -577,6 +577,7 @@ export interface ScheduleBlock {
   name: string;
   size: number;
   photos: SchedulePhoto[];
+  collapsed?: boolean;
 }
 
 export interface Schedule {
@@ -594,12 +595,13 @@ export interface Schedule {
   updatedAt: string;
 }
 
-export type ScheduleBlockWrite =
+export type ScheduleBlockWrite = (
   | { kind: "text"; id?: string; title: string; text: string }
   | { kind: "list"; id?: string; title: string; items: string[] }
   | { kind: "photos"; id?: string; title: string; photos: ({ id: string } | { file: { name: string; data: string } })[] }
   | { kind: "photo" | "file"; id: string }
-  | { kind: "photo" | "file"; file: { name: string; data: string } };
+  | { kind: "photo" | "file"; file: { name: string; data: string } }
+) & { collapsed?: boolean };
 
 export interface ScheduleWrite {
   title: string;
