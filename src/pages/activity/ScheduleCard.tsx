@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, ExternalLink, MoreHorizontal, Paperclip } from "lucide-react";
 import PhotoViewer from "../../components/common/PhotoViewer";
@@ -375,7 +375,7 @@ function adoptServerMedia(mine: Draft, server: Draft): Draft | null {
       let hit = false;
       const photos = b.photos.map((p) => {
         const q = sp.get(p.id);
-        if (!q || (!p.file && p.url === q.url && p.thumbUrl === q.thumbUrl && p.gridUrl === q.gridUrl)) return p;
+        if (!q || (!p.file && p.url === q.url)) return p;
         hit = true;
         return q;
       });
@@ -449,9 +449,7 @@ function merge(
   };
 }
 
-export default function ScheduleCard({
-  schedule, timeText, dateLabel, canEdit, canDelete, onChanged, onDeleted, footer,
-}: {
+type ScheduleCardProps = {
   schedule: Schedule;
   timeText?: React.ReactNode;
   dateLabel?: string;
@@ -460,7 +458,20 @@ export default function ScheduleCard({
   onChanged: (s: Schedule) => void;
   onDeleted: (id: number) => void;
   footer?: React.ReactNode;
-}) {
+};
+
+/* ★ 카드는 memo — 일정 하나를 저장(접기 하나라도)하면 활동 목록이 그 일정을 갈아 끼우며 목록 전체를 다시 그리는데, 여태는 화면의 일정 카드가
+   전부 요소까지 통째로 다시 그려졌다(요청: "요소 접기·펼치기도 전체 다시 그리는 등의 이유로 느린지 확인"). 제 일정·권한·날짜 글자가 바뀔 때만
+   다시 그린다 — 손잡이(onChanged·onDeleted)는 늘 새로 오지만 안에서 최신 것을 쓰고, footer 는 일정 id 로만 갈린다. */
+const ScheduleCard = memo(ScheduleCardInner, (a, b) => (
+  a.schedule === b.schedule && a.canEdit === b.canEdit && a.canDelete === b.canDelete
+  && a.dateLabel === b.dateLabel && a.timeText === b.timeText
+));
+export default ScheduleCard;
+
+function ScheduleCardInner({
+  schedule, timeText, dateLabel, canEdit, canDelete, onChanged, onDeleted, footer,
+}: ScheduleCardProps) {
   const photos = schedule.files.filter(isImageFile);
   const docs = schedule.files.filter((f) => !isImageFile(f));
   const readBlocks = useMemo(() => withKeys(schedule.blocks ?? []), [schedule.blocks]);
@@ -520,6 +531,8 @@ export default function ScheduleCard({
   const mineAt = useRef("");
   const latest = useRef({ schedule, onChanged });
   latest.current = { schedule, onChanged };
+  const latestDeleted = useRef(onDeleted);
+  latestDeleted.current = onDeleted;
 
   const dirty = (): boolean => editVer.current !== savedVer.current;
   const markEdited = (): void => {
@@ -733,7 +746,7 @@ export default function ScheduleCard({
       <div className="scr-schedule-card" ref={cardRef}>
         <ScheduleHead
           head={head} canEdit={canEdit} editing={editing} saveState={saveState} savedAt={savedAt}
-          menu={<ScheduleActionsMenu schedule={schedule} canDelete={canDelete} onDeleted={onDeleted} />}
+          menu={<ScheduleActionsMenu schedule={schedule} canDelete={canDelete} onDeleted={(id) => latestDeleted.current(id)} />}
           onChange={edit}
         />
 

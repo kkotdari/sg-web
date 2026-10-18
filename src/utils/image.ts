@@ -54,6 +54,6 @@ export async function buildChallengeBackdrop(file: File): Promise<ChallengeBackd
   return { backdrop, share: backdrop };
 }
 
-export function pickPhoto(file: File): Pick<SchedulePhoto, "url" | "thumbUrl" | "name" | "size" | "file"> {
-  return { url: URL.createObjectURL(file), thumbUrl: null, name: file.name, size: file.size, file };
+export function pickPhoto(file: File): Pick<SchedulePhoto, "url" | "name" | "size" | "file"> {
+  return { url: URL.createObjectURL(file), name: file.name, size: file.size, file };
 }

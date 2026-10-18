@@ -7364,7 +7364,8 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 /* 글·목록·파일 요소는 한 줄 [내용 | 접기 | 단추들] — 내용이 남는 폭을 다 쓴다. */
 .scr-sb-row { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 2px; }
 .scr-sb-row > :first-child { flex: 1 1 0; min-width: 0; }
-.scr-sb-row > .scr-sb-fold-corner { flex: 0 0 auto; }
+/* 접기 단추는 늘 줄의 맨 끝 — 단추 묶음이 펴져도 제자리에 있다(묶음은 그 앞에서 펴지며 내용을 민다). */
+.scr-sb-row > .scr-sb-fold-corner { flex: 0 0 auto; order: 2; }
 /* 단추(24px)가 글 한 줄(≈19px)보다 키가 커서 뜰 때마다 요소가 위아래로 늘었다(요청: "버튼 보이기 모드에서 위아래 높이가 더 높아지는 문제") —
    접기·단추 칸은 줄 높이에 끼지 않는다(높이 0 · 단추는 그 밖으로 늘어뜨린다). 폭만 접고 펴므로 가로만 자른다(overflow-x: clip). */
 .scr-sb-row > .scr-sb-fold-corner, .scr-sb-row > .scr-sb-tools { height: 0; overflow-y: visible; align-self: flex-start; }
@@ -7382,9 +7383,13 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-sb-block:has(:is(input, textarea):focus) .scr-sb-tools, .scr-sb-block:has(:is(input, textarea):focus) .scr-sb-handles,
 .scr-sb-tools:focus-within, .scr-sb-handles:focus-within,
 .scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; max-width: 140px; }
-/* 올림으로 띄우는 것은 마우스 화면만 — 폰은 누른 자리에 :hover 가 눌어붙어, 접기·저장을 누르면 단추가 펴졌다. */
+/* 올림으로 띄우는 것은 마우스 화면만 — 폰은 누른 자리에 :hover 가 눌어붙어, 접기·저장을 누르면 단추가 펴졌다.
+   늘 보이는 단추(접기·전체 저장) 위에 올렸을 때는 띄우지 않는다(요청: "PC 에서 이미 노출된 버튼에 마우스 가져갈 땐 버튼 노출로 작동 안 하게"). */
 @media (hover: hover) {
-  .scr-sb-block:hover .scr-sb-tools, .scr-sb-block:hover .scr-sb-handles { opacity: 1; pointer-events: auto; max-width: 140px; }
+  .scr-sb-block:hover:not(:has(.scr-sb-fold-corner:hover, .scr-sb-saveall:hover, .scr-sb-photos-head [aria-expanded]:hover)) .scr-sb-tools,
+  .scr-sb-block:hover:not(:has(.scr-sb-fold-corner:hover, .scr-sb-saveall:hover, .scr-sb-photos-head [aria-expanded]:hover)) .scr-sb-handles {
+    opacity: 1; pointer-events: auto; max-width: 140px;
+  }
 }
 /* 폰은 올림(hover)이 없다 — 단추 줄을 글 옆에 끼우지 않고, 그 요소를 고치는 동안에만 아래에 한 줄로 낸다. */
 @media (hover: none) {
@@ -7427,7 +7432,8 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 /* 제목 요소 — 글·목록·사진 위에 따로 서는 굵은 한 줄(노션의 제목 블록). */
 .scr-sb-text.scr-sb-heading { font-size: calc(var(--fs-caption) * 1.08); font-weight: 800; line-height: 1.4; }
 .scr-sb-photos-gap { flex: 1 1 auto; }
-.scr-sb-has-fold > .scr-sb-fold-corner { margin: 0; }
+/* 접기 칸은 단추 줄(.scr-sb-tools)과 같은 꼴로 선다 — 블록이면 안의 단추가 글자 기준선에 앉아 줄보다 아래로 처졌다(지적: "버튼 줄도 안 맞음"). */
+.scr-sb-row > .scr-sb-fold-corner { margin: 0; display: flex; align-items: flex-start; }
 /* 맨 아래 이어 쓰기 자리(요청: "'글을 쓰거나 / 로 요소 추가' 는 필요 없을 듯") — 글자 없이 빈 띠만 두고, 올리면 + 가 옅게 뜬다. */
 .scr-sb-composer {
   margin-top: 4px; min-height: 22px; padding: 2px 4px; border-radius: 6px;
@@ -7533,6 +7539,10 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-photos-head { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
 .scr-sb-photos-head > .scr-sb-list-title { flex: 1 1 auto; min-width: 0; width: auto; }
 .scr-sb-photos-head > .scr-sb-icon, .scr-sb-photos-head > .scr-sb-grip { flex: 0 0 auto; }
+/* 앨범 제목 줄의 단추 묶음은 폭을 늘 잡아 두고 투명도만 바꾼다 — 폭이 펴지는 전환(max-width)은 매 장 배치를 다시 해, 그 배치가 앨범(슬라이드
+   수십~수백 장) 전체로 번졌다(지적: "앨범 제목의 버튼들만 노출될 때 느려 · 작은 버튼 줄만 영향받아야 하는데 전체가 무겁게"). 이 줄은 오른쪽이 빈 칸이라
+   밀어낼 것도 없다. */
+.scr-sb-photos-head > .scr-sb-handles { max-width: none; transition: opacity .15s; }
 .scr-sb-slide-count {
   position: absolute; right: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px;
   font-size: 11.5px; font-weight: 700; color: #fff; background: rgba(0, 0, 0, 0.55);
@@ -7626,7 +7636,6 @@ html.color-lighting .scr-sb-slide-save.is-armed, html.color-lighting .scr-photo-
 .scr-sb-order-sorting { cursor: grabbing; }
 /* SortableJS 클래스 — 빈자리(ghost)는 옅게, 잡은 칸(chosen)은 파란 테. 끄는 몸(drag)은 아래 .scr-sb-order-drag 그림자. */
 .scr-sb-order-ghost { opacity: 0.35; }
-.scr-sb-order-locked { contain: strict; }
 .scr-sb-order-chosen { box-shadow: 0 0 0 2px var(--timeline-blue); }
 .scr-sb-order-n {
   position: absolute; left: 3px; top: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;

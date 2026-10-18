@@ -29,7 +29,7 @@ const uniqueNames = (names: string[]): string[] => {
 
 /* 받은 것은 주소별로 한 벌만 들고 있는다 — 사진첩 저장을 미리 받을 때 '전체 저장'과 낱장 저장이 같은 동영상을 두 번 받지 않게.
    합이 CACHE_MAX 를 넘으면 오래된 것부터 놓는다. */
-const CACHE_MAX = 120 * 1024 * 1024;
+const CACHE_MAX = 300 * 1024 * 1024;
 const cache = new Map<string, { blob: Promise<Blob>; size: number }>();
 const cacheTrim = (): void => {
   let total = 0;

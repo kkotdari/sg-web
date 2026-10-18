@@ -527,8 +527,6 @@ function ListBlock({
    그래서 단추가 화면에 보이면 미리 받아 둔다 — 화면에 뜬 사진은 브라우저 캐시에서 바로 온다. 누를 땐 손에 든 File 로 곧장 공유한다.
    동영상도 미리 받는다(요청: "동영상도 사진첩 저장 한 번에") — 손가락이 닿는 순간(pointerdown)에도 받기를 당긴다.
    그래도 다 받기 전에 누르면(큰 동영상을 막 띄운 참) 옛 두 번째 누름이 남는다. */
-const EAGER_MAX = 6;
-
 function useSaver(photos: SchedulePhoto[], zipName: string) {
   const album = canSaveToAlbum();
   const [busy, setBusy] = useState<string | null>(null);
@@ -549,10 +547,7 @@ function useSaver(photos: SchedulePhoto[], zipName: string) {
     }
     return prep.current;
   };
-  /* ★ 미리 받기는 몇 장일 때만(EAGER_MAX) — 사진 목록이 화면에 보이기만 해도 원본을 **전부** 받아 들고 있었다. 수십~수백 장이면
-     수백 MB 를 받아 메모리에 쥐어, 폰이 통째로 무거워졌다(지적: "소팅이 아직도 느려 · 시작하기까지도 느리고 · 사진이 많아질수록").
-     많으면 저장 단추에 손가락이 닿는 순간(onPress) 받기 시작한다 — 늦으면 옛 두 번째 누름이 남는다. */
-  const eager = album && photos.length > 0 && photos.length <= EAGER_MAX;
+  const eager = album && photos.length > 0;
   useEffect(() => {
     const el = btn.current;
     if (!eager || !el || typeof IntersectionObserver === "undefined") return;
@@ -648,9 +643,7 @@ const OrderCell = memo(function OrderCell({ p, i, on, sortable, act }: {
           <span className="scr-sb-order-play" aria-hidden><Play size={12} /></span>
         </>
       ) : (
-        /* 칸은 그리드용 작은 썸네일(240px) — 1200px 썸네일을 칸마다 풀어 쥐면 장수가 늘수록 끌기가 무거웠고, 집을 때 Sortable 이
-           칸을 복제하며 큰 그림을 또 풀었다(지적: "사진을 선택하고 옮길 때 그 사진을 로드하느라 느린 것 같기도"). */
-        <img src={imgSrc(p.gridUrl ?? p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
+        <img src={imgSrc(p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
       )}
       <span className="scr-sb-order-n" aria-hidden>{i + 1}</span>
     </button>
@@ -697,22 +690,11 @@ function PhotoOrder({
       });
     };
     // supportPointer 는 SortableJS 옵션인데 @types/sortablejs 에 빠져 있어 단언으로 넘긴다.
+    // supportPointer 는 SortableJS 옵션인데 @types/sortablejs 에 빠져 있어 단언으로 넘긴다.
     /* ★ 끄는 동안 그리드를 제 크기로 못 박고 contain: strict 로 가둔다(지적: "적은 양이 바뀔 땐 괜찮다 · 7~10개 바뀌기 시작하면 느려짐") —
        칸이 비켜 설 때마다 '다시 배치' 표시가 조상으로 올라가, 활동 목록처럼 형제가 많은 부모에서는 그때마다 목록 전체를 다시 훑었다.
        크기까지 가둔 상자(contain: strict)는 배치의 경계가 돼 그 안에서 끝난다. 크기는 끄는 동안 안 바뀌니 못 박아도 된다.
        (실측 · 큰 쪽 · CPU 4배: 10칸 밀기 끌기 중 배치 940ms → 아래 표) */
-    const lockBox = (on: boolean): void => {
-      if (on) {
-        const r = el.getBoundingClientRect();
-        el.style.width = `${r.width}px`;
-        el.style.height = `${r.height}px`;
-        el.classList.add("scr-sb-order-locked");
-      } else {
-        el.classList.remove("scr-sb-order-locked");
-        el.style.width = "";
-        el.style.height = "";
-      }
-    };
     const sortableObj = Sortable.create(el, {
       /* 비켜 서는 애니메이션은 끈다(animation: 0) — Sortable 의 애니메이션은 칸마다 transform·강제 배치를 걸어 밀리는 칸 수만큼 그리기가
          늘었다(지적: "7~10개 바뀌기 시작하면 느려짐"). 실측(피드 꼴 쪽 · CPU 4배 · 10칸 밀기): 작업 2.7초 → 1.0초 · 그리기 전 단계 1.5초 → 0.27초.
@@ -728,18 +710,15 @@ function PhotoOrder({
       // Sortable 이 든 칸(dragEl)을 안 놓아, 한 번 쓸어 넘긴 뒤로는 아무리 길게 눌러도 안 들렸다(크롬 폰 · SortableJS 1.15).
       // 터치 이벤트 갈래는 touchend·touchcancel 로 깨끗이 놓는다.
       supportPointer: false,
-      // 끄는 몸은 body 에 단다 — 그리드에 contain: strict 를 거는 동안(아래 lockBox) 그 안의 고정 위치 몸은 그리드를 기준으로 서 버린다.
-      fallbackOnBody: true,
       ghostClass: "scr-sb-order-ghost",
       chosenClass: "scr-sb-order-chosen",
       dragClass: "scr-sb-order-drag",
       onChoose: () => { navigator.vibrate?.(12); },
-      onStart: () => { sorting += 1; lockBox(true); },
+      onStart: () => { sorting += 1; },
       onMove: (e) => !e.related.classList.contains("scr-sb-order-addcell"),
       onChange: renumber,
       onEnd: (e) => {
         sorting = Math.max(0, sorting - 1);
-        lockBox(false);
         lastDrop.current = Date.now();
         const from = e.oldDraggableIndex ?? -1;
         const to = e.newDraggableIndex ?? -1;
@@ -811,7 +790,7 @@ const PhotoSlide = memo(function PhotoSlide({ p, i, playing, canEdit, act }: {
               <span className="scr-sb-slide-play" aria-hidden><Play size={22} /></span>
             </>
           ) : (
-            <img src={imgSrc(p.thumbUrl ?? p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
+            <img src={imgSrc(p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
           )}
         </button>
       )}
@@ -971,7 +950,6 @@ function MediaBlock({
             <span className="scr-sb-file-name">{block.name}</span>
             {block.size > 0 && <span className="scr-sb-file-size">{formatBytes(block.size)}</span>}
           </a>
-          {foldBtn}
         </div>
       )}
       {canEdit && (
@@ -982,6 +960,7 @@ function MediaBlock({
           </IconBtn>
         </div>
       )}
+      {foldBtn && <div className="scr-sb-fold-corner">{foldBtn}</div>}
       {open && <PhotoViewer src={block.url} alt={block.name} onClose={() => setOpen(false)} />}
     </div>
   );

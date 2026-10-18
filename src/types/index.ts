@@ -569,9 +569,6 @@ export interface ScheduleAttendee {
 export interface SchedulePhoto {
   id: string;
   url: string;
-  thumbUrl: string | null;
-  /** 그리드(작은 칸)용 썸네일(긴 변 240) — 옛 사진·작은 사진은 없다(thumbUrl·url 로 내려간다). */
-  gridUrl?: string | null;
   name: string;
   size: number;
   file?: File;
