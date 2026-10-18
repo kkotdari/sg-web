@@ -591,14 +591,14 @@ function useSaver(photos: SchedulePhoto[], zipName: string) {
 
 function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string }) {
   const { album, busy, armed, run, btn, onPress } = useSaver(photos, title);
-  const label = album ? (armed ? "사진첩에 저장" : "전체 사진첩에 저장") : "전체 다운로드";
+  const label = album ? (armed ? "눌러서 저장" : "전체 저장") : "전체 다운로드";
   return (
     <button
       ref={btn} type="button" className={cx("scr-compact-rect-btn", "scr-sb-saveall", armed && "scr-sb-saveall-armed")} disabled={busy !== null}
       onPointerDown={onPress} onClick={(e) => { e.stopPropagation(); void run(); }} aria-label={label} title={label}
     >
       <Download size={13} aria-hidden />
-      <span>{busy ?? (armed ? "눌러서 저장" : album ? "사진첩에 저장" : "전체 다운로드")}</span>
+      <span>{busy ?? label}</span>
     </button>
   );
 }
