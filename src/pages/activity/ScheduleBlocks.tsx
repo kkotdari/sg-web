@@ -1005,8 +1005,20 @@ export default function ScheduleBlocks({
     releaseKeyboard();
   });
   const NAV = "input.scr-sb-list-title, input.scr-sb-list-text, textarea.scr-sb-textarea, p.scr-sb-editable";
+  /* 위아래로 옮길 때 커서는 같은 열에 선다(요청: "캐럿은 아랫줄 캐럿이랑 같은 위치") — 짧은 줄을 지나도 처음 열을 기억해
+     다음 줄에서 되찾는다(보통 글 편집기처럼). 다른 키를 누르거나 마우스로 누르면 잊는다. */
+  const goalCol = useRef<number | null>(null);
+  const caretFor = (value: string, col: number, up: boolean): number => {
+    if (up) {
+      const ls = value.lastIndexOf("\n") + 1;
+      return ls + Math.min(col, value.length - ls);
+    }
+    const le = value.indexOf("\n");
+    return Math.min(col, le < 0 ? value.length : le);
+  };
   const onNavKey = (e: React.KeyboardEvent): void => {
-    if (!canEdit || e.defaultPrevented || (e.key !== "ArrowUp" && e.key !== "ArrowDown") || composing(e)) return;
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") { goalCol.current = null; return; }
+    if (!canEdit || e.defaultPrevented || composing(e)) return;
     const t = e.target as HTMLElement;
     if (!t.matches(NAV)) return;
     const up = e.key === "ArrowUp";
@@ -1015,6 +1027,11 @@ export default function ScheduleBlocks({
       const after = t.value.slice(t.selectionEnd ?? t.value.length);
       if (up ? before.includes("\n") : after.includes("\n")) return;
     }
+    if (goalCol.current === null && (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement)) {
+      const c = t.selectionStart ?? 0;
+      goalCol.current = c - (t.value.lastIndexOf("\n", c - 1) + 1);
+    }
+    const col = goalCol.current ?? 0;
     const all = Array.from(listRef.current?.querySelectorAll<HTMLElement>(NAV) ?? []);
     const i = all.indexOf(t);
     const next = i < 0 ? undefined : all[i + (up ? -1 : 1)];
@@ -1024,11 +1041,12 @@ export default function ScheduleBlocks({
        열고 커서를 끝(위로)·처음(아래로)에 둔다. */
     if (next.matches("p.scr-sb-editable")) {
       const key = next.closest<HTMLElement>("[data-block]")?.dataset.block;
-      if (key) { focusOn(key, "body", up ? "end" : 0); return; }
+      const nb = key ? latest.current.find((x) => x.key === key) : undefined;
+      if (key && nb) { focusOn(key, "body", caretFor(isHeading(nb) ? nb.title : nb.text, col, up)); return; }
     }
     next.focus();
     if (next instanceof HTMLInputElement || next instanceof HTMLTextAreaElement) {
-      const at = up ? next.value.length : 0;
+      const at = caretFor(next.value, col, up);
       next.setSelectionRange(at, at);
     }
   };
@@ -1418,6 +1436,7 @@ export default function ScheduleBlocks({
     <div
       className={cx("scr-sb", dragKey !== null && "scr-sb-dragging")} ref={listRef}
       onKeyDown={(e) => { onNavKey(e); onIndentKey(e); }}
+      onPointerDown={() => { goalCol.current = null; }}
       onKeyDownCapture={onSlashKey}
     >
       {(() => {
