@@ -594,7 +594,7 @@ function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string 
   const label = album ? (armed ? "사진첩에 저장" : "전체 사진첩에 저장") : "전체 다운로드";
   return (
     <button
-      ref={btn} type="button" className={cx("scr-sb-saveall", armed && "scr-sb-saveall-armed")} disabled={busy !== null}
+      ref={btn} type="button" className={cx("scr-compact-rect-btn", "scr-sb-saveall", armed && "scr-sb-saveall-armed")} disabled={busy !== null}
       onPointerDown={onPress} onClick={(e) => { e.stopPropagation(); void run(); }} aria-label={label} title={label}
     >
       <Download size={13} aria-hidden />
