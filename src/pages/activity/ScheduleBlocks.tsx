@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   ChevronDown, ChevronLeft, ChevronRight, Download, GripVertical, Image as ImageIcon, List as ListIcon, Paperclip,
@@ -313,7 +313,7 @@ function ListBlock({
   );
 }
 
-function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string }) {
+function useSaver(photos: SchedulePhoto[], zipName: string) {
   const album = canSaveToAlbum();
   const [busy, setBusy] = useState<string | null>(null);
   const ready = useRef<File[] | null>(null);
@@ -337,13 +337,18 @@ function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string 
     try {
       const files = await fetchMedia(photos, (d, t) => setBusy(`${d} / ${t}`));
       if (album && navigator.canShare({ files })) await share(files);
-      else await downloadFiles(files, title.trim() || "사진");
+      else await downloadFiles(files, zipName.trim() || "사진");
     } catch (err) {
       showAlert(err instanceof Error && err.message ? err.message : "내려받지 못했어요.");
     } finally {
       setBusy(null);
     }
   };
+  return { album, busy, armed, run };
+}
+
+function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string }) {
+  const { album, busy, armed, run } = useSaver(photos, title);
   const label = album ? (armed ? "사진첩에 저장" : "전체 사진첩에 저장") : "전체 다운로드";
   return (
     <button
@@ -352,6 +357,21 @@ function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string 
     >
       <Download size={13} aria-hidden />
       <span>{busy ?? (armed ? "눌러서 저장" : album ? "사진첩에 저장" : "전체 다운로드")}</span>
+    </button>
+  );
+}
+
+function SaveOneBtn({ photo, className }: { photo: SchedulePhoto; className: string }) {
+  const one = useMemo(() => [photo], [photo]);
+  const { album, busy, armed, run } = useSaver(one, photo.name);
+  const label = armed ? "눌러서 사진첩에 저장" : album ? "사진첩에 저장" : "다운로드";
+  return (
+    <button
+      type="button" className={cx(className, armed && "is-armed")} disabled={busy !== null}
+      onClick={(e) => { e.stopPropagation(); void run(); }} onPointerDown={(e) => e.stopPropagation()}
+      aria-label={label} title={label}
+    >
+      <Download size={15} aria-hidden />
     </button>
   );
 }
@@ -503,6 +523,7 @@ function PhotosBlock({
                     <img src={imgSrc(p.thumbUrl ?? p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
                   )}
                 </button>
+                <SaveOneBtn photo={p} className="scr-sb-slide-save" />
                 {canEdit && (
                   <button
                     type="button" className="scr-sb-slide-x" aria-label="이 사진 삭제" title="이 사진 삭제"
@@ -555,6 +576,7 @@ function PhotosBlock({
           onPrev={open > 0 ? () => view(open - 1) : undefined}
           onNext={open < n - 1 ? () => view(open + 1) : undefined}
           counter={n > 1 ? `${open + 1} / ${n}` : undefined}
+          extra={<SaveOneBtn photo={shown} className="scr-icon-btn scr-photo-save" />}
         />
       )}
     </div>

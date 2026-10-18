@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
@@ -12,6 +12,7 @@ interface PhotoViewerProps {
   onPrev?: () => void;
   onNext?: () => void;
   counter?: string;
+  extra?: ReactNode;
 }
 
 type Pt = { x: number; y: number };
@@ -54,7 +55,7 @@ function zoomAt(c: Pt, z: Zoom, p: Pt, next: number): Zoom {
   return { s: next, tx: p.x - c.x - k * (p.x - c.x - z.tx), ty: p.y - c.y - k * (p.y - c.y - z.ty) };
 }
 
-export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, counter }: PhotoViewerProps) {
+export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, counter, extra }: PhotoViewerProps) {
   useLockBodyScroll();
   const frameRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -162,7 +163,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
-    if ((e.target as Element).closest(".scr-photo-close, .scr-photo-nav, video")) return;
+    if ((e.target as Element).closest(".scr-photo-close, .scr-photo-save, .scr-photo-nav, video")) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     unbake();
@@ -234,6 +235,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
         >
           <X size={16} />
         </button>
+        {extra}
         {video ? (
           <video key={src} src={imgSrc(src)} className="scr-photo-large scr-photo-video" controls autoPlay playsInline />
         ) : (
