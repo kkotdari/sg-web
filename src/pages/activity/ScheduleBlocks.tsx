@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
-  ChevronDown, ChevronLeft, ChevronRight, Download, GripVertical, Image as ImageIcon, List as ListIcon, Paperclip,
+  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GripVertical, Image as ImageIcon, List as ListIcon, Paperclip,
   Play, Plus, Trash2, Type, X,
 } from "lucide-react";
 import PhotoViewer from "../../components/common/PhotoViewer";
@@ -67,7 +67,7 @@ function useFold(block: ScheduleBlock, canEdit: boolean, onFold: (collapsed: boo
 function FoldBtn({ folded, onToggle, what }: { folded: boolean; onToggle: () => void; what: string }) {
   return (
     <IconBtn label={folded ? `${what} 펴기` : `${what} 접기`} expanded={!folded} onClick={onToggle}>
-      {folded ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+      {folded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
     </IconBtn>
   );
 }
