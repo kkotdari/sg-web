@@ -564,7 +564,9 @@ export default function ScheduleCard({
     const sent = d;
     const pending = countNewPhotos(sent);
     if (pending > 0 && !uploadTotal.current) uploadTotal.current = pending;
-    setShield({ done: uploadTotal.current - pending, total: uploadTotal.current });
+    /* 가림막(화면 어둡게 · 입력 막기)은 사진을 올릴 때만(2026-10-18, 지적: "접기·펴기가 왜 이렇게 딜레이가 있어 보이지") — 여태는 글 한 자·
+       접기 하나를 저장할 때도 응답이 올 때까지 화면 전체를 덮고 입력을 삼켜 고침이 늦게 먹는 것처럼 보였다. 저장 중 고침은 editVer 로 따로 챙긴다. */
+    if (uploadTotal.current > 0) setShield({ done: uploadTotal.current - pending, total: uploadTotal.current });
     try {
       const { payload, deferred } = await payloadOf(d, baseUpdatedAt.current);
       const saved = await api.updateSchedule(latest.current.schedule.id, payload);
@@ -718,6 +720,7 @@ export default function ScheduleCard({
 
         <ScheduleBlocks
           blocks={draft ? draft.blocks : readBlocks} canEdit={editing}
+          onSaveNow={() => { if (!saving.current) void save(); }}
           onChange={onBlocks}
         />
 

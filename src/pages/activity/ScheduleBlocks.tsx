@@ -936,11 +936,13 @@ function MediaBlock({
 }
 
 export default function ScheduleBlocks({
-  blocks, canEdit, onChange,
+  blocks, canEdit, onChange, onSaveNow,
 }: {
   blocks: DraftBlock[];
   canEdit: boolean;
   onChange: (next: DraftBlock[]) => void;
+  /** 곧바로 저장(자동 저장의 쉼 2초를 안 기다린다) — 접기·펴기처럼 한 번 누름이 곧 끝난 고침일 때. */
+  onSaveNow?: () => void;
 }) {
   const photoRef = useRef<HTMLInputElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -1428,7 +1430,8 @@ export default function ScheduleBlocks({
       })().map(({ b, kids }) => {
         const grip = gripFor(b);
         const fold: [boolean, () => void] = [foldedOf(b), () => {
-          if (canEdit) patch(b.key, { collapsed: !b.collapsed });
+          /* 접기·펴기는 화면에 먼저 반영하고(요청: "화면에 먼저 반영 후 api 요청") 곧바로 저장한다 — 쉼(2초)을 안 기다린다. */
+          if (canEdit) { patch(b.key, { collapsed: !b.collapsed }); onSaveNow?.(); }
           else setViewFold((v) => ({ ...v, [b.key]: !foldedOf(b) }));
         }];
         return (
