@@ -1284,8 +1284,7 @@ export default function ScheduleBlocks({
       }
       const under = Math.min(MAX_INDENT, (prev.indent ?? 0) + 1);
       if ((cur.indent ?? 0) < under) {
-        patch(b.key, { indent: under });
-        return true;
+        return indentTo(b.key, under);
       }
       if (prev.kind === "text" && !prev.collapsed) {
         const sep = prev.text ? "\n" : "";
@@ -1369,11 +1368,24 @@ export default function ScheduleBlocks({
     focusOn(made.key, "body", 0);
   };
 
+  /** 요소의 들여쓰기를 to 로 — 딸린 하위 요소도 같은 만큼 함께 옮긴다(요청: "상위 요소 들여쓰기를 바꾸면 하위도 자동으로").
+   *  가장 깊은 하위가 한도(MAX_INDENT)를 넘게 되면 통째로 안 움직인다 — 하위만 눌리면 딸림이 풀린다. */
+  const indentTo = (key: string, to: number): boolean => {
+    const now = latest.current;
+    const i = now.findIndex((x) => x.key === key);
+    if (i < 0) return false;
+    const from = now[i].indent ?? 0;
+    const by = Math.max(0, Math.min(MAX_INDENT, to)) - from;
+    if (by === 0) return false;
+    const end = i + 1 + kidsAt(now, i);
+    const deepest = now.slice(i, end).reduce((m, x) => Math.max(m, x.indent ?? 0), 0);
+    if (deepest + by > MAX_INDENT) return false;
+    onChange(now.map((x, k) => (k >= i && k < end ? { ...x, indent: (x.indent ?? 0) + by } : x)));
+    return true;
+  };
   const indentBy = (key: string, by: number): void => {
     const b = latest.current.find((x) => x.key === key);
-    if (!b) return;
-    const to = Math.max(0, Math.min(MAX_INDENT, (b.indent ?? 0) + by));
-    if (to !== (b.indent ?? 0)) patch(key, { indent: to });
+    if (b) indentTo(key, (b.indent ?? 0) + by);
   };
   const gripFor = (b: DraftBlock): ReactNode => (
     <span className="scr-sb-handles">
