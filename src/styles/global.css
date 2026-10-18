@@ -7341,10 +7341,10 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   opacity: 0; pointer-events: none; max-width: 0; overflow-x: clip; overflow-y: visible;
   transition: opacity .15s, max-width .18s ease;
 }
-/* 포커스로 띄우는 것은 글·단추 묶음 안에 포커스가 있을 때만 — 접기·저장 단추를 누른 포커스로는 띄우지 않는다
-   (요청: "접기펼치기 버튼도 버튼 보이기로 동작하네"). */
-.scr-sb-block:has(:focus:not([aria-expanded], .scr-sb-saveall, .scr-sb-slide-save)) .scr-sb-tools,
-.scr-sb-block:has(:focus:not([aria-expanded], .scr-sb-saveall, .scr-sb-slide-save)) .scr-sb-handles,
+/* 포커스로 띄우는 것은 글 칸(입력·글상자)을 고칠 때와 단추 묶음 안에 포커스가 있을 때만 — 그 밖의 단추(접기·저장·목록 줄 X·사진 칸…)를
+   누른 포커스로는 띄우지 않는다(요청: "접기펼치기 버튼도 버튼 보이기로 동작" · "목록의 x 버튼도 … 이런 거 없게"). */
+.scr-sb-block:has(:is(input, textarea):focus) .scr-sb-tools, .scr-sb-block:has(:is(input, textarea):focus) .scr-sb-handles,
+.scr-sb-tools:focus-within, .scr-sb-handles:focus-within,
 .scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; max-width: 140px; }
 /* 올림으로 띄우는 것은 마우스 화면만 — 폰은 누른 자리에 :hover 가 눌어붙어, 접기·저장을 누르면 단추가 펴졌다. */
 @media (hover: hover) {
@@ -7353,7 +7353,7 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 /* 폰은 올림(hover)이 없다 — 단추 줄을 글 옆에 끼우지 않고, 그 요소를 고치는 동안에만 아래에 한 줄로 낸다. */
 @media (hover: none) {
   .scr-sb-block > .scr-sb-tools { flex-basis: 100%; max-width: none; height: auto; justify-content: flex-end; display: none; margin-top: 2px; }
-  .scr-sb-block:has(:focus:not([aria-expanded], .scr-sb-saveall, .scr-sb-slide-save)) > .scr-sb-tools { display: flex; }
+  .scr-sb-block:has(:is(input, textarea):focus) > .scr-sb-tools, .scr-sb-block > .scr-sb-tools:focus-within { display: flex; }
 }
 .scr-sb-icon {
   display: inline-flex; align-items: center; justify-content: center;

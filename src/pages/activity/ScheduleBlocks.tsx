@@ -1618,6 +1618,8 @@ export default function ScheduleBlocks({
       tabIndex={canEdit ? -1 : undefined}
       onKeyDown={(e) => { onBlockSelKey(e); onNavKey(e); onIndentKey(e); }}
       onPointerDown={() => { goalCol.current = null; if (blockSel) setBlockSel(null); }}
+      // 단추 묶음을 눌러도 글 칸의 포커스를 뺏지 않는다 — 묶음은 글을 고칠 때만 뜨므로(CSS), 누르는 순간 포커스가 빠지면 묶음이 숨어 누름이 헛돈다.
+      onMouseDown={(e) => { if ((e.target as HTMLElement).closest(".scr-sb-tools, .scr-sb-handles")) e.preventDefault(); }}
       onKeyDownCapture={onSlashKey}
     >
       {(() => {
