@@ -222,7 +222,7 @@ function TextBlock({
   const foldBtn = hasKids ? <FoldBtn folded={folded} onToggle={() => { setEditing(false); toggle(); }} what={heading ? "제목" : "글"} /> : null;
   const look = cx("scr-sb-text", heading && "scr-sb-heading");
   return (
-    <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit", hasKids && "scr-sb-has-fold")}>
+    <div className={cx("scr-sb-block", "scr-sb-row", canEdit && "scr-sb-block-edit", hasKids && "scr-sb-has-fold")}>
       {open ? (
         <textarea
           ref={ref} className={cx(look, "scr-sb-textarea")} value={value} autoFocus rows={1}
@@ -347,9 +347,11 @@ function ListBlock({
     const mod = e.ctrlKey || e.metaKey;
     if (e.key === "Escape") { e.preventDefault(); setSel(null); focusRow(sel.b, "end"); return; }
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-      e.preventDefault();
       const by = e.key === "ArrowUp" ? -1 : 1;
-      if (e.shiftKey) setSel({ a: sel.a, b: Math.max(0, Math.min(block.items.length - 1, sel.b + by)) });
+      // 첫·끝 줄 밖으로 더 넓히면 요소 고르기로 넘긴다(바깥 ScheduleBlocks 가 받는다).
+      if (e.shiftKey && (sel.b + by < 0 || sel.b + by >= block.items.length)) { setSel(null); return; }
+      e.preventDefault();
+      if (e.shiftKey) setSel({ a: sel.a, b: sel.b + by });
       else { setSel(null); focusRow(Math.max(0, Math.min(block.items.length - 1, (by < 0 ? selLo : selHi) + by)), 0); }
       return;
     }
@@ -464,7 +466,7 @@ function ListBlock({
   };
 
   return (
-    <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
+    <div className={cx("scr-sb-block", "scr-sb-row", canEdit && "scr-sb-block-edit")}>
       {open && (
         <ul
           className={cx("scr-sb-list", sel && "scr-sb-list-selecting")} ref={listRef}
@@ -519,29 +521,54 @@ function ListBlock({
   );
 }
 
+/* 사진첩 저장(폰) — 공유 시트는 누른 손짓 안에서 바로 불러야 뜬다. 누른 뒤 받기(fetch)를 기다리면 손짓이 식어(특히 iOS)
+   "다운로드 → 또 '사진첩에 저장'" 두 번 눌러야 했다(요청: "이미 화면에 로딩된 애들을 바로 저장하면 안 되나").
+   그래서 단추가 화면에 보이면 미리 받아 둔다 — 화면에 뜬 사진은 브라우저 캐시에서 바로 온다. 누를 땐 손에 든 File 로 곧장 공유한다.
+   동영상이 든 묶음은 커서 미리 받지 않고 손가락이 닿는 순간(pointerdown) 받기 시작한다. 그래도 늦으면 옛 두 번째 누름이 남는다. */
 function useSaver(photos: SchedulePhoto[], zipName: string) {
   const album = canSaveToAlbum();
   const [busy, setBusy] = useState<string | null>(null);
   const ready = useRef<File[] | null>(null);
+  const prep = useRef<Promise<File[]> | null>(null);
+  const btn = useRef<HTMLButtonElement | null>(null);
   const [armed, setArmed] = useState(false);
-  useEffect(() => { ready.current = null; setArmed(false); }, [photos]);
+  useEffect(() => { ready.current = null; prep.current = null; setArmed(false); }, [photos]);
+  const warm = (onProgress?: (d: number, t: number) => void): Promise<File[]> => {
+    if (!prep.current) {
+      const p = fetchMedia(photos, onProgress);
+      prep.current = p;
+      p.then((files) => { if (prep.current === p) ready.current = files; }, () => { if (prep.current === p) prep.current = null; });
+    }
+    return prep.current;
+  };
+  const eager = album && photos.length > 0 && !photos.some(isVideoItem);
+  useEffect(() => {
+    const el = btn.current;
+    if (!eager || !el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((es) => {
+      if (es.some((x) => x.isIntersecting)) { io.disconnect(); void warm().catch(() => {}); }
+    }, { rootMargin: "200px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [eager, photos]);
   const share = async (files: File[]): Promise<void> => {
     try {
       await shareToAlbum(files);
-      ready.current = null; setArmed(false);
+      setArmed(false);
     } catch (err) {
       const name = (err as { name?: string }).name;
       if (name === "AbortError") return;
-      if (name === "NotAllowedError") { ready.current = files; setArmed(true); return; }
+      if (name === "NotAllowedError") { setArmed(true); return; }
       throw err;
     }
   };
   const run = async (): Promise<void> => {
     if (busy) return;
-    if (ready.current) { await share(ready.current); return; }
+    // 미리 받아 둔 것이 있으면 기다림 없이 곧장 — 이 줄 앞에 await 를 두지 마라(손짓이 식는다).
+    if (album && ready.current && navigator.canShare({ files: ready.current })) { await share(ready.current); return; }
     setBusy(`0 / ${photos.length}`);
     try {
-      const files = await fetchMedia(photos, (d, t) => setBusy(`${d} / ${t}`));
+      const files = await warm((d, t) => setBusy(`${d} / ${t}`));
       if (album && navigator.canShare({ files })) await share(files);
       else await downloadFiles(files, zipName.trim() || "사진");
     } catch (err) {
@@ -550,16 +577,17 @@ function useSaver(photos: SchedulePhoto[], zipName: string) {
       setBusy(null);
     }
   };
-  return { album, busy, armed, run };
+  const onPress = (): void => { if (album) void warm().catch(() => {}); };
+  return { album, busy, armed, run, btn, onPress };
 }
 
 function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string }) {
-  const { album, busy, armed, run } = useSaver(photos, title);
+  const { album, busy, armed, run, btn, onPress } = useSaver(photos, title);
   const label = album ? (armed ? "사진첩에 저장" : "전체 사진첩에 저장") : "전체 다운로드";
   return (
     <button
-      type="button" className={cx("scr-sb-saveall", armed && "scr-sb-saveall-armed")} disabled={busy !== null}
-      onClick={(e) => { e.stopPropagation(); void run(); }} aria-label={label} title={label}
+      ref={btn} type="button" className={cx("scr-sb-saveall", armed && "scr-sb-saveall-armed")} disabled={busy !== null}
+      onPointerDown={onPress} onClick={(e) => { e.stopPropagation(); void run(); }} aria-label={label} title={label}
     >
       <Download size={13} aria-hidden />
       <span>{busy ?? (armed ? "눌러서 저장" : album ? "사진첩에 저장" : "전체 다운로드")}</span>
@@ -569,12 +597,12 @@ function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string 
 
 function SaveOneBtn({ photo, className }: { photo: SchedulePhoto; className: string }) {
   const one = useMemo(() => [photo], [photo]);
-  const { album, busy, armed, run } = useSaver(one, photo.name);
+  const { album, busy, armed, run, btn, onPress } = useSaver(one, photo.name);
   const label = armed ? "눌러서 사진첩에 저장" : album ? "사진첩에 저장" : "다운로드";
   return (
     <button
-      type="button" className={cx(className, armed && "is-armed")} disabled={busy !== null}
-      onClick={(e) => { e.stopPropagation(); void run(); }} onPointerDown={(e) => e.stopPropagation()}
+      ref={btn} type="button" className={cx(className, armed && "is-armed")} disabled={busy !== null}
+      onClick={(e) => { e.stopPropagation(); void run(); }} onPointerDown={(e) => { e.stopPropagation(); onPress(); }}
       aria-label={label} title={label}
     >
       <Download size={15} aria-hidden />
@@ -613,7 +641,7 @@ function PhotoOrder({
     const box = wrap.current?.getBoundingClientRect();
     if (!pr || !el || !box) return;
     const slot = slotOf(el);
-    el.style.transform = `translate(${pr.lastX - box.left - pr.grabX - slot.x}px, ${pr.lastY - box.top - pr.grabY - slot.y}px) scale(1.06)`;
+    el.style.transform = `translate(${pr.lastX - box.left - pr.grabX - slot.x}px, ${pr.lastY - box.top - pr.grabY - slot.y}px)`;
   };
   const reslot = (): void => {
     const pr = press.current;
@@ -701,9 +729,12 @@ function PhotoOrder({
     setDragId(null);
     const { order, photos: now, byId: map, onPick: pick, onReorder: reorder } = live.current;
     if (!pr.moved) { if (commit) pick(order.indexOf(pr.id)); return; }
-    setPreview(null);
     const same = order.length === now.length && order.every((id, i) => id === now[i].id);
-    if (commit && !same) reorder(order.map((id) => map.get(id)!));
+    if (!commit || same) { setPreview(null); return; }
+    // 놓은 칸이 자리에 앉는 동안(SORT_MS)은 미리보기 차례를 그대로 두고, 앉은 뒤에 반영한다 — 슬라이드 수십 장을 다시 늘어놓는
+    // 무거운 다시 그리기가 앉는 움직임과 겹치지 않게.
+    const final = order.map((id) => map.get(id)!);
+    window.setTimeout(() => { reorder(final); setPreview(null); }, SORT_MS);
   };
   const onUp = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(true); };
   const onCancel = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(false); };
@@ -918,7 +949,7 @@ function MediaBlock({
   const photo = block.kind === "photo";
   const foldBtn = hasKids ? <FoldBtn folded={folded} onToggle={toggle} what={photo ? "사진" : "파일"} /> : null;
   return (
-    <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
+    <div className={cx("scr-sb-block", "scr-sb-row", canEdit && "scr-sb-block-edit")}>
       {photo ? (
         <button
           type="button" className="scr-sb-photo"
@@ -1034,6 +1065,98 @@ export default function ScheduleBlocks({
   /* 위아래로 옮길 때 커서는 같은 열에 선다(요청: "캐럿은 아랫줄 캐럿이랑 같은 위치") — 짧은 줄을 지나도 처음 열을 기억해
      다음 줄에서 되찾는다(보통 글 편집기처럼). 다른 키를 누르거나 마우스로 누르면 잊는다. */
   const goalCol = useRef<number | null>(null);
+  /* ★ 요소 여러 개 고르기(요청: "다른 요소들 간 Shift+화살표 위아래로 선택") — 글자 칸의 맨 위·맨 아래(목록은 첫·끝 줄 밖)에서
+     Shift+위아래를 누르면 글자 대신 요소째 고른다(노션처럼). 이어 누르면 넓히고 좁힌다. 고른 요소는 Delete·Backspace(한 번 묻는다),
+     Tab·Shift+Tab(들여쓰기), Ctrl/⌘+C(글 복사)로 다루고, Esc·화살표로 푼다. 접혀 숨은 하위는 위 요소와 함께 움직인다. */
+  const [blockSel, setBlockSel] = useState<{ a: string; b: string } | null>(null);
+  const visibleKeys = useRef<string[]>([]);
+  const selRange = (): string[] => {
+    if (!blockSel) return [];
+    const vis = visibleKeys.current;
+    const ia = vis.indexOf(blockSel.a);
+    const ib = vis.indexOf(blockSel.b);
+    if (ia < 0 || ib < 0) return [];
+    return vis.slice(Math.min(ia, ib), Math.max(ia, ib) + 1);
+  };
+  const withKids = (keys: string[]): Set<string> => {
+    const now = latest.current;
+    const out = new Set<string>();
+    for (const k of keys) {
+      const i = now.findIndex((x) => x.key === k);
+      if (i < 0) continue;
+      out.add(k);
+      for (const x of now.slice(i + 1, i + 1 + kidsAt(now, i))) out.add(x.key);
+    }
+    return out;
+  };
+  const startBlockSel = (e: React.KeyboardEvent): void => {
+    if (!canEdit || e.defaultPrevented || composing(e)) return;
+    const t = e.target as HTMLElement;
+    if (!t.matches(NAV) && !t.matches("ul.scr-sb-list")) return;
+    const up = e.key === "ArrowUp";
+    if ((t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) && !t.matches("input.scr-sb-list-text")) {
+      const atEdge = up ? (t.selectionStart ?? 0) === 0 : (t.selectionEnd ?? 0) === t.value.length;
+      if (!atEdge) return;
+    }
+    const key = t.closest<HTMLElement>("[data-block]")?.dataset.block;
+    if (!key) return;
+    const vis = visibleKeys.current;
+    const i = vis.indexOf(key);
+    if (i < 0) return;
+    e.preventDefault();
+    setBlockSel({ a: key, b: vis[Math.max(0, Math.min(vis.length - 1, i + (up ? -1 : 1)))] });
+    t.blur();
+    listRef.current?.focus();
+  };
+  const blockText = (b: DraftBlock): string => (
+    b.kind === "text" ? (isHeading(b) ? b.title : b.text)
+      : b.kind === "list" ? b.items.map((x, k) => `${"  ".repeat(b.levels?.[k] ?? 0)}- ${x}`).join("\n")
+        : b.kind === "photos" ? `[사진 ${b.photos.length}장]` : b.name
+  );
+  const onBlockSelKey = (e: React.KeyboardEvent): void => {
+    if (!blockSel || e.target !== listRef.current) return;
+    const vis = visibleKeys.current;
+    const keys = selRange();
+    const mod = e.ctrlKey || e.metaKey;
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const by = e.key === "ArrowUp" ? -1 : 1;
+      if (e.shiftKey) {
+        const ib = vis.indexOf(blockSel.b);
+        setBlockSel({ a: blockSel.a, b: vis[Math.max(0, Math.min(vis.length - 1, ib + by))] });
+      } else {
+        const edge = by < 0 ? keys[0] : keys[keys.length - 1];
+        setBlockSel(null);
+        const nb = latest.current.find((x) => x.key === edge);
+        if (nb) focusEnd(nb);
+      }
+      return;
+    }
+    if (e.key === "Escape") { e.preventDefault(); setBlockSel(null); return; }
+    if (e.key === "Backspace" || e.key === "Delete") {
+      e.preventDefault();
+      const gone = withKids(keys);
+      ask(`요소 ${keys.length}개를 지울까요?${gone.size > keys.length ? ` 접혀 있던 하위 ${gone.size - keys.length}개도 함께 지워요.` : ""}`, () => {
+        setBlockSel(null);
+        onChange(latest.current.filter((x) => !gone.has(x.key)));
+      });
+      return;
+    }
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const by = e.shiftKey ? -1 : 1;
+      const moved = withKids(keys);
+      const ind = latest.current.filter((x) => moved.has(x.key)).map((x) => x.indent ?? 0);
+      if (Math.max(...ind) + by > MAX_INDENT || Math.min(...ind) + by < 0) return;
+      onChange(latest.current.map((x) => (moved.has(x.key) ? { ...x, indent: (x.indent ?? 0) + by } : x)));
+      return;
+    }
+    if (mod && (e.key === "c" || e.key === "C" || e.key === "x" || e.key === "X")) {
+      e.preventDefault();
+      const byKey = new Map(latest.current.map((x) => [x.key, x]));
+      void navigator.clipboard?.writeText(keys.map((k) => byKey.get(k)).filter((x): x is DraftBlock => !!x).map(blockText).join("\n")).catch(() => {});
+    }
+  };
   const caretFor = (value: string, col: number, up: boolean): number => {
     if (up) {
       const ls = value.lastIndexOf("\n") + 1;
@@ -1044,7 +1167,8 @@ export default function ScheduleBlocks({
   };
   const onNavKey = (e: React.KeyboardEvent): void => {
     if (e.key !== "ArrowUp" && e.key !== "ArrowDown") { goalCol.current = null; return; }
-    if (!canEdit || e.defaultPrevented || composing(e) || e.shiftKey) return;
+    if (e.shiftKey) { startBlockSel(e); return; }
+    if (!canEdit || e.defaultPrevented || composing(e)) return;
     const t = e.target as HTMLElement;
     if (!t.matches(NAV)) return;
     const up = e.key === "ArrowUp";
@@ -1458,11 +1582,13 @@ export default function ScheduleBlocks({
     indentBy(key, e.shiftKey ? -1 : 1);
   };
 
+  const selSet = new Set(selRange());
   return (
     <div
       className={cx("scr-sb", dragKey !== null && "scr-sb-dragging")} ref={listRef}
-      onKeyDown={(e) => { onNavKey(e); onIndentKey(e); }}
-      onPointerDown={() => { goalCol.current = null; }}
+      tabIndex={canEdit ? -1 : undefined}
+      onKeyDown={(e) => { onBlockSelKey(e); onNavKey(e); onIndentKey(e); }}
+      onPointerDown={() => { goalCol.current = null; if (blockSel) setBlockSel(null); }}
       onKeyDownCapture={onSlashKey}
     >
       {(() => {
@@ -1477,6 +1603,7 @@ export default function ScheduleBlocks({
           out.push({ b, kids });
           if (kids > 0 && foldedOf(b)) hideBelow = ind;
         });
+        visibleKeys.current = out.map((o) => o.b.key);
         return out;
       })().map(({ b, kids }) => {
         const grip = gripFor(b);
@@ -1488,7 +1615,7 @@ export default function ScheduleBlocks({
         return (
           <div
             key={b.key} data-block={b.key} data-indent={b.indent ?? 0}
-            className={cx("scr-sb-item", dragKey === b.key && "scr-sb-item-lifted")}
+            className={cx("scr-sb-item", dragKey === b.key && "scr-sb-item-lifted", selSet.has(b.key) && "scr-sb-item-sel")}
             style={b.indent ? ({ "--sb-indent": b.indent } as React.CSSProperties) : undefined}
             ref={(el) => { if (el) rowRefs.current.set(b.key, el); else rowRefs.current.delete(b.key); }}
           >

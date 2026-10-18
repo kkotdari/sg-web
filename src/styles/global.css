@@ -7329,21 +7329,25 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   color: var(--muted); cursor: grab; touch-action: none;
 }
 .scr-sb-grip:active { cursor: grabbing; }
-.scr-sb-tools {
-  position: absolute; top: 0; right: 0;
-  display: flex; gap: 2px;
-}
+/* 글·목록·파일 요소는 한 줄 [내용 | 접기 | 단추들] — 내용이 남는 폭을 다 쓴다. */
+.scr-sb-row { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 2px; }
+.scr-sb-row > :first-child { flex: 1 1 0; min-width: 0; }
+.scr-sb-row > .scr-sb-fold-corner { flex: 0 0 auto; }
+.scr-sb-tools { display: flex; gap: 2px; flex: 0 0 auto; }
 /* 들여쓰기·끌기·삭제 단추는 늘 띄우지 않는다(2026-10-18, 요청: "항상 표시하지 말고 요소 위에 마우스 가져가면 표시") —
-   그 요소 위에 올렸을 때·그 안에 커서가 있을 때(폰은 이쪽)·끄는 동안만 보인다. 자리는 그대로 비워 둬 글자가 안 밀린다. */
+   그 요소 위에 올렸을 때·그 안에 커서가 있을 때(폰은 이쪽)·끄는 동안만 보인다.
+   숨은 동안엔 폭도 0 이다(요청: "버튼 자리를 남겨 놔서 별로 · 보일 때 왼쪽으로 밀리면서 노출") — 뜰 때 폭이 자라며 내용·접기를 왼쪽으로 민다. */
 .scr-sb-handles { display: inline-flex; align-items: center; gap: 2px; }
-.scr-sb-tools, .scr-sb-handles { opacity: 0; pointer-events: none; transition: opacity .15s; }
+.scr-sb-tools, .scr-sb-handles {
+  opacity: 0; pointer-events: none; max-width: 0; overflow: hidden;
+  transition: opacity .15s, max-width .18s ease;
+}
 .scr-sb-block:hover .scr-sb-tools, .scr-sb-block:hover .scr-sb-handles,
 .scr-sb-block:focus-within .scr-sb-tools, .scr-sb-block:focus-within .scr-sb-handles,
-.scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; }
-@media (hover: hover) { .scr-sb-block-edit > .scr-sb-text, .scr-sb-block-edit > .scr-sb-list > .scr-sb-list-item:first-child { padding-right: 104px; } }
-/* 폰은 올림(hover)이 없다 — 단추 줄을 글 위에 겹치지 않고, 그 요소를 고치는 동안에만 아래에 한 줄로 낸다. */
+.scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; max-width: 140px; }
+/* 폰은 올림(hover)이 없다 — 단추 줄을 글 옆에 끼우지 않고, 그 요소를 고치는 동안에만 아래에 한 줄로 낸다. */
 @media (hover: none) {
-  .scr-sb-block > .scr-sb-tools { position: static; justify-content: flex-end; display: none; margin-top: 2px; }
+  .scr-sb-block > .scr-sb-tools { flex-basis: 100%; max-width: none; justify-content: flex-end; display: none; margin-top: 2px; }
   .scr-sb-block:focus-within > .scr-sb-tools { display: flex; }
 }
 .scr-sb-icon {
@@ -7361,8 +7365,6 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   font-size: var(--fs-caption); line-height: 1.5; color: var(--text);
   white-space: pre-wrap; word-break: break-word;
 }
-.scr-sb-block-edit .scr-sb-text,
-.scr-sb-block-edit .scr-sb-list-head { padding-right: 104px; }
 .scr-sb-line {
   display: block; width: 100%; min-width: 0; box-sizing: border-box;
   margin: 0; padding: 2px 4px;
@@ -7384,9 +7386,7 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 /* 제목 요소 — 글·목록·사진 위에 따로 서는 굵은 한 줄(노션의 제목 블록). */
 .scr-sb-text.scr-sb-heading { font-size: calc(var(--fs-caption) * 1.08); font-weight: 800; line-height: 1.4; }
 .scr-sb-photos-gap { flex: 1 1 auto; }
-.scr-sb-has-fold > .scr-sb-text { padding-right: 28px; }
-.scr-sb-has-fold > .scr-sb-fold-corner { position: absolute; top: 0; right: 0; margin: 0; }
-.scr-sb-block-edit.scr-sb-has-fold > .scr-sb-fold-corner { right: 104px; }
+.scr-sb-has-fold > .scr-sb-fold-corner { margin: 0; }
 /* 맨 아래 이어 쓰기 자리(요청: "'글을 쓰거나 / 로 요소 추가' 는 필요 없을 듯") — 글자 없이 빈 띠만 두고, 올리면 + 가 옅게 뜬다. */
 .scr-sb-composer {
   margin-top: 4px; min-height: 22px; padding: 2px 4px; border-radius: 6px;
@@ -7420,6 +7420,8 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-lv2 > .scr-sb-list-dot { border-radius: 1px; }
 .scr-sb-lv-btns { display: inline-flex; flex: 0 0 auto; gap: 1px; }
 .scr-sb-list:focus { outline: none; }
+.scr-sb:focus { outline: none; }
+.scr-sb-item-sel { border-radius: 6px; background: color-mix(in srgb, var(--timeline-blue) 18%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--timeline-blue) 18%, transparent); }
 .scr-sb-row-sel { background: color-mix(in srgb, var(--timeline-blue) 22%, transparent); border-radius: 4px; }
 .scr-sb-list-selecting .scr-sb-list-text { user-select: none; -webkit-user-select: none; }
 .scr-sb-list-text {
@@ -7551,7 +7553,7 @@ html.scr-light-theme .scr-photo-nav, html.scr-light-theme .scr-photo-counter { b
 .scr-sb-fold-corner { display: flex; justify-content: flex-end; margin-top: -4px; }
 .scr-sb-file-row { display: flex; align-items: center; gap: 4px; }
 .scr-sb-file-row > .scr-sb-file { flex: 0 1 auto; min-width: 0; margin-right: 0; }
-.scr-sb-block-edit .scr-sb-file-row { padding-right: 104px; }
+
 .scr-sb-file-row > .scr-sb-icon { flex: 0 0 auto; }
 /* 썸네일 칸은 늘 보인다(요청: "앨범도 아래 그리드 항상 표시 · 좌우 여백은 자동으로 같게") — 칸이 56px 이상에서 줄 폭을
    똑같이 나눠 가져(minmax(56px, 1fr)) 양 끝이 위 슬라이드 끝과 맞고 칸 사이도 같다. 칸은 정사각. */
@@ -7580,8 +7582,9 @@ html.scr-light-theme .scr-sb-order-add { background: #fff; border-color: rgba(0,
   z-index: 2; cursor: grabbing; will-change: transform;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--timeline-blue);
 }
+/* 끌기 시작·끝이 버벅였다(지적) — 나머지 칸을 흐리게(opacity) 하면 칸마다 합성 층이 새로 서고 원본 크기 사진을 다시 굽는다.
+   흐림·확대(scale)를 걷고 끄는 칸에 그림자·테만 둔다. */
 .scr-sb-order-sorting { cursor: grabbing; }
-.scr-sb-order-sorting .scr-sb-order-cell:not(.scr-sb-order-drag) { opacity: 0.8; }
 .scr-sb-order-n {
   position: absolute; left: 3px; top: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
   background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center;
