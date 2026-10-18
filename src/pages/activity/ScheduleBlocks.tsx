@@ -1020,6 +1020,12 @@ export default function ScheduleBlocks({
     const next = i < 0 ? undefined : all[i + (up ? -1 : 1)];
     if (!next) return;
     e.preventDefault();
+    /* 아직 안 펼친 글(p)은 칸이 아니라 커서가 안 선다(지적: "화살표로 아래위 이동 시 커서가 없어짐") — 그 요소를 고침 칸으로
+       열고 커서를 끝(위로)·처음(아래로)에 둔다. */
+    if (next.matches("p.scr-sb-editable")) {
+      const key = next.closest<HTMLElement>("[data-block]")?.dataset.block;
+      if (key) { focusOn(key, "body", up ? "end" : 0); return; }
+    }
     next.focus();
     if (next instanceof HTMLInputElement || next instanceof HTMLTextAreaElement) {
       const at = up ? next.value.length : 0;
