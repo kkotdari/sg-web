@@ -27,23 +27,54 @@ const uniqueNames = (names: string[]): string[] => {
   });
 };
 
+/* 받은 것은 주소별로 한 벌만 들고 있는다 — 사진첩 저장을 미리 받을 때 '전체 저장'과 낱장 저장이 같은 동영상을 두 번 받지 않게.
+   합이 CACHE_MAX 를 넘으면 오래된 것부터 놓는다. */
+const CACHE_MAX = 300 * 1024 * 1024;
+const cache = new Map<string, { blob: Promise<Blob>; size: number }>();
+const cacheTrim = (): void => {
+  let total = 0;
+  for (const v of cache.values()) total += v.size;
+  for (const [k, v] of cache) {
+    if (total <= CACHE_MAX) break;
+    cache.delete(k);
+    total -= v.size;
+  }
+};
+const fetchBlob = (url: string, name: string): Promise<Blob> => {
+  const hit = cache.get(url);
+  if (hit) { cache.delete(url); cache.set(url, hit); return hit.blob; }
+  const entry = { size: 0, blob: Promise.resolve(new Blob()) };
+  entry.blob = fetch(imgSrc(url), { mode: "cors" }).then(async (res) => {
+    if (!res.ok) throw new Error(`${name} 을(를) 받지 못했어요.`);
+    const b = await res.blob();
+    entry.size = b.size;
+    cacheTrim();
+    return b;
+  });
+  entry.blob.catch(() => { if (cache.get(url) === entry) cache.delete(url); });
+  cache.set(url, entry);
+  return entry.blob;
+};
+
 /** 사진·동영상을 다 받아 File 로 — 고친 뒤 아직 안 올린 것은 손에 든 File 을 그대로 쓴다. */
 export async function fetchMedia(
   items: { name: string; url: string; file?: File }[],
   onProgress?: (done: number, total: number) => void,
 ): Promise<File[]> {
-  const names = uniqueNames(items.map((p) => p.name || "photo"));
+  // 목록 차례대로 담긴다(요청: "저장 시 목록 순으로 저장") — 여럿이면 이름 앞에 차례 번호(01_…)를 붙여 zip·파일 앱이 이름순으로
+  // 늘어놓고, 수정 시각도 차례대로 1초씩 늘려 시각순으로 늘어놓는 사진첩에서도 같은 차례가 되게 한다.
+  // (사진 안에 찍은 날짜(EXIF)가 박힌 것은 사진첩이 그 날짜를 쓴다 — 거기까지는 못 바꾼다.)
+  const pad = String(items.length).length;
+  const base = items.map((p) => p.name || "photo");
+  const names = items.length > 1 ? base.map((n, i) => `${String(i + 1).padStart(Math.max(2, pad), "0")}_${n}`) : uniqueNames(base);
+  const t0 = Date.now() - items.length * 1000;
   const out: File[] = [];
   for (let i = 0; i < items.length; i += 1) {
     const p = items[i];
     let blob: Blob;
     if (p.file) blob = p.file;
-    else {
-      const res = await fetch(imgSrc(p.url), { mode: "cors" });
-      if (!res.ok) throw new Error(`${p.name} 을(를) 받지 못했어요.`);
-      blob = await res.blob();
-    }
-    out.push(new File([blob], names[i], { type: blob.type || "application/octet-stream" }));
+    else blob = await fetchBlob(p.url, p.name);
+    out.push(new File([blob], names[i], { type: blob.type || "application/octet-stream", lastModified: t0 + i * 1000 }));
     onProgress?.(i + 1, items.length);
   }
   return out;

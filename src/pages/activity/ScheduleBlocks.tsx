@@ -524,7 +524,8 @@ function ListBlock({
 /* 사진첩 저장(폰) — 공유 시트는 누른 손짓 안에서 바로 불러야 뜬다. 누른 뒤 받기(fetch)를 기다리면 손짓이 식어(특히 iOS)
    "다운로드 → 또 '사진첩에 저장'" 두 번 눌러야 했다(요청: "이미 화면에 로딩된 애들을 바로 저장하면 안 되나").
    그래서 단추가 화면에 보이면 미리 받아 둔다 — 화면에 뜬 사진은 브라우저 캐시에서 바로 온다. 누를 땐 손에 든 File 로 곧장 공유한다.
-   동영상이 든 묶음은 커서 미리 받지 않고 손가락이 닿는 순간(pointerdown) 받기 시작한다. 그래도 늦으면 옛 두 번째 누름이 남는다. */
+   동영상도 미리 받는다(요청: "동영상도 사진첩 저장 한 번에") — 손가락이 닿는 순간(pointerdown)에도 받기를 당긴다.
+   그래도 다 받기 전에 누르면(큰 동영상을 막 띄운 참) 옛 두 번째 누름이 남는다. */
 function useSaver(photos: SchedulePhoto[], zipName: string) {
   const album = canSaveToAlbum();
   const [busy, setBusy] = useState<string | null>(null);
@@ -533,15 +534,19 @@ function useSaver(photos: SchedulePhoto[], zipName: string) {
   const btn = useRef<HTMLButtonElement | null>(null);
   const [armed, setArmed] = useState(false);
   useEffect(() => { ready.current = null; prep.current = null; setArmed(false); }, [photos]);
-  const warm = (onProgress?: (d: number, t: number) => void): Promise<File[]> => {
+  // 받는 중 진행(받은 수/전체)은 미리 받기와 누름이 함께 본다 — 미리 받던 중에 누르면 거기서부터 센다(옛 길은 "0 / N" 에 멈춰 있었다).
+  const seen = useRef<((d: number, t: number) => void) | null>(null);
+  const got = useRef(0);
+  const warm = (): Promise<File[]> => {
     if (!prep.current) {
-      const p = fetchMedia(photos, onProgress);
+      got.current = 0;
+      const p = fetchMedia(photos, (d, t) => { got.current = d; seen.current?.(d, t); });
       prep.current = p;
       p.then((files) => { if (prep.current === p) ready.current = files; }, () => { if (prep.current === p) prep.current = null; });
     }
     return prep.current;
   };
-  const eager = album && photos.length > 0 && !photos.some(isVideoItem);
+  const eager = album && photos.length > 0;
   useEffect(() => {
     const el = btn.current;
     if (!eager || !el || typeof IntersectionObserver === "undefined") return;
@@ -566,14 +571,17 @@ function useSaver(photos: SchedulePhoto[], zipName: string) {
     if (busy) return;
     // 미리 받아 둔 것이 있으면 기다림 없이 곧장 — 이 줄 앞에 await 를 두지 마라(손짓이 식는다).
     if (album && ready.current && navigator.canShare({ files: ready.current })) { await share(ready.current); return; }
-    setBusy(`0 / ${photos.length}`);
+    const p = warm();
+    seen.current = (d, t) => setBusy(`받는 중 ${d}/${t}`);
+    setBusy(`받는 중 ${got.current}/${photos.length}`);
     try {
-      const files = await warm((d, t) => setBusy(`${d} / ${t}`));
+      const files = await p;
       if (album && navigator.canShare({ files })) await share(files);
       else await downloadFiles(files, zipName.trim() || "사진");
     } catch (err) {
       showAlert(err instanceof Error && err.message ? err.message : "내려받지 못했어요.");
     } finally {
+      seen.current = null;
       setBusy(null);
     }
   };
@@ -612,6 +620,9 @@ function SaveOneBtn({ photo, className }: { photo: SchedulePhoto; className: str
 
 const SORT_SLOP = 6;
 const SORT_MS = 160;
+/* 손가락은 오래 눌러야 끌기가 된다(요청: "바로 드래그 아니고 오래 눌러야 드래그 모드 · 스크롤하다가 드래그가 돼 버림") —
+   LONG_PRESS_MS 안에 손가락이 SORT_SLOP 넘게 움직이면 끌기가 아니라 쓸어 넘기기(스크롤)로 보고 놓는다. 마우스는 끌면 바로 끈다. */
+const LONG_PRESS_MS = 380;
 
 function PhotoOrder({
   photos, at, onPick, onReorder, sortable, onAdd,
@@ -625,6 +636,7 @@ function PhotoOrder({
   const press = useRef<{
     id: string; pointerId: number; x: number; y: number; grabX: number; grabY: number;
     lastX: number; lastY: number; moved: boolean; raf: number; stop: () => void;
+    touch: boolean; timer: number;
   } | null>(null);
   const [preview, setPreview] = useState<string[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -694,17 +706,23 @@ function PhotoOrder({
     follow();
   }, [preview]);
 
+  const lift = (): void => {
+    const pr = press.current;
+    if (!pr || pr.moved) return;
+    pr.moved = true;
+    sorting += 1;
+    const el = cells.current.get(pr.id);
+    if (el) el.style.transition = "none";
+    setDragId(pr.id);
+  };
   const onMove = (e: PointerEvent): void => {
     const pr = press.current;
     if (!pr || pr.pointerId !== e.pointerId) return;
     pr.lastX = e.clientX; pr.lastY = e.clientY;
     if (!pr.moved) {
       if (Math.hypot(e.clientX - pr.x, e.clientY - pr.y) < SORT_SLOP) return;
-      pr.moved = true;
-      sorting += 1;
-      const el = cells.current.get(pr.id);
-      if (el) el.style.transition = "none";
-      setDragId(pr.id);
+      if (pr.touch) { finish(false); return; }
+      lift();
     }
     e.preventDefault();
     if (pr.raf) return;
@@ -718,6 +736,7 @@ function PhotoOrder({
     const pr = press.current;
     if (!pr) return;
     pr.stop();
+    window.clearTimeout(pr.timer);
     if (pr.raf) cancelAnimationFrame(pr.raf);
     press.current = null;
     if (pr.moved) sorting = Math.max(0, sorting - 1);
@@ -745,15 +764,24 @@ function PhotoOrder({
   const onDown = (e: React.PointerEvent<HTMLButtonElement>, id: string): void => {
     if (!sortable || e.button !== 0 || press.current) return;
     const r = e.currentTarget.getBoundingClientRect();
+    const touch = e.pointerType !== "mouse";
+    // 끄는 동안엔 쪽 스크롤을 막는다 — 칸은 스크롤을 허락(touch-action: manipulation)하므로 들어 올린 뒤의 touchmove 를 막아야 한다.
+    const holdScroll = (te: TouchEvent): void => { if (press.current?.moved && te.cancelable) te.preventDefault(); };
     press.current = {
       id, pointerId: e.pointerId, x: e.clientX, y: e.clientY, grabX: e.clientX - r.left, grabY: e.clientY - r.top,
-      lastX: e.clientX, lastY: e.clientY, moved: false, raf: 0,
+      lastX: e.clientX, lastY: e.clientY, moved: false, raf: 0, touch,
+      timer: touch ? window.setTimeout(() => {
+        lift();
+        navigator.vibrate?.(12);
+      }, LONG_PRESS_MS) : 0,
       stop: () => {
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
         window.removeEventListener("pointercancel", onCancel);
+        window.removeEventListener("touchmove", holdScroll);
       },
     };
+    window.addEventListener("touchmove", holdScroll, { passive: false });
     window.addEventListener("pointermove", onMove, { passive: false });
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onCancel);
@@ -770,6 +798,7 @@ function PhotoOrder({
             className={cx("scr-sb-order-cell", photos[at]?.id === id && "scr-sb-order-on", id === dragId && "scr-sb-order-drag")}
             aria-label={sortable ? `${i + 1}번째 ${p.name} — 끌어서 옮기기` : `${i + 1}번째 ${p.name} 보기`}
             onPointerDown={(e) => onDown(e, id)}
+            onContextMenu={sortable ? (e) => e.preventDefault() : undefined}
             onClick={(e) => { e.stopPropagation(); if (!sortable) onPick(i); }}
           >
             {isVideoItem(p) ? (
@@ -833,16 +862,16 @@ function PhotosBlock({
       {(canEdit || n > 0) && (
         <div className="scr-sb-photos-head">
           {block.title ? <div className="scr-sb-line scr-sb-list-title">{block.title}</div> : <span className="scr-sb-photos-gap" />}
+          {/* 단추 묶음은 저장·접기 앞(왼쪽)에 둔다 — 뒤에 두면 저장을 누르는 순간(포커스) 묶음이 펴지며 저장 단추를 왼쪽으로 밀어,
+              손가락 밑에 다른 단추가 와 엉뚱한 것이 눌렸다(요청: "사진첩에 저장 버튼을 눌렀는데 버튼 펼치기가 돼 버림"). */}
+          {canEdit && (
+            <span className="scr-sb-handles">
+              {grip}
+              <IconBtn label="사진 목록 삭제" onClick={onDelete} danger><X size={14} /></IconBtn>
+            </span>
+          )}
           {n > 0 && <SaveAllBtn photos={block.photos} title={block.title || "사진"} />}
           {hasKids && <FoldBtn folded={folded} onToggle={toggle} what="사진 목록" />}
-          {canEdit && (
-            <>
-              <span className="scr-sb-handles">
-                {grip}
-                <IconBtn label="사진 목록 삭제" onClick={onDelete} danger><X size={14} /></IconBtn>
-              </span>
-            </>
-          )}
         </div>
       )}
       {n > 0 && (

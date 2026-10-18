@@ -7311,11 +7311,7 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-sb > .scr-sb-item + .scr-sb-item[data-indent="2"], .scr-sb > .scr-sb-item + .scr-sb-item[data-indent="3"] { margin-top: 4px; }
 .scr-sb-item { position: relative; padding-left: calc(var(--sb-indent, 0) * 24px); }
 @media (max-width: 640px) { .scr-sb-item { padding-left: calc(var(--sb-indent, 0) * 14px); } }
-.scr-sb-item[style*="--sb-indent"]::before {
-  content: ""; position: absolute; left: calc(var(--sb-indent, 0) * 24px - 12px); top: 4px; bottom: 4px;
-  border-left: 1px solid var(--line); pointer-events: none;
-}
-@media (max-width: 640px) { .scr-sb-item[style*="--sb-indent"]::before { left: calc(var(--sb-indent, 0) * 14px - 7px); } }
+/* 들여 쓴 요소 앞의 세로줄은 걷었다(요청: "들여쓰기 앞에 | 바 없애기") — 들여쓰기 폭만으로 단을 보인다. */
 .scr-sb-item-lifted {
   position: relative; z-index: 3; border-radius: 10px; background: var(--panel-raised);
   box-shadow: 0 0 0 6px var(--panel-raised), 0 10px 28px rgba(0, 0, 0, 0.35);
@@ -7333,13 +7329,16 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-sb-row { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 2px; }
 .scr-sb-row > :first-child { flex: 1 1 0; min-width: 0; }
 .scr-sb-row > .scr-sb-fold-corner { flex: 0 0 auto; }
+/* 단추(24px)가 글 한 줄(≈19px)보다 키가 커서 뜰 때마다 요소가 위아래로 늘었다(요청: "버튼 보이기 모드에서 위아래 높이가 더 높아지는 문제") —
+   접기·단추 칸은 줄 높이에 끼지 않는다(높이 0 · 단추는 그 밖으로 늘어뜨린다). 폭만 접고 펴므로 가로만 자른다(overflow-x: clip). */
+.scr-sb-row > .scr-sb-fold-corner, .scr-sb-row > .scr-sb-tools { height: 0; overflow-y: visible; align-self: flex-start; }
 .scr-sb-tools { display: flex; gap: 2px; flex: 0 0 auto; }
 /* 들여쓰기·끌기·삭제 단추는 늘 띄우지 않는다(2026-10-18, 요청: "항상 표시하지 말고 요소 위에 마우스 가져가면 표시") —
    그 요소 위에 올렸을 때·그 안에 커서가 있을 때(폰은 이쪽)·끄는 동안만 보인다.
    숨은 동안엔 폭도 0 이다(요청: "버튼 자리를 남겨 놔서 별로 · 보일 때 왼쪽으로 밀리면서 노출") — 뜰 때 폭이 자라며 내용·접기를 왼쪽으로 민다. */
 .scr-sb-handles { display: inline-flex; align-items: center; gap: 2px; }
 .scr-sb-tools, .scr-sb-handles {
-  opacity: 0; pointer-events: none; max-width: 0; overflow: hidden;
+  opacity: 0; pointer-events: none; max-width: 0; overflow-x: clip; overflow-y: visible;
   transition: opacity .15s, max-width .18s ease;
 }
 .scr-sb-block:hover .scr-sb-tools, .scr-sb-block:hover .scr-sb-handles,
@@ -7347,7 +7346,7 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; max-width: 140px; }
 /* 폰은 올림(hover)이 없다 — 단추 줄을 글 옆에 끼우지 않고, 그 요소를 고치는 동안에만 아래에 한 줄로 낸다. */
 @media (hover: none) {
-  .scr-sb-block > .scr-sb-tools { flex-basis: 100%; max-width: none; justify-content: flex-end; display: none; margin-top: 2px; }
+  .scr-sb-block > .scr-sb-tools { flex-basis: 100%; max-width: none; height: auto; justify-content: flex-end; display: none; margin-top: 2px; }
   .scr-sb-block:focus-within > .scr-sb-tools { display: flex; }
 }
 .scr-sb-icon {
@@ -7574,7 +7573,7 @@ html.scr-light-theme .scr-sb-order-add { background: #fff; border-color: rgba(0,
 .scr-sb-order-cell {
   position: relative; width: 100%; height: auto; aspect-ratio: 1 / 1; padding: 0; overflow: hidden;
   border: 1px solid var(--line); border-radius: 6px; background: var(--panel); cursor: grab;
-  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 .scr-sb-order-cell img, .scr-sb-order-cell video { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .scr-sb-order-on { border-color: var(--timeline-blue); box-shadow: 0 0 0 1px var(--timeline-blue); }
