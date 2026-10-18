@@ -363,6 +363,35 @@ function applyAdopted(blocks: DraftBlock[], adopted: Map<string, Adopted>): Draf
   });
 }
 
+/** 내 판을 받을 때 — 글·차례는 손대지 않고, 막 올린 사진·파일만 서버 주소(썸네일)로 바꿔 손에 든 File 을 놓는다. 바뀐 게 없으면 null. */
+function adoptServerMedia(mine: Draft, server: Draft): Draft | null {
+  const byId = new Map(server.blocks.map((b) => [b.id, b]));
+  let changed = false;
+  const blocks = mine.blocks.map((b) => {
+    const sb = byId.get(b.id);
+    if (!sb || sb.kind !== b.kind) return b;
+    if (b.kind === "photos") {
+      const sp = new Map(sb.photos.map((p) => [p.id, p]));
+      let hit = false;
+      const photos = b.photos.map((p) => {
+        const q = sp.get(p.id);
+        if (!q || (!p.file && p.url === q.url && p.thumbUrl === q.thumbUrl)) return p;
+        hit = true;
+        return q;
+      });
+      if (!hit) return b;
+      changed = true;
+      return { ...b, photos };
+    }
+    if ((b.kind === "photo" || b.kind === "file") && b.url !== sb.url) {
+      changed = true;
+      return { ...b, url: sb.url, name: sb.name, size: sb.size };
+    }
+    return b;
+  });
+  return changed ? { ...mine, blocks } : null;
+}
+
 function keepLocal(server: Draft, mine: Draft): Draft {
   const local = new Map(mine.blocks.map((b) => [b.key, b]));
   const blocks: DraftBlock[] = server.blocks.map((s) => {
@@ -485,6 +514,10 @@ export default function ScheduleCard({
   const failedAt = useRef(0);
   const lastKey = useRef("");
   const baseUpdatedAt = useRef("");
+  /* ★ 내가 저장해 만든 판(서버 updatedAt)을 기억한다(요청: "일정 저장 버전을 만들어서 내가 수정한 버전이면 업데이트 안 하게") —
+     저장 응답이나 다시 묻기(refresh)로 돌아온 판이 이 값이면 내 판이니, 비교 기준(lastKey·base)만 맞추고 화면의 글·차례는
+     그대로 둔다. 여태는 내 저장도 서버 꼴로 다시 갈아 끼워 커서·고침이 흔들렸다. 남이 고쳐 판이 바뀐 때만 받아 합친다. */
+  const mineAt = useRef("");
   const latest = useRef({ schedule, onChanged });
   latest.current = { schedule, onChanged };
 
@@ -505,7 +538,12 @@ export default function ScheduleCard({
     const d = draftRef.current;
     if (!d) return;
     const server = draftOf(s, d.blocks);
-    setDraft(dirty() ? merge(server, d, touched.current, removed.current, base.current) : keepLocal(server, d));
+    const own = !!mineAt.current && s.updatedAt === mineAt.current;
+    if (!own) setDraft(dirty() ? merge(server, d, touched.current, removed.current, base.current) : keepLocal(server, d));
+    else {
+      const media = adoptServerMedia(d, server);
+      if (media) setDraft(media);
+    }
     base.current = new Map(server.blocks.map((b) => [b.key, b]));
     savedSnap.current = snapOf(server);
   };
@@ -572,6 +610,7 @@ export default function ScheduleCard({
     try {
       const { payload, deferred } = await payloadOf(d, baseUpdatedAt.current);
       const saved = await api.updateSchedule(latest.current.schedule.id, payload);
+      mineAt.current = saved.updatedAt;
       failedAt.current = 0;
       setSavedAt(saved.updatedAt);
       if (deferred.size === 0) { uploadTotal.current = 0; setShield(null); }
@@ -623,8 +662,12 @@ export default function ScheduleCard({
     try {
       const s = await api.getSchedule(latest.current.schedule.id);
       if (!draftRef.current || sortingNow()) return;
-      // 같은 내용이면 끝 — 위(활동 목록)에 알리면 목록의 카드가 전부 다시 그려진다.
-      if (serverKeyOf(s) === lastKey.current) { baseUpdatedAt.current = s.updatedAt; return; }
+      // 같은 내용이거나 내가 저장한 그 판이면 끝 — 위(활동 목록)에 알리면 목록의 카드가 전부 다시 그려진다.
+      if (serverKeyOf(s) === lastKey.current || s.updatedAt === mineAt.current) {
+        baseUpdatedAt.current = s.updatedAt;
+        lastKey.current = serverKeyOf(s);
+        return;
+      }
       absorb(s);
       latest.current.onChanged(s);
     } catch {
