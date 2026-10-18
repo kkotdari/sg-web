@@ -18,11 +18,13 @@
     "react-dom": "^19.0.0",
     "scplay": "github:kkotdari/scplay#dist",
     "screp-js": "^0.3.0",
+    "sortablejs": "^1.15.6",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/sortablejs": "^1.15.8",
     "@vitejs/plugin-react": "^4.3.4",
     "playwright-core": "^1.62.1",
     "typescript": "^5.9.3",

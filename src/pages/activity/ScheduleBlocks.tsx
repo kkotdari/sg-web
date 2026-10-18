@@ -1,5 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
+import Sortable from "sortablejs";
 import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GripVertical, Heading, Image as ImageIcon,
   IndentDecrease, IndentIncrease, List as ListIcon, Paperclip,
@@ -624,6 +625,32 @@ const SORT_MS = 160;
    LONG_PRESS_MS 안에 손가락이 SORT_SLOP 넘게 움직이면 끌기가 아니라 쓸어 넘기기(스크롤)로 보고 놓는다. 마우스는 끌면 바로 끈다. */
 const LONG_PRESS_MS = 380;
 
+type CellAct = { pick: (i: number) => void; ref: (id: string) => (el: HTMLButtonElement | null) => void };
+
+const OrderCell = memo(function OrderCell({ p, i, on, sortable, act }: {
+  p: SchedulePhoto; i: number; on: boolean; sortable: boolean; act: CellAct;
+}) {
+  return (
+    <button
+      type="button" ref={act.ref(p.id)}
+      className={cx("scr-sb-order-cell", on && "scr-sb-order-on")}
+      aria-label={sortable ? `${i + 1}번째 ${p.name} — 끌어서 옮기기` : `${i + 1}번째 ${p.name} 보기`}
+      onContextMenu={sortable ? (e) => e.preventDefault() : undefined}
+      onClick={(e) => { e.stopPropagation(); act.pick(i); }}
+    >
+      {isVideoItem(p) ? (
+        <>
+          <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
+          <span className="scr-sb-order-play" aria-hidden><Play size={12} /></span>
+        </>
+      ) : (
+        <img src={imgSrc(p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
+      )}
+      <span className="scr-sb-order-n" aria-hidden>{i + 1}</span>
+    </button>
+  );
+});
+
 function PhotoOrder({
   photos, at, onPick, onReorder, sortable, onAdd,
 }: {
@@ -633,219 +660,88 @@ function PhotoOrder({
 }) {
   const wrap = useRef<HTMLDivElement | null>(null);
   const cells = useRef(new Map<string, HTMLButtonElement>());
-  const press = useRef<{
-    id: string; pointerId: number; x: number; y: number; grabX: number; grabY: number;
-    lastX: number; lastY: number; moved: boolean; raf: number; stop: () => void;
-    touch: boolean; timer: number;
-  } | null>(null);
-  // 든 칸·끄는 중 표시는 클래스를 DOM 에 바로 단다 — 상태로 두면 들어 올리고 놓을 때마다 칸 전부를 다시 그렸다(장수만큼 무겁다).
-  const markDrag = (id: string, on: boolean): void => {
-    wrap.current?.classList.toggle("scr-sb-order-sorting", on);
-    cells.current.get(id)?.classList.toggle("scr-sb-order-drag", on);
-  };
   const byId = new Map(photos.map((p) => [p.id, p]));
   const order = photos.map((p) => p.id);
   const live = useRef({ photos, onPick, onReorder });
   live.current = { photos, onPick, onReorder };
-  /* ★ 끄는 동안엔 DOM 차례도 React 상태도 안 바꾼다 — 칸을 transform 으로만 옮긴다(지적: "사진 그리드 드래그가 너무 느려 · 사진이 많아질수록
-     더 느려짐"). 옛 길은 칸 자리가 바뀔 때마다 미리보기 차례로 전부 다시 그리고(FLIP), 칸마다 자리를 읽고 쓰며 `offsetWidth` 로 강제 배치를
-     칸 수만큼 돌렸다(장수² 꼴). 이제 들어 올릴 때 칸 자리를 **한 번** 재 두고(slots), 끄는 동안 가까운 칸은 셈으로 찾고, 자리가 바뀐 칸만
-     transform 을 고친다. 놓으면 차례를 한 번 반영하고, 그 다시 그리기 직전(useLayoutEffect)에 transform 을 걷는다. */
-  const drag = useRef<{ slots: { x: number; y: number; w: number; h: number }[]; cur: string[]; home: Map<string, number> } | null>(null);
-  const clearPending = useRef(false);
-
-  // 칸 번호는 React 가 쥔 글자 마디의 값만 바꾼다(textContent 로 갈면 React 가 떨어진 옛 마디를 고쳐 번호가 멈춘다).
-  const setNo = (el: HTMLElement | undefined, n: number): void => {
-    const t = el?.querySelector(".scr-sb-order-n")?.firstChild;
-    if (t && t.nodeType === Node.TEXT_NODE && t.nodeValue !== String(n)) t.nodeValue = String(n);
-  };
-  const placeAll = (cur: string[]): void => {
-    const d = drag.current;
-    const pr = press.current;
-    if (!d) return;
-    cur.forEach((id, i) => {
-      if (id === pr?.id) return;
-      const el = cells.current.get(id);
-      const h = d.home.get(id);
-      if (!el || h === undefined) return;
-      const dx = d.slots[i].x - d.slots[h].x;
-      const dy = d.slots[i].y - d.slots[h].y;
-      el.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : "";
-      setNo(el, i + 1);
-    });
-  };
-  const follow = (): void => {
-    const pr = press.current;
-    const d = drag.current;
-    const el = pr && cells.current.get(pr.id);
-    const box = wrap.current?.getBoundingClientRect();
-    if (!pr || !d || !el || !box) return;
-    const home = d.slots[d.home.get(pr.id) ?? 0];
-    el.style.transform = `translate(${pr.lastX - box.left - pr.grabX - home.x}px, ${pr.lastY - box.top - pr.grabY - home.y}px)`;
-  };
-  const reslot = (): void => {
-    const pr = press.current;
-    const d = drag.current;
-    const box = wrap.current?.getBoundingClientRect();
-    if (!pr || !d || !box) return;
-    const px = pr.lastX - box.left;
-    const py = pr.lastY - box.top;
-    let to = -1;
-    let bestD = Infinity;
-    d.slots.forEach((s, i) => {
-      const dd = Math.hypot(px - (s.x + s.w / 2), py - (s.y + s.h / 2));
-      if (dd < bestD) { bestD = dd; to = i; }
-    });
-    const from = d.cur.indexOf(pr.id);
-    if (to < 0 || from < 0 || to === from) return;
-    const next = [...d.cur];
-    next.splice(from, 1);
-    next.splice(to, 0, pr.id);
-    d.cur = next;
-    placeAll(next);
-    setNo(cells.current.get(pr.id), to + 1);
-  };
-  // 놓은 차례가 그려지기 직전에 칸의 transform·번호를 걷는다 — 그려진 DOM 차례가 곧 그 자리다.
-  useLayoutEffect(() => {
-    if (!clearPending.current) return;
-    clearPending.current = false;
-    cells.current.forEach((el, id) => {
-      el.style.transition = "none";
-      el.style.transform = "";
-      const i = order.indexOf(id);
-      if (i >= 0) setNo(el, i + 1);
-    });
-    requestAnimationFrame(() => cells.current.forEach((el) => { el.style.transition = ""; }));
-  });
-
-  const lift = (): void => {
-    const pr = press.current;
-    if (!pr || pr.moved) return;
-    pr.moved = true;
-    sorting += 1;
-    const ids = live.current.photos.map((p) => p.id);
-    const slots = ids.map((id) => {
-      const el = cells.current.get(id);
-      return el ? { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight } : { x: 0, y: 0, w: 0, h: 0 };
-    });
-    drag.current = { slots, cur: ids, home: new Map(ids.map((id, i) => [id, i])) };
-    const el = cells.current.get(pr.id);
-    if (el) el.style.transition = "none";
-    markDrag(pr.id, true);
-  };
-  const onMove = (e: PointerEvent): void => {
-    const pr = press.current;
-    if (!pr || pr.pointerId !== e.pointerId) return;
-    pr.lastX = e.clientX; pr.lastY = e.clientY;
-    if (!pr.moved) {
-      if (Math.hypot(e.clientX - pr.x, e.clientY - pr.y) < SORT_SLOP) return;
-      if (pr.touch) { finish(false); return; }
-      lift();
+  const lastDrop = useRef(0);
+  // 칸은 memo(OrderCell) — 넘길 때(at)·차례를 바꿀 때 바뀐 칸만 다시 그린다. 손잡이는 늘 같은 그릇으로 넘긴다.
+  const cellAct = useRef<CellAct>({ pick: () => {}, ref: () => () => {} }).current;
+  const cellRefs = useRef(new Map<string, (el: HTMLButtonElement | null) => void>());
+  cellAct.pick = (i) => { if (Date.now() - lastDrop.current > 250) live.current.onPick(i); };
+  cellAct.ref = (id) => {
+    let f = cellRefs.current.get(id);
+    if (!f) {
+      f = (el) => { if (el) cells.current.set(id, el); else { cells.current.delete(id); cellRefs.current.delete(id); } };
+      cellRefs.current.set(id, f);
     }
-    e.preventDefault();
-    if (pr.raf) return;
-    pr.raf = requestAnimationFrame(() => {
-      pr.raf = 0;
-      follow();
-      reslot();
-    });
+    return f;
   };
-  const finish = (commit: boolean): void => {
-    const pr = press.current;
-    if (!pr) return;
-    pr.stop();
-    window.clearTimeout(pr.timer);
-    if (pr.raf) cancelAnimationFrame(pr.raf);
-    press.current = null;
-    if (pr.moved) sorting = Math.max(0, sorting - 1);
-    markDrag(pr.id, false);
-    const { photos: now, onPick: pick, onReorder: reorder } = live.current;
-    const d = drag.current;
-    drag.current = null;
-    if (!pr.moved || !d) { if (commit) pick(now.findIndex((p) => p.id === pr.id)); return; }
-    const final = commit ? d.cur : now.map((p) => p.id);
-    // 든 칸을 놓은 자리로 미끄러뜨린다(나머지 칸은 이미 그 자리에 있다).
-    const el = cells.current.get(pr.id);
-    const h = d.home.get(pr.id) ?? 0;
-    const to = final.indexOf(pr.id);
-    if (el && to >= 0) {
-      el.style.transition = `transform ${SORT_MS}ms ease`;
-      const dx = d.slots[to].x - d.slots[h].x;
-      const dy = d.slots[to].y - d.slots[h].y;
-      el.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : "";
-    }
-    const same = final.every((id, i) => id === now[i]?.id);
-    if (same) {
-      // 제자리 — 다른 칸들도 제자리로 돌려 둔다.
-      d.cur = final;
-      drag.current = d;
-      placeAll(final);
-      drag.current = null;
-      return;
-    }
-    const map = new Map(now.map((p) => [p.id, p]));
-    // 놓은 칸이 자리에 앉는 동안(SORT_MS)은 그대로 두고, 앉은 뒤에 차례를 한 번 반영한다 — 슬라이드 수십 장을 다시 늘어놓는
-    // 무거운 다시 그리기가 앉는 움직임과 겹치지 않게.
-    window.setTimeout(() => { clearPending.current = true; reorder(final.map((id) => map.get(id)!)); }, SORT_MS);
-  };
-  const onUp = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(true); };
-  const onCancel = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(false); };
-  useEffect(() => () => {
-    if (press.current?.moved) sorting = Math.max(0, sorting - 1);
-    press.current?.stop();
-  }, []);
-  const onDown = (e: React.PointerEvent<HTMLButtonElement>, id: string): void => {
-    if (!sortable || e.button !== 0 || press.current) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    const touch = e.pointerType !== "mouse";
-    // 끄는 동안엔 쪽 스크롤을 막는다 — 칸은 스크롤을 허락(touch-action: manipulation)하므로 들어 올린 뒤의 touchmove 를 막아야 한다.
-    const holdScroll = (te: TouchEvent): void => { if (press.current?.moved && te.cancelable) te.preventDefault(); };
-    press.current = {
-      id, pointerId: e.pointerId, x: e.clientX, y: e.clientY, grabX: e.clientX - r.left, grabY: e.clientY - r.top,
-      lastX: e.clientX, lastY: e.clientY, moved: false, raf: 0, touch,
-      timer: touch ? window.setTimeout(() => {
-        lift();
-        navigator.vibrate?.(12);
-      }, LONG_PRESS_MS) : 0,
-      stop: () => {
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        window.removeEventListener("pointercancel", onCancel);
-        window.removeEventListener("touchmove", holdScroll);
-      },
+  /* ★ 끌어 옮기기는 SortableJS 가 맡는다(요청: "시작 시도 느리고 이동 시에도 느려 · 그냥 sortablejs 를 쓰는 게 나으려나") — 끄는 동안의
+     DOM 옮김·비켜 주는 애니메이션은 Sortable 이, 놓은 뒤 차례는 React 가 쥔다. 놓으면 Sortable 이 옮긴 DOM 을 제자리로 되돌리고
+     (React 가 아는 DOM 과 어긋나지 않게) 새 차례를 flushSync 로 한 번에 그린다 — 되돌린 장이 한 프레임도 안 보인다.
+     폰은 길게 눌러야 들린다(delayOnTouchOnly · LONG_PRESS_MS) — 그 전에 손가락이 움직이면 스크롤이다. */
+  useEffect(() => {
+    const el = wrap.current;
+    if (!sortable || !el) return;
+    const renumber = (): void => {
+      Array.from(el.querySelectorAll<HTMLElement>(".scr-sb-order-cell")).forEach((c, i) => {
+        const t = c.querySelector(".scr-sb-order-n")?.firstChild;
+        if (t && t.nodeType === Node.TEXT_NODE && t.nodeValue !== String(i + 1)) t.nodeValue = String(i + 1);
+      });
     };
-    window.addEventListener("touchmove", holdScroll, { passive: false });
-    window.addEventListener("pointermove", onMove, { passive: false });
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onCancel);
-  };
+    // supportPointer 는 SortableJS 옵션인데 @types/sortablejs 에 빠져 있어 단언으로 넘긴다.
+    const sortableObj = Sortable.create(el, {
+      animation: SORT_MS,
+      draggable: ".scr-sb-order-cell",
+      filter: ".scr-sb-order-addcell",
+      preventOnFilter: false,
+      delay: LONG_PRESS_MS,
+      delayOnTouchOnly: true,
+      touchStartThreshold: SORT_SLOP,
+      // 포인터 이벤트 갈래는 끄지 않는다(supportPointer: false) — 켜 두면 길게 누르는 중 브라우저가 스크롤로 가져가 pointercancel 이 나면
+      // Sortable 이 든 칸(dragEl)을 안 놓아, 한 번 쓸어 넘긴 뒤로는 아무리 길게 눌러도 안 들렸다(크롬 폰 · SortableJS 1.15).
+      // 터치 이벤트 갈래는 touchend·touchcancel 로 깨끗이 놓는다.
+      supportPointer: false,
+      ghostClass: "scr-sb-order-ghost",
+      chosenClass: "scr-sb-order-chosen",
+      dragClass: "scr-sb-order-drag",
+      onChoose: () => { navigator.vibrate?.(12); },
+      onStart: () => { sorting += 1; },
+      onMove: (e) => !e.related.classList.contains("scr-sb-order-addcell"),
+      onChange: renumber,
+      onEnd: (e) => {
+        sorting = Math.max(0, sorting - 1);
+        lastDrop.current = Date.now();
+        const from = e.oldDraggableIndex ?? -1;
+        const to = e.newDraggableIndex ?? -1;
+        if (from < 0 || to < 0 || from === to) { renumber(); return; }
+        const next = [...live.current.photos];
+        const [moved] = next.splice(from, 1);
+        next.splice(to, 0, moved);
+        // 놓는 애니메이션(SORT_MS)이 끝난 뒤에 차례를 반영한다 — 그 사이 화면은 Sortable 이 옮겨 둔 DOM 그대로다. 같은 일에서
+        // DOM 을 제자리로 되돌리고(React 가 아는 DOM 과 맞게) 새 차례를 flushSync 로 그리므로 되돌린 장은 안 보인다.
+        // (곧장 그리면 Sortable 의 놓기 애니메이션과 겹쳐 200장에서 한 장이 0.4초 걸렸다.)
+        const { item, from: box } = e;
+        const oldIndex = e.oldIndex ?? -1;
+        window.setTimeout(() => {
+          if (oldIndex >= 0 && item.parentNode === box) {
+            item.remove();
+            box.insertBefore(item, box.children[oldIndex] ?? null);
+          }
+          flushSync(() => live.current.onReorder(next));
+          renumber();
+        }, SORT_MS + 20);
+      },
+    } as Sortable.Options);
+    return () => sortableObj.destroy();
+  }, [sortable]);
 
   return (
     <div className={cx("scr-sb-order", !sortable && "scr-sb-order-view")} ref={wrap} aria-label={sortable ? "끌어서 순서 바꾸기" : "사진 고르기"}>
-      {order.map((id, i) => {
-        const p = byId.get(id)!;
-        return (
-          <button
-            key={id} type="button"
-            ref={(el) => { if (el) cells.current.set(id, el); else cells.current.delete(id); }}
-            className={cx("scr-sb-order-cell", photos[at]?.id === id && "scr-sb-order-on")}
-            aria-label={sortable ? `${i + 1}번째 ${p.name} — 끌어서 옮기기` : `${i + 1}번째 ${p.name} 보기`}
-            onPointerDown={(e) => onDown(e, id)}
-            onContextMenu={sortable ? (e) => e.preventDefault() : undefined}
-            onClick={(e) => { e.stopPropagation(); if (!sortable) onPick(i); }}
-          >
-            {isVideoItem(p) ? (
-              <>
-                <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
-                <span className="scr-sb-order-play" aria-hidden><Play size={12} /></span>
-              </>
-            ) : (
-              <img src={imgSrc(p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
-            )}
-            <span className="scr-sb-order-n" aria-hidden>{i + 1}</span>
-          </button>
-        );
-      })}
+      {order.map((id, i) => (
+        <OrderCell key={id} p={byId.get(id)!} i={i} on={photos[at]?.id === id} sortable={sortable} act={cellAct} />
+      ))}
       {onAdd && (
         <span className="scr-sb-order-addcell">
           <button
@@ -859,6 +755,50 @@ function PhotoOrder({
     </div>
   );
 }
+
+type SlideAct = {
+  play: (id: string, i: number) => void; stop: () => void; view: (i: number) => void; remove: (p: SchedulePhoto) => void;
+};
+
+const PhotoSlide = memo(function PhotoSlide({ p, i, playing, canEdit, act }: {
+  p: SchedulePhoto; i: number; playing: boolean; canEdit: boolean; act: SlideAct;
+}) {
+  const video = isVideoItem(p);
+  return (
+    <div className="scr-sb-slide">
+      {playing ? (
+        <video
+          className="scr-sb-slide-video" src={imgSrc(p.url)} controls autoPlay playsInline
+          onClick={(e) => e.stopPropagation()} onEnded={() => act.stop()}
+        />
+      ) : (
+        <button
+          type="button" className="scr-sb-slide-img"
+          onClick={(e) => { e.stopPropagation(); if (video) act.play(p.id, i); else act.view(i); }}
+          aria-label={video ? `${p.name} 재생` : `${p.name} 크게 보기`}
+        >
+          {video ? (
+            <>
+              <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
+              <span className="scr-sb-slide-play" aria-hidden><Play size={22} /></span>
+            </>
+          ) : (
+            <img src={imgSrc(p.thumbUrl ?? p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
+          )}
+        </button>
+      )}
+      <SaveOneBtn photo={p} className="scr-sb-slide-save" />
+      {canEdit && (
+        <button
+          type="button" className="scr-sb-slide-x" aria-label="이 사진 삭제" title="이 사진 삭제"
+          onClick={(e) => { e.stopPropagation(); act.remove(p); }}
+        >
+          <X size={14} />
+        </button>
+      )}
+    </div>
+  );
+});
 
 function PhotosBlock({
   block, canEdit, grip, onChange, onAdd, onDelete, fold, hasKids, ask = NO_ASK,
@@ -890,6 +830,13 @@ function PhotosBlock({
   };
   const shown = open === null ? null : block.photos[Math.min(open, n - 1)] ?? null;
   const view = (i: number): void => { setPlaying(null); setOpen(i); go(i, false); };
+  /* 슬라이드 하나하나는 memo(PhotoSlide) — 넘길 때(onScroll → at)·차례를 바꿀 때 바뀐 장만 다시 그린다(옛 길은 장 전부를 다시 그려
+     200장에서 놓기 한 번이 0.35초였다 · CPU 4배 느림). 손잡이는 늘 같은 그릇(slideAct)으로 넘기고 그 속만 갈아 끼운다. */
+  const slideAct = useRef<SlideAct>({ play: () => {}, stop: () => {}, view: () => {}, remove: () => {} }).current;
+  slideAct.play = (id, i) => { setPlaying(id); setAt(i); };
+  slideAct.stop = () => setPlaying(null);
+  slideAct.view = view;
+  slideAct.remove = (p) => ask(isVideoItem(p) ? "이 동영상을 지울까요?" : "이 사진을 지울까요?", () => onChange({ photos: block.photos.filter((x) => x.id !== p.id) }));
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
       {(canEdit || n > 0) && (
@@ -918,41 +865,7 @@ function PhotosBlock({
             }}
           >
             {block.photos.map((p, i) => (
-              <div key={p.id} className="scr-sb-slide">
-                {playing === p.id ? (
-                  <video
-                    className="scr-sb-slide-video" src={imgSrc(p.url)} controls autoPlay playsInline
-                    onClick={(e) => e.stopPropagation()} onEnded={() => setPlaying(null)}
-                  />
-                ) : (
-                  <button
-                    type="button" className="scr-sb-slide-img"
-                    onClick={(e) => { e.stopPropagation(); if (isVideoItem(p)) { setPlaying(p.id); setAt(i); } else view(i); }}
-                    aria-label={isVideoItem(p) ? `${p.name} 재생` : `${p.name} 크게 보기`}
-                  >
-                    {isVideoItem(p) ? (
-                      <>
-                        <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
-                        <span className="scr-sb-slide-play" aria-hidden><Play size={22} /></span>
-                      </>
-                    ) : (
-                      <img src={imgSrc(p.thumbUrl ?? p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
-                    )}
-                  </button>
-                )}
-                <SaveOneBtn photo={p} className="scr-sb-slide-save" />
-                {canEdit && (
-                  <button
-                    type="button" className="scr-sb-slide-x" aria-label="이 사진 삭제" title="이 사진 삭제"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      ask(isVideoItem(p) ? "이 동영상을 지울까요?" : "이 사진을 지울까요?", () => onChange({ photos: block.photos.filter((x) => x.id !== p.id) }));
-                    }}
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
+              <PhotoSlide key={p.id} p={p} i={i} playing={playing === p.id} canEdit={canEdit} act={slideAct} />
             ))}
           </div>
           {n > 1 && (
