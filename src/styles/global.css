@@ -7626,6 +7626,7 @@ html.color-lighting .scr-sb-slide-save.is-armed, html.color-lighting .scr-photo-
 .scr-sb-order-sorting { cursor: grabbing; }
 /* SortableJS 클래스 — 빈자리(ghost)는 옅게, 잡은 칸(chosen)은 파란 테. 끄는 몸(drag)은 아래 .scr-sb-order-drag 그림자. */
 .scr-sb-order-ghost { opacity: 0.35; }
+.scr-sb-order-locked { contain: strict; }
 .scr-sb-order-chosen { box-shadow: 0 0 0 2px var(--timeline-blue); }
 .scr-sb-order-n {
   position: absolute; left: 3px; top: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;

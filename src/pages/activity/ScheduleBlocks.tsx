@@ -625,7 +625,6 @@ const SaveOneBtn = memo(function SaveOneBtn({ photo, className }: { photo: Sched
 });
 
 const SORT_SLOP = 6;
-const SORT_MS = 160;
 /* 손가락은 오래 눌러야 끌기가 된다(요청: "바로 드래그 아니고 오래 눌러야 드래그 모드 · 스크롤하다가 드래그가 돼 버림") —
    LONG_PRESS_MS 안에 손가락이 SORT_SLOP 넘게 움직이면 끌기가 아니라 쓸어 넘기기(스크롤)로 보고 놓는다. 마우스는 끌면 바로 끈다. */
 const LONG_PRESS_MS = 250;
@@ -698,8 +697,27 @@ function PhotoOrder({
       });
     };
     // supportPointer 는 SortableJS 옵션인데 @types/sortablejs 에 빠져 있어 단언으로 넘긴다.
+    /* ★ 끄는 동안 그리드를 제 크기로 못 박고 contain: strict 로 가둔다(지적: "적은 양이 바뀔 땐 괜찮다 · 7~10개 바뀌기 시작하면 느려짐") —
+       칸이 비켜 설 때마다 '다시 배치' 표시가 조상으로 올라가, 활동 목록처럼 형제가 많은 부모에서는 그때마다 목록 전체를 다시 훑었다.
+       크기까지 가둔 상자(contain: strict)는 배치의 경계가 돼 그 안에서 끝난다. 크기는 끄는 동안 안 바뀌니 못 박아도 된다.
+       (실측 · 큰 쪽 · CPU 4배: 10칸 밀기 끌기 중 배치 940ms → 아래 표) */
+    const lockBox = (on: boolean): void => {
+      if (on) {
+        const r = el.getBoundingClientRect();
+        el.style.width = `${r.width}px`;
+        el.style.height = `${r.height}px`;
+        el.classList.add("scr-sb-order-locked");
+      } else {
+        el.classList.remove("scr-sb-order-locked");
+        el.style.width = "";
+        el.style.height = "";
+      }
+    };
     const sortableObj = Sortable.create(el, {
-      animation: SORT_MS,
+      /* 비켜 서는 애니메이션은 끈다(animation: 0) — Sortable 의 애니메이션은 칸마다 transform·강제 배치를 걸어 밀리는 칸 수만큼 그리기가
+         늘었다(지적: "7~10개 바뀌기 시작하면 느려짐"). 실측(피드 꼴 쪽 · CPU 4배 · 10칸 밀기): 작업 2.7초 → 1.0초 · 그리기 전 단계 1.5초 → 0.27초.
+         칸은 즉시 자리를 바꾸고, 들어갈 자리는 옅은 빈칸(ghost)이 보여 준다. */
+      animation: 0,
       draggable: ".scr-sb-order-cell",
       filter: ".scr-sb-order-addcell",
       preventOnFilter: false,
@@ -710,15 +728,18 @@ function PhotoOrder({
       // Sortable 이 든 칸(dragEl)을 안 놓아, 한 번 쓸어 넘긴 뒤로는 아무리 길게 눌러도 안 들렸다(크롬 폰 · SortableJS 1.15).
       // 터치 이벤트 갈래는 touchend·touchcancel 로 깨끗이 놓는다.
       supportPointer: false,
+      // 끄는 몸은 body 에 단다 — 그리드에 contain: strict 를 거는 동안(아래 lockBox) 그 안의 고정 위치 몸은 그리드를 기준으로 서 버린다.
+      fallbackOnBody: true,
       ghostClass: "scr-sb-order-ghost",
       chosenClass: "scr-sb-order-chosen",
       dragClass: "scr-sb-order-drag",
       onChoose: () => { navigator.vibrate?.(12); },
-      onStart: () => { sorting += 1; },
+      onStart: () => { sorting += 1; lockBox(true); },
       onMove: (e) => !e.related.classList.contains("scr-sb-order-addcell"),
       onChange: renumber,
       onEnd: (e) => {
         sorting = Math.max(0, sorting - 1);
+        lockBox(false);
         lastDrop.current = Date.now();
         const from = e.oldDraggableIndex ?? -1;
         const to = e.newDraggableIndex ?? -1;
@@ -726,9 +747,9 @@ function PhotoOrder({
         const next = [...live.current.photos];
         const [moved] = next.splice(from, 1);
         next.splice(to, 0, moved);
-        // 놓는 애니메이션(SORT_MS)이 끝난 뒤에 차례를 반영한다 — 그 사이 화면은 Sortable 이 옮겨 둔 DOM 그대로다. 같은 일에서
+        // Sortable 이 놓기를 마친 뒤(다음 일)에 차례를 반영한다 — 그 사이 화면은 Sortable 이 옮겨 둔 DOM 그대로다. 같은 일에서
         // DOM 을 제자리로 되돌리고(React 가 아는 DOM 과 맞게) 새 차례를 flushSync 로 그리므로 되돌린 장은 안 보인다.
-        // (곧장 그리면 Sortable 의 놓기 애니메이션과 겹쳐 200장에서 한 장이 0.4초 걸렸다.)
+        // (React 다시 그리기는 PhotoSlide·OrderCell memo 로 바뀐 장만 다시 그린다.)
         const { item, from: box } = e;
         const oldIndex = e.oldIndex ?? -1;
         window.setTimeout(() => {
@@ -738,7 +759,7 @@ function PhotoOrder({
           }
           flushSync(() => live.current.onReorder(next));
           renumber();
-        }, SORT_MS + 20);
+        }, 30);
       },
     } as Sortable.Options);
     return () => sortableObj.destroy();
