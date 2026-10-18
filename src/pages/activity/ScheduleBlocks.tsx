@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GripVertical, Heading, Image as ImageIcon,
@@ -603,7 +603,7 @@ function SaveAllBtn({ photos, title }: { photos: SchedulePhoto[]; title: string 
   );
 }
 
-function SaveOneBtn({ photo, className }: { photo: SchedulePhoto; className: string }) {
+const SaveOneBtn = memo(function SaveOneBtn({ photo, className }: { photo: SchedulePhoto; className: string }) {
   const one = useMemo(() => [photo], [photo]);
   const { album, busy, armed, run, btn, onPress } = useSaver(one, photo.name);
   const label = armed ? "눌러서 사진첩에 저장" : album ? "사진첩에 저장" : "다운로드";
@@ -616,7 +616,7 @@ function SaveOneBtn({ photo, className }: { photo: SchedulePhoto; className: str
       <Download size={15} aria-hidden />
     </button>
   );
-}
+});
 
 const SORT_SLOP = 6;
 const SORT_MS = 160;
@@ -638,82 +638,100 @@ function PhotoOrder({
     lastX: number; lastY: number; moved: boolean; raf: number; stop: () => void;
     touch: boolean; timer: number;
   } | null>(null);
-  const [preview, setPreview] = useState<string[] | null>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const flipFrom = useRef<Map<string, { x: number; y: number }> | null>(null);
+  // 든 칸·끄는 중 표시는 클래스를 DOM 에 바로 단다 — 상태로 두면 들어 올리고 놓을 때마다 칸 전부를 다시 그렸다(장수만큼 무겁다).
+  const markDrag = (id: string, on: boolean): void => {
+    wrap.current?.classList.toggle("scr-sb-order-sorting", on);
+    cells.current.get(id)?.classList.toggle("scr-sb-order-drag", on);
+  };
   const byId = new Map(photos.map((p) => [p.id, p]));
-  const order = (preview ?? photos.map((p) => p.id)).filter((id) => byId.has(id));
-  const live = useRef({ order, photos, byId, onPick, onReorder });
-  live.current = { order, photos, byId, onPick, onReorder };
+  const order = photos.map((p) => p.id);
+  const live = useRef({ photos, onPick, onReorder });
+  live.current = { photos, onPick, onReorder };
+  /* ★ 끄는 동안엔 DOM 차례도 React 상태도 안 바꾼다 — 칸을 transform 으로만 옮긴다(지적: "사진 그리드 드래그가 너무 느려 · 사진이 많아질수록
+     더 느려짐"). 옛 길은 칸 자리가 바뀔 때마다 미리보기 차례로 전부 다시 그리고(FLIP), 칸마다 자리를 읽고 쓰며 `offsetWidth` 로 강제 배치를
+     칸 수만큼 돌렸다(장수² 꼴). 이제 들어 올릴 때 칸 자리를 **한 번** 재 두고(slots), 끄는 동안 가까운 칸은 셈으로 찾고, 자리가 바뀐 칸만
+     transform 을 고친다. 놓으면 차례를 한 번 반영하고, 그 다시 그리기 직전(useLayoutEffect)에 transform 을 걷는다. */
+  const drag = useRef<{ slots: { x: number; y: number; w: number; h: number }[]; cur: string[]; home: Map<string, number> } | null>(null);
+  const clearPending = useRef(false);
 
-  const slotOf = (el: HTMLElement): { x: number; y: number } => ({ x: el.offsetLeft, y: el.offsetTop });
+  // 칸 번호는 React 가 쥔 글자 마디의 값만 바꾼다(textContent 로 갈면 React 가 떨어진 옛 마디를 고쳐 번호가 멈춘다).
+  const setNo = (el: HTMLElement | undefined, n: number): void => {
+    const t = el?.querySelector(".scr-sb-order-n")?.firstChild;
+    if (t && t.nodeType === Node.TEXT_NODE && t.nodeValue !== String(n)) t.nodeValue = String(n);
+  };
+  const placeAll = (cur: string[]): void => {
+    const d = drag.current;
+    const pr = press.current;
+    if (!d) return;
+    cur.forEach((id, i) => {
+      if (id === pr?.id) return;
+      const el = cells.current.get(id);
+      const h = d.home.get(id);
+      if (!el || h === undefined) return;
+      const dx = d.slots[i].x - d.slots[h].x;
+      const dy = d.slots[i].y - d.slots[h].y;
+      el.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : "";
+      setNo(el, i + 1);
+    });
+  };
   const follow = (): void => {
     const pr = press.current;
+    const d = drag.current;
     const el = pr && cells.current.get(pr.id);
     const box = wrap.current?.getBoundingClientRect();
-    if (!pr || !el || !box) return;
-    const slot = slotOf(el);
-    el.style.transform = `translate(${pr.lastX - box.left - pr.grabX - slot.x}px, ${pr.lastY - box.top - pr.grabY - slot.y}px)`;
+    if (!pr || !d || !el || !box) return;
+    const home = d.slots[d.home.get(pr.id) ?? 0];
+    el.style.transform = `translate(${pr.lastX - box.left - pr.grabX - home.x}px, ${pr.lastY - box.top - pr.grabY - home.y}px)`;
   };
   const reslot = (): void => {
     const pr = press.current;
+    const d = drag.current;
     const box = wrap.current?.getBoundingClientRect();
-    if (!pr || !box) return;
+    if (!pr || !d || !box) return;
     const px = pr.lastX - box.left;
     const py = pr.lastY - box.top;
-    const { order } = live.current;
-    let best: string | null = null;
+    let to = -1;
     let bestD = Infinity;
-    for (const id of order) {
-      const el = cells.current.get(id);
-      if (!el) continue;
-      const cx = el.offsetLeft + el.offsetWidth / 2;
-      const cy = el.offsetTop + el.offsetHeight / 2;
-      const d = Math.hypot(px - cx, py - cy);
-      if (d < bestD) { bestD = d; best = id; }
-    }
-    if (!best || best === pr.id) return;
-    const from = order.indexOf(pr.id);
-    const to = order.indexOf(best);
-    if (from < 0 || to < 0) return;
-    const next = [...order];
+    d.slots.forEach((s, i) => {
+      const dd = Math.hypot(px - (s.x + s.w / 2), py - (s.y + s.h / 2));
+      if (dd < bestD) { bestD = dd; to = i; }
+    });
+    const from = d.cur.indexOf(pr.id);
+    if (to < 0 || from < 0 || to === from) return;
+    const next = [...d.cur];
     next.splice(from, 1);
     next.splice(to, 0, pr.id);
-    flipFrom.current = new Map(order.map((id) => {
-      const el = cells.current.get(id);
-      return [id, el ? slotOf(el) : { x: 0, y: 0 }];
-    }));
-    setPreview(next);
+    d.cur = next;
+    placeAll(next);
+    setNo(cells.current.get(pr.id), to + 1);
   };
+  // 놓은 차례가 그려지기 직전에 칸의 transform·번호를 걷는다 — 그려진 DOM 차례가 곧 그 자리다.
   useLayoutEffect(() => {
-    const from = flipFrom.current;
-    if (!from) return;
-    flipFrom.current = null;
-    const moving = press.current?.id;
-    for (const [id, was] of from) {
-      const el = cells.current.get(id);
-      if (!el || id === moving) continue;
-      const now = slotOf(el);
-      const dx = was.x - now.x;
-      const dy = was.y - now.y;
-      if (!dx && !dy) continue;
+    if (!clearPending.current) return;
+    clearPending.current = false;
+    cells.current.forEach((el, id) => {
       el.style.transition = "none";
-      el.style.transform = `translate(${dx}px, ${dy}px)`;
-      void el.offsetWidth;
-      el.style.transition = `transform ${SORT_MS}ms ease`;
       el.style.transform = "";
-    }
-    follow();
-  }, [preview]);
+      const i = order.indexOf(id);
+      if (i >= 0) setNo(el, i + 1);
+    });
+    requestAnimationFrame(() => cells.current.forEach((el) => { el.style.transition = ""; }));
+  });
 
   const lift = (): void => {
     const pr = press.current;
     if (!pr || pr.moved) return;
     pr.moved = true;
     sorting += 1;
+    const ids = live.current.photos.map((p) => p.id);
+    const slots = ids.map((id) => {
+      const el = cells.current.get(id);
+      return el ? { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight } : { x: 0, y: 0, w: 0, h: 0 };
+    });
+    drag.current = { slots, cur: ids, home: new Map(ids.map((id, i) => [id, i])) };
     const el = cells.current.get(pr.id);
     if (el) el.style.transition = "none";
-    setDragId(pr.id);
+    markDrag(pr.id, true);
   };
   const onMove = (e: PointerEvent): void => {
     const pr = press.current;
@@ -740,20 +758,35 @@ function PhotoOrder({
     if (pr.raf) cancelAnimationFrame(pr.raf);
     press.current = null;
     if (pr.moved) sorting = Math.max(0, sorting - 1);
+    markDrag(pr.id, false);
+    const { photos: now, onPick: pick, onReorder: reorder } = live.current;
+    const d = drag.current;
+    drag.current = null;
+    if (!pr.moved || !d) { if (commit) pick(now.findIndex((p) => p.id === pr.id)); return; }
+    const final = commit ? d.cur : now.map((p) => p.id);
+    // 든 칸을 놓은 자리로 미끄러뜨린다(나머지 칸은 이미 그 자리에 있다).
     const el = cells.current.get(pr.id);
-    if (el) {
+    const h = d.home.get(pr.id) ?? 0;
+    const to = final.indexOf(pr.id);
+    if (el && to >= 0) {
       el.style.transition = `transform ${SORT_MS}ms ease`;
-      el.style.transform = "";
+      const dx = d.slots[to].x - d.slots[h].x;
+      const dy = d.slots[to].y - d.slots[h].y;
+      el.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : "";
     }
-    setDragId(null);
-    const { order, photos: now, byId: map, onPick: pick, onReorder: reorder } = live.current;
-    if (!pr.moved) { if (commit) pick(order.indexOf(pr.id)); return; }
-    const same = order.length === now.length && order.every((id, i) => id === now[i].id);
-    if (!commit || same) { setPreview(null); return; }
-    // 놓은 칸이 자리에 앉는 동안(SORT_MS)은 미리보기 차례를 그대로 두고, 앉은 뒤에 반영한다 — 슬라이드 수십 장을 다시 늘어놓는
+    const same = final.every((id, i) => id === now[i]?.id);
+    if (same) {
+      // 제자리 — 다른 칸들도 제자리로 돌려 둔다.
+      d.cur = final;
+      drag.current = d;
+      placeAll(final);
+      drag.current = null;
+      return;
+    }
+    const map = new Map(now.map((p) => [p.id, p]));
+    // 놓은 칸이 자리에 앉는 동안(SORT_MS)은 그대로 두고, 앉은 뒤에 차례를 한 번 반영한다 — 슬라이드 수십 장을 다시 늘어놓는
     // 무거운 다시 그리기가 앉는 움직임과 겹치지 않게.
-    const final = order.map((id) => map.get(id)!);
-    window.setTimeout(() => { reorder(final); setPreview(null); }, SORT_MS);
+    window.setTimeout(() => { clearPending.current = true; reorder(final.map((id) => map.get(id)!)); }, SORT_MS);
   };
   const onUp = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(true); };
   const onCancel = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(false); };
@@ -788,14 +821,14 @@ function PhotoOrder({
   };
 
   return (
-    <div className={cx("scr-sb-order", dragId && "scr-sb-order-sorting", !sortable && "scr-sb-order-view")} ref={wrap} aria-label={sortable ? "끌어서 순서 바꾸기" : "사진 고르기"}>
+    <div className={cx("scr-sb-order", !sortable && "scr-sb-order-view")} ref={wrap} aria-label={sortable ? "끌어서 순서 바꾸기" : "사진 고르기"}>
       {order.map((id, i) => {
         const p = byId.get(id)!;
         return (
           <button
             key={id} type="button"
             ref={(el) => { if (el) cells.current.set(id, el); else cells.current.delete(id); }}
-            className={cx("scr-sb-order-cell", photos[at]?.id === id && "scr-sb-order-on", id === dragId && "scr-sb-order-drag")}
+            className={cx("scr-sb-order-cell", photos[at]?.id === id && "scr-sb-order-on")}
             aria-label={sortable ? `${i + 1}번째 ${p.name} — 끌어서 옮기기` : `${i + 1}번째 ${p.name} 보기`}
             onPointerDown={(e) => onDown(e, id)}
             onContextMenu={sortable ? (e) => e.preventDefault() : undefined}

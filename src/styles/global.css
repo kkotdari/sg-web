@@ -7618,6 +7618,8 @@ html.color-lighting .scr-sb-slide-save.is-armed, html.color-lighting .scr-photo-
 /* 끌기 시작·끝이 버벅였다(지적) — 나머지 칸을 흐리게(opacity) 하면 칸마다 합성 층이 새로 서고 원본 크기 사진을 다시 굽는다.
    흐림·확대(scale)를 걷고 끄는 칸에 그림자·테만 둔다. */
 .scr-sb-order-sorting { cursor: grabbing; }
+/* 끄는 동안 자리를 비켜 주는 칸은 transform 으로만 미끄러진다(DOM 차례는 놓을 때 한 번 바뀐다). */
+.scr-sb-order-sorting .scr-sb-order-cell:not(.scr-sb-order-drag) { transition: transform 160ms ease; }
 .scr-sb-order-n {
   position: absolute; left: 3px; top: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
   background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center;
