@@ -7340,7 +7340,7 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-sb-block:hover .scr-sb-tools, .scr-sb-block:hover .scr-sb-handles,
 .scr-sb-block:focus-within .scr-sb-tools, .scr-sb-block:focus-within .scr-sb-handles,
 .scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; }
-@media (hover: hover) { .scr-sb-block-edit > .scr-sb-text { padding-right: 104px; } }
+@media (hover: hover) { .scr-sb-block-edit > .scr-sb-text, .scr-sb-block-edit > .scr-sb-list > .scr-sb-list-item:first-child { padding-right: 104px; } }
 /* 폰은 올림(hover)이 없다 — 단추 줄을 글 위에 겹치지 않고, 그 요소를 고치는 동안에만 아래에 한 줄로 낸다. */
 @media (hover: none) {
   .scr-sb-block > .scr-sb-tools { position: static; justify-content: flex-end; display: none; margin-top: 2px; }
@@ -7431,10 +7431,8 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 @media (hover: none) { .scr-sb-list-item .scr-sb-icon { opacity: 0.6; } }
 
 .scr-sb-editable { cursor: text; border-radius: 5px; }
-@media (hover: hover) {
-  .scr-sb-editable:hover { background: rgba(var(--overlay-rgb), 0.08); box-shadow: 0 0 0 3px rgba(var(--overlay-rgb), 0.08); }
-}
-.scr-sb-editable:focus-visible { outline: 2px solid var(--timeline-blue); outline-offset: 2px; }
+/* 올려도 칸 바탕이 안 생긴다(2026-10-18, 요청: "마우스오버 시 인풋 배경 생기지 않게") — 늘 편집 상태라 글 전체가 칸처럼 번쩍였다. */
+.scr-sb-editable:focus-visible { outline: none; }
 .scr-sb-input-bare {
   border-color: transparent; background: transparent; padding: 2px 4px;
 }

@@ -6,6 +6,7 @@ import {
   Play, Plus, Trash2, Type, X,
 } from "lucide-react";
 import PhotoViewer from "../../components/common/PhotoViewer";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { showAlert } from "../../components/common/AlertDialog";
 import { cx, formatBytes } from "../../utils/format";
 import { pickPhoto, readAsDataUrl } from "../../utils/image";
@@ -117,6 +118,10 @@ const placeCaret = (el: HTMLInputElement | HTMLTextAreaElement, caret: number | 
   const at = caret === "end" ? el.value.length : Math.min(caret, el.value.length);
   el.setSelectionRange(at, at);
 };
+
+/** 지우기 전에 한 번 묻는다(요청: "삭제 시에는 한 번 물어봐 줘") — 요소·사진·목록 줄의 지우기 단추. 키보드로 지우는 건(Backspace 등) 묻지 않는다. */
+type Ask = (message: string, run: () => void) => void;
+const NO_ASK: Ask = (_m, run) => run();
 
 let sorting = 0;
 /** 끌어서 차례를 바꾸는 중인가 — 그동안 자동 저장을 미룬다(사진 base64·큰 JSON 만들기가 끌기를 버벅이게 한다). */
@@ -255,11 +260,11 @@ function TextBlock({
 }
 
 function ListBlock({
-  block, canEdit, grip, onChange, onDelete, nav = NO_NAV, fold,
+  block, canEdit, grip, onChange, onDelete, nav = NO_NAV, fold, ask = NO_ASK,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
   onChange: (patch: { title?: string; items?: string[]; levels?: number[]; collapsed?: boolean }) => void; onDelete: () => void;
-  nav?: BlockNav;
+  nav?: BlockNav; ask?: Ask;
 } & FoldProps) {
   void fold;
   const open = true;
@@ -341,6 +346,13 @@ function ListBlock({
     if (!sel || e.target !== listRef.current) return;
     const mod = e.ctrlKey || e.metaKey;
     if (e.key === "Escape") { e.preventDefault(); setSel(null); focusRow(sel.b, "end"); return; }
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const by = e.key === "ArrowUp" ? -1 : 1;
+      if (e.shiftKey) setSel({ a: sel.a, b: Math.max(0, Math.min(block.items.length - 1, sel.b + by)) });
+      else { setSel(null); focusRow(Math.max(0, Math.min(block.items.length - 1, (by < 0 ? selLo : selHi) + by)), 0); }
+      return;
+    }
     if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); dropSel(); return; }
     if (e.key === "Tab") {
       e.preventDefault();
@@ -394,15 +406,18 @@ function ListBlock({
   const onKey = (i: number, e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (composing(e)) return;
     const el = e.currentTarget;
-    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-      const caret = el.selectionStart ?? 0;
+    // Shift+위아래는 줄 고르기로 넘어간다(요청: "Shift+화살표로 선택") — 이 줄과 위·아랫줄을 고르고, 이어 누르면 넓힌다.
+    if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.shiftKey && i < block.items.length) {
       const to = i + (e.key === "ArrowUp" ? -1 : 1);
-      if (to < 0) return;
-      if (to >= shown.length) return;
+      if (to < 0 || to >= block.items.length) return;
       e.preventDefault();
-      focusRow(to, caret);
+      setSel({ a: i, b: to });
+      el.blur();
+      listRef.current?.focus();
       return;
     }
+    // 위아래 옮기기는 바깥(ScheduleBlocks)이 맡는다 — 목록 줄끼리도 기억한 열을 함께 쓴다(요청: "목록 안에서도 커서 열 기억").
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") return;
     if (e.key === "Tab") {
       e.preventDefault();
       shift(i, e.shiftKey ? -1 : 1);
@@ -483,9 +498,9 @@ function ListBlock({
               {canEdit && i < block.items.length && (
                 <IconBtn
                   label="줄 삭제" danger
-                  onClick={() => onChange({
+                  onClick={() => ask(`'${block.items[i] || "빈 줄"}' 줄을 지울까요?`, () => onChange({
                     items: block.items.filter((_, k) => k !== i), levels: levels.filter((_, k) => k !== i),
-                  })}
+                  }))}
                 >
                   <X size={12} />
                 </IconBtn>
@@ -753,11 +768,11 @@ function PhotoOrder({
 }
 
 function PhotosBlock({
-  block, canEdit, grip, onChange, onAdd, onDelete, fold, hasKids,
+  block, canEdit, grip, onChange, onAdd, onDelete, fold, hasKids, ask = NO_ASK,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
   onChange: (patch: { title?: string; photos?: SchedulePhoto[]; collapsed?: boolean }) => void;
-  onAdd: () => void; onDelete: () => void;
+  onAdd: () => void; onDelete: () => void; ask?: Ask;
 } & FoldProps) {
   const ownFold = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
   const [folded, toggle] = fold ?? ownFold;
@@ -836,7 +851,10 @@ function PhotosBlock({
                 {canEdit && (
                   <button
                     type="button" className="scr-sb-slide-x" aria-label="이 사진 삭제" title="이 사진 삭제"
-                    onClick={(e) => { e.stopPropagation(); onChange({ photos: block.photos.filter((x) => x.id !== p.id) }); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      ask(isVideoItem(p) ? "이 동영상을 지울까요?" : "이 사진을 지울까요?", () => onChange({ photos: block.photos.filter((x) => x.id !== p.id) }));
+                    }}
                   >
                     <X size={14} />
                   </button>
@@ -971,6 +989,14 @@ export default function ScheduleBlocks({
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [preview, setPreview] = useState<string[] | null>(null);
   const previewRef = useRef<string[] | null>(null);
+  const [asking, setAsking] = useState<{ message: string; run: () => void } | null>(null);
+  const ask: Ask = (message, run) => setAsking({ message, run });
+  const KIND_KO: Record<ScheduleBlock["kind"], string> = { text: "글", list: "목록", photo: "사진", photos: "사진 목록", file: "파일" };
+  const askDrop = (b: DraftBlock): void => {
+    const what = isHeading(b) ? "제목" : KIND_KO[b.kind];
+    const kids = kidsAt(latest.current, latest.current.findIndex((x) => x.key === b.key));
+    ask(kids > 0 ? `이 ${what}을(를) 지울까요? 딸린 요소 ${kids}개는 남아요.` : `이 ${what}을(를) 지울까요?`, () => drop(b.key));
+  };
   const [viewFold, setViewFold] = useState<Record<string, boolean>>({});
   const foldedOf = (b: DraftBlock): boolean => (canEdit ? !!b.collapsed : viewFold[b.key] ?? !!b.collapsed);
   /** i 번째 요소 아래로 이어지는 더 깊은 들여쓰기 요소 수 — 그 요소에 딸린 하위 요소다(요청: "글 다음 사진이 들여쓰기 되면 사진은 글에 포함"). */
@@ -1018,7 +1044,7 @@ export default function ScheduleBlocks({
   };
   const onNavKey = (e: React.KeyboardEvent): void => {
     if (e.key !== "ArrowUp" && e.key !== "ArrowDown") { goalCol.current = null; return; }
-    if (!canEdit || e.defaultPrevented || composing(e)) return;
+    if (!canEdit || e.defaultPrevented || composing(e) || e.shiftKey) return;
     const t = e.target as HTMLElement;
     if (!t.matches(NAV)) return;
     const up = e.key === "ArrowUp";
@@ -1468,25 +1494,25 @@ export default function ScheduleBlocks({
           >
             {b.kind === "text" ? (
               <TextBlock
-                block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
+                block={b} canEdit={canEdit} grip={grip} onDelete={() => askDrop(b)}
                 onChange={(part) => patch(b.key, part)} nav={canEdit ? navFor(b) : NO_NAV}
                 fold={fold} hasKids={kids > 0}
               />
             ) : b.kind === "list" ? (
               <ListBlock
-                block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
+                block={b} canEdit={canEdit} grip={grip} onDelete={() => askDrop(b)}
                 onChange={(part) => patch(b.key, part)} nav={canEdit ? navFor(b) : NO_NAV}
-                fold={fold} hasKids={kids > 0}
+                fold={fold} hasKids={kids > 0} ask={ask}
               />
             ) : b.kind === "photos" ? (
               <PhotosBlock
-                block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
+                block={b} canEdit={canEdit} grip={grip} onDelete={() => askDrop(b)}
                 onChange={(part) => patch(b.key, part)} onAdd={() => pickPhotos(b.key)}
-                fold={fold} hasKids={kids > 0}
+                fold={fold} hasKids={kids > 0} ask={ask}
               />
             ) : (
               <MediaBlock
-                block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
+                block={b} canEdit={canEdit} grip={grip} onDelete={() => askDrop(b)}
                 onChange={(part) => patch(b.key, part)} fold={fold} hasKids={kids > 0}
               />
             )}
@@ -1500,8 +1526,14 @@ export default function ScheduleBlocks({
           onClick={(e) => { e.stopPropagation(); openComposer(); }}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); openComposer(); } }}
         >
-          <span className="scr-sb-composer-hint">+</span>
         </div>
+      )}
+      {asking && (
+        <ConfirmDialog
+          title="지우기" message={asking.message} confirmLabel="지우기"
+          onConfirm={() => { const run = asking.run; setAsking(null); run(); }}
+          onCancel={() => setAsking(null)}
+        />
       )}
       {canEdit && slot !== null && createPortal(
         <>

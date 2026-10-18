@@ -221,7 +221,9 @@ function SchedulePhotos({ photos }: { photos: ScheduleFile[] }) {
 
 const SAVE_IDLE_MS = 2000;
 const SAVE_MAX_MS = 15000;
-const REFRESH_MS = 4000;
+/* 남의 고침을 묻는 간격 4 → 8초(2026-10-18, 지적: "드래그 앤 드롭도 너무 느려 · 서버에서 계속 갱신해서 조회하는 거 때문인가") —
+   보이는 카드마다 4초마다 받아 와 목록 전체를 다시 그렸다. 이제 바뀐 게 없으면 아무것도 안 하고, 끌거나 치는 동안은 묻지 않는다. */
+const REFRESH_MS = 8000;
 const RETRY_MS = 5000;
 
 const NO_KEYBOARD = new Set(["checkbox", "radio", "button", "submit", "reset", "file", "range", "color", "image"]);
@@ -616,11 +618,13 @@ export default function ScheduleCard({
   };
 
   const refresh = async (): Promise<void> => {
-    if (saving.current || dirty()) return;
+    if (saving.current || dirty() || sortingNow() || typingNow()) return;
     lastRefreshAt.current = Date.now();
     try {
       const s = await api.getSchedule(latest.current.schedule.id);
-      if (!draftRef.current) return;
+      if (!draftRef.current || sortingNow()) return;
+      // 같은 내용이면 끝 — 위(활동 목록)에 알리면 목록의 카드가 전부 다시 그려진다.
+      if (serverKeyOf(s) === lastKey.current) { baseUpdatedAt.current = s.updatedAt; return; }
       absorb(s);
       latest.current.onChanged(s);
     } catch {
@@ -720,7 +724,10 @@ export default function ScheduleCard({
 
         <ScheduleBlocks
           blocks={draft ? draft.blocks : readBlocks} canEdit={editing}
-          onSaveNow={() => { if (!saving.current) void save(); }}
+          onSaveNow={() => {
+            // 화면이 먼저 그려진 다음에 보낸다 — 저장 준비(지문·본문 만들기)가 그 프레임을 붙잡지 않게.
+            requestAnimationFrame(() => setTimeout(() => { if (!saving.current) void save(); }, 0));
+          }}
           onChange={onBlocks}
         />
 
