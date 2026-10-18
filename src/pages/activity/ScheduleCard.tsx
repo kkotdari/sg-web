@@ -254,17 +254,23 @@ const draftOf = (s: Schedule, prev: DraftBlock[] = []): Draft => {
 };
 const serverKeyOf = (s: Schedule): string =>
   JSON.stringify([s.title, s.scheduledDate, s.scheduledTime, s.blocks ?? []]);
+const levelsOf = (b: ScheduleBlock): number[] => b.items.map((_, i) => b.levels?.[i] ?? 0);
 const sameBlock = (a: ScheduleBlock, b: ScheduleBlock): boolean =>
   a.kind === b.kind && a.text === b.text && a.title === b.title && a.url === b.url
   && a.items.length === b.items.length && a.items.every((x, i) => x === b.items[i])
   && a.photos.length === b.photos.length && a.photos.every((x, i) => x.id === b.photos[i].id)
-  && !!a.collapsed === !!b.collapsed;
+  && !!a.collapsed === !!b.collapsed && (a.indent ?? 0) === (b.indent ?? 0)
+  && levelsOf(a).every((x, i) => x === levelsOf(b)[i]);
 const startsWith = (xs: string[], prefix: string[]): boolean =>
   prefix.length <= xs.length && prefix.every((x, i) => x === xs[i]);
-const normBlock = (b: ScheduleBlock): ScheduleBlock => ({
-  ...b, text: b.text.trim(), title: b.title.trim(),
-  items: b.items.map((x) => x.trim()).filter(Boolean),
-});
+const normBlock = (b: ScheduleBlock): ScheduleBlock => {
+  const lv = levelsOf(b);
+  const kept = b.items.map((x, i) => [x.trim(), lv[i]] as const).filter(([x]) => x);
+  return {
+    ...b, text: b.text.trim(), title: b.title.trim(),
+    items: kept.map(([x]) => x), levels: kept.map(([, n]) => n),
+  };
+};
 const equivalent = (mine: ScheduleBlock, server: ScheduleBlock): boolean => sameBlock(normBlock(mine), server);
 const isEphemeral = (b: ScheduleBlock): boolean =>
   (b.kind === "text" && !b.text.trim() && !b.title.trim()) || (b.kind === "list" && !b.title.trim())
@@ -282,8 +288,12 @@ async function payloadOf(d: Draft, expectedUpdatedAt: string): Promise<Outgoing>
   const blocks: ScheduleBlockWrite[] = [];
   for (const b of d.blocks) {
     const collapsed = !!b.collapsed;
-    if (b.kind === "text") { blocks.push({ kind: "text", id: b.id, title: b.title, text: b.text, collapsed }); continue; }
-    if (b.kind === "list") { blocks.push({ kind: "list", id: b.id, title: b.title, items: b.items, collapsed }); continue; }
+    const indent = b.indent ?? 0;
+    if (b.kind === "text") { blocks.push({ kind: "text", id: b.id, title: b.title, text: b.text, collapsed, indent }); continue; }
+    if (b.kind === "list") {
+      blocks.push({ kind: "list", id: b.id, title: b.title, items: b.items, levels: levelsOf(b), collapsed, indent });
+      continue;
+    }
     if (b.kind === "photos") {
       const photos: Extract<ScheduleBlockWrite, { kind: "photos" }>["photos"] = [];
       for (const p of b.photos) {
@@ -292,10 +302,10 @@ async function payloadOf(d: Draft, expectedUpdatedAt: string): Promise<Outgoing>
         bytes += p.size;
         photos.push({ file: { name: p.name, data: p.file ? await readAsDataUrl(p.file) : p.url } });
       }
-      blocks.push({ kind: "photos", id: b.id, title: b.title, photos, collapsed });
+      blocks.push({ kind: "photos", id: b.id, title: b.title, photos, collapsed, indent });
       continue;
     }
-    blocks.push(isNew(b.id) ? { kind: b.kind, file: { name: b.name, data: b.url }, collapsed } : { kind: b.kind, id: b.id, collapsed });
+    blocks.push(isNew(b.id) ? { kind: b.kind, file: { name: b.name, data: b.url }, collapsed, indent } : { kind: b.kind, id: b.id, collapsed, indent });
   }
   return {
     payload: { title: d.title.trim(), scheduledDate: d.date, scheduledTime: d.time || null, expectedUpdatedAt, blocks },
@@ -384,7 +394,10 @@ function merge(
     if (t && b.kind === "list") {
       const old = base.get(b.key)?.items ?? [];
       if (t.items.length > old.length && startsWith(t.items, old)) {
-        blocks.push({ ...b, items: [...b.items, ...t.items.slice(old.length)] });
+        blocks.push({
+          ...b, items: [...b.items, ...t.items.slice(old.length)],
+          levels: [...levelsOf(b), ...levelsOf(t).slice(old.length)],
+        });
         continue;
       }
     }

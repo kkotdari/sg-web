@@ -7304,7 +7304,13 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 }
 
 .scr-sb { display: flex; flex-direction: column; gap: 24px; }
-.scr-sb-item { position: relative; }
+.scr-sb-item { position: relative; padding-left: calc(var(--sb-indent, 0) * 24px); }
+@media (max-width: 640px) { .scr-sb-item { padding-left: calc(var(--sb-indent, 0) * 14px); } }
+.scr-sb-item[style*="--sb-indent"]::before {
+  content: ""; position: absolute; left: calc(var(--sb-indent, 0) * 24px - 12px); top: 4px; bottom: 4px;
+  border-left: 1px solid var(--line); pointer-events: none;
+}
+@media (max-width: 640px) { .scr-sb-item[style*="--sb-indent"]::before { left: calc(var(--sb-indent, 0) * 14px - 7px); } }
 .scr-sb-item-lifted {
   position: relative; z-index: 3; border-radius: 10px; background: var(--panel-raised);
   box-shadow: 0 0 0 6px var(--panel-raised), 0 10px 28px rgba(0, 0, 0, 0.35);
@@ -7341,7 +7347,7 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   white-space: pre-wrap; word-break: break-word;
 }
 .scr-sb-block-edit .scr-sb-text,
-.scr-sb-block-edit .scr-sb-list-head { padding-right: 52px; }
+.scr-sb-block-edit .scr-sb-list-head { padding-right: 104px; }
 .scr-sb-line {
   display: block; width: 100%; min-width: 0; box-sizing: border-box;
   margin: 0; padding: 2px 4px;
@@ -7377,6 +7383,9 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
   flex: 0 0 auto; width: 4px; height: 4px; margin-left: 3px;
   border-radius: 50%; background: var(--muted);
 }
+.scr-sb-lv1 > .scr-sb-list-dot { width: 5px; height: 5px; background: transparent; box-shadow: inset 0 0 0 1px var(--muted); }
+.scr-sb-lv2 > .scr-sb-list-dot { border-radius: 1px; }
+.scr-sb-lv-btns { display: inline-flex; flex: 0 0 auto; gap: 1px; }
 .scr-sb-list-text {
   flex: 1 1 auto; min-width: 0;
   font-size: var(--fs-caption); line-height: 1.5; color: var(--text); word-break: break-word;
@@ -7487,7 +7496,7 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-fold-corner { display: flex; justify-content: flex-end; margin-top: -4px; }
 .scr-sb-file-row { display: flex; align-items: center; gap: 4px; }
 .scr-sb-file-row > .scr-sb-file { flex: 0 1 auto; min-width: 0; margin-right: 0; }
-.scr-sb-block-edit .scr-sb-file-row { padding-right: 52px; }
+.scr-sb-block-edit .scr-sb-file-row { padding-right: 104px; }
 .scr-sb-file-row > .scr-sb-icon { flex: 0 0 auto; }
 .scr-sb-order { position: relative; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .scr-sb-order-cell {

@@ -578,6 +578,8 @@ export interface ScheduleBlock {
   size: number;
   photos: SchedulePhoto[];
   collapsed?: boolean;
+  indent?: number;
+  levels?: number[];
 }
 
 export interface Schedule {
@@ -597,11 +599,11 @@ export interface Schedule {
 
 export type ScheduleBlockWrite = (
   | { kind: "text"; id?: string; title: string; text: string }
-  | { kind: "list"; id?: string; title: string; items: string[] }
+  | { kind: "list"; id?: string; title: string; items: string[]; levels: number[] }
   | { kind: "photos"; id?: string; title: string; photos: ({ id: string } | { file: { name: string; data: string } })[] }
   | { kind: "photo" | "file"; id: string }
   | { kind: "photo" | "file"; file: { name: string; data: string } }
-) & { collapsed?: boolean };
+) & { collapsed?: boolean; indent?: number };
 
 export interface ScheduleWrite {
   title: string;

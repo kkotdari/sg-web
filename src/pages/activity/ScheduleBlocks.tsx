@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
-  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GripVertical, Image as ImageIcon, List as ListIcon, Paperclip,
+  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GripVertical, Image as ImageIcon,
+  IndentDecrease, IndentIncrease, List as ListIcon, Paperclip,
   Play, Plus, Trash2, Type, X,
 } from "lucide-react";
 import PhotoViewer from "../../components/common/PhotoViewer";
@@ -79,6 +80,8 @@ const emptyBlock = (kind: ScheduleBlock["kind"]): DraftBlock => {
   return { id, key: id, kind, text: "", title: "", items: [], url: "", name: "", size: 0, photos: [] };
 };
 const MAX_BLOCKS = 40;
+const MAX_INDENT = 3;
+const MAX_LEVEL = 2;
 const composing = (e: React.KeyboardEvent): boolean => e.nativeEvent.isComposing || e.keyCode === 229;
 
 let keyboardProxy: HTMLInputElement | null = null;
@@ -181,10 +184,21 @@ function ListBlock({
   block, canEdit, grip, onChange, onDelete,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
-  onChange: (patch: { title?: string; items?: string[]; collapsed?: boolean }) => void; onDelete: () => void;
+  onChange: (patch: { title?: string; items?: string[]; levels?: number[]; collapsed?: boolean }) => void; onDelete: () => void;
 }) {
   const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
   const open = !folded;
+  const levels = block.items.map((_, i) => block.levels?.[i] ?? 0);
+  const [focused, setFocused] = useState<number | null>(null);
+  const shift = (i: number, by: number): void => {
+    if (i >= block.items.length) return;
+    const cap = i === 0 ? 0 : Math.min(MAX_LEVEL, levels[i - 1] + 1);
+    const to = Math.max(0, Math.min(cap, levels[i] + by));
+    if (to === levels[i]) return;
+    const next = [...levels];
+    next[i] = to;
+    onChange({ levels: next });
+  };
 
   const rows = useRef(new Map<number, HTMLInputElement>());
   const titleRef = useRef<HTMLInputElement | null>(null);
@@ -207,7 +221,7 @@ function ListBlock({
 
   const setItem = (i: number, value: string): void => {
     if (block.items.length === 0) {
-      if (value) onChange({ items: [value] });
+      if (value) onChange({ items: [value], levels: [0] });
       return;
     }
     const next = [...block.items];
@@ -227,6 +241,11 @@ function ListBlock({
       focusRow(to, caret);
       return;
     }
+    if (e.key === "Tab") {
+      e.preventDefault();
+      shift(i, e.shiftKey ? -1 : 1);
+      return;
+    }
     if (e.key === "Enter") {
       e.preventDefault();
       if (!el.value && i >= block.items.length - 1) return;
@@ -234,22 +253,28 @@ function ListBlock({
       const rest = el.value.slice(el.selectionEnd ?? el.value.length);
       const next = [...block.items];
       next.splice(i, 1, head, rest);
-      onChange({ items: next });
+      const lv = [...levels];
+      lv.splice(i, 1, levels[i] ?? 0, levels[i] ?? 0);
+      onChange({ items: next, levels: lv });
       focusAt.current = { row: i + 1, caret: 0 };
     } else if (e.key === "Backspace" && el.selectionStart === 0 && el.selectionEnd === 0) {
       e.preventDefault();
       if (block.items.length === 0) return;
+      if ((levels[i] ?? 0) > 0) { shift(i, -1); return; }
       const next = [...block.items];
+      const lv = [...levels];
       if (i === 0) {
         if (el.value) return;
         next.splice(0, 1);
-        onChange({ items: next });
+        lv.splice(0, 1);
+        onChange({ items: next, levels: lv });
         if (next.length > 0) focusAt.current = { row: 0, caret: 0 };
         return;
       }
       const above = next[i - 1];
       next.splice(i - 1, 2, above + el.value);
-      onChange({ items: next });
+      lv.splice(i - 1, 2, levels[i - 1]);
+      onChange({ items: next, levels: lv });
       focusAt.current = { row: i - 1, caret: above.length };
     }
   };
@@ -279,7 +304,10 @@ function ListBlock({
       {open && (
         <ul className="scr-sb-list">
           {shown.map((it, i) => (
-            <li key={i} className="scr-sb-list-item">
+            <li
+              key={i} className={cx("scr-sb-list-item", `scr-sb-lv${levels[i] ?? 0}`)}
+              style={(levels[i] ?? 0) > 0 ? { paddingLeft: `${(levels[i] ?? 0) * 18}px` } : undefined}
+            >
               <span className="scr-sb-list-dot" aria-hidden />
               {canEdit ? (
                 <input
@@ -287,14 +315,24 @@ function ListBlock({
                   ref={(el) => { if (el) rows.current.set(i, el); else rows.current.delete(i); }}
                   onChange={(e) => setItem(i, e.target.value)}
                   onKeyDown={(e) => onKey(i, e)}
+                  onFocus={() => setFocused(i)}
+                  onBlur={() => setFocused((f) => (f === i ? null : f))}
                 />
               ) : (
                 <span className="scr-sb-line scr-sb-list-text">{it}</span>
               )}
+              {canEdit && focused === i && i < block.items.length && (
+                <span className="scr-sb-lv-btns" onPointerDown={(e) => e.preventDefault()}>
+                  <IconBtn label="내어쓰기" onClick={() => shift(i, -1)}><IndentDecrease size={13} /></IconBtn>
+                  <IconBtn label="들여쓰기" onClick={() => shift(i, 1)}><IndentIncrease size={13} /></IconBtn>
+                </span>
+              )}
               {canEdit && i < block.items.length && (
                 <IconBtn
                   label="줄 삭제" danger
-                  onClick={() => onChange({ items: block.items.filter((_, k) => k !== i) })}
+                  onClick={() => onChange({
+                    items: block.items.filter((_, k) => k !== i), levels: levels.filter((_, k) => k !== i),
+                  })}
                 >
                   <X size={12} />
                 </IconBtn>
@@ -762,6 +800,8 @@ export default function ScheduleBlocks({
   } | null>(null);
   const flipFrom = useRef<Map<string, number> | null>(null);
   const [dragKey, setDragKey] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string[] | null>(null);
+  const previewRef = useRef<string[] | null>(null);
 
   const patch = (key: string, part: Partial<ScheduleBlock>): void =>
     onChange(blocks.map((b) => (b.key === key ? { ...b, ...part } : b)));
@@ -862,14 +902,14 @@ export default function ScheduleBlocks({
     const d = drag.current;
     const el = d && rowRefs.current.get(d.key);
     if (!d || !el) return;
-    const list = latest.current;
-    const from = list.findIndex((b) => b.key === d.key);
+    const keys = previewRef.current ?? latest.current.map((b) => b.key);
+    const from = keys.indexOf(d.key);
     if (from < 0) return;
     const top = d.lastY - (d.grabY - d.grabTop);
     const bottom = top + el.offsetHeight;
     let to = from;
-    for (let i = 0; i < list.length; i += 1) {
-      const row = rowRefs.current.get(list[i].key);
+    for (let i = 0; i < keys.length; i += 1) {
+      const row = rowRefs.current.get(keys[i]);
       if (!row || i === from) continue;
       const mid = layoutTop(row) + row.offsetHeight / 2;
       if (i < from && top < mid) { to = i; break; }
@@ -879,9 +919,10 @@ export default function ScheduleBlocks({
     const from_ = new Map<string, number>();
     for (const [k, row] of rowRefs.current) from_.set(k, row.getBoundingClientRect().top);
     flipFrom.current = from_;
-    const next = [...list];
+    const next = [...keys];
     next.splice(to, 0, ...next.splice(from, 1));
-    onChange(next);
+    previewRef.current = next;
+    setPreview(next);
   };
   const scrollBy = (dy: number): void => {
     for (let n: HTMLElement | null = listRef.current; n && n !== document.body; n = n.parentElement) {
@@ -931,6 +972,16 @@ export default function ScheduleBlocks({
     window.removeEventListener("pointercancel", endDrag);
     cancelAnimationFrame(d.raf);
     drag.current = null;
+    const keys = previewRef.current;
+    previewRef.current = null;
+    if (keys) {
+      const now = latest.current;
+      const byKey = new Map(now.map((b) => [b.key, b]));
+      const next = keys.map((k) => byKey.get(k)).filter((b): b is DraftBlock => !!b);
+      for (const b of now) if (!keys.includes(b.key)) next.push(b);
+      if (next.some((b, i) => b.key !== now[i]?.key)) onChange(next);
+      setPreview(null);
+    }
     const el = rowRefs.current.get(d.key);
     if (!el) { setDragKey(null); return; }
     el.style.transition = "transform .2s cubic-bezier(0.2, 0, 0, 1)";
@@ -980,24 +1031,47 @@ export default function ScheduleBlocks({
     if (at !== null) make(at);
   };
 
+  const indentBy = (key: string, by: number): void => {
+    const b = latest.current.find((x) => x.key === key);
+    if (!b) return;
+    const to = Math.max(0, Math.min(MAX_INDENT, (b.indent ?? 0) + by));
+    if (to !== (b.indent ?? 0)) patch(key, { indent: to });
+  };
   const gripFor = (b: DraftBlock): ReactNode => (
-    <span
-      className="scr-sb-grip" role="button" tabIndex={-1}
-      aria-label="끌어서 차례 바꾸기" title="끌어서 차례 바꾸기"
-      onPointerDown={(e) => startDrag(e, b.key)}
-    >
-      <GripVertical size={13} />
-    </span>
+    <>
+      <IconBtn label="요소 내어쓰기" onClick={() => indentBy(b.key, -1)}><IndentDecrease size={13} /></IconBtn>
+      <IconBtn label="요소 들여쓰기" onClick={() => indentBy(b.key, 1)}><IndentIncrease size={13} /></IconBtn>
+      <span
+        className="scr-sb-grip" role="button" tabIndex={-1}
+        aria-label="끌어서 차례 바꾸기" title="끌어서 차례 바꾸기"
+        onPointerDown={(e) => startDrag(e, b.key)}
+      >
+        <GripVertical size={13} />
+      </span>
+    </>
   );
+  const onIndentKey = (e: React.KeyboardEvent): void => {
+    if (!canEdit || e.defaultPrevented || e.key !== "Tab" || composing(e)) return;
+    const t = e.target as HTMLElement;
+    if (!t.matches("input.scr-sb-list-title")) return;
+    const key = t.closest<HTMLElement>("[data-block]")?.dataset.block;
+    if (!key) return;
+    e.preventDefault();
+    indentBy(key, e.shiftKey ? -1 : 1);
+  };
 
   return (
-    <div className={cx("scr-sb", dragKey !== null && "scr-sb-dragging")} ref={listRef} onKeyDown={onNavKey}>
-      {blocks.map((b, i) => {
+    <div
+      className={cx("scr-sb", dragKey !== null && "scr-sb-dragging")} ref={listRef}
+      onKeyDown={(e) => { onNavKey(e); onIndentKey(e); }}
+    >
+      {(preview ? preview.map((k) => blocks.find((b) => b.key === k)).filter((b): b is DraftBlock => !!b) : blocks).map((b, i) => {
         const grip = gripFor(b);
         return (
           <div
-            key={b.key}
+            key={b.key} data-block={b.key}
             className={cx("scr-sb-item", dragKey === b.key && "scr-sb-item-lifted")}
+            style={b.indent ? ({ "--sb-indent": b.indent } as React.CSSProperties) : undefined}
             ref={(el) => { if (el) rowRefs.current.set(b.key, el); else rowRefs.current.delete(b.key); }}
           >
             {canEdit && slotBtn(i, i === 0 ? "top" : "mid")}
