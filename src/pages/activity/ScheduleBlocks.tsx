@@ -73,6 +73,10 @@ function FoldBtn({ folded, onToggle, what }: { folded: boolean; onToggle: () => 
   );
 }
 
+let sorting = 0;
+/** 끌어서 차례를 바꾸는 중인가 — 그동안 자동 저장을 미룬다(사진 base64·큰 JSON 만들기가 끌기를 버벅이게 한다). */
+export const sortingNow = (): boolean => sorting > 0;
+
 export const NEW_PREFIX = "new:";
 const newId = (): string => `${NEW_PREFIX}${Math.random().toString(36).slice(2)}`;
 const emptyBlock = (kind: ScheduleBlock["kind"]): DraftBlock => {
@@ -504,6 +508,7 @@ function PhotoOrder({
     if (!pr.moved) {
       if (Math.hypot(e.clientX - pr.x, e.clientY - pr.y) < SORT_SLOP) return;
       pr.moved = true;
+      sorting += 1;
       const el = cells.current.get(pr.id);
       if (el) el.style.transition = "none";
       setDragId(pr.id);
@@ -522,6 +527,7 @@ function PhotoOrder({
     pr.stop();
     if (pr.raf) cancelAnimationFrame(pr.raf);
     press.current = null;
+    if (pr.moved) sorting = Math.max(0, sorting - 1);
     const el = cells.current.get(pr.id);
     if (el) {
       el.style.transition = `transform ${SORT_MS}ms ease`;
@@ -536,7 +542,10 @@ function PhotoOrder({
   };
   const onUp = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(true); };
   const onCancel = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(false); };
-  useEffect(() => () => { press.current?.stop(); }, []);
+  useEffect(() => () => {
+    if (press.current?.moved) sorting = Math.max(0, sorting - 1);
+    press.current?.stop();
+  }, []);
   const onDown = (e: React.PointerEvent<HTMLButtonElement>, id: string): void => {
     if (e.button !== 0 || press.current) return;
     const r = e.currentTarget.getBoundingClientRect();
@@ -959,6 +968,7 @@ export default function ScheduleBlocks({
       lastY: e.clientY, raf: 0,
     };
     setDragKey(key);
+    sorting += 1;
     window.addEventListener("pointermove", moveDrag);
     window.addEventListener("pointerup", endDrag);
     window.addEventListener("pointercancel", endDrag);
@@ -972,6 +982,7 @@ export default function ScheduleBlocks({
     window.removeEventListener("pointercancel", endDrag);
     cancelAnimationFrame(d.raf);
     drag.current = null;
+    sorting = Math.max(0, sorting - 1);
     const keys = previewRef.current;
     previewRef.current = null;
     if (keys) {

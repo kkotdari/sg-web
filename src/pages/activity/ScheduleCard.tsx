@@ -15,7 +15,7 @@ import { readAsDataUrl } from "../../utils/image";
 import { showAlert } from "../../components/common/AlertDialog";
 import type { Schedule, ScheduleBlock, ScheduleFile, SchedulePhoto, ScheduleWrite, ScheduleBlockWrite } from "../../types";
 import { ActivityCard } from "./ActivityCard";
-import ScheduleBlocks, { NEW_PREFIX, withKeys, type DraftBlock } from "./ScheduleBlocks";
+import ScheduleBlocks, { NEW_PREFIX, sortingNow, withKeys, type DraftBlock } from "./ScheduleBlocks";
 import { imgSrc } from "../../utils/imgSrc";
 
 function whenTextOf(date: string, time: string | null): string {
@@ -565,7 +565,7 @@ export default function ScheduleCard({
       if (deferred.size === 0) { uploadTotal.current = 0; setShield(null); }
       else {
         setShield({ done: uploadTotal.current - deferred.size, total: uploadTotal.current });
-        setTimeout(() => { if (!saving.current && draftRef.current) void save(); }, 0);
+        setTimeout(() => { if (!saving.current && draftRef.current && !sortingNow()) void save(); }, 0);
       }
       const cur = draftRef.current;
       if (cur) {
@@ -638,7 +638,7 @@ export default function ScheduleCard({
       const now = Date.now();
       if (dirty()) {
         if (failedAt.current && now - failedAt.current < RETRY_MS) return;
-        if (typingNow()) return;
+        if (typingNow() || sortingNow()) return;
         const rush = draftRef.current ? countNewPhotos(draftRef.current) > 0 : false;
         if (rush || now - lastEditAt.current >= SAVE_IDLE_MS || now - dirtySince.current >= SAVE_MAX_MS) void save();
       } else if (now - lastRefreshAt.current >= REFRESH_MS) {
