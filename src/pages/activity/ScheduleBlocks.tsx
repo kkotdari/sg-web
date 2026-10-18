@@ -376,6 +376,9 @@ function SaveOneBtn({ photo, className }: { photo: SchedulePhoto; className: str
   );
 }
 
+const SORT_SLOP = 6;
+const SORT_MS = 160;
+
 function PhotoOrder({
   photos, at, onPick, onReorder,
 }: {
@@ -383,66 +386,161 @@ function PhotoOrder({
   onPick: (i: number) => void; onReorder: (next: SchedulePhoto[]) => void;
 }) {
   const wrap = useRef<HTMLDivElement | null>(null);
-  const press = useRef<{ id: string; pointerId: number; x: number; y: number; moved: boolean } | null>(null);
+  const cells = useRef(new Map<string, HTMLButtonElement>());
+  const press = useRef<{
+    id: string; pointerId: number; x: number; y: number; grabX: number; grabY: number;
+    lastX: number; lastY: number; moved: boolean; raf: number; stop: () => void;
+  } | null>(null);
+  const [preview, setPreview] = useState<string[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
-  const latest = useRef(photos);
-  latest.current = photos;
-  const onDown = (e: React.PointerEvent<HTMLButtonElement>, id: string): void => {
-    if (e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    press.current = { id, pointerId: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+  const flipFrom = useRef<Map<string, { x: number; y: number }> | null>(null);
+  const byId = new Map(photos.map((p) => [p.id, p]));
+  const order = (preview ?? photos.map((p) => p.id)).filter((id) => byId.has(id));
+  const live = useRef({ order, photos, byId, onPick, onReorder });
+  live.current = { order, photos, byId, onPick, onReorder };
+
+  const slotOf = (el: HTMLElement): { x: number; y: number } => ({ x: el.offsetLeft, y: el.offsetTop });
+  const follow = (): void => {
+    const pr = press.current;
+    const el = pr && cells.current.get(pr.id);
+    const box = wrap.current?.getBoundingClientRect();
+    if (!pr || !el || !box) return;
+    const slot = slotOf(el);
+    el.style.transform = `translate(${pr.lastX - box.left - pr.grabX - slot.x}px, ${pr.lastY - box.top - pr.grabY - slot.y}px) scale(1.06)`;
   };
-  const onMove = (e: React.PointerEvent<HTMLButtonElement>): void => {
+  const reslot = (): void => {
+    const pr = press.current;
+    const box = wrap.current?.getBoundingClientRect();
+    if (!pr || !box) return;
+    const px = pr.lastX - box.left;
+    const py = pr.lastY - box.top;
+    const { order } = live.current;
+    let best: string | null = null;
+    let bestD = Infinity;
+    for (const id of order) {
+      const el = cells.current.get(id);
+      if (!el) continue;
+      const cx = el.offsetLeft + el.offsetWidth / 2;
+      const cy = el.offsetTop + el.offsetHeight / 2;
+      const d = Math.hypot(px - cx, py - cy);
+      if (d < bestD) { bestD = d; best = id; }
+    }
+    if (!best || best === pr.id) return;
+    const from = order.indexOf(pr.id);
+    const to = order.indexOf(best);
+    if (from < 0 || to < 0) return;
+    const next = [...order];
+    next.splice(from, 1);
+    next.splice(to, 0, pr.id);
+    flipFrom.current = new Map(order.map((id) => {
+      const el = cells.current.get(id);
+      return [id, el ? slotOf(el) : { x: 0, y: 0 }];
+    }));
+    setPreview(next);
+  };
+  useLayoutEffect(() => {
+    const from = flipFrom.current;
+    if (!from) return;
+    flipFrom.current = null;
+    const moving = press.current?.id;
+    for (const [id, was] of from) {
+      const el = cells.current.get(id);
+      if (!el || id === moving) continue;
+      const now = slotOf(el);
+      const dx = was.x - now.x;
+      const dy = was.y - now.y;
+      if (!dx && !dy) continue;
+      el.style.transition = "none";
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+      void el.offsetWidth;
+      el.style.transition = `transform ${SORT_MS}ms ease`;
+      el.style.transform = "";
+    }
+    follow();
+  }, [preview]);
+
+  const onMove = (e: PointerEvent): void => {
     const pr = press.current;
     if (!pr || pr.pointerId !== e.pointerId) return;
+    pr.lastX = e.clientX; pr.lastY = e.clientY;
     if (!pr.moved) {
-      if (Math.hypot(e.clientX - pr.x, e.clientY - pr.y) < 6) return;
+      if (Math.hypot(e.clientX - pr.x, e.clientY - pr.y) < SORT_SLOP) return;
       pr.moved = true;
+      const el = cells.current.get(pr.id);
+      if (el) el.style.transition = "none";
       setDragId(pr.id);
     }
-    const cells = Array.from(wrap.current?.querySelectorAll<HTMLElement>("[data-pid]") ?? []);
-    const hit = cells.find((c) => {
-      const r = c.getBoundingClientRect();
-      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    e.preventDefault();
+    if (pr.raf) return;
+    pr.raf = requestAnimationFrame(() => {
+      pr.raf = 0;
+      follow();
+      reslot();
     });
-    const to = hit ? latest.current.findIndex((p) => p.id === hit.dataset.pid) : -1;
-    const from = latest.current.findIndex((p) => p.id === pr.id);
-    if (to < 0 || from < 0 || to === from) return;
-    const next = [...latest.current];
-    const [it] = next.splice(from, 1);
-    next.splice(to, 0, it);
-    latest.current = next;
-    onReorder(next);
   };
-  const onUp = (e: React.PointerEvent<HTMLButtonElement>): void => {
+  const finish = (commit: boolean): void => {
     const pr = press.current;
-    if (!pr || pr.pointerId !== e.pointerId) return;
+    if (!pr) return;
+    pr.stop();
+    if (pr.raf) cancelAnimationFrame(pr.raf);
     press.current = null;
+    const el = cells.current.get(pr.id);
+    if (el) {
+      el.style.transition = `transform ${SORT_MS}ms ease`;
+      el.style.transform = "";
+    }
     setDragId(null);
-    if (!pr.moved) onPick(latest.current.findIndex((p) => p.id === pr.id));
+    const { order, photos: now, byId: map, onPick: pick, onReorder: reorder } = live.current;
+    if (!pr.moved) { if (commit) pick(order.indexOf(pr.id)); return; }
+    setPreview(null);
+    const same = order.length === now.length && order.every((id, i) => id === now[i].id);
+    if (commit && !same) reorder(order.map((id) => map.get(id)!));
   };
+  const onUp = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(true); };
+  const onCancel = (e: PointerEvent): void => { if (press.current?.pointerId === e.pointerId) finish(false); };
+  useEffect(() => () => { press.current?.stop(); }, []);
+  const onDown = (e: React.PointerEvent<HTMLButtonElement>, id: string): void => {
+    if (e.button !== 0 || press.current) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    press.current = {
+      id, pointerId: e.pointerId, x: e.clientX, y: e.clientY, grabX: e.clientX - r.left, grabY: e.clientY - r.top,
+      lastX: e.clientX, lastY: e.clientY, moved: false, raf: 0,
+      stop: () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onCancel);
+      },
+    };
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+  };
+
   return (
-    <div className="scr-sb-order" ref={wrap} aria-label="끌어서 순서 바꾸기">
-      {photos.map((p, i) => (
-        <button
-          key={p.id} type="button" data-pid={p.id}
-          className={cx("scr-sb-order-cell", i === at && "scr-sb-order-on", p.id === dragId && "scr-sb-order-drag")}
-          aria-label={`${i + 1}번째 ${p.name} — 끌어서 옮기기`}
-          onPointerDown={(e) => onDown(e, p.id)} onPointerMove={onMove} onPointerUp={onUp}
-          onPointerCancel={() => { press.current = null; setDragId(null); }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {isVideoItem(p) ? (
-            <>
-              <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
-              <span className="scr-sb-order-play" aria-hidden><Play size={12} /></span>
-            </>
-          ) : (
-            <img src={imgSrc(p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
-          )}
-          <span className="scr-sb-order-n" aria-hidden>{i + 1}</span>
-        </button>
-      ))}
+    <div className={cx("scr-sb-order", dragId && "scr-sb-order-sorting")} ref={wrap} aria-label="끌어서 순서 바꾸기">
+      {order.map((id, i) => {
+        const p = byId.get(id)!;
+        return (
+          <button
+            key={id} type="button"
+            ref={(el) => { if (el) cells.current.set(id, el); else cells.current.delete(id); }}
+            className={cx("scr-sb-order-cell", photos[at]?.id === id && "scr-sb-order-on", id === dragId && "scr-sb-order-drag")}
+            aria-label={`${i + 1}번째 ${p.name} — 끌어서 옮기기`}
+            onPointerDown={(e) => onDown(e, id)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {isVideoItem(p) ? (
+              <>
+                <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
+                <span className="scr-sb-order-play" aria-hidden><Play size={12} /></span>
+              </>
+            ) : (
+              <img src={imgSrc(p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
+            )}
+            <span className="scr-sb-order-n" aria-hidden>{i + 1}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -561,7 +659,7 @@ function PhotosBlock({
       )}
       {canEdit && n > 1 && !folded && (
         <PhotoOrder
-          photos={block.photos} at={idx} onPick={(i) => go(i)}
+          photos={block.photos} at={idx} onPick={(i) => go(i, false)}
           onReorder={(next) => onChange({ photos: next })}
         />
       )}
