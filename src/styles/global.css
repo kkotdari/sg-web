@@ -7366,6 +7366,14 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 }
 .scr-sb-textarea:focus, .scr-sb-textarea:focus-visible { outline: none; }
 .scr-sb-empty { color: var(--muted); }
+.scr-sb-empty[data-ph]::before { content: attr(data-ph); color: var(--muted); opacity: 0.7; }
+.scr-sb-composer {
+  margin-top: 6px; padding: 6px 4px; border-radius: 6px;
+  color: var(--muted); opacity: 0.7; font-size: 13.5px; cursor: text;
+}
+@media (hover: hover) { .scr-sb-composer:hover { opacity: 1; background: color-mix(in srgb, var(--text) 5%, transparent); } }
+.scr-sb-composer:focus-visible { outline: 2px solid var(--timeline-blue); outline-offset: 1px; }
+.scr-sb-slot-on { background: color-mix(in srgb, var(--text) 10%, transparent); }
 .scr-sb-list-title {
   font-size: var(--fs-body); font-weight: 700; color: var(--text);
   line-height: 1.5;
@@ -7444,12 +7452,13 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 }
 @media (hover: hover) { .scr-sb-slide-x:hover { background: var(--loss); } }
 .scr-sb-slide-save {
-  position: absolute; top: 8px; left: 8px; z-index: 1;
+  position: absolute; top: 8px; right: 8px; z-index: 1;
   display: inline-flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%;
   background: rgba(0, 0, 0, 0.6); color: #fff; cursor: pointer;
 }
 .scr-sb-slide-save:disabled { cursor: progress; opacity: 0.7; }
+.scr-sb-block-edit .scr-sb-slide-save { right: 44px; }
 .scr-sb-slide-save.is-armed { background: var(--timeline-blue); }
 @media (hover: hover) { .scr-sb-slide-save:not(:disabled):hover { background: rgba(0, 0, 0, 0.8); } }
 .scr-sb-photos-head { display: flex; align-items: center; gap: 2px; margin-bottom: 6px; }
@@ -7476,6 +7485,7 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-slide-next { right: 8px; }
 .scr-sb-slide-nav:disabled { opacity: 0.3; cursor: default; }
 @media (hover: hover) { .scr-sb-slide-nav { display: inline-flex; } }
+.scr-sb-slide-video { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
 .scr-sb-slide-img video { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; background: #000; }
 .scr-sb-slide-play {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -7490,6 +7500,22 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 }
 .scr-sb-saveall:disabled { cursor: progress; opacity: 0.7; }
 .scr-sb-saveall-armed { border-color: var(--timeline-blue); color: var(--timeline-blue); }
+/* 밝은 테마(요청: "전체 다운로드 포함 사진첩 버튼들 라이팅테마") — 사진 위에 뜨는 둥근 단추·쪽수·점은 검은 반투명이라
+   밝은 화면에서 혼자 무겁게 떴다. 흰 반투명 + 진한 글자로 바꾼다. 전체 다운로드 알약은 테두리·글자를 테마 글자색에 맞춘다. */
+html.scr-light-theme .scr-sb-slide-save, html.scr-light-theme .scr-sb-slide-x, html.scr-light-theme .scr-sb-slide-nav,
+html.scr-light-theme .scr-sb-slide-count, html.scr-light-theme .scr-sb-slide-play {
+  background: rgba(255, 255, 255, 0.82); color: #1d2430; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+html.scr-light-theme .scr-sb-slide-dot { background: rgba(0, 0, 0, 0.25); }
+html.scr-light-theme .scr-sb-slide-dot-on { background: #1d2430; }
+html.scr-light-theme .scr-sb-saveall { color: var(--text); border-color: color-mix(in srgb, var(--text) 25%, transparent); background: rgba(255, 255, 255, 0.6); }
+html.scr-light-theme .scr-sb-order-n, html.scr-light-theme .scr-sb-order-play { background: rgba(255, 255, 255, 0.85); color: #1d2430; }
+html.scr-light-theme .scr-photo-nav, html.scr-light-theme .scr-photo-counter { background: rgba(255, 255, 255, 0.85); color: #1d2430; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }
+@media (hover: hover) {
+  html.scr-light-theme .scr-sb-slide-save:not(:disabled):hover, html.scr-light-theme .scr-sb-slide-nav:not(:disabled):hover { background: #fff; }
+  html.scr-light-theme .scr-sb-slide-x:hover { background: var(--loss); color: #fff; }
+  html.scr-light-theme .scr-photo-nav:hover { background: #fff; }
+}
 @media (hover: hover) { .scr-sb-saveall:not(:disabled):hover { color: var(--text); border-color: var(--text); } }
 .scr-sb-folded-preview { color: var(--muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scr-sb-folded-preview > svg { vertical-align: -2px; }

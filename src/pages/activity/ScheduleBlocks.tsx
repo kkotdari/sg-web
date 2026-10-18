@@ -73,6 +73,27 @@ function FoldBtn({ folded, onToggle, what }: { folded: boolean; onToggle: () => 
   );
 }
 
+type FocusPart = "title" | "body" | "item";
+type FocusReq = { key: string; part: FocusPart; row?: number; caret: number | "end"; n: number };
+/** 요소가 이웃 요소와 나누고 합치고 들여 쓰는 길 — 문서처럼(요청: "다른 요소들 간에도 백스페이스·엔터로 합치고 나누기 · 탭까지"). */
+type BlockNav = {
+  focus: FocusReq | null;
+  slash: (anchor: HTMLElement, part: FocusPart, row?: number) => void;
+  splitText: (before: string, after: string) => void;
+  mergeBack: () => boolean;
+  exitList: (items: string[], levels: number[]) => void;
+  removeSelf: () => void;
+  indent: (by: number) => void;
+};
+const NO_NAV: BlockNav = {
+  focus: null, slash: () => {}, splitText: () => {}, mergeBack: () => false, exitList: () => {}, removeSelf: () => {}, indent: () => {},
+};
+const placeCaret = (el: HTMLInputElement | HTMLTextAreaElement, caret: number | "end"): void => {
+  el.focus();
+  const at = caret === "end" ? el.value.length : Math.min(caret, el.value.length);
+  el.setSelectionRange(at, at);
+};
+
 let sorting = 0;
 /** 끌어서 차례를 바꾸는 중인가 — 그동안 자동 저장을 미룬다(사진 base64·큰 JSON 만들기가 끌기를 버벅이게 한다). */
 export const sortingNow = (): boolean => sorting > 0;
@@ -121,15 +142,54 @@ function useAutoGrow(value: string, active: boolean): React.RefObject<HTMLTextAr
 }
 
 function TextBlock({
-  block, canEdit, grip, onChange, onDelete,
+  block, canEdit, grip, onChange, onDelete, nav = NO_NAV,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
   onChange: (patch: { title?: string; text?: string; collapsed?: boolean }) => void; onDelete: () => void;
+  nav?: BlockNav;
 }) {
   const [editing, setEditing] = useState(false);
   const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
   const open = canEdit && editing && !folded;
   const ref = useAutoGrow(block.text, open);
+  const titleRef = useRef<HTMLInputElement | null>(null);
+  const caretTo = useRef<number | "end" | null>(null);
+  useEffect(() => {
+    const f = nav.focus;
+    if (!f || !canEdit) return;
+    if (f.part === "title") { if (titleRef.current) placeCaret(titleRef.current, f.caret); return; }
+    caretTo.current = f.caret;
+    if (folded) toggle();
+    setEditing(true);
+    if (ref.current) { placeCaret(ref.current, f.caret); caretTo.current = null; }
+  }, [nav.focus?.n]);
+  useLayoutEffect(() => {
+    if (!open || caretTo.current === null || !ref.current) return;
+    placeCaret(ref.current, caretTo.current);
+    caretTo.current = null;
+  }, [open]);
+  const onBodyKey = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (composing(e)) return;
+    const el = e.currentTarget;
+    const c = el.selectionStart ?? 0;
+    const same = c === el.selectionEnd;
+    if (e.key === "Tab") { e.preventDefault(); nav.indent(e.shiftKey ? -1 : 1); return; }
+    if (e.key === "Enter" && !e.shiftKey && same) {
+      const v = el.value;
+      const ls = v.lastIndexOf("\n", c - 1) + 1;
+      const found = v.indexOf("\n", c);
+      const le = found < 0 ? v.length : found;
+      if (ls > 0 && ls === le && c === ls) {
+        e.preventDefault();
+        nav.splitText(v.slice(0, ls - 1), v.slice(le === v.length ? le : le + 1));
+      }
+      return;
+    }
+    if (e.key === "Backspace" && same && c === 0) {
+      if (block.title) { e.preventDefault(); if (titleRef.current) placeCaret(titleRef.current, "end"); return; }
+      if (nav.mergeBack()) e.preventDefault();
+    }
+  };
   const fold = block.text ? <FoldBtn folded={folded} onToggle={() => { setEditing(false); toggle(); }} what="글" /> : null;
   const preview = block.text.split("\n", 1)[0];
   return (
@@ -137,13 +197,21 @@ function TextBlock({
       {canEdit ? (
         <div className="scr-sb-list-head">
           <input
+            ref={titleRef}
             className="scr-sb-line scr-sb-list-title" value={block.title} placeholder="글 제목 (선택)"
-            onChange={(e) => onChange({ title: e.target.value })}
+            onChange={(e) => {
+              const v = e.target.value;
+              onChange({ title: v });
+              if (v === "/" && !block.title && !block.text) nav.slash(e.currentTarget, "title");
+            }}
             onKeyDown={(e) => {
-              if (composing(e) || e.key !== "Enter") return;
+              if (composing(e)) return;
+              if (e.key === "Backspace" && !block.title && !block.text) { e.preventDefault(); nav.removeSelf(); return; }
+              if (e.key !== "Enter") return;
               e.preventDefault();
               if (folded) toggle();
-              if (open) { ref.current?.focus(); ref.current?.setSelectionRange(0, 0); } else setEditing(true);
+              caretTo.current = 0;
+              if (open && ref.current) { placeCaret(ref.current, 0); caretTo.current = null; } else setEditing(true);
             }}
           />
           {fold}
@@ -157,7 +225,13 @@ function TextBlock({
       {folded ? null : open ? (
         <textarea
           ref={ref} className="scr-sb-text scr-sb-textarea" value={block.text} autoFocus rows={1}
-          onChange={(e) => onChange({ text: e.target.value })}
+          placeholder="글을 쓰거나 / 로 요소 추가"
+          onChange={(e) => {
+            const v = e.target.value;
+            onChange({ text: v });
+            if (v === "/" && !block.text) nav.slash(e.currentTarget, "body");
+          }}
+          onKeyDown={onBodyKey}
           onBlur={() => setEditing(false)}
         />
       ) : block.text || canEdit ? (
@@ -165,6 +239,7 @@ function TextBlock({
           className={cx("scr-sb-text", canEdit && "scr-sb-editable", !block.text && "scr-sb-empty")}
           role={canEdit ? "button" : undefined} tabIndex={canEdit ? 0 : undefined}
           aria-label={canEdit && !block.text ? "내용 적기" : undefined}
+          data-ph={canEdit && !block.text ? "글을 쓰거나 / 로 요소 추가" : undefined}
           onClick={canEdit ? (e) => { e.stopPropagation(); setEditing(true); } : undefined}
           onKeyDown={canEdit ? (e) => {
             if (e.key === "Enter") { e.preventDefault(); setEditing(true); }
@@ -185,10 +260,11 @@ function TextBlock({
 }
 
 function ListBlock({
-  block, canEdit, grip, onChange, onDelete,
+  block, canEdit, grip, onChange, onDelete, nav = NO_NAV,
 }: {
   block: ScheduleBlock; canEdit: boolean; grip: ReactNode;
   onChange: (patch: { title?: string; items?: string[]; levels?: number[]; collapsed?: boolean }) => void; onDelete: () => void;
+  nav?: BlockNav;
 }) {
   const [folded, toggle] = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
   const open = !folded;
@@ -222,8 +298,22 @@ function ListBlock({
   });
 
   const shown = canEdit && block.items.length === 0 ? [""] : block.items;
+  useEffect(() => {
+    const f = nav.focus;
+    if (!f || !canEdit) return;
+    if (folded) toggle();
+    if (f.part === "title") { focusAt.current = null; if (titleRef.current) placeCaret(titleRef.current, f.caret); return; }
+    focusAt.current = { row: f.row ?? Math.max(0, shown.length - 1), caret: f.caret };
+    focusRow(focusAt.current.row, f.caret);
+  }, [nav.focus?.n]);
 
-  const setItem = (i: number, value: string): void => {
+  const setItem = (i: number, value: string, el?: HTMLElement): void => {
+    if (value === "/" && !(block.items[i] ?? "") && el) {
+      const next = block.items.length === 0 ? ["/"] : block.items.map((x, k) => (k === i ? "/" : x));
+      onChange({ items: next, levels: block.items.length === 0 ? [0] : levels });
+      nav.slash(el, "item", i);
+      return;
+    }
     if (block.items.length === 0) {
       if (value) onChange({ items: [value], levels: [0] });
       return;
@@ -252,7 +342,13 @@ function ListBlock({
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      if (!el.value && i >= block.items.length - 1) return;
+      if (!el.value) {
+        if ((levels[i] ?? 0) > 0) { shift(i, -1); return; }
+        if (i >= block.items.length - 1) {
+          nav.exitList(block.items.filter((_, k) => k !== i), levels.filter((_, k) => k !== i));
+          return;
+        }
+      }
       const head = el.value.slice(0, el.selectionStart ?? el.value.length);
       const rest = el.value.slice(el.selectionEnd ?? el.value.length);
       const next = [...block.items];
@@ -290,9 +386,14 @@ function ListBlock({
           <input
             ref={titleRef}
             className="scr-sb-line scr-sb-list-title" value={block.title} placeholder="목록 제목"
-            onChange={(e) => onChange({ title: e.target.value })}
+            onChange={(e) => {
+              const v = e.target.value;
+              onChange({ title: v });
+              if (v === "/" && !block.title && block.items.length === 0) nav.slash(e.currentTarget, "title");
+            }}
             onKeyDown={(e) => {
               if (composing(e)) return;
+              if (e.key === "Backspace" && !block.title && block.items.length === 0) { e.preventDefault(); nav.removeSelf(); return; }
               if (e.key === "Enter") { e.preventDefault(); focusRow(0, 0); }
               else if (e.key === "ArrowDown") { e.preventDefault(); focusRow(0, e.currentTarget.selectionStart ?? 0); }
             }}
@@ -317,7 +418,7 @@ function ListBlock({
                 <input
                   className="scr-sb-line scr-sb-list-text" value={it}
                   ref={(el) => { if (el) rows.current.set(i, el); else rows.current.delete(i); }}
-                  onChange={(e) => setItem(i, e.target.value)}
+                  onChange={(e) => setItem(i, e.target.value, e.currentTarget)}
                   onKeyDown={(e) => onKey(i, e)}
                   onFocus={() => setFocused(i)}
                   onBlur={() => setFocused((f) => (f === i ? null : f))}
@@ -603,6 +704,7 @@ function PhotosBlock({
   const strip = useRef<HTMLDivElement | null>(null);
   const [at, setAt] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
+  const [playing, setPlaying] = useState<string | null>(null);
   const n = block.photos.length;
   const idx = Math.min(at, Math.max(0, n - 1));
   const go = (i: number, smooth = true): void => {
@@ -614,10 +716,12 @@ function PhotosBlock({
   const onScroll = (): void => {
     const el = strip.current;
     if (!el || !el.clientWidth) return;
-    setAt(Math.round(el.scrollLeft / el.clientWidth));
+    const i = Math.round(el.scrollLeft / el.clientWidth);
+    setAt(i);
+    if (playing && block.photos[i]?.id !== playing) setPlaying(null);
   };
   const shown = open === null ? null : block.photos[Math.min(open, n - 1)] ?? null;
-  const view = (i: number): void => { setOpen(i); go(i, false); };
+  const view = (i: number): void => { setPlaying(null); setOpen(i); go(i, false); };
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
       {(canEdit || block.title || n > 0) && (
@@ -654,20 +758,27 @@ function PhotosBlock({
           >
             {block.photos.map((p, i) => (
               <div key={p.id} className="scr-sb-slide">
-                <button
-                  type="button" className="scr-sb-slide-img"
-                  onClick={(e) => { e.stopPropagation(); view(i); }}
-                  aria-label={`${p.name} 크게 보기`}
-                >
-                  {isVideoItem(p) ? (
-                    <>
-                      <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
-                      <span className="scr-sb-slide-play" aria-hidden><Play size={22} /></span>
-                    </>
-                  ) : (
-                    <img src={imgSrc(p.thumbUrl ?? p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
-                  )}
-                </button>
+                {playing === p.id ? (
+                  <video
+                    className="scr-sb-slide-video" src={imgSrc(p.url)} controls autoPlay playsInline
+                    onClick={(e) => e.stopPropagation()} onEnded={() => setPlaying(null)}
+                  />
+                ) : (
+                  <button
+                    type="button" className="scr-sb-slide-img"
+                    onClick={(e) => { e.stopPropagation(); if (isVideoItem(p)) { setPlaying(p.id); setAt(i); } else view(i); }}
+                    aria-label={isVideoItem(p) ? `${p.name} 재생` : `${p.name} 크게 보기`}
+                  >
+                    {isVideoItem(p) ? (
+                      <>
+                        <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
+                        <span className="scr-sb-slide-play" aria-hidden><Play size={22} /></span>
+                      </>
+                    ) : (
+                      <img src={imgSrc(p.thumbUrl ?? p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
+                    )}
+                  </button>
+                )}
                 <SaveOneBtn photo={p} className="scr-sb-slide-save" />
                 {canEdit && (
                   <button
@@ -794,9 +905,14 @@ export default function ScheduleBlocks({
   const photoTarget = useRef<{ key: string | null; at: number }>({ key: null, at: 0 });
   const fileAt = useRef(0);
 
-  const [slot, setSlot] = useState<number | null>(null);
-  const slotAnchor = useRef<HTMLButtonElement | null>(null);
+  const [slot, setSlot] = useState<{ at: number; key: string; part: FocusPart; row?: number; replace: boolean } | null>(null);
+  const [slotOn, setSlotOn] = useState(0);
+  const slotAnchor = useRef<HTMLElement | null>(null);
   const slotDrop = useRef<HTMLDivElement | null>(null);
+  const [focusReq, setFocusReq] = useState<FocusReq | null>(null);
+  const focusSeq = useRef(0);
+  const focusOn = (key: string, part: FocusPart, caret: number | "end", row?: number): void =>
+    setFocusReq({ key, part, caret, row, n: (focusSeq.current += 1) });
   useLayoutEffect(() => {
     if (slot === null || !slotAnchor.current || !slotDrop.current) return undefined;
     return attachPopover(slotAnchor.current, slotDrop.current, { growToContent: true, maxWidth: 200, placement: "bottom" });
@@ -1026,20 +1142,136 @@ export default function ScheduleBlocks({
 
   if (blocks.length === 0 && !canEdit) return null;
 
-  const slotBtn = (at: number, where: "top" | "mid" | "bottom" | "inrow"): ReactNode => (
-    <button
-      type="button" className={cx("scr-sb-slot", `scr-sb-slot-${where}`)}
-      aria-label="여기에 요소 추가" title="여기에 요소 추가" aria-expanded={slot === at}
-      ref={(el) => { if (slot === at) slotAnchor.current = el; }}
-      onClick={(e) => { e.stopPropagation(); setSlot((v) => (v === at ? null : at)); }}
-    >
-      <Plus size={12} />
-    </button>
-  );
-  const pick = (make: (at: number) => void): void => {
-    const at = slot;
+  const focusEnd = (b: DraftBlock | undefined): void => {
+    if (!b) return;
+    if (b.kind === "text") focusOn(b.key, b.text || !b.title ? "body" : "title", "end");
+    else if (b.kind === "list") {
+      if (b.items.length) focusOn(b.key, "item", "end", b.items.length - 1);
+      else focusOn(b.key, "title", "end");
+    } else if (b.kind === "photos") focusOn(b.key, "title", "end");
+  };
+  const textAfter = (cur: DraftBlock, text: string): DraftBlock => ({ ...emptyBlock("text"), text, indent: cur.indent ?? 0 });
+  const navFor = (b: DraftBlock): BlockNav => ({
+    focus: focusReq && focusReq.key === b.key ? focusReq : null,
+    slash: (anchor, part, row) => {
+      slotAnchor.current = anchor;
+      const now = latest.current;
+      const i = now.findIndex((x) => x.key === b.key);
+      const cur = now[i];
+      const replace = !!cur && cur.kind === "text" && !cur.title.trim() && (!cur.text || cur.text === "/")
+        && (part === "body" || part === "title");
+      setSlotOn(0);
+      setSlot({ at: replace ? i : i + 1, key: b.key, part, row, replace });
+    },
+    splitText: (before, after) => {
+      const now = latest.current;
+      const i = now.findIndex((x) => x.key === b.key);
+      if (i < 0) return;
+      const added = textAfter(now[i], after);
+      const next = now.map((x) => (x.key === b.key ? { ...x, text: before } : x));
+      next.splice(i + 1, 0, added);
+      onChange(next);
+      focusOn(added.key, "body", 0);
+    },
+    mergeBack: () => {
+      const now = latest.current;
+      const i = now.findIndex((x) => x.key === b.key);
+      const cur = now[i];
+      const prev = now[i - 1];
+      if (!cur || !prev || cur.kind !== "text" || cur.title.trim()) return false;
+      if (!cur.text) {
+        onChange(now.filter((x) => x.key !== b.key));
+        focusEnd(prev);
+        return true;
+      }
+      if (prev.kind === "text" && !prev.collapsed) {
+        const sep = prev.text ? "\n" : "";
+        onChange(now.filter((x) => x.key !== b.key)
+          .map((x) => (x.key === prev.key ? { ...x, text: prev.text + sep + cur.text } : x)));
+        focusOn(prev.key, "body", prev.text.length + sep.length);
+        return true;
+      }
+      if (prev.kind === "list" && !prev.collapsed) {
+        const lines = cur.text.split("\n").map((x) => x.trim()).filter(Boolean);
+        const lv = prev.items.map((_, k) => prev.levels?.[k] ?? 0);
+        onChange(now.filter((x) => x.key !== b.key).map((x) => (x.key === prev.key
+          ? { ...x, items: [...prev.items, ...lines], levels: [...lv, ...lines.map(() => 0)] } : x)));
+        focusOn(prev.key, "item", 0, prev.items.length);
+        return true;
+      }
+      return false;
+    },
+    exitList: (items, levels) => {
+      const now = latest.current;
+      const i = now.findIndex((x) => x.key === b.key);
+      if (i < 0) return;
+      const added = textAfter(now[i], "");
+      const next = now.map((x) => (x.key === b.key ? { ...x, items, levels } : x));
+      next.splice(i + 1, 0, added);
+      onChange(next);
+      focusOn(added.key, "body", 0);
+    },
+    removeSelf: () => {
+      const now = latest.current;
+      const i = now.findIndex((x) => x.key === b.key);
+      if (i < 0) return;
+      onChange(now.filter((x) => x.key !== b.key));
+      focusEnd(now[i - 1] ?? now[i + 1]);
+    },
+    indent: (by) => indentBy(b.key, by),
+  });
+  const SLASH_OPTS = [
+    { kind: "text" as const, label: "글", icon: <Type size={14} aria-hidden /> },
+    { kind: "list" as const, label: "목록", icon: <ListIcon size={14} aria-hidden /> },
+    { kind: "photos" as const, label: "사진", icon: <ImageIcon size={14} aria-hidden /> },
+    { kind: "file" as const, label: "파일", icon: <Paperclip size={14} aria-hidden /> },
+  ];
+  const clearSlash = (bs: DraftBlock[], sl: NonNullable<typeof slot>): DraftBlock[] => bs.map((x) => {
+    if (x.key !== sl.key) return x;
+    if (sl.part === "body") return { ...x, text: x.text === "/" ? "" : x.text };
+    if (sl.part === "title") return { ...x, title: x.title === "/" ? "" : x.title };
+    const r = sl.row ?? -1;
+    if (x.items[r] !== "/") return x;
+    return { ...x, items: x.items.filter((_, k) => k !== r), levels: x.levels?.filter((_, k) => k !== r) };
+  });
+  const choose = (kind: (typeof SLASH_OPTS)[number]["kind"]): void => {
+    const sl = slot;
     setSlot(null);
-    if (at !== null) make(at);
+    if (!sl) return;
+    let next = clearSlash(latest.current, sl);
+    if (sl.replace) next = next.filter((x) => x.key !== sl.key);
+    const at = Math.max(0, Math.min(sl.at, next.length));
+    const src = latest.current.find((x) => x.key === sl.key);
+    if (kind === "file") { onChange(next); pickFiles(at); return; }
+    if (next.length >= MAX_BLOCKS) { onChange(next); showAlert(`요소는 ${MAX_BLOCKS}개까지예요.`); return; }
+    const made: DraftBlock = { ...emptyBlock(kind), indent: src?.indent ?? 0 };
+    next.splice(at, 0, made);
+    summonKeyboard();
+    onChange(next);
+    focusOn(made.key, kind === "text" ? "body" : "title", 0);
+  };
+  const onSlashKey = (e: React.KeyboardEvent): void => {
+    if (!slot) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault(); e.stopPropagation();
+      setSlotOn((v) => (v + (e.key === "ArrowDown" ? 1 : SLASH_OPTS.length - 1)) % SLASH_OPTS.length);
+    } else if (e.key === "Enter" && !composing(e)) {
+      e.preventDefault(); e.stopPropagation();
+      choose(SLASH_OPTS[slotOn].kind);
+    } else if (e.key === "Escape") {
+      e.preventDefault(); e.stopPropagation();
+      setSlot(null);
+    } else if (e.key.length === 1 || e.key === "Backspace") setSlot(null);
+  };
+  const openComposer = (): void => {
+    const now = latest.current;
+    const last = now[now.length - 1];
+    if (last && last.kind === "text" && !last.text && !last.title) { focusOn(last.key, "body", 0); return; }
+    if (now.length >= MAX_BLOCKS) { showAlert(`요소는 ${MAX_BLOCKS}개까지예요.`); return; }
+    const made = emptyBlock("text");
+    summonKeyboard();
+    onChange([...now, made]);
+    focusOn(made.key, "body", 0);
   };
 
   const indentBy = (key: string, by: number): void => {
@@ -1075,8 +1307,9 @@ export default function ScheduleBlocks({
     <div
       className={cx("scr-sb", dragKey !== null && "scr-sb-dragging")} ref={listRef}
       onKeyDown={(e) => { onNavKey(e); onIndentKey(e); }}
+      onKeyDownCapture={onSlashKey}
     >
-      {(preview ? preview.map((k) => blocks.find((b) => b.key === k)).filter((b): b is DraftBlock => !!b) : blocks).map((b, i) => {
+      {(preview ? preview.map((k) => blocks.find((b) => b.key === k)).filter((b): b is DraftBlock => !!b) : blocks).map((b) => {
         const grip = gripFor(b);
         return (
           <div
@@ -1085,17 +1318,15 @@ export default function ScheduleBlocks({
             style={b.indent ? ({ "--sb-indent": b.indent } as React.CSSProperties) : undefined}
             ref={(el) => { if (el) rowRefs.current.set(b.key, el); else rowRefs.current.delete(b.key); }}
           >
-            {canEdit && slotBtn(i, i === 0 ? "top" : "mid")}
-            {canEdit && i === blocks.length - 1 && slotBtn(i + 1, "bottom")}
             {b.kind === "text" ? (
               <TextBlock
                 block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
-                onChange={(part) => patch(b.key, part)}
+                onChange={(part) => patch(b.key, part)} nav={canEdit ? navFor(b) : NO_NAV}
               />
             ) : b.kind === "list" ? (
               <ListBlock
                 block={b} canEdit={canEdit} grip={grip} onDelete={() => drop(b.key)}
-                onChange={(part) => patch(b.key, part)}
+                onChange={(part) => patch(b.key, part)} nav={canEdit ? navFor(b) : NO_NAV}
               />
             ) : b.kind === "photos" ? (
               <PhotosBlock
@@ -1112,29 +1343,34 @@ export default function ScheduleBlocks({
         );
       })}
 
-      {canEdit && blocks.length === 0 && <div className="scr-sb-slot-row">{slotBtn(0, "inrow")}</div>}
+      {canEdit && (
+        <div
+          className="scr-sb-composer" role="button" tabIndex={0}
+          onClick={(e) => { e.stopPropagation(); openComposer(); }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); openComposer(); } }}
+        >
+          글을 쓰거나 / 로 요소 추가
+        </div>
+      )}
       {canEdit && slot !== null && createPortal(
         <>
           <div
             className="scr-activity-add-backdrop scr-menu-pop-backdrop"
-            onClick={(e) => { e.stopPropagation(); setSlot(null); }} aria-hidden
+            onPointerDown={(e) => { e.preventDefault(); setSlot(null); }} aria-hidden
           />
           <div
             className="scr-menu-pop-drop scr-activity-post-menu-drop scr-scroll scr-sb-slot-menu" ref={slotDrop}
-            role="menu" onClick={(e) => e.stopPropagation()}
+            role="menu" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.preventDefault()}
           >
-            <button type="button" role="menuitem" className="scr-menu-pop-opt" onClick={() => { summonKeyboard(); pick((at) => insertAt(at, emptyBlock("text"))); }}>
-              <Type size={14} aria-hidden /> 글
-            </button>
-            <button type="button" role="menuitem" className="scr-menu-pop-opt" onClick={() => { summonKeyboard(); pick((at) => insertAt(at, emptyBlock("list"))); }}>
-              <ListIcon size={14} aria-hidden /> 목록
-            </button>
-            <button type="button" role="menuitem" className="scr-menu-pop-opt" onClick={() => { summonKeyboard(); pick((at) => insertAt(at, emptyBlock("photos"))); }}>
-              <ImageIcon size={14} aria-hidden /> 사진
-            </button>
-            <button type="button" role="menuitem" className="scr-menu-pop-opt" onClick={() => pick((at) => pickFiles(at))}>
-              <Paperclip size={14} aria-hidden /> 파일
-            </button>
+            {SLASH_OPTS.map((o, k) => (
+              <button
+                key={o.kind} type="button" role="menuitem"
+                className={cx("scr-menu-pop-opt", k === slotOn && "scr-sb-slot-on")}
+                onMouseEnter={() => setSlotOn(k)} onClick={() => choose(o.kind)}
+              >
+                {o.icon} {o.label}
+              </button>
+            ))}
           </div>
         </>,
         document.body,
