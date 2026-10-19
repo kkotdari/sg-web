@@ -169,6 +169,17 @@ export interface GameResult {
   hidden?: boolean;
   /** 내전(참가자 전원이 회원)인가 — 서버가 실어 준다(비공개 판은 팀이 비어 슬롯으로 못 가른다 · 2026-10-12). 옛 서버면 없다. */
   clan?: boolean;
+  /** 유즈맵 판 — 기록만 남고 통계·재생기에서 빠진다(서버 game_result_ums · 2026-10-19). 옛 서버면 없다. */
+  ums?: boolean;
+  /** 리그 경기 세트로 쓰인 판이면 그 자리 — 리그 탭의 배지 "2026 팀리그 · 결승 · 1세트"(2026-10-19). 아니면 null · 옛 서버면 없다. */
+  league?: GameLeagueTag | null;
+}
+
+export interface GameLeagueTag {
+  leagueId: number;
+  leagueName: string;
+  roundName: string;
+  setNo: number;
 }
 
 export interface DeletedGameResult extends GameResult {
@@ -443,10 +454,12 @@ export interface LeagueMatchSubstitution {
   note: string;
 }
 
-/** 경기 한 판의 세트 — 그 세트로 친 게임 결과(고른 것이 있으면)와 이긴 쪽. */
+/** 경기 한 판의 세트 — 그 세트로 친 게임 결과(고른 것이 있으면)와 이긴 쪽("draw" 무승부 · 2026-10-19) · 손으로 적은 글(게임을 안 이은 세트). */
 export interface LeagueMatchSet {
   gameResultId: number | null;
-  winner: LeagueMatchSide | null;
+  winner: LeagueMatchSide | "draw" | null;
+  /** 옛 서버면 없다. */
+  memo?: string;
 }
 
 export interface LeagueMatch {

@@ -260,18 +260,23 @@ export function isClanGame(item: ActivityItem, memberOf: (id: string) => Member 
   return slots.every((slot) => !!memberOf(slot.memberId));
 }
 
-export type GameTab = "clan" | "pub";
+/* ★ 탭 셋 — 리그 / 내전 / 공방(2026-10-19, 요청: "경기 탭 순서 내전 / 리그 / 공방으로 나누기" → "탭 순서 리그/내전/공방 순으로 변경").
+   리그 판(서버 league — 리그 경기 세트에 고른 게임)은 리그 탭에만 서고, 내전·공방은 리그 판을 뺀 나머지를 clan 으로 가른다. */
+export type GameTab = "league" | "clan" | "pub";
 const GAME_TAB_OPTIONS: { value: GameTab; label: string }[] = [
+  { value: "league", label: "리그" },
   { value: "clan", label: "내전" },
   { value: "pub", label: "공방" },
 ];
 export function inGameTab(item: ActivityItem, tab: GameTab, memberOf: (id: string) => Member | undefined): boolean {
   if (item.kind !== "gameResult") return true;
+  if (item.gameResult.league) return tab === "league";
+  if (tab === "league") return false;
   return isClanGame(item, memberOf) === (tab === "clan");
 }
 export function GameTabs({ value, onChange }: { value: GameTab; onChange: (next: GameTab) => void }) {
   return (
-    <div className="scr-activity-game-tabs" role="tablist" aria-label="내전·공방">
+    <div className="scr-activity-game-tabs" role="tablist" aria-label="리그·내전·공방">
       {GAME_TAB_OPTIONS.map((o) => (
         <button
           key={o.value} type="button" role="tab"

@@ -10,5 +10,6 @@ export function hasComputerSlot(g: { team1: GameResultSlot[]; team2: GameResultS
 }
 
 export function gamePlayable(g: GameResult): boolean {
-  return !!g.replay && !hasComputerSlot(g) && !truthMissing(g);
+  // 유즈맵은 기록만 — 재생기를 안 띄운다(서버도 참값을 안 굽는다).
+  return !!g.replay && !g.ums && !hasComputerSlot(g) && !truthMissing(g);
 }

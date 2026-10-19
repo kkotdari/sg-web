@@ -65,6 +65,14 @@ function SelectionActions({ picked, onDelete, onHide, onScrap, scrapBusy }: {
   );
 }
 
+/** 탭 → 서버 목록 조건 — 리그 판은 리그 탭에만(leagueOnly), 내전·공방은 리그 판을 뺀다(noLeague). */
+const tabQuery = (tab: GameTab) => ({
+  membersOnly: tab === "clan" || undefined,
+  pubOnly: tab === "pub" || undefined,
+  leagueOnly: tab === "league" || undefined,
+  noLeague: tab !== "league" || undefined,
+});
+
 export default memo(function ActivityGroupPage({
   groupKey, members, onBack, view, act,
   gameTab, onGameTabChange,
@@ -133,8 +141,7 @@ export default memo(function ActivityGroupPage({
     setServerBusy(true);
     api.getGameResultsPage({
       any: merged.any, linked: merged.linked, limit: 100, sort: "latest",
-      membersOnly: gameTab === "clan" || undefined,
-      pubOnly: gameTab === "pub" || undefined,
+      ...tabQuery(gameTab),
     })
       .then((page) => {
         if (dead) return;
@@ -157,7 +164,7 @@ export default memo(function ActivityGroupPage({
       const merged = toServerMerged(searchApplied, lexRef.current);
       const page = await api.getGameResultsPage({
         any: merged.any, linked: merged.linked, limit: 100, sort: "latest",
-        membersOnly: gameTab === "clan" || undefined, pubOnly: gameTab === "pub" || undefined, cursor,
+        ...tabQuery(gameTab), cursor,
       });
       setServerGames((prev) => (prev && prev.cursor === cursor ? {
         total: prev.total,

@@ -158,7 +158,7 @@ export default function LeagueScreen() {
   const shownStatus: LeagueStatus = league?.status ?? "setup";
 
   return (
-    <div className="scr-screen scr-league-screen">
+    <div className={cx("scr-screen scr-league-screen", selectedId !== null && "is-detail")}>
       {selectedId === null ? (
         <div className="scr-v2-toolbar">
           <div className="scr-v2-toolbar-title-row">

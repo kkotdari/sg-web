@@ -8,7 +8,7 @@ import { Spinner } from "../components/common/Feedback";
 import { showAlert } from "../components/common/AlertDialog";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import { cx } from "../utils/format";
-import { hasComputerSlot, hasUnregisteredSlot, memberSlotCount, shortMatchHint, validateReplayDraft, resolveUnmatchedAsUnregistered, type ReplayDraft, type UnmatchedPlayer } from "../utils/replayDraft";
+import { hasComputerSlot, hasUnregisteredSlot, memberSlotCount, shortMatchHint, validateReplayDraft, resolveUnmatchedAsUnregistered, type ReplayDraft, type UnmatchedPlayer, UMS_GAME_TYPE_ID } from "../utils/replayDraft";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
 import { api } from "../api/client";
@@ -53,6 +53,9 @@ function reviewOf(d: ReplayDraft): ReviewVerdict {
   const notes: string[] = [];
   if (d.teamSplitUncertain) {
     issues.push("팀을 자동으로 나누지 못했어요(맵 자체의 한계) — 아래에서 직접 편을 갈라 주세요.");
+  }
+  if (d.gameTypeId === UMS_GAME_TYPE_ID) {
+    notes.push("유즈맵 경기예요 — 기록만 남고 통계와 재생기에서는 빠져요.");
   }
   if (d.ffa) {
     notes.push(d.result === "unknown"

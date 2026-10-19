@@ -210,9 +210,9 @@ function ActivityRouter() {
   rowAct.current = { open: openItem, toggle: sel.toggle, setMany: sel.setMany };
 
   const [gameTabRaw, setGameTabRaw] = useUrlState("tab");
-  const gameTab: GameTab = gameTabRaw === "pub" ? "pub" : "clan";
+  const gameTab: GameTab = gameTabRaw === "pub" ? "pub" : gameTabRaw === "league" ? "league" : "clan";
   const setGameTab = useCallback(
-    (next: GameTab) => setGameTabRaw(next === "pub" ? "pub" : ""), [setGameTabRaw],
+    (next: GameTab) => setGameTabRaw(next === "clan" ? "" : next), [setGameTabRaw],
   );
 
   const [addMenuOpen, setAddMenuOpen] = useState(false);

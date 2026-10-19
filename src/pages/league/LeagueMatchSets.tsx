@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Play, Plus, X } from "lucide-react";
+import { Link2, Play, Plus, Unlink, X } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import { api } from "../../api/client";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
 import { cleanMapName } from "../../utils/mapName";
+import { gamePlayable } from "../../utils/gamePlayable";
 import { navigateTo, pathOf } from "../../utils/route";
 import type { GameResult, GameResultSlot, League, LeagueMatch, LeagueMatchSet, LeagueMatchSide } from "../../types";
 
@@ -27,7 +28,6 @@ function sideOf(league: League, match: LeagueMatch, teamId: number | undefined):
   };
 }
 
-const NO_GAME = "게임 고르기";
 const PICK_LIMIT = 60;
 
 export default function LeagueMatchSets({
@@ -119,17 +119,21 @@ export default function LeagueMatchSets({
     setOpen(null);
     if (!g) { patch(i, { gameResultId: null }); return; }
     const w = winnerOf(g);
-    patch(i, { gameResultId: g.id, winner: w ?? sets[i].winner });
+    // 이으면 글 칸이 사라진다 — 숨은 글이 남지 않게 비운다(해제하면 빈 글 칸으로 돌아온다).
+    patch(i, { gameResultId: g.id, winner: w ?? sets[i].winner, memo: "" });
   };
   const used = new Set(sets.map((s) => s.gameResultId).filter((x): x is number => x !== null));
 
+  /* ★ 세트 줄(2026-10-19, 요청: "세트추가버튼은 라이팅 테마 채우기 네모 버튼 · N세트 링크 아이콘버튼(경기결과 연동) 옆엔 인풋창 옆에 재생버튼(재생가능한 경우만) ·
+     승리 선택(무승부도 있게) · 링크 눌러서 연동한 경우에는 인풋창이 제거되게 링크 해제버튼으로 바뀌고 해제하면 다시 링크버튼 + 인풋창으로").
+     안 이은 세트 = [N세트] [링크] [글 칸] · 이은 세트 = [N세트] [링크 해제] [그 게임] [재생(재생 가능할 때)] — 둘 다 끝에 [빼기], 아래에 [A 승 · 무 · B 승]. */
   return (
     <div className="scr-field">
       <div className="scr-league-sets-head">
-        <span className="scr-label">세트 <span className="scr-label-optional">(게임 결과 연결)</span></span>
+        <span className="scr-label">세트</span>
         <button
-          type="button" className="scr-compact-rect-btn is-secondary" disabled={disabled}
-          onClick={() => { onChange([...sets, { gameResultId: null, winner: null }]); setOpen(sets.length); }}
+          type="button" className="scr-compact-rect-btn" disabled={disabled}
+          onClick={() => onChange([...sets, { gameResultId: null, winner: null, memo: "" }])}
         >
           <Plus size={13} aria-hidden /> 세트 추가
         </button>
@@ -137,25 +141,44 @@ export default function LeagueMatchSets({
       {sets.length > 0 && (
         <ol className="scr-league-sets">
           {sets.map((s, i) => {
-            const g = s.gameResultId !== null ? byId.get(s.gameResultId) : undefined;
+            const linked = s.gameResultId !== null;
+            const g = linked ? byId.get(s.gameResultId as number) : undefined;
             return (
               <li key={i} className="scr-league-set">
                 <div className="scr-league-set-row">
                   <span className="scr-league-set-no">{i + 1}세트</span>
-                  <button
-                    type="button" className={cx("scr-league-set-game", s.gameResultId === null && "is-empty")}
-                    disabled={disabled} aria-expanded={open === i}
-                    onClick={() => setOpen(open === i ? null : i)}
-                  >
-                    {g ? labelOf(g) : s.gameResultId !== null ? `게임 #${s.gameResultId}` : NO_GAME}
-                  </button>
-                  {s.gameResultId !== null && (
+                  {linked ? (
                     <button
-                      type="button" className="scr-icon-btn scr-league-set-play" aria-label={`${i + 1}세트 게임 보기`} title="게임 상세 보기"
+                      type="button" className="scr-icon-btn scr-league-set-link is-on" disabled={disabled}
+                      aria-label={`${i + 1}세트 게임 연결 해제`} title="게임 결과 연결 해제"
+                      onClick={() => { setOpen(null); patch(i, { gameResultId: null }); }}
+                    >
+                      <Unlink size={14} />
+                    </button>
+                  ) : (
+                    <button
+                      type="button" className="scr-icon-btn scr-league-set-link" disabled={disabled}
+                      aria-label={`${i + 1}세트 게임 결과 연결`} title="게임 결과 연결" aria-expanded={open === i}
+                      onClick={() => setOpen(open === i ? null : i)}
+                    >
+                      <Link2 size={14} />
+                    </button>
+                  )}
+                  {linked ? (
+                    <span className="scr-league-set-game">{g ? labelOf(g) : `게임 #${s.gameResultId}`}</span>
+                  ) : (
+                    <input
+                      type="text" className="scr-input scr-league-set-memo" disabled={disabled} maxLength={200}
+                      value={s.memo ?? ""} placeholder="세트 내용(예: 홍탑 승)" aria-label={`${i + 1}세트 내용`}
+                      onChange={(e) => patch(i, { memo: e.target.value })}
+                    />
+                  )}
+                  {linked && g && gamePlayable(g) && (
+                    <button
+                      type="button" className="scr-icon-btn scr-league-set-play" aria-label={`${i + 1}세트 게임 보기`} title="게임 재생"
                       onClick={() => {
-                        const id = s.gameResultId as number;
                         onOpenGame?.();
-                        navigateTo(pathOf({ screen: "activity", group: "gameResult", item: g?.matchNo || String(id) }));
+                        navigateTo(pathOf({ screen: "activity", group: "gameResult", item: g.matchNo || String(g.id) }));
                       }}
                     >
                       <Play size={13} />
@@ -168,18 +191,19 @@ export default function LeagueMatchSets({
                     <X size={13} />
                   </button>
                 </div>
-                <div className="scr-league-set-win" role="group" aria-label={`${i + 1}세트 이긴 쪽`}>
-                  {(["a", "b"] as const).map((side) => (
+                <div className="scr-league-set-win" role="group" aria-label={`${i + 1}세트 결과`}>
+                  {(["a", "draw", "b"] as const).map((side) => (
                     <button
                       key={side} type="button" disabled={disabled}
-                      className={cx("scr-compact-rect-btn", s.winner !== side && "is-secondary")} aria-pressed={s.winner === side}
+                      className={cx("scr-compact-rect-btn", s.winner !== side && "is-secondary", side === "draw" && "scr-league-set-draw")}
+                      aria-pressed={s.winner === side}
                       onClick={() => patch(i, { winner: s.winner === side ? null : side })}
                     >
-                      {side === "a" ? nameA : nameB} 승
+                      {side === "a" ? `${nameA} 승` : side === "b" ? `${nameB} 승` : "무"}
                     </button>
                   ))}
                 </div>
-                {open === i && (
+                {open === i && !linked && (
                   <div className="scr-league-set-pick">
                     {games === null ? (
                       <div className="scr-league-set-pick-empty"><Spinner size={14} /> 불러오는 중</div>
@@ -188,11 +212,11 @@ export default function LeagueMatchSets({
                     ) : (
                       games.map((c) => {
                         const w = winnerOf(c);
-                        const taken = used.has(c.id) && c.id !== s.gameResultId;
+                        const taken = used.has(c.id);
                         return (
                           <button
                             key={c.id} type="button" disabled={taken}
-                            className={cx("scr-league-set-cand", c.id === s.gameResultId && "is-on")}
+                            className="scr-league-set-cand"
                             onClick={() => pick(i, c)}
                           >
                             <span className="scr-league-set-cand-main">{labelOf(c)}</span>
@@ -202,11 +226,6 @@ export default function LeagueMatchSets({
                           </button>
                         );
                       })
-                    )}
-                    {s.gameResultId !== null && (
-                      <button type="button" className="scr-league-set-cand scr-league-set-cand-none" onClick={() => pick(i, null)}>
-                        게임 연결 빼기
-                      </button>
                     )}
                   </div>
                 )}

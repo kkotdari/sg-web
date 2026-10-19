@@ -136,8 +136,10 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   </>);
 }
 
-export function ListRow({ desc, status, top, side, onClick, check, picked, className, disabled, onLongPress }: {
+export function ListRow({ desc, status, top, side, onClick, check, picked, className, disabled, onLongPress, above }: {
   desc: ReactNode;
+  /** 줄 **위**에 따로 서는 배지 줄(리그 판의 "2026 팀리그 · 결승 · 1세트" · 2026-10-19). */
+  above?: ReactNode;
   /** 맵·길이 배지(GameRowStatus 따위) — desc 안이 아니라 **제 칸**에 선다. 폰 게임 줄은 이 칸을 시각 옆 윗줄로 올린다(global.css). */
   status?: ReactNode;
   top?: ReactNode;
@@ -161,7 +163,8 @@ export function ListRow({ desc, status, top, side, onClick, check, picked, class
         aria-disabled={disabled ? true : undefined}
         onClick={() => { if (!disabled) onClick(); }}
       >
-        <span className="scr-activity-row-main">
+        <span className={cx("scr-activity-row-main", !!above && "has-above")}>
+          {above && <span className="scr-activity-row-above">{above}</span>}
           {status}
           <span className="scr-activity-row-desc">{desc}</span>
           <span className="scr-activity-row-badges">

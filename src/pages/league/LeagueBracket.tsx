@@ -6,7 +6,6 @@ import Select from "../../components/common/Select";
 import Avatar from "../../components/common/Avatar";
 import RosterFace from "./RosterFace";
 import LeagueMatchSets from "./LeagueMatchSets";
-import PillTabs from "../../components/common/PillTabs";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { api } from "../../api/client";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
@@ -213,9 +212,8 @@ function MatchEditModal({
   const [b, setB] = useState(() => (match.setsWonB === null ? "" : String(match.setsWonB)));
   const [note, setNote] = useState(() => match.note);
   const [sets, setSets] = useState<LeagueMatchSet[]>(() => match.sets ?? []);
-  /* 결과는 두 길로 넣는다(요청: "탭으로 수기 입력 · 게임 결과 선택 두 개 구분") — 수기 입력은 몇 대 몇 + 메모, 게임 결과 선택은 세트마다
-     게임을 이어 이긴 쪽·몇 대 몇이 따라온다. 세트가 이미 있으면 그 탭으로 연다. */
-  const [tab, setTab] = useState<"manual" | "games">(() => ((match.sets?.length ?? 0) > 0 ? "games" : "manual"));
+  /* (걷어냄 · 2026-10-19, 요청: "탭 없애고 이렇게 해줘") 수기 입력 / 게임 결과 선택 두 탭 — 이제 세트 하나에 둘이 다 든다(게임을 이으면 그 판 ·
+     안 이으면 글 칸). 몇 대 몇은 세트의 이긴 쪽으로만 채운다. 옛 메모(경기 note)는 적힌 것이 있을 때만 보여 고치거나 지울 수 있게 둔다. */
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -229,14 +227,15 @@ function MatchEditModal({
     ? (canScore ? null : "두 자리가 다 차야 결과를 넣을 수 있어요.")
     : "대진을 확정해야 결과를 넣을 수 있어요.";
 
-  // 세트의 이긴 쪽이 바뀌면 몇 대 몇을 그 수로 채운다(손으로 고칠 수 있다).
+  // 세트의 이긴 쪽이 바뀌면 몇 대 몇을 그 수로 채운다(무승부는 어느 쪽에도 안 센다 · 결과가 정해진 세트가 없으면 비운다).
   const changeSets = (next: LeagueMatchSet[]): void => {
     setSets(next);
-    if (!next.some((x) => x.winner)) return;
+    if (!next.some((x) => x.winner)) { setA(""); setB(""); return; }
     setA(String(next.filter((x) => x.winner === "a").length));
     setB(String(next.filter((x) => x.winner === "b").length));
   };
-  const setsKey = (list: LeagueMatchSet[]): string => JSON.stringify(list.map((x) => [x.gameResultId, x.winner]));
+  const setsKey = (list: LeagueMatchSet[]): string =>
+    JSON.stringify(list.map((x) => [x.gameResultId, x.winner, (x.memo ?? "").trim()]));
 
   const save = async () => {
     setErr("");
@@ -292,13 +291,7 @@ function MatchEditModal({
           />
         </label>
 
-        {canScore && match.sets !== undefined && (
-          <PillTabs
-            options={[{ value: "manual", label: "수기 입력" }, { value: "games", label: "게임 결과 선택" }]}
-            value={tab} onChange={setTab} aria-label="결과 넣는 방식"
-          />
-        )}
-        {canScore && match.sets !== undefined && tab === "games" ? (
+        {canScore && match.sets !== undefined ? (
           <>
             <LeagueMatchSets
               league={league} match={match} sets={sets} onChange={changeSets}
@@ -310,40 +303,16 @@ function MatchEditModal({
             </p>
           </>
         ) : (
-        <>
-        <div className="scr-field">
-          <span className="scr-label">결과 <span className="scr-label-optional">(몇 대 몇)</span></span>
-          <div className="scr-league-match-score">
-            <input
-              type="number" inputMode="numeric" min={0} className="scr-input"
-              value={a} onChange={(e) => setA(e.target.value)} disabled={!canScore} aria-label="A 세트 수"
+          scoreNote && <p className="scr-league-match-note">{scoreNote}</p>
+        )}
+        {match.note !== "" && (
+          <label className="scr-field">
+            <span className="scr-label">메모</span>
+            <textarea
+              className="scr-input scr-league-match-memo" value={note} rows={3}
+              onChange={(e) => setNote(e.target.value)}
             />
-            <span className="scr-league-match-score-sep">:</span>
-            <input
-              type="number" inputMode="numeric" min={0} className="scr-input"
-              value={b} onChange={(e) => setB(e.target.value)} disabled={!canScore} aria-label="B 세트 수"
-            />
-            {canScore && (a !== "" || b !== "") && (
-              <button
-                type="button" className="scr-rect-btn is-secondary"
-                onClick={() => { setA(""); setB(""); }}
-              >
-                지우기
-              </button>
-            )}
-          </div>
-          {scoreNote && <p className="scr-league-match-note">{scoreNote}</p>}
-        </div>
-
-        <label className="scr-field">
-          <span className="scr-label">메모 <span className="scr-label-optional">(세트 정보 등)</span></span>
-          <textarea
-            className="scr-input scr-league-match-memo" value={note} rows={4}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={"예)\n1세트 홍탑 승\n2세트 타센 승\n3세트 팀전 A 승"}
-          />
-        </label>
-        </>
+          </label>
         )}
 
         {err && <div className="scr-err" role="alert">{err}</div>}

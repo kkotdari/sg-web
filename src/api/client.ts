@@ -66,6 +66,8 @@ export interface GameResultListParams {
   hasPlaceholder?: boolean;
   membersOnly?: boolean;
   pubOnly?: boolean;
+  leagueOnly?: boolean;
+  noLeague?: boolean;
   teamMemberIds?: string[];
 }
 
@@ -261,6 +263,8 @@ export const api = {
       hasPlaceholder: params.hasPlaceholder,
       membersOnly: params.membersOnly,
       pubOnly: params.pubOnly,
+      leagueOnly: params.leagueOnly,
+      noLeague: params.noLeague,
       matchAllUsers: params.matchAllUsers,
       q: params.q,
       any: params.any,

@@ -7,7 +7,11 @@ import { isComputerSlot, newComputerSlotId } from "../constants/computerSlot";
 import { isUnregisteredSlot, newUnregisteredSlotId } from "../constants/unregisteredSlot";
 import type { ReplayUpload, GameOutcome, GameResultSlot, GameType, Race, Member } from "../types";
 
-const SERVER_REJECTS_GAME_TYPE = new Set<number>([10]);
+/* 서버가 받지 않는 리플레이 게임 종류 — 비었다. 유즈맵(10)도 이제 받는다(2026-10-19, 요청: "유즈맵 경기도 등록 가능하게 · 재생기는 안되도 되고 기록만") —
+   서버가 유즈맵 표식(ums)을 달아 통계·재생기에서 뺀다. 갈래 거절 길(excludeReason "gametype")은 다시 쓸 일에 대비해 남긴다. */
+const SERVER_REJECTS_GAME_TYPE = new Set<number>([]);
+/** 리플레이 게임 종류 '유즈맵(Use Map Settings)'. */
+export const UMS_GAME_TYPE_ID = 10;
 
 export const isRejectedGameType = (id: number | null): boolean =>
   id !== null && SERVER_REJECTS_GAME_TYPE.has(id);

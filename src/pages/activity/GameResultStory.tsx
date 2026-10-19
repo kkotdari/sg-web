@@ -84,13 +84,16 @@ export default function GameResultStory({
     }
     return `${o1 === "win" ? 1 : 2}팀 승`;
   })();
-  const mapName = cleanMapName(gameResult.mapCanonName ?? gameResult.mapName);
+  /* 유즈맵 판은 맵 이름 앞에 '유즈맵'을 단다 — 기록만 남는 판이라 재생기가 없다(아래 umsGame · 2026-10-19). */
+  const umsGame = gameResult.ums === true;
+  const mapName0 = cleanMapName(gameResult.mapCanonName ?? gameResult.mapName);
+  const mapName = umsGame ? (mapName0 ? `유즈맵 · ${mapName0}` : "유즈맵") : mapName0;
   const minutes = gameResult.durationSeconds != null
     ? Math.round(gameResult.durationSeconds / 60) : null;
   const melee = isMeleeGame({ matchType: gameResult.matchType, team1, team2 });
   const computerGame = hasComputerSlot({ team1, team2 });
-  const noTruth = !computerGame && truthMissing(gameResult);
-  const unplayable = computerGame || noTruth;
+  const noTruth = !computerGame && !umsGame && truthMissing(gameResult);
+  const unplayable = computerGame || umsGame || noTruth;
   const storyMap = unplayable ? null : (grid ?? null);
   const mapPending = !unplayable && grid === undefined;
   const showRoster = !mapPending && storyMap === null;
