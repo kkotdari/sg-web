@@ -90,7 +90,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
     : null;
   const sideNodes = (slots: GameResultSlot[]): ReactNode[] =>
     slots.flatMap((s, i) => [
-      ...(i > 0 ? [<span className="scr-activity-row-slash" key={`s${i}`} aria-hidden>/</span>] : []),
+      ...(i > 0 ? [<span className="scr-activity-row-slash" key={`s${i}`} aria-hidden>•</span>] : []),
       <span className="scr-activity-row-em" key={`n${i}`}>
         {(nameMask ? nameOf(s, slots) : clipRowName(nameOf(s, slots), mobile))}
       </span>,
