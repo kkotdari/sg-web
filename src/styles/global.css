@@ -5551,8 +5551,8 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   margin: 0 5px; font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.04em;
 }
 .scr-activity-row-wl {
-  flex: none; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0 0 1px; border-radius: 50%; box-sizing: border-box;
-  font-size: var(--fs-micro); font-weight: 800; line-height: 1; letter-spacing: 0; white-space: nowrap;
+  flex: none; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0 0 1px; border-radius: 3px; box-sizing: border-box;   /* 원 → 둥근 네모(2026-10-19, 요청: "승무패 배지 글자크기 1스텝 줄이고 둥근네모로") */
+  font-size: var(--fs-11); font-weight: 800; line-height: 1; letter-spacing: 0; white-space: nowrap;   /* --fs-micro(12) → --fs-11(11) 한 단 */
   color: var(--btn-fill-text); background: var(--btn-fill-bg); border: 1px solid var(--btn-fill-border);
 }
 .scr-activity-row-wl.is-loss { opacity: 0.5; }
