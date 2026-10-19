@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal, flushSync } from "react-dom";
 import Sortable from "sortablejs";
 import {
@@ -966,6 +966,75 @@ function MediaBlock({
   );
 }
 
+/* ★ 요소 한 줄 — memo. 한 요소를 고쳐도(글자·접기·사진) 다른 요소는 다시 그리지 않는다(요청: "일정 내에서도 한 부분 변한다고 다른 부분이 다시 그리지 않게").
+   고친 요소만 새 객체가 되고(patch) 나머지는 그대로라 비교가 맞는다. 손잡이는 늘 같은 그릇(act)으로 받고 누를 때 그릇 안의 최신 것을 부른다. */
+type RowActs = {
+  patch: (key: string, part: Partial<ScheduleBlock>) => void;
+  indentBy: (key: string, by: number) => void;
+  startDrag: (e: React.PointerEvent, key: string) => void;
+  pickPhotos: (key: string) => void;
+  askDrop: (key: string) => void;
+  fold: (key: string) => void;
+  ask: Ask;
+  nav: (b: { key: string }) => BlockNav;
+  rowRef: (key: string, el: HTMLDivElement | null) => void;
+};
+const BlockRow = memo(function BlockRow({ b, kids, folded, canEdit, lifted, sel, focus, act }: {
+  b: DraftBlock; kids: number; folded: boolean; canEdit: boolean; lifted: boolean; sel: boolean;
+  focus: FocusReq | null; act: React.RefObject<RowActs>;
+}) {
+  const key = b.key;
+  const on = () => act.current;
+  const grip = (
+    <span className="scr-sb-handles">
+      <IconBtn label="요소 내어쓰기" onClick={() => on().indentBy(key, -1)}><IndentDecrease size={13} /></IconBtn>
+      <IconBtn label="요소 들여쓰기" onClick={() => on().indentBy(key, 1)}><IndentIncrease size={13} /></IconBtn>
+      <span
+        className="scr-sb-grip" role="button" tabIndex={-1}
+        aria-label="끌어서 차례 바꾸기" title="끌어서 차례 바꾸기"
+        onPointerDown={(e) => on().startDrag(e, key)}
+      >
+        <GripVertical size={13} />
+      </span>
+    </span>
+  );
+  const fold: [boolean, () => void] = [folded, () => on().fold(key)];
+  const nav: BlockNav = canEdit ? {
+    focus,
+    slash: (anchor, part, row) => on().nav(b).slash(anchor, part, row),
+    split: (before, after) => on().nav(b).split(before, after),
+    merge: (content, row) => on().nav(b).merge(content, row),
+    exitList: (items, levels) => on().nav(b).exitList(items, levels),
+    removeSelf: () => on().nav(b).removeSelf(),
+    indent: (by) => on().nav(b).indent(by),
+  } : NO_NAV;
+  const ask: Ask = (message, run) => on().ask(message, run);
+  const onChange = (part: Partial<ScheduleBlock>): void => on().patch(key, part);
+  const onDelete = (): void => on().askDrop(key);
+  const rowRef = useCallback((el: HTMLDivElement | null) => act.current.rowRef(key, el), [act, key]);
+  return (
+    <div
+      data-block={key} data-indent={b.indent ?? 0}
+      className={cx("scr-sb-item", lifted && "scr-sb-item-lifted", sel && "scr-sb-item-sel")}
+      style={b.indent ? ({ "--sb-indent": b.indent } as React.CSSProperties) : undefined}
+      ref={rowRef}
+    >
+      {b.kind === "text" ? (
+        <TextBlock block={b} canEdit={canEdit} grip={grip} onDelete={onDelete} onChange={onChange} nav={nav} fold={fold} hasKids={kids > 0} />
+      ) : b.kind === "list" ? (
+        <ListBlock block={b} canEdit={canEdit} grip={grip} onDelete={onDelete} onChange={onChange} nav={nav} fold={fold} hasKids={kids > 0} ask={ask} />
+      ) : b.kind === "photos" ? (
+        <PhotosBlock
+          block={b} canEdit={canEdit} grip={grip} onDelete={onDelete} onChange={onChange}
+          onAdd={() => on().pickPhotos(key)} fold={fold} hasKids={kids > 0} ask={ask}
+        />
+      ) : (
+        <MediaBlock block={b} canEdit={canEdit} grip={grip} onDelete={onDelete} onChange={onChange} fold={fold} hasKids={kids > 0} />
+      )}
+    </div>
+  );
+});
+
 export default function ScheduleBlocks({
   blocks, canEdit, onChange, onSaveNow,
 }: {
@@ -1026,6 +1095,7 @@ export default function ScheduleBlocks({
 
   const latest = useRef(blocks);
   latest.current = blocks;
+  const rowAct = useRef<RowActs>(null as unknown as RowActs);
 
   const focusNew = useRef<string | null>(null);
   const insertAt = (at: number, b: DraftBlock): void => {
@@ -1374,7 +1444,7 @@ export default function ScheduleBlocks({
     } else if (b.kind === "photos") focusOn(b.key, "title", "end");
   };
   const textAfter = (cur: DraftBlock, text: string): DraftBlock => ({ ...emptyBlock("text"), text, indent: cur.indent ?? 0 });
-  const navFor = (b: DraftBlock): BlockNav => ({
+  const navFor = (b: { key: string }): BlockNav => ({
     focus: focusReq && focusReq.key === b.key ? focusReq : null,
     slash: (anchor, part, row) => {
       slotAnchor.current = anchor;
@@ -1541,19 +1611,6 @@ export default function ScheduleBlocks({
     const b = latest.current.find((x) => x.key === key);
     if (b) indentTo(key, (b.indent ?? 0) + by);
   };
-  const gripFor = (b: DraftBlock): ReactNode => (
-    <span className="scr-sb-handles">
-      <IconBtn label="요소 내어쓰기" onClick={() => indentBy(b.key, -1)}><IndentDecrease size={13} /></IconBtn>
-      <IconBtn label="요소 들여쓰기" onClick={() => indentBy(b.key, 1)}><IndentIncrease size={13} /></IconBtn>
-      <span
-        className="scr-sb-grip" role="button" tabIndex={-1}
-        aria-label="끌어서 차례 바꾸기" title="끌어서 차례 바꾸기"
-        onPointerDown={(e) => startDrag(e, b.key)}
-      >
-        <GripVertical size={13} />
-      </span>
-    </span>
-  );
   const onIndentKey = (e: React.KeyboardEvent): void => {
     if (!canEdit || e.defaultPrevented || e.key !== "Tab" || composing(e)) return;
     const t = e.target as HTMLElement;
@@ -1565,6 +1622,19 @@ export default function ScheduleBlocks({
   };
 
   const selSet = new Set(selRange());
+  // 요소 줄은 memo(BlockRow) — 손잡이는 늘 같은 그릇(rowAct)으로 넘기고 그릇 안만 갈아 끼운다(아래 ★).
+  rowAct.current = {
+    patch, indentBy, startDrag, pickPhotos, ask, nav: navFor,
+    askDrop: (key) => { const b = latest.current.find((x) => x.key === key); if (b) askDrop(b); },
+    fold: (key) => {
+      const b = latest.current.find((x) => x.key === key);
+      if (!b) return;
+      /* 접기·펴기는 화면에 먼저 반영하고(요청: "화면에 먼저 반영 후 api 요청") 곧바로 저장한다 — 쉼(2초)을 안 기다린다. */
+      if (canEdit) { patch(b.key, { collapsed: !b.collapsed }); onSaveNow?.(); }
+      else setViewFold((v) => ({ ...v, [b.key]: !foldedOf(b) }));
+    },
+    rowRef: (key, el) => { if (el) rowRefs.current.set(key, el); else rowRefs.current.delete(key); },
+  };
   return (
     <div
       className={cx("scr-sb", dragKey !== null && "scr-sb-dragging")} ref={listRef}
@@ -1589,47 +1659,13 @@ export default function ScheduleBlocks({
         });
         visibleKeys.current = out.map((o) => o.b.key);
         return out;
-      })().map(({ b, kids }) => {
-        const grip = gripFor(b);
-        const fold: [boolean, () => void] = [foldedOf(b), () => {
-          /* 접기·펴기는 화면에 먼저 반영하고(요청: "화면에 먼저 반영 후 api 요청") 곧바로 저장한다 — 쉼(2초)을 안 기다린다. */
-          if (canEdit) { patch(b.key, { collapsed: !b.collapsed }); onSaveNow?.(); }
-          else setViewFold((v) => ({ ...v, [b.key]: !foldedOf(b) }));
-        }];
-        return (
-          <div
-            key={b.key} data-block={b.key} data-indent={b.indent ?? 0}
-            className={cx("scr-sb-item", dragKey === b.key && "scr-sb-item-lifted", selSet.has(b.key) && "scr-sb-item-sel")}
-            style={b.indent ? ({ "--sb-indent": b.indent } as React.CSSProperties) : undefined}
-            ref={(el) => { if (el) rowRefs.current.set(b.key, el); else rowRefs.current.delete(b.key); }}
-          >
-            {b.kind === "text" ? (
-              <TextBlock
-                block={b} canEdit={canEdit} grip={grip} onDelete={() => askDrop(b)}
-                onChange={(part) => patch(b.key, part)} nav={canEdit ? navFor(b) : NO_NAV}
-                fold={fold} hasKids={kids > 0}
-              />
-            ) : b.kind === "list" ? (
-              <ListBlock
-                block={b} canEdit={canEdit} grip={grip} onDelete={() => askDrop(b)}
-                onChange={(part) => patch(b.key, part)} nav={canEdit ? navFor(b) : NO_NAV}
-                fold={fold} hasKids={kids > 0} ask={ask}
-              />
-            ) : b.kind === "photos" ? (
-              <PhotosBlock
-                block={b} canEdit={canEdit} grip={grip} onDelete={() => askDrop(b)}
-                onChange={(part) => patch(b.key, part)} onAdd={() => pickPhotos(b.key)}
-                fold={fold} hasKids={kids > 0} ask={ask}
-              />
-            ) : (
-              <MediaBlock
-                block={b} canEdit={canEdit} grip={grip} onDelete={() => askDrop(b)}
-                onChange={(part) => patch(b.key, part)} fold={fold} hasKids={kids > 0}
-              />
-            )}
-          </div>
-        );
-      })}
+      })().map(({ b, kids }) => (
+        <BlockRow
+          key={b.key} b={b} kids={kids} folded={foldedOf(b)} canEdit={canEdit}
+          lifted={dragKey === b.key} sel={selSet.has(b.key)}
+          focus={focusReq && focusReq.key === b.key ? focusReq : null} act={rowAct}
+        />
+      ))}
 
       {canEdit && (
         <div
