@@ -897,11 +897,7 @@ function PhotosBlock({
                 <ChevronRight size={18} />
               </button>
               <div className="scr-sb-slide-count" aria-hidden>{idx + 1} / {n}</div>
-              <div className="scr-sb-slide-dots" aria-hidden>
-                {block.photos.map((p, i) => (
-                  <span key={p.id} className={cx("scr-sb-slide-dot", i === idx && "scr-sb-slide-dot-on")} />
-                ))}
-              </div>
+              {/* (걷어냄 · 2026-10-19, 요청: "일정 사진목록의 아래 점점점 제거 · 별 효과가 없는듯 숫자만 있으면 돼") 아래 점 줄(.scr-sb-slide-dots) — 몇 번째인지는 위 숫자가 말한다. */}
             </>
           )}
         </div>
