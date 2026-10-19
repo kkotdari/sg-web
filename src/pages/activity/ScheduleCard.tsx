@@ -455,14 +455,13 @@ type ScheduleCardProps = {
   dateLabel?: string;
   canEdit: boolean;
   canDelete: boolean;
-  onChanged: (s: Schedule) => void;
   onDeleted: (id: number) => void;
   footer?: React.ReactNode;
 };
 
-/* ★ 카드는 memo — 일정 하나를 저장(접기 하나라도)하면 활동 목록이 그 일정을 갈아 끼우며 목록 전체를 다시 그리는데, 여태는 화면의 일정 카드가
-   전부 요소까지 통째로 다시 그려졌다(요청: "요소 접기·펼치기도 전체 다시 그리는 등의 이유로 느린지 확인"). 제 일정·권한·날짜 글자가 바뀔 때만
-   다시 그린다 — 손잡이(onChanged·onDeleted)는 늘 새로 오지만 안에서 최신 것을 쓰고, footer 는 일정 id 로만 갈린다. */
+/* ★ 카드는 memo — 제 일정·권한·날짜 글자가 바뀔 때만 다시 그린다(요청: "요소 접기·펼치기도 전체 다시 그리는 등의 이유로 느린지 확인").
+   손잡이(onDeleted)는 늘 새로 오지만 안에서 최신 것을 쓰고, footer 는 일정 id 로만 갈린다.
+   카드 안 저장은 활동 목록에 알리지 않는다(요청: "목록은 신경쓰지말고 목록에서 상세 들어갈때마다 새로 받아야지") — 상세는 들어갈 때마다 서버에서 받는다(ActivityScreen ★). */
 const ScheduleCard = memo(ScheduleCardInner, (a, b) => (
   a.schedule === b.schedule && a.canEdit === b.canEdit && a.canDelete === b.canDelete
   && a.dateLabel === b.dateLabel && a.timeText === b.timeText
@@ -470,7 +469,7 @@ const ScheduleCard = memo(ScheduleCardInner, (a, b) => (
 export default ScheduleCard;
 
 function ScheduleCardInner({
-  schedule, timeText, dateLabel, canEdit, canDelete, onChanged, onDeleted, footer,
+  schedule, timeText, dateLabel, canEdit, canDelete, onDeleted, footer,
 }: ScheduleCardProps) {
   const photos = schedule.files.filter(isImageFile);
   const docs = schedule.files.filter((f) => !isImageFile(f));
@@ -529,8 +528,8 @@ function ScheduleCardInner({
      저장 응답이나 다시 묻기(refresh)로 돌아온 판이 이 값이면 내 판이니, 비교 기준(lastKey·base)만 맞추고 화면의 글·차례는
      그대로 둔다. 여태는 내 저장도 서버 꼴로 다시 갈아 끼워 커서·고침이 흔들렸다. 남이 고쳐 판이 바뀐 때만 받아 합친다. */
   const mineAt = useRef("");
-  const latest = useRef({ schedule, onChanged });
-  latest.current = { schedule, onChanged };
+  const latest = useRef({ schedule });
+  latest.current = { schedule };
   const latestDeleted = useRef(onDeleted);
   latestDeleted.current = onDeleted;
 
@@ -647,7 +646,6 @@ function ScheduleCardInner({
       base.current = new Map(draftRef.current?.blocks.map((b) => [b.key, b]) ?? []);
       for (const b of sent.blocks) if (!base.current.has(b.key)) base.current.set(b.key, b);
       absorb(saved);
-      latest.current.onChanged(saved);
       return true;
     } catch (e) {
       uploadTotal.current = 0;
@@ -656,7 +654,6 @@ function ScheduleCardInner({
         try {
           const s = await api.getSchedule(latest.current.schedule.id);
           absorb(s);
-          latest.current.onChanged(s);
         } catch { }
         return false;
       }
@@ -675,14 +672,13 @@ function ScheduleCardInner({
     try {
       const s = await api.getSchedule(latest.current.schedule.id);
       if (!draftRef.current || sortingNow()) return;
-      // 같은 내용이거나 내가 저장한 그 판이면 끝 — 위(활동 목록)에 알리면 목록의 카드가 전부 다시 그려진다.
+      // 같은 내용이거나 내가 저장한 그 판이면 끝.
       if (serverKeyOf(s) === lastKey.current || s.updatedAt === mineAt.current) {
         baseUpdatedAt.current = s.updatedAt;
         lastKey.current = serverKeyOf(s);
         return;
       }
       absorb(s);
-      latest.current.onChanged(s);
     } catch {
     }
   };

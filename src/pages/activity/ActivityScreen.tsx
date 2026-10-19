@@ -896,12 +896,16 @@ export default function ActivityScreen() {
   const [detailItem, setDetailItem] = useState<DisplayItem | null>(null);
   const routeItemPending = parseRoute().item !== null && gameItem === null && detailItem === null && !itemMiss;
   const pushedDetailRef = useRef(false);
+  /* ★ 일정 상세는 목록의 사본을 쓰지 않고 들어갈 때마다 서버에서 새로 받는다(요청: "목록은 신경쓰지말고 목록에서 상세 들어갈때마다 새로 받아야지").
+     카드 안 저장은 목록에 알리지 않으므로 목록의 일정은 낡을 수 있다. 받는 동안은 routeItemPending 이 받침 표시를 띄운다. */
+  const [detailTick, setDetailTick] = useState(0);
   const openDetailPage = (item: DisplayItem) => {
     const id9 = detailIdOf(item);
     if (id9 === null) return;
     const group9 = detailGroupOf(item);
     if (group9 === null) return;
-    setDetailItem(item);
+    if (item.kind === "schedule") { setItemMiss(false); setDetailTick((n) => n + 1); }
+    else setDetailItem(item);
     const params = new URLSearchParams(window.location.search);
     for (const k9 of SCENE_LINK_KEYS9) params.delete(k9);
     params.delete("u");
@@ -1172,7 +1176,7 @@ export default function ActivityScreen() {
     }
     const id9 = Number(idText);
     if (!Number.isFinite(id9)) return undefined;
-    const hit = feed.find((it) => detailGroupOf(it) === group9 && detailIdOf(it) === id9);
+    const hit = group9 === "schedule" ? undefined : feed.find((it) => detailGroupOf(it) === group9 && detailIdOf(it) === id9);
     if (hit) { setDetailItem(hit); return undefined; }
     let cancelled = false;
     api.getActivityItem(GROUP_ITEM_KIND[group9], id9)
@@ -1185,11 +1189,12 @@ export default function ActivityScreen() {
       })
       .catch(() => { if (!cancelled) setItemMiss(true); });
     return () => { cancelled = true; };
-  }, [feed, detailItem]);
+  }, [feed, detailItem, detailTick]);
   useEffect(() => {
     const onPop = () => {
       pushedDetailRef.current = false;
       setItemMiss(false);
+      setDetailTick((n) => n + 1);   // 일정 상세로 오면 새로 받는다(위 ★)
       const r9 = parseRoute();
       const idText = r9.item;
       const group9 = r9.group;
@@ -1197,6 +1202,7 @@ export default function ActivityScreen() {
         if (!idText || !group9 || group9 === "gameResult") return null;
         const id9 = Number(idText);
         if (cur && detailGroupOf(cur) === group9 && detailIdOf(cur) === id9) return cur;
+        if (group9 === "schedule") return null;   // 일정은 늘 새로 받는다(위 ★)
         return feedRef.current.find(
           (it) => detailGroupOf(it) === group9 && detailIdOf(it) === id9,
         ) ?? null;
@@ -1285,6 +1291,7 @@ export default function ActivityScreen() {
 
   const liveDetailItem = useMemo(() => {
     if (!detailItem) return null;
+    if (detailItem.kind === "schedule") return detailItem;   // 받은 그 판 그대로 — 목록의 사본은 낡았을 수 있다(위 ★)
     const key = rowKeyOf(detailItem);
     return feed.find((it) => rowKeyOf(it) === key) ?? detailItem;
   }, [detailItem, feed]);
@@ -1545,7 +1552,6 @@ export default function ActivityScreen() {
           dateLabel={dateLabelOf(item)}
           canEdit={!!user}
           canDelete={!!user && (item.schedule.createdBy.id === user.id || isAdmin)}
-          onChanged={upsertSchedule}
           onDeleted={(id) => {
             patchFeed((prev) => prev.filter((it) => it.schedule?.id !== id));
             reload();

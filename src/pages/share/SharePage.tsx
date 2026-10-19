@@ -113,7 +113,6 @@ export default function SharePage({ target, onExit }: { target: ShareTarget; onE
               timeText={formatWhen(schedule.scheduledDate)}
               canEdit={false}
               canDelete={false}
-              onChanged={setSchedule}
               onDeleted={() => {}}
             />
           </div>
