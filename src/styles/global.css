@@ -5559,6 +5559,8 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-activity-row-name-main > .scr-activity-row-wl { margin-left: 4px; }
 .scr-activity-row-flat { flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .scr-activity-row-play { flex: none; align-self: center; color: #4cc93b; }
+/* 맵 배지 옆 재생 배지(GameRowStatus playable · 2026-10-19) — 폰 게임 줄만 선다(아래 미디어 블록) · PC 는 이름 줄 끝 그대로. */
+.scr-activity-row-play-top { display: none; }
 .scr-light-theme .scr-activity-row-play { color: #379a20; }
 /* 글자는 **누르지 않는다**(2026-10, 요청: "글자 좌우 압축 제거 · 글자가 잘리면 할수없이 자르기") — 한때 width:max-content 로 펼친 뒤
    transform: scaleX(--flat) 로 줄 폭에 맞춰 눌렀다(찌그러져 보였다). 이제 그냥 줄어들다 말줄임(.scr-activity-row-em)으로 잘린다. */
@@ -5592,6 +5594,10 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   }
   .scr-activity-row-game .scr-activity-row-badges { display: contents; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-status { order: 1; }
+  /* ★ 재생 배지는 맵 배지 **바로 옆**(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") — 같은 order 1 이라 DOM 차례대로 배지 뒤에 선다 ·
+     옛 자리(이름 줄 끝)는 그 줄이 윗줄 배지를 가질 때만 숨긴다(배지를 안 넘기는 모달 목록은 그대로). */
+  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-play-top { display: block; order: 1; margin-left: -2px; }
+  .scr-activity-row-game > .scr-activity-row-main:has(> .scr-activity-row-play-top) > .scr-activity-row-desc .scr-activity-row-play { display: none; }
   .scr-activity-row-game .scr-activity-row-badges-top { order: 2; margin-left: auto; min-height: 0; }
   .scr-activity-row-game .scr-activity-row-time { order: 3; text-align: right; line-height: 1.25; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-desc { order: 4; flex: 1 0 100%; }

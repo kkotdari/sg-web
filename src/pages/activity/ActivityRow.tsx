@@ -41,7 +41,7 @@ function rowStatusOf(item: DisplayItem) {
       </span>
     );
   }
-  if (item.kind === "gameResult") return <GameRowStatus game={item.gameResult} />;
+  if (item.kind === "gameResult") return <GameRowStatus game={item.gameResult} playable={gamePlayable(item.gameResult)} />;
   if (item.kind !== "challenge") return null;
   const s = challengeStatusInfo(item.challenge);
   const text = s.text === "대기중" ? "대기" : s.text;

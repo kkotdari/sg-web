@@ -41,7 +41,8 @@ export function clipRowName(name: string, mobile: boolean): string {
   return kept.join("");
 }
 
-export function GameRowStatus({ game }: { game: GameResult }) {
+/** playable — 폰 게임 줄은 재생 배지를 맵 배지 **바로 옆**(윗줄)에 단다(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") · PC 는 숨고 이름 줄 끝 그대로(global.css). */
+export function GameRowStatus({ game, playable }: { game: GameResult; playable?: boolean }) {
   if (isSecretGame(game)) {
     return (
       <span className="scr-activity-row-status scr-activity-row-status-dur scr-activity-row-status-secret" title="숨긴 경기">
@@ -55,12 +56,13 @@ export function GameRowStatus({ game }: { game: GameResult }) {
     ?? game.mapName);
   const map = full.length > 5 ? full.slice(0, 5) : full;
   if (sec == null && !map) return null;
-  return (
+  return (<>
     <span className="scr-activity-row-status scr-activity-row-status-dur" title={full || undefined}>
       {map !== "" && <span>{map}</span>}
       {sec != null && <span>{Math.round(sec / 60)}분</span>}
     </span>
-  );
+    {playable && <Play size={12} className="scr-activity-row-play scr-activity-row-play-top" aria-hidden fill="currentColor" />}
+  </>);
 }
 
 const sideOutcome = (result: GameResult["result"], side: 1 | 2): "승" | "무" | "패" | null =>
