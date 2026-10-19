@@ -8,39 +8,6 @@ import { useLongPress } from "../../hooks/useLongPress";
 import { isSecretGame } from "../../utils/gameAccess";
 import type { GameResult, GameResultSlot, Member } from "../../types";
 
-/** 이름 줄 — 넘치면 **말줄임으로 자른다**(2026-10, 요청: "글자 좌우 압축 제거 · 글자가 잘리면 할수없이 자르기").
- *  한때는 줄 폭을 재서 transform: scaleX(--flat) 로 글자를 좌우로 눌러 담았다(ResizeObserver + fonts.ready) — 글자가 찌그러져 보였다. */
-export function FlatLine({ children }: { children: ReactNode }) {
-  return (
-    <span className="scr-activity-row-flat">
-      <span className="scr-activity-row-flat-in">{children}</span>
-    </span>
-  );
-}
-
-const TITLE_UNITS_WIDE = 4;
-const TITLE_UNITS_NARROW = 4;
-
-function charUnits(ch: string): number {
-  return /[ᄀ-ᅟ⺀-〾ぁ-㏿㐀-䶿一-鿿ꥠ-꥿가-힣豈-﫿︰-﹯＀-｠￠-￦]/u.test(ch)
-    || ch.codePointAt(0)! > 0xFFFF ? 2 : 1;
-}
-
-export function clipRowName(name: string, mobile: boolean): string {
-  if (!mobile) return name;
-  const chars = Array.from(name);
-  const wide = chars.some((c) => charUnits(c) === 2);
-  const limit = wide ? TITLE_UNITS_WIDE : TITLE_UNITS_NARROW;
-  let used = 0;
-  const kept: string[] = [];
-  for (const c of chars) {
-    const w = charUnits(c);
-    if (used + w > limit) break;
-    kept.push(c); used += w;
-  }
-  return kept.join("");
-}
-
 /** playable — 폰 게임 줄은 재생 배지를 맵 배지 **바로 옆**(윗줄)에 단다(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") · PC 는 숨고 이름 줄 끝 그대로(global.css). */
 export function GameRowStatus({ game, playable }: { game: GameResult; playable?: boolean }) {
   if (isSecretGame(game)) {
@@ -70,12 +37,13 @@ const sideOutcome = (result: GameResult["result"], side: 1 | 2): "승" | "무" |
 const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
   (text ? <span className={text === "패" ? "scr-activity-row-wl is-loss" : text === "승" ? "scr-activity-row-wl is-win" : "scr-activity-row-wl"} aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
 
-export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
+export function GameRowNames({ game, memberOf, playable, nameMask }: {
   game: GameResult;
   memberOf: (id: string) => Member | undefined;
+  /** 옛 폰 글자 수 자르기(clipRowName)의 깃발 — 이제 이름은 칸 폭으로 잘린다(아래 ★★ 격자) · 부르는 쪽 호환으로만 남는다. */
   mobile: boolean;
   playable: boolean;
-  /** 보이는 이름만 바꾸는 손 — 손님 모드의 가명(guestAliasOf · Player1…). 자료는 그대로다. 가명은 폰 줄 자르기(clipRowName)를 안 탄다 — 번호가 잘린다. */
+  /** 보이는 이름만 바꾸는 손 — 손님 모드의 가명(guestAliasOf · Player1…). 자료는 그대로다. */
   nameMask?: (name: string, slot: GameResultSlot) => string;
 }) {
   const nameOf = (s: GameResultSlot, all: GameResultSlot[]): string =>
@@ -90,50 +58,60 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   const playBadge = playable
     ? <Play size={12} className="scr-activity-row-play" aria-label="재생 가능" fill="currentColor" />
     : null;
-  const sideNodes = (slots: GameResultSlot[]): ReactNode[] =>
-    slots.flatMap((s, i) => [
-      ...(i > 0 ? [<span className="scr-activity-row-slash" key={`s${i}`} aria-hidden>･</span>] : []),
-      <span className="scr-activity-row-em" key={`n${i}`}>
-        {(nameMask ? nameOf(s, slots) : clipRowName(nameOf(s, slots), mobile))}
-      </span>,
-    ]);
+  /* ★★ **이름 줄은 격자다**(2026-10-19, 요청: "로스터 형태 변경 · 2팀 경기면 vs 는 정가운데 · 각 팀 로스터는 제 영역 가로세로 가운데 · 3명 이상이면 각 팀 2×2 ·
+     프리포올이나 3팀 이상이면 그에 맞게 · 로스터 칸 안의 조건은 같음 · 글자 수는 칸 너비에 맞게 유동(말줄임 없음)") — 옛 한 줄(FlatLine · 폰 글자 수 자르기 clipRowName)을 걷었다.
+       · 2팀: [팀1 1fr | vs(승패 배지) | 팀2 1fr] — vs 가 줄 한가운데 · 팀 칸은 제 칸 가운데(가로·세로).
+       · 팀 칸 안: 1~2명은 한 줄(사이 ･) · 3명 넘으면 2열(2×2 · 셋이면 2+1).
+       · 개인전(melee): 넷까지 [사람 | vs | 사람 | vs …] 한 줄 · 그 위는 두 줄 격자(칸마다 이름 + 승패 배지).
+       · 이름 칸은 남는 폭만큼 줄어 **그냥 잘린다**(text-overflow clip — global.css .scr-activity-row-cell). */
+  const cellOf = (s: GameResultSlot, all: GameResultSlot[], key: string, badge?: ReactNode): ReactNode => (
+    <span className="scr-activity-row-cell" key={key}>
+      <span className="scr-activity-row-em">{nameOf(s, all)}</span>
+      {badge}
+    </span>
+  );
+  const teamOf = (slots: GameResultSlot[], k: string): ReactNode => {
+    const two = slots.length >= 3;
+    return (
+      <span className={cx("scr-activity-row-team", two && "is-grid")} key={k}>
+        {slots.flatMap((s, i) => [
+          ...(!two && i > 0 ? [<span className="scr-activity-row-slash" key={`s${i}`} aria-hidden>･</span>] : []),
+          cellOf(s, slots, `n${i}`),
+        ])}
+      </span>
+    );
+  };
   if (isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 })) {
     const all = [...game.team1, ...game.team2];
-    return (<>
-      <FlatLine>
-        <span className="scr-activity-row-name">
-          <span className="scr-activity-row-name-main">
-            {all.flatMap((s, i) => [
-              ...(i > 0 ? [(
-                <span className="scr-activity-row-arrow scr-activity-row-vs" key={`v${i}`} aria-hidden>
-                  vs
-                </span>
-              )] : []),
-              <span className="scr-activity-row-em" key={`n${i}`}>
-                {(nameMask ? nameOf(s, all) : clipRowName(nameOf(s, all), mobile))}
-              </span>,
-              <OutcomeBadge key={`w${i}`} text={sideOutcome(game.result, i < game.team1.length ? 1 : 2)} />,
-            ])}
-          </span>
+    const badgeOf = (i: number): ReactNode => <OutcomeBadge text={sideOutcome(game.result, i < game.team1.length ? 1 : 2)} />;
+    if (all.length <= 4) {
+      return (<>
+        <span className="scr-activity-row-grid" style={{ gridTemplateColumns: all.map(() => "minmax(0, 1fr)").join(" auto ") }}>
+          {all.flatMap((s, i) => [
+            ...(i > 0 ? [<span className="scr-activity-row-arrow scr-activity-row-vs" key={`v${i}`} aria-hidden>vs</span>] : []),
+            <span className="scr-activity-row-team" key={`t${i}`}>{cellOf(s, all, `n${i}`, badgeOf(i))}</span>,
+          ])}
         </span>
-      </FlatLine>
+        {playBadge}
+      </>);
+    }
+    return (<>
+      <span className="scr-activity-row-grid is-ffa" style={{ gridTemplateColumns: `repeat(${Math.ceil(all.length / 2)}, minmax(0, 1fr))` }}>
+        {all.map((s, i) => <span className="scr-activity-row-team" key={`t${i}`}>{cellOf(s, all, `n${i}`, badgeOf(i))}</span>)}
+      </span>
       {playBadge}
     </>);
   }
   return (<>
-    <FlatLine>
-      <span className="scr-activity-row-name">
-        <span className="scr-activity-row-name-main">{sideNodes(game.team1)}</span>
-      </span>
+    <span className="scr-activity-row-grid">
+      {teamOf(game.team1, "t1")}
       <span className="scr-activity-row-arrow scr-activity-row-vs">
         <OutcomeBadge text={sideOutcome(game.result, 1)} />
         <span aria-hidden>vs</span>
         <OutcomeBadge text={sideOutcome(game.result, 2)} />
       </span>
-      <span className="scr-activity-row-name">
-        <span className="scr-activity-row-name-main">{sideNodes(game.team2)}</span>
-      </span>
-    </FlatLine>
+      {teamOf(game.team2, "t2")}
+    </span>
     {playBadge}
   </>);
 }

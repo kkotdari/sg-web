@@ -5576,6 +5576,22 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   display: flex; align-items: center; min-width: 0; max-width: 100%;
 }
 .scr-activity-row-name-main { position: relative; display: flex; align-items: center; min-width: 0; }
+/* ★★ 이름 줄 격자(GameRowNames ★★ · 2026-10-19, 요청: "2팀이면 vs 정가운데 · 팀 로스터는 제 영역 가로세로 가운데 · 3명 넘으면 2×2 · 글자는 칸 너비에 맞게(말줄임 없음)") —
+   줄 = [팀1 1fr | vs | 팀2 1fr](개인전 넷까지는 사람마다 1fr 사이사이 vs · 다섯부터는 두 줄 격자 is-ffa) · 팀 칸은 제 칸의 가로·세로 가운데 · 3명 넘는 팀은 2열(is-grid).
+   이름 칸(.scr-activity-row-cell)은 남는 폭만큼 줄고 넘치면 **그냥 잘린다**(clip). */
+.scr-activity-row-grid {
+  flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center; row-gap: 1px;
+}
+.scr-activity-row-team { min-width: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.scr-activity-row-team.is-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(2.2em, max-content)); justify-content: center; align-content: center; justify-items: center;
+  column-gap: 8px; row-gap: 1px;
+}
+/* 칸은 두 글자 폭(2.2em)까지만 준다 — 긴 이름 곁의 짧은 이름이 같은 비로 줄어 "정ㄱ"처럼 잘리지 않게 넘치는 몫은 긴 이름이 진다. */
+.scr-activity-row-cell { flex: 0 1 auto; min-width: 2.2em; max-width: 100%; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+.scr-activity-row-cell > .scr-activity-row-em { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: clip; }
+.scr-activity-row-cell > .scr-activity-row-wl { margin-left: 3px; }
 .scr-activity-row-state {
   flex: none; margin-right: 3px;
   font-size: var(--fs-9); font-weight: 800; line-height: 1; white-space: nowrap;
