@@ -17,15 +17,14 @@ import { ActivityCard } from "./ActivityCard";
 import LeagueMatchCard from "./LeagueMatchCard";
 import ScheduleCard from "./ScheduleCard";
 import { GameDetailCloseContext } from "./gameDetailClose";
-import { useFeedActions } from "./activityFeed";
 import {
   GROUP_DEFS, GROUP_ITEM_KIND, GROUP_SCREEN_CODE, challengeItem, dateLabelOf, leagueMatchItem, rowPhoto, scheduleItem,
   type ActivityItem,
 } from "./activityItems";
 
-/* ★ 상세(일정·너 나와!·리그 경기) — 2026-10-19 ActivityScreen 에서 뗐다(요청: "…목록과 상세등 모두 컴포넌트 분리").
-   상세는 제 항목을 **제 상태로** 든다 — 피드(목록)를 구독하지 않으므로 목록이 바뀌어도 다시 그려지지 않는다. 상세에서 고친 것은
-   목록에도 알린다(피드 손잡이 · 일정은 빼고 — 일정은 들어올 때마다 서버에서 새로 받는다: "목록은 신경쓰지말고 목록에서 상세 들어갈때마다 새로 받아야지"). */
+/* ★ 상세(일정·너 나와!·리그 경기)는 **목록과 무관한 별도 페이지**다(2026-10-19, 요청: "목록은 신경쓰지말고 목록에서 상세 들어갈때마다 새로 받아야지" →
+   "너나와 리그 게임도 목록과 전혀무관하게 변경 · 별도 페이지임 그냥") — 들어올 때마다 서버에서 받고(목록의 사본으로 먼저 그리지 않는다), 상세에서
+   고친 것을 목록에 알리지도 않는다. 제 항목을 제 상태로 든다. */
 
 function ChallengeActionsMenu({ challenge, isAdmin, myId, onDeleted, onChanged }: {
   challenge: Challenge;
@@ -149,11 +148,9 @@ function ActivityCardComments({ targetType, targetId, overModal }: {
   return <ActivityComments targetType={targetType} targetId={targetId} overModal={overModal} />;
 }
 
-export default memo(function ActivityDetailPage({ group, id, seed, onBack, onClose, onMiss }: {
+export default memo(function ActivityDetailPage({ group, id, onBack, onClose, onMiss }: {
   group: ActivityGroupKey;
   id: number;
-  /** 목록에서 눌러 온 항목 — 첫 그림을 바로 그린다. 일정은 쓰지 않는다(늘 새로 받는다). */
-  seed: ActivityItem | null;
   /** 머리 줄의 뒤로(묶음 목록으로). */
   onBack: () => void;
   /** 카드 안에서 상세를 닫을 때(게임으로 가기 등 · GameDetailCloseContext). */
@@ -161,10 +158,9 @@ export default memo(function ActivityDetailPage({ group, id, seed, onBack, onClo
   /** 서버에 없을 때 — 라우터가 목록을 그린다. */
   onMiss: () => void;
 }) {
-  const feed = useFeedActions();
   const user = useAppStore((s) => s.user);
   const isAdmin = !!user && isAdminRole(user.roles);
-  const [item, setItem] = useState<ActivityItem | null>(group === "schedule" ? null : seed);
+  const [item, setItem] = useState<ActivityItem | null>(null);
 
   useLayoutEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
   useEffect(() => { void api.pingAccess(GROUP_SCREEN_CODE[group], `${group}#${id}`); }, []);
@@ -185,10 +181,7 @@ export default memo(function ActivityDetailPage({ group, id, seed, onBack, onClo
 
   if (!item) return <div className="scr-activity-list"><LoadingMark /></div>;
 
-  const upsertChallenge = (c: Challenge): void => {
-    setItem(challengeItem(c));
-    feed.upsertChallenge(c);
-  };
+  const upsertChallenge = (c: Challenge): void => setItem(challengeItem(c));
   const g9 = GROUP_DEFS.find((d) => d.key === group);
   const photo = rowPhoto(item);
   return (
@@ -217,10 +210,7 @@ export default memo(function ActivityDetailPage({ group, id, seed, onBack, onClo
                   dateLabel={dateLabelOf(item)}
                   canEdit={!!user}
                   canDelete={!!user && (item.schedule.createdBy.id === user.id || isAdmin)}
-                  onDeleted={(sid) => {
-                    feed.patch((prev) => prev.filter((it) => it.schedule?.id !== sid));
-                    feed.reload();
-                  }}
+                  onDeleted={onClose}
                   footer={<ActivityCardComments targetType="schedule" targetId={item.schedule.id} overModal />}
                 />
               </div>
@@ -254,10 +244,7 @@ export default memo(function ActivityDetailPage({ group, id, seed, onBack, onClo
                       challenge={item.challenge}
                       isAdmin={isAdmin}
                       myId={user?.id ?? ""}
-                      onDeleted={(cid) => {
-                        feed.patch((prev) => prev.filter((it) => it.challenge?.id !== cid));
-                        feed.reload();
-                      }}
+                      onDeleted={onClose}
                       onChanged={upsertChallenge}
                     />
                   }

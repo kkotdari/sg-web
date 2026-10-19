@@ -79,8 +79,6 @@ function ActivityRouter() {
   const viewKey = view.kind === "home" ? "home" : view.kind === "group" ? `g:${view.key}` : view.path;
   const groupKey = view.kind === "group" ? view.key : null;
 
-  /* 눌러서 연 항목 — 상세의 첫 그림. 뒤로/앞으로로 온 상세는 피드의 사본(그 순간에 읽는다)으로 그린다. */
-  const seedRef = useRef<{ path: string; item: DisplayItem } | null>(null);
   const pushedGroupRef = useRef(false);
   const pushedItemRef = useRef(false);
   const homeScrollRef = useRef(0);
@@ -120,7 +118,6 @@ function ActivityRouter() {
       if (id === null || group === null) return;
       path = pathOf({ screen: "activity", group, item: String(id) });
     }
-    seedRef.current = { path, item };
     go(path, { search });
     pushedItemRef.current = true;
   };
@@ -375,20 +372,18 @@ function ActivityRouter() {
   const onScrapItems = useCallback((items: DisplayItem[]) => { void runBulkScrap(items); }, [runBulkScrap]);
 
   const listShown = view.kind === "home" || view.kind === "group";
-  const seed = (path: string): DisplayItem | null =>
-    (seedRef.current?.path === path ? seedRef.current.item : null);
 
   return (
     <div className="scr-screen scr-activity-screen">
       {view.kind === "game" && (
         <GameDetailPage
-          key={view.path} idText={view.idText} seed={seed(view.path) ?? feed.findGame(view.idText)}
+          key={view.path} idText={view.idText}
           onBack={nav.backFromDetail} onClose={nav.closeGame} onGone={nav.gameGone} onMiss={nav.miss}
         />
       )}
       {view.kind === "detail" && (
         <ActivityDetailPage
-          key={view.path} group={view.group} id={view.id} seed={seed(view.path) ?? feed.findDetail(view.group, view.id)}
+          key={view.path} group={view.group} id={view.id}
           onBack={nav.backFromDetail} onClose={nav.closeDetail} onMiss={nav.miss}
         />
       )}

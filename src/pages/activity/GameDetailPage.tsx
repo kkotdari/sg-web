@@ -11,16 +11,13 @@ import ActivityComments from "./ActivityComments";
 import { GameResultActionsMenu } from "./GameResultCardBody";
 import GameResultStory from "./GameResultStory";
 import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
-import { useFeedActions } from "./activityFeed";
-import type { ActivityItem } from "./activityItems";
 
-/* ★ 게임 상세 — 2026-10-19 ActivityScreen 에서 뗐다(요청: "…목록과 상세등 모두 컴포넌트 분리"). 제 게임을 제 상태로 든다 —
-   피드(목록)를 구독하지 않는다. 목록에서 눌러 왔으면 그 사본으로 바로 그리고, 주소로 왔으면 서버에서 받는다. */
+/* ★ 게임 상세는 **목록과 무관한 별도 페이지**다(2026-10-19, 요청: "너나와 리그 게임도 목록과 전혀무관하게 변경 · 별도 페이지임 그냥") —
+   들어올 때마다 서버에서 받고, 고친 것을 목록에 알리지 않는다. 제 게임을 제 상태로 든다. */
 
-export default memo(function GameDetailPage({ idText, seed, onBack, onClose, onGone, onMiss }: {
+export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, onMiss }: {
   /** 주소의 게임 칸(경기 번호 또는 id). */
   idText: string;
-  seed: ActivityItem | null;
   /** 머리 줄의 뒤로(게임 목록으로). */
   onBack: () => void;
   /** 지운 뒤 닫기. */
@@ -29,12 +26,11 @@ export default memo(function GameDetailPage({ idText, seed, onBack, onClose, onG
   onGone: () => void;
   onMiss: () => void;
 }) {
-  const feed = useFeedActions();
   const user = useAppStore((s) => s.user);
   const isAdmin = !!user && isAdminRole(user.roles);
   const memberOf = useAppStore((s) => s.memberOf);
   const deleteGameResultAction = useAppStore((s) => s.deleteGameResult);
-  const [game, setGame] = useState<GameResult | null>(seed?.kind === "gameResult" ? seed.gameResult : null);
+  const [game, setGame] = useState<GameResult | null>(null);
   const [pendingDelete, setPendingDelete] = useState<GameResult | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
@@ -73,7 +69,6 @@ export default memo(function GameDetailPage({ idText, seed, onBack, onClose, onG
   }, [game, memberOf]);
 
   const onChanged = (updated: GameResult): void => {
-    feed.patchGameResult(updated);
     if (isSecretGame(updated)) { onGone(); return; }
     setGame(updated);
   };

@@ -5,10 +5,9 @@ import { useCursorPagination } from "../../hooks/useCursorPagination";
 import { primeActivityComments } from "./ActivityComments";
 import { pickComingMatches } from "./ComingMatches";
 import {
-  challengeItem, detailGroupOf, detailIdOf, gameResultItem, leagueMatchItem, scheduleItem, sortMsOf,
+  challengeItem, gameResultItem, leagueMatchItem, scheduleItem, sortMsOf,
   type ActivityItem,
 } from "./activityItems";
-import type { ActivityGroupKey } from "../../utils/route";
 import type { ActivityFeedItem, Challenge, GameResult, LeagueMatchActivity, Schedule } from "../../types";
 
 /* ★ 활동 피드(홈·묶음 목록이 보는 서버 목록) — 2026-10-19(요청: "활동과 일정 너나와 리그 게임 목록과 상세등 모두 컴포넌트 분리").
@@ -34,10 +33,6 @@ export interface FeedActions {
   upsertSchedule: (s: Schedule) => void;
   /** 목록의 그 게임만 갈아 끼운다(상세가 제 것을 따로 고친다). */
   patchGameResult: (g: GameResult) => void;
-  removeGameResult: (id: number) => void;
-  /** 뒤로/앞으로로 상세에 올 때 첫 그림을 바로 그릴 목록의 사본 — 값은 그 순간에 읽는다(구독하지 않는다). */
-  findDetail: (group: ActivityGroupKey, id: number) => ActivityItem | null;
-  findGame: (idText: string) => ActivityItem | null;
 }
 
 const DataCtx = createContext<FeedData | null>(null);
@@ -96,8 +91,6 @@ export function FeedProvider({ children }: { children: ReactNode }) {
     ];
     return items.sort((a, b) => sortMsOf(b) - sortMsOf(a));
   }, [challenges, gameResults, leagueMatches, schedules]);
-  const feedAllRef = useRef(feedAll);
-  feedAllRef.current = feedAll;
 
   const reloadRef = useRef(reload);
   reloadRef.current = reload;
@@ -121,20 +114,6 @@ export function FeedProvider({ children }: { children: ReactNode }) {
     patchGameResult: (updated) => patch((prev) => prev.map((it) => (it.gameResults.some((g) => g.id === updated.id)
       ? { ...it, gameResults: it.gameResults.map((g) => (g.id === updated.id ? updated : g)) }
       : it))),
-    removeGameResult: (id) => {
-      patch((prev) => prev
-        .map((it) => (it.gameResults.some((g) => g.id === id)
-          ? { ...it, gameResults: it.gameResults.filter((g) => g.id !== id) }
-          : it))
-        .filter((it) => !!it.challenge || !!it.notice || it.gameResults.length > 0));
-      reloadRef.current();
-    },
-    findDetail: (group, id) => feedAllRef.current.find((it) => detailGroupOf(it) === group && detailIdOf(it) === id) ?? null,
-    findGame: (idText) => {
-      const id = Number(idText);
-      return feedAllRef.current.find((it) => it.kind === "gameResult"
-        && (it.gameResult.matchNo === idText || it.gameResult.id === id)) ?? null;
-    },
   }), [patch]);
 
   const data = useMemo<FeedData>(() => ({
