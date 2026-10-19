@@ -7723,7 +7723,9 @@ input.scr-sb-list-title { font-weight: 700; }
 .scr-league-tag {
   display: inline-flex; align-items: center; max-width: 100%; min-width: 0;
   border-radius: 4px;
-  background: var(--lighting-accent-soft, rgba(230, 162, 62, 0.16)); color: var(--accent, #e6a23e);
+  /* 색은 **라이팅 강조색 하나**(--lighting-accent — 어두운 테마 오렌지 · 라이트 테마 파랑 #3b82f6 · 2026-10-19, 지적: "라이팅 테마 강조색은 푸른색이야(다크의 오렌지와 대비)") —
+     바탕은 그 색의 옅은 겹(16%). */
+  background: color-mix(in srgb, var(--lighting-accent, #e6a23e) 16%, transparent); color: var(--lighting-accent, #e6a23e);
   font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   /* 글자·좌우 여백은 **맵 배지와 같다**(2026-10-19, 요청: "리그 배지 글자크기와 좌우패딩을 맵 배지랑 똑같게(모바일 피시 각각)") —
      PC 는 .scr-activity-row-status-dur(--fs-micro · 2px 5px 1px), 폰은 아래 미디어 블록(.scr-activity-row-game 의 --fs-10 · 0 3px · 줄 1.3). */
@@ -7731,10 +7733,4 @@ input.scr-sb-list-title { font-weight: 700; }
 }
 @media (max-width: 960px) {
   .scr-league-tag { font-size: var(--fs-10); padding: 0 3px; line-height: 1.3; }
-}
-/* 라이트 테마의 리그 배지는 **라이팅 테마의 푸른빛**(2026-10-19, 요청: "라이트테마 매치 정보 배지를 라이팅테마의 푸른빛으로") — 바탕은 라이팅 빛(--lighting-rgb 168·193·225),
-   글자는 라이팅 강조 파랑(#3b82f6)을 한 단 짙게(읽힘). 어두운 테마는 종전 호박색. */
-html.scr-light-theme .scr-league-tag {
-  background: rgba(var(--lighting-rgb, 168, 193, 225), 0.42);
-  color: color-mix(in srgb, var(--lighting-accent, #3b82f6) 78%, #000);
 }
