@@ -5555,8 +5555,16 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   font-size: var(--fs-11); font-weight: 800; line-height: 1; letter-spacing: 0; white-space: nowrap;   /* --fs-micro(12) → --fs-11(11) 한 단 */
   color: var(--btn-outline-text); background: var(--btn-outline-bg); border: 1px solid var(--btn-outline-border);   /* 채움 → 테두리 둥근 네모 버튼 색(.is-secondary · 같은 날 요청: "색도 둥근네모 버튼 색") */
 }
+/* 승은 **채움 버튼** 색(2026-10-19, 요청: "색은 승은 버튼 채워진색") — 무·패는 위 테두리 색 그대로. */
+.scr-activity-row-wl.is-win { color: var(--btn-fill-text); background: var(--btn-fill-bg); border-color: var(--btn-fill-border); }
 .scr-activity-row-wl.is-loss { opacity: 0.5; }
 .scr-activity-row-name-main > .scr-activity-row-wl { margin-left: 4px; }
+/* ★ 폰은 한 치 더 작게(같은 날 요청: "승패 배지 크기 더 줄여서 모바일에서 글자자리 더 확보") — 칸 16 → 13 · 글자 11 → 10 · 모서리 3 → 2 · vs 둘레 틈 6/5 → 3/3 · 이름 곁 4 → 2. */
+@media (max-width: 960px) {
+  .scr-activity-row-wl { width: 13px; height: 13px; border-radius: 2px; font-size: var(--fs-10); }
+  .scr-activity-row-vs { gap: 3px; margin: 0 3px; }
+  .scr-activity-row-name-main > .scr-activity-row-wl { margin-left: 2px; }
+}
 .scr-activity-row-flat { flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .scr-activity-row-play { flex: none; align-self: center; color: #4cc93b; }
 /* 맵 배지 옆 재생 배지(GameRowStatus playable · 2026-10-19) — 폰 게임 줄만 선다(아래 미디어 블록) · PC 는 이름 줄 끝 그대로. */
