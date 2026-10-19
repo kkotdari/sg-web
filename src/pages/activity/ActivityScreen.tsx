@@ -28,7 +28,7 @@ import ActivityGroupPage from "./ActivityGroupPage";
 import ActivityDetailPage from "./ActivityDetailPage";
 import GameDetailPage from "./GameDetailPage";
 import type { RowAct, RowView } from "./ActivityRow";
-import { FeedProvider, useFeedActions } from "./activityFeed";
+import { FeedProvider, useFeedActions, useRecentLeague } from "./activityFeed";
 import {
   GROUP_DEFS, GROUP_ITEM_KIND, GROUP_SCREEN_CODE, HIDE_FORMS, SCRAP_FORMS, bulkDeleteMessageOf, deletableOf,
   detailGroupOf, detailIdOf, leagueMatchItem, type DisplayItem, type GameTab,
@@ -209,11 +209,13 @@ function ActivityRouter() {
   const rowAct = useRef<RowAct>({ open: openItem, toggle: sel.toggle, setMany: sel.setMany });
   rowAct.current = { open: openItem, toggle: sel.toggle, setMany: sel.setMany };
 
+  /* ★ 게임 탭 기본값은 **리그**, 다만 최근 7일 안에 리그 판이 없으면 **내전**(2026-10-19, 요청: "게임 탭 기본값은 리그로하고 리그 경기 일주일 이내에 없으면 내전으로").
+     주소에 탭이 없을 때만 이 셈을 타고, 사람이 고른 탭은 주소(tab=league|clan|pub)에 남아 그대로 선다. */
+  const recentLeague = useRecentLeague();
   const [gameTabRaw, setGameTabRaw] = useUrlState("tab");
-  const gameTab: GameTab = gameTabRaw === "pub" ? "pub" : gameTabRaw === "league" ? "league" : "clan";
-  const setGameTab = useCallback(
-    (next: GameTab) => setGameTabRaw(next === "clan" ? "" : next), [setGameTabRaw],
-  );
+  const gameTab: GameTab = gameTabRaw === "pub" || gameTabRaw === "league" || gameTabRaw === "clan"
+    ? gameTabRaw : recentLeague ? "league" : "clan";
+  const setGameTab = useCallback((next: GameTab) => setGameTabRaw(next), [setGameTabRaw]);
 
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const fabHidden = useEditableFocused();

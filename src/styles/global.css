@@ -7729,7 +7729,8 @@ input.scr-sb-list-title { font-weight: 700; }
 .scr-activity-row-above { flex: 1 0 100%; order: 0; display: flex; min-width: 0; }
 .scr-league-tag {
   display: inline-flex; align-items: center; max-width: 100%; min-width: 0;
-  padding: 1px 6px; border-radius: 4px;
+  padding: 2px 8px; border-radius: 4px;
   background: var(--lighting-accent-soft, rgba(230, 162, 62, 0.16)); color: var(--accent, #e6a23e);
-  font-size: var(--fs-10); font-weight: 700; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* 글자 10 → 12(같은 날, 요청: "게임 목록의 리그 정보 배지를 좀더 키우기") · 여백 1/6 → 2/8. */
+  font-size: var(--fs-micro, 12px); font-weight: 700; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }

@@ -37,6 +37,13 @@ export interface FeedActions {
 
 const DataCtx = createContext<FeedData | null>(null);
 const ActionsCtx = createContext<FeedActions | null>(null);
+/** 최근 7일 안에 리그 판(리그 세트에 쓰인 게임)이 있나 — 게임 탭 기본값(리그 / 내전)을 정한다. 불러오는 동안은 null.
+ *  값이 참·거짓 하나라 바뀔 때만 구독자가 다시 그린다(피드 전체를 구독하지 않는 라우터가 쓴다). */
+const RecentLeagueCtx = createContext<boolean | null>(null);
+const RECENT_LEAGUE_MS = 7 * 24 * 60 * 60 * 1000;
+export function useRecentLeague(): boolean | null {
+  return useContext(RecentLeagueCtx);
+}
 
 export function useFeedData(): FeedData {
   const v = useContext(DataCtx);
@@ -116,13 +123,21 @@ export function FeedProvider({ children }: { children: ReactNode }) {
       : it))),
   }), [patch]);
 
+  const recentLeague = useMemo<boolean | null>(() => {
+    if (feedLoading) return null;
+    const since = Date.now() - RECENT_LEAGUE_MS;
+    return feedAll.some((it) => it.kind === "gameResult" && !!it.gameResult.league && it.time >= since);
+  }, [feedAll, feedLoading]);
+
   const data = useMemo<FeedData>(() => ({
     feedAll, comingMatches, loading: feedLoading || mapsLoading, loadingMore, hasMore, loadMore,
   }), [feedAll, comingMatches, feedLoading, mapsLoading, loadingMore, hasMore, loadMore]);
 
   return (
     <ActionsCtx.Provider value={actions}>
-      <DataCtx.Provider value={data}>{children}</DataCtx.Provider>
+      <RecentLeagueCtx.Provider value={recentLeague}>
+        <DataCtx.Provider value={data}>{children}</DataCtx.Provider>
+      </RecentLeagueCtx.Provider>
     </ActionsCtx.Provider>
   );
 }
