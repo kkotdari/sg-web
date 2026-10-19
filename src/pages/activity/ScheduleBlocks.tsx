@@ -637,13 +637,16 @@ const OrderCell = memo(function OrderCell({ p, i, on, sortable, act }: {
       onContextMenu={sortable ? (e) => e.preventDefault() : undefined}
       onClick={(e) => { e.stopPropagation(); act.pick(i); }}
     >
+      {/* 칸은 **썸네일**(긴 변 240 · 2026-10-19, 요청: "일정 사진의 240p 섬네일은 필요할듯.. 다운이 너무 오래걸려 · 동영상도 섬네일 필요하고") — 없으면 원본·동영상 첫 장면. */}
       {isVideoItem(p) ? (
         <>
-          <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
+          {p.thumbUrl
+            ? <img src={imgSrc(p.thumbUrl)} alt="" loading="lazy" decoding="async" draggable={false} />
+            : <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />}
           <span className="scr-sb-order-play" aria-hidden><Play size={12} /></span>
         </>
       ) : (
-        <img src={imgSrc(p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
+        <img src={imgSrc(p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
       )}
       <span className="scr-sb-order-n" aria-hidden>{i + 1}</span>
     </button>
@@ -775,18 +778,22 @@ const PhotoSlide = memo(function PhotoSlide({ p, i, playing, canEdit, act }: {
     <div className="scr-sb-slide">
       {playing ? (
         <video
-          className="scr-sb-slide-video" src={imgSrc(p.url)} controls autoPlay playsInline
+          className="scr-sb-slide-video" src={imgSrc(p.url)} poster={p.thumbUrl ? imgSrc(p.thumbUrl) : undefined} controls autoPlay playsInline
           onClick={(e) => e.stopPropagation()} onEnded={() => act.stop()}
         />
       ) : (
         <button
           type="button" className="scr-sb-slide-img"
+          /* 원본이 오는 동안 썸네일을 깔아 둔다(흐린 첫 그림 · 2026-10-19) — 원본이 그 위를 덮는다. */
+          style={p.thumbUrl ? { backgroundImage: `url("${imgSrc(p.thumbUrl)}")` } : undefined}
           onClick={(e) => { e.stopPropagation(); if (video) act.play(p.id, i); else act.view(i); }}
           aria-label={video ? `${p.name} 재생` : `${p.name} 크게 보기`}
         >
           {video ? (
             <>
-              <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />
+              {p.thumbUrl
+                ? <img src={imgSrc(p.thumbUrl)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
+                : <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />}
               <span className="scr-sb-slide-play" aria-hidden><Play size={22} /></span>
             </>
           ) : (

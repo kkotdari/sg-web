@@ -571,6 +571,8 @@ export interface SchedulePhoto {
   url: string;
   name: string;
   size: number;
+  /** 긴 변 240 썸네일(사진 · 동영상 첫 장면 · 2026-10-19) — 작은 사진·옛 서버·풀 수 없는 동영상은 없다(원본으로 내려간다). */
+  thumbUrl?: string | null;
   file?: File;
 }
 
