@@ -19,7 +19,9 @@ const RACES = ["테란", "프로토스", "저그"] as const;
 const RACE_TONE: Record<string, string> = { 테란: "var(--terran)", 프로토스: "var(--protoss)", 저그: "var(--zerg)" };
 const MAX_OPTS = 30;
 
-/** 칩 입력 — 엔터 · 띄어쓰기 · 자동완성으로 값을 칩으로 담는다(칸 안 여러 값 · 쉼표는 안 쓴다 · 2026-10-20 요청: "쉼표 사용 제거"). 빈 칸에서 엔터면 onSubmit. */
+/** 칩 입력 — 엔터 · 탭 · 자동완성으로 값을 칩으로 담는다(칸 안 여러 값). 빈 칸에서 엔터면 onSubmit.
+ *  쉼표·띄어쓰기로는 끊지 않는다(2026-10-20, 요청: "쉼표 사용 제거" → "칩 인풋은 띄어쓰기가 필요 없음") — 띄어쓰기는 글자 그대로라
+ *  "Fighting " 처럼 치면 **띄어쓰기까지 맞는 후보만** 남는다. */
 function ChipInput({ values, onChange, options, placeholder, onSubmit, single }: {
   values: string[];
   onChange: (next: string[]) => void;
@@ -33,17 +35,13 @@ function ChipInput({ values, onChange, options, placeholder, onSubmit, single }:
   const [open, setOpen] = useState(false);
   const [hi, setHi] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const q = normalizeSearchText(text.trim());
+  const q = normalizeSearchText(text.trimStart());
   const shown = useMemo(() => {
-    if (!q) return [];
+    if (!q.trim()) return [];
     const have = new Set(values.map((v) => normalizeSearchText(v)));
     return options.filter((o) => !have.has(normalizeSearchText(o.value)) && normalizeSearchText(o.value).includes(q)).slice(0, MAX_OPTS);
   }, [q, options, values]);
   useEffect(() => { setHi(0); }, [q]);
-  const continuesName = (t: string): boolean => {
-    const head = `${normalizeSearchText(t.trimStart())} `;
-    return options.some((o) => normalizeSearchText(o.value).startsWith(head));
-  };
   const add = (v: string): void => {
     const t = v.trim();
     if (!t) return;
@@ -59,13 +57,6 @@ function ChipInput({ values, onChange, options, placeholder, onSubmit, single }:
       if (open && shown[hi]) { add(shown[hi].value); return; }
       if (text.trim()) { add(text); return; }
       onSubmit();
-      return;
-    }
-    /* 띄어쓰기도 값을 끊는다(2026-10-20, 요청: "맵 유닛 건물 스킬은 칩 형태라 괜찮지 않아? , 아니어도") — 다만 치던 글에 띄어쓰기를 붙여
-       **띄어쓰기가 든 후보 이름의 앞머리**가 되면(Fighting Spirit · 사이오닉 스톰) 끊지 않고 이어 친다. */
-    if (e.key === " " && text.trim() && !continuesName(text)) {
-      e.preventDefault();
-      add(open && shown[hi] && normalizeSearchText(shown[hi].value).startsWith(normalizeSearchText(text.trim())) ? shown[hi].value : text);
       return;
     }
     if (e.key === "Tab") {
@@ -88,20 +79,7 @@ function ChipInput({ values, onChange, options, placeholder, onSubmit, single }:
       {(!single || values.length === 0) && (
         <input
           className="scr-gs-input" value={text} placeholder={values.length ? "" : placeholder}
-          onChange={(e) => {
-            const raw = e.target.value;
-            /* 붙여 넣기 — 띄어쓰기로 나눈다(띄어쓰기 든 이름이 후보에 있는 칸은 통째 한 값). */
-            const parts = options.some((o) => o.value.includes(" ")) ? [raw] : raw.split(/\s+/);
-            if (parts.length > 1) {
-              const last = parts.pop() ?? "";
-              const fresh = parts.map((x) => x.trim()).filter((x) => x && !values.some((v) => normalizeSearchText(v) === normalizeSearchText(x)));
-              if (fresh.length) onChange(single ? [fresh[0]] : [...values, ...fresh]);
-              setText(last);
-            } else {
-              setText(raw);
-            }
-            setOpen(true);
-          }}
+          onChange={(e) => { setText(e.target.value); setOpen(true); }}
           onKeyDown={onKey}
           onFocus={() => setOpen(true)}
           onBlur={() => {
@@ -211,10 +189,10 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
       {open && (
         <div className="scr-gs-panel">
           <Field label="선수" hint="모두 뛴 판">
-            <ChipInput values={draft.players} onChange={(v) => set("players", v)} options={memberOpts} placeholder="닉네임 · 띄어쓰기로 여럿" onSubmit={() => apply()} />
+            <ChipInput values={draft.players} onChange={(v) => set("players", v)} options={memberOpts} placeholder="닉네임" onSubmit={() => apply()} />
           </Field>
           <Field label="맵" hint="그중 한 맵">
-            <ChipInput values={draft.maps} onChange={(v) => set("maps", v)} options={mapOpts} placeholder="맵 이름 · 띄어쓰기로 여럿" onSubmit={() => apply()} />
+            <ChipInput values={draft.maps} onChange={(v) => set("maps", v)} options={mapOpts} placeholder="맵 이름" onSubmit={() => apply()} />
           </Field>
           <Field label="종족" hint="그 종족이 있던 판">
             <div className="scr-gs-toggles">
@@ -238,7 +216,7 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
             </div>
           </Field>
           <Field label="유닛·건물·스킬" hint="모두 나온 판">
-            <ChipInput values={draft.items} onChange={(v) => set("items", v)} options={itemOpts} placeholder="캐리어 사이오닉 스톰 · 띄어쓰기로 여럿" onSubmit={() => apply()} />
+            <ChipInput values={draft.items} onChange={(v) => set("items", v)} options={itemOpts} placeholder="캐리어 · 사이오닉 스톰 · Carrier" onSubmit={() => apply()} />
           </Field>
           <Field label="게임번호" hint="그중 하나">
             <ChipInput values={draft.nos} onChange={(v) => set("nos", v)} options={[]} placeholder="261019213105 · 앞자리만(261019)도 됨" onSubmit={() => apply()} />

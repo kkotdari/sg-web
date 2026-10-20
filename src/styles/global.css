@@ -8005,8 +8005,11 @@ input.scr-sb-list-title { font-weight: 700; }
 .scr-gs-input { flex: 1 1 80px; min-width: 60px; border: none; outline: none; background: transparent; color: var(--text); font: inherit; font-size: var(--fs-caption); padding: 3px 2px; }
 .scr-gs-drop {
   position: absolute; z-index: 30; left: -1px; right: -1px; top: calc(100% + 4px); max-height: 240px; overflow-y: auto;
-  padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel, #fff); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 4px; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  /* 불투명에 가까운 바탕(2026-10-20, 지적: "추천목록 배경이 완전 투명해서 뒤가 비침") — 다른 자동완성(.scr-pv-drop)과 같은 색. */
+  background: rgba(20, 25, 31, 0.97); backdrop-filter: blur(4px);
 }
+.scr-light-theme .scr-gs-drop { background: var(--lighting-panel-bg, #fff); }
 .scr-gs-opt {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: none; border-radius: 6px; background: none;
   color: var(--text); font: inherit; font-size: var(--fs-caption); text-align: left; cursor: pointer;
@@ -8025,6 +8028,7 @@ input.scr-sb-list-title { font-weight: 700; }
   background: color-mix(in srgb, var(--lighting-accent, #3b82f6) 14%, transparent);
 }
 .scr-gs-link-list { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.scr-gs-link-add { margin-top: 4px; }   /* 조건 추가 단추 위 틈(2026-10-20 요청) */
 .scr-gs-link { display: grid; grid-template-columns: minmax(120px, 1fr) 110px minmax(0, 2fr) auto; gap: 6px; align-items: center; width: 100%; }
 .scr-gs-select {
   height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg, transparent);
