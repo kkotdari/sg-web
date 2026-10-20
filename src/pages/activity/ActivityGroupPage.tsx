@@ -300,8 +300,8 @@ export default memo(function ActivityGroupPage({
           />
         </SelectionBar>
       )}
-      <div className={cx("scr-activity-rows scr-activity-group-page-rows", groupKey === "gameResult" && !view.isMobile && "scr-gtab-list")}>
-        {groupKey === "gameResult" && !view.isMobile && filtered.length > 0 && <GameTableHead selecting={!!selection} />}
+      <div className={cx("scr-activity-rows scr-activity-group-page-rows", groupKey === "gameResult" && !view.isMobile && "scr-gtab-list", view.leagueCol && "has-league")}>
+        {groupKey === "gameResult" && !view.isMobile && filtered.length > 0 && <GameTableHead selecting={!!selection} leagueCol={view.leagueCol} />}
         {filtered.length === 0 ? (
           <div className="scr-empty">{serverBusy ? "찾는 중…" : "결과가 없어요"}</div>
         ) : (

@@ -103,8 +103,8 @@ export default memo(function ActivityHome({ gameTab, onGameTab, error, onOpenGro
                 <span className="scr-activity-group-viewall" aria-hidden>전체 보기</span>
               </div>
               {section.key === "gameResult" && <GameTabs value={gameTab} onChange={onGameTab} />}
-              <div className={cx("scr-activity-rows", section.key === "gameResult" && !view.isMobile && "scr-gtab-list")}>
-                {section.key === "gameResult" && !view.isMobile && <GameTableHead selecting={false} />}
+              <div className={cx("scr-activity-rows", section.key === "gameResult" && !view.isMobile && "scr-gtab-list", view.leagueCol && "has-league")}>
+                {section.key === "gameResult" && !view.isMobile && <GameTableHead selecting={false} leagueCol={view.leagueCol} />}
                 {section.rows.map((item) => {
                   const { key, ...p } = rowPropsOf(item, NO_PICK);
                   return <ActivityRow key={key} {...p} minute={minute} view={view} act={act} />;

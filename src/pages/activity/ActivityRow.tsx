@@ -31,6 +31,8 @@ export interface RowView {
   /** 폰 선택 모드 — 켜진 동안 줄 누름은 열기가 아니라 고르기다. */
   selMode: boolean;
   selectionNote: string;
+  /** PC 게임 표의 리그 칸 — 리그 탭에서만 선다(GameTable ★★ · 2026-10-20). */
+  leagueCol: boolean;
 }
 
 function rowStatusOf(item: DisplayItem) {
@@ -149,6 +151,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
         check={check} picked={picked} disabled={secret}
         onClick={() => act.current.open(item)}
         when={formatAgo(item.time)}
+        leagueCol={view.leagueCol}
         league={lg ? { name: lg.leagueName, round: `${lg.roundName} · ${lg.setNo}세트` } : null}
       />
     );

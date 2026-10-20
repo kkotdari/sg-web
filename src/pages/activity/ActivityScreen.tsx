@@ -203,9 +203,6 @@ function ActivityRouter() {
     return it.kind === "gameResult" && canManageGame(it.gameResult, user);
   }, [isAdmin, user]);
   const selectionNote = isAdmin ? "리그 경기는 여기서 지울 수 없어요." : "내가 뛴 게임만 고를 수 있어요.";
-  const rowView = useMemo<RowView>(() => ({
-    isMobile, memberOf, selecting: !!selection, selMode: sel.mode, selectionNote,
-  }), [isMobile, memberOf, !!selection, sel.mode, selectionNote]);
   const rowAct = useRef<RowAct>({ open: openItem, toggle: sel.toggle, setMany: sel.setMany });
   rowAct.current = { open: openItem, toggle: sel.toggle, setMany: sel.setMany };
 
@@ -215,6 +212,9 @@ function ActivityRouter() {
   const [gameTabRaw, setGameTabRaw] = useUrlState("tab");
   const gameTab: GameTab = gameTabRaw === "pub" || gameTabRaw === "league" || gameTabRaw === "clan"
     ? gameTabRaw : recentLeague ? "league" : "clan";
+  const rowView = useMemo<RowView>(() => ({
+    isMobile, memberOf, selecting: !!selection, selMode: sel.mode, selectionNote, leagueCol: gameTab === "league",
+  }), [isMobile, memberOf, !!selection, sel.mode, selectionNote, gameTab]);
   const setGameTab = useCallback((next: GameTab) => setGameTabRaw(next), [setGameTabRaw]);
 
   const [addMenuOpen, setAddMenuOpen] = useState(false);
