@@ -338,6 +338,8 @@ export default function ClanStatsScreen() {
             </button>
           ))}
         </div>
+        {/* 폰 줄 누름 힌트 — 표 밖, 정렬 탭 줄 오른끝(2026-10-20, 요청: "힌트 위치 그리드 외부 위"). */}
+        {isMobile && <span className="scr-sg-hint">행을 눌러서 그래프 보기</span>}
       </div>
 
       {error && <div className="scr-err">{error}</div>}

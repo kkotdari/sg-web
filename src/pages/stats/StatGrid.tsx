@@ -187,8 +187,6 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   if (mobile) {
     return (
       <div className="scr-sg is-m" role="table" aria-label="통계">
-        {/* 줄 누름 힌트 — 표 맨 위 한 줄(2026-10-20, 요청: "열을 터치해서 펼치기 힌트 표 맨 위에" → 글 "행을 눌러서 그래프 보기"). */}
-        <p className="scr-sg-hint">행을 눌러서 그래프 보기</p>
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who">유저</span>
           {/* 칸 머리 "전체 승률 · 테란 승률 …" — 늘 두 줄(2026-10-20, 요청: "헤더도 전체 승률 테란 승률 이렇게 · 칸 좁으면 두 줄"). 색 네모 없음. */}
