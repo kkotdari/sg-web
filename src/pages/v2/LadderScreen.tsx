@@ -175,7 +175,7 @@ export default function LadderScreen() {
             className="scr-compact-rect-btn"
             onClick={() => setRatingOpen(true)}
           >
-            실력순위
+            실력순위 보기
           </button>
           {/* 상성 보기는 걷었다(2026-10-20, 요청: "상성보기 제거"). */}
           {/* 역대 퀸 — 제목 줄 **오른끝**(QueenHistoryModal ★ · 2026-10-20, 요청: "역대퀸 버튼 우측끝 정렬"). */}

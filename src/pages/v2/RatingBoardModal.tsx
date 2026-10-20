@@ -67,7 +67,7 @@ export default function RatingBoardModal({ poolIds, members, onClose }: {
           <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
         </div>
         <div className="scr-modal-body">
-          <p className="scr-rating-note">처음부터 쌓인 일대일 레이팅(기준 1000) 순위예요. 래더 표의 점수는 그 달에 번 점수예요.</p>
+          <p className="scr-rating-note">처음부터 쌓인 일대일 레이팅(기준 1000) 순위예요.</p>
           {error && <div className="scr-err">{error}</div>}
           {rows === null ? (
             <div className="scr-queen-empty"><Spinner /> 불러오는 중…</div>
