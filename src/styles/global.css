@@ -8074,6 +8074,12 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-race-head { flex-direction: column; gap: 1px; letter-spacing: -0.02em; white-space: nowrap; line-height: 1.2; }
 .scr-sg.is-m .scr-sg-race-head > span:last-child { font-weight: 600; }
 .scr-sg.is-m .scr-sg-c:not(.scr-sg-who) { padding-left: 2px; padding-right: 2px; }
+/* 폰 줄 누름 힌트 — 표 맨 위 한 줄(StatGrid). */
+.scr-sg-hint {
+  grid-column: 1 / -1; margin: 0; padding: 6px 10px; font-size: var(--fs-10); font-weight: 600; color: var(--dim);
+  background: rgba(var(--overlay-rgb), 0.03); border-bottom: 1px solid var(--line-faint);
+}
+.scr-sg-tap .scr-sg-avatar { cursor: inherit; }
 /* 폰 줄은 어디를 눌러도 펼치기·접기(StatGrid MobileRow onRow). */
 .scr-sg-tap > .scr-sg-c { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 

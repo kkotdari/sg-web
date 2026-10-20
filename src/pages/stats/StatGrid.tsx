@@ -75,6 +75,16 @@ function Who({ member }: { member: Member }) {
   );
 }
 
+/** 폰 줄의 아바타·이름 — 단추가 아니다(2026-10-20, 요청: "폰 아바타·닉네임도 접기·펴기로 동작") · 누르면 줄이 펴지고 접힌다(사진·프로필은 안 연다). */
+function WhoPlain({ member }: { member: Member }) {
+  return (
+    <>
+      <span className="scr-sg-avatar"><Avatar member={member} size={28} /></span>
+      <span className="scr-sg-name" title={member.nickname}>{member.nickname}</span>
+    </>
+  );
+}
+
 /** 종족 두 칸 — [전적 "30회" | 승률] (2026-10-20, 요청: "각 종족 컬럼을 두 컬럼으로 나눠 전적/승률" → "전적 몇 회로 단순화").
  *  클랜원 전체 줄도 종족 승률은 쓴다(요청: "클랜원 전체 종족별 승률 넣기" — 그 종족으로 뛴 클랜원 판의 승률). 전체 승률만 안 쓴다(내전이라 늘 반반). */
 function RaceCells({ s }: { s?: MemberStats }) {
@@ -126,8 +136,8 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
   const s = row.stats;
   const [open, setOpen] = useState(openAll);
   useEffect(() => { setOpen(openAll); }, [openAll]);
-  /* 줄 어디를 눌러도 펼치기·접기(2026-10-20, 요청: "모바일 열 전체가 펼치기 접기로 작동" → "화살표 제거": ▾ 단추는 걷었다)
-     — 아바타(사진)·이름(프로필) 단추만 제 일을 한다.
+  /* 줄 어디를 눌러도 펼치기·접기(2026-10-20, 요청: "모바일 열 전체가 펼치기 접기로 작동" → "화살표 제거": ▾ 단추는 걷었다
+     → "아바타·닉네임도 접기·펴기로": 폰은 WhoPlain — 줄 안에 단추가 없다).
      React 이벤트는 포털(사진 창)에서도 이 줄로 올라오므로 DOM 으로 줄 안에서 누른 것만 받는다. */
   const onRow = (e: React.MouseEvent<HTMLDivElement>): void => {
     const t = e.target as Element;
@@ -141,7 +151,7 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
     <div className={cx("scr-sg-row scr-sg-tap", clan && "is-clan", open && "is-open")} onClick={onRow}>
       <span className="scr-sg-c scr-sg-who">
         <span className="scr-sg-who-top">
-          {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <Who member={row.member} />}
+          {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <WhoPlain member={row.member} />}
         </span>
         <span className="scr-sg-who-sub">
           {/* 판수는 APM 줄 맨 앞에(2026-10-20, 요청: "전체 플레이 전적은 메인 칸에" → "폰도 APM 줄에 같이 넣기 · 몇 회"). 클랜원 전체는 판. */}
@@ -177,6 +187,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   if (mobile) {
     return (
       <div className="scr-sg is-m" role="table" aria-label="통계">
+        {/* 줄 누름 힌트 — 표 맨 위 한 줄(2026-10-20, 요청: "열을 터치해서 펼치기 힌트 표 맨 위에"). */}
+        <p className="scr-sg-hint">줄을 누르면 분당 그래프가 펼쳐져요</p>
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who">유저</span>
           {/* 칸 머리 "전체 승률 · 테란 승률 …" — 늘 두 줄(2026-10-20, 요청: "헤더도 전체 승률 테란 승률 이렇게 · 칸 좁으면 두 줄"). 색 네모 없음. */}
