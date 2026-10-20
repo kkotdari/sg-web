@@ -8063,14 +8063,14 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-who-sub { font-size: var(--fs-10); gap: 5px; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 3px; }
 /* 아래 줄(APM · 딜 · 피해) 한 줄 — 글자는 크게(12px) · 칸이 좁으면 폭에 비례해 줄인다(7.5cqw · 9.5px 밑으로 안 간다). */
-.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(9.5px, min(16px, 9.2cqw)); }
+.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(10px, min(13px, 9.2cqw)); }
 /* 유저 칸 글자 크게(2026-10-20, 요청: "유저 칸 글자 키우고") — 이름 19px · 아바타 32. */
-.scr-sg.is-m .scr-sg-name { font-size: 19px; }
-.scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 32px !important; height: 32px !important; }
+.scr-sg.is-m .scr-sg-name { font-size: 17px; } /* 다섯 칸으로 돌아와 19 → 17(요청: "크기 적절히") */
+.scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 28px !important; height: 28px !important; }
 /* 아바타·닉네임 줄과 아래 데이터 줄 사이를 넓게(2026-10-20, 요청: 5 → 10 → 14 · 데이터 글자 최대 13 → 14px). */
 /* 유저 칸 세 줄(이름 · APM · 데미지) — 가운데로 모으고 줄 사이 8 · 이름 줄은 아바타 없는 클랜원 전체 줄도 32 높이. */
-.scr-sg.is-m .scr-sg-tap > .scr-sg-c.scr-sg-who { padding: 12px 6px 12px 14px; gap: 8px; justify-content: center; }
-.scr-sg.is-m .scr-sg-who-top { min-height: 32px; }
+.scr-sg.is-m .scr-sg-tap > .scr-sg-c.scr-sg-who { padding: 12px 6px 12px 14px; gap: 6px; justify-content: center; }
+.scr-sg.is-m .scr-sg-who-top { min-height: 28px; }
 .scr-sg.is-m .scr-sg-who > .scr-sg-who-sub { line-height: 1.2; }
 .scr-sg-dmg-lab { font-style: normal; color: var(--dim); font-weight: 600; }
 /* APM · 데미지 값의 왼끝을 맞춘다(2026-10-20, 요청) — 두 이름표를 같은 폭("데미지" 3자 + 틈)으로. */
@@ -8081,11 +8081,11 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-row.scr-sg-head > .scr-sg-c.scr-sg-who { align-items: center; } /* 폰 유저 칸은 세로 흐름(column)이라 가로는 align-items */
 .scr-sg.is-m .scr-sg-row.scr-sg-head > .scr-sg-c.scr-sg-race-head { padding-left: 2px; padding-right: 2px; }
 /* 폰 전적 칸 — 위 "N전" · 아래 승률(가운데). */
-.scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-mrec { flex-direction: column; gap: 4px; padding: 8px 2px; font-variant-numeric: tabular-nums; }
+.scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-mrec { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .scr-sg-mrec > .scr-sg-v > b { font-weight: 600; }
 .scr-sg-mrec > .scr-sg-v:first-child { color: var(--muted); }
 .scr-sg-mrec > .scr-sg-v:first-child > b { font-weight: 600; color: var(--muted); }
-.scr-sg-mrate > b { font-size: 13px; color: var(--text); }
+.scr-sg-mrate > b { font-size: 14px; color: var(--text); }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-v > i, .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > i { font-size: inherit; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-cnt { min-width: 2.8em; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 2px; }
