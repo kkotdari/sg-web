@@ -56,15 +56,17 @@ export function wasPushed(): boolean {
   return !!st?.scrPushed;
 }
 
-/* ★ 목록 자리 되살리기(2026-10-20) — 목록에서 상세로 가기 직전, 지금 기록 칸(history.state)에 스크롤 y 와 불러와 있던 줄 수 n 을 적는다.
-   앱 ← · 브라우저 뒤로 · 폰 밀기 모두 같은 칸으로 돌아오므로 목록이 이것을 읽어 새로 n 줄 받고 y 로 내린다. 주소도 목록 자료도 들고 있지 않는다. */
-let listCount9 = 0;
-export function noteListCount(n: number): void { listCount9 = n; }
+/* ★ 목록 자리 되살리기(2026-10-20) — 목록에서 상세로 가기 직전, 지금 기록 칸(history.state)에 스크롤 y 를 적는다. 앱 ← · 브라우저 뒤로 ·
+   폰 밀기 모두 같은 칸으로 돌아오므로 목록이 이것을 **한 번** 읽고(읽는 즉시 지운다 — 새로고침·다시 그림에 또 쓰이지 않게) 그 자리로 간다.
+   주소도 목록 자료도 들고 있지 않는다. */
 export function rememberListScroll(): void {
-  window.history.replaceState({ ...(window.history.state ?? {}), scrList: { y: window.scrollY, n: listCount9 } }, "");
+  window.history.replaceState({ ...(window.history.state ?? {}), scrListY: window.scrollY }, "");
 }
-export function listRestoreOfEntry(): { y: number; n: number } | null {
-  return (window.history.state as { scrList?: { y: number; n: number } } | null)?.scrList ?? null;
+export function takeListScroll(): number | null {
+  const { scrListY, ...rest } = (window.history.state ?? {}) as { scrListY?: unknown };
+  if (typeof scrListY !== "number") return null;
+  window.history.replaceState(rest, "");
+  return scrListY;
 }
 
 const DEAD_PARAMS = ["screen", "group", "item", "game"] as const;
