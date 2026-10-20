@@ -8039,7 +8039,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* 폰 — [유저(아래 한 줄: 판수 · APM · 딜 · 피해) | 전체 | 테 | 프 | 저] · 칸마다 승률 · ▾ 는 이름 옆(펼침은 PC 와 같은 곡선). */
 /* 폰 — [유저 | 전체 | 테란 | 프로토스 | 저그](2026-10-20, 요청: "원래대로 · 유저 전체 테 프 저 전적으로 · 유저 칸 세 줄 유지 · 각 전적 칸은 위 전수 아래 승률").
    한때의 [유저 | 전적] 세로 쌓기(.scr-sg-stack)는 걷었다. 전적 칸 넷은 폭에 비례(13vw · 46~56px). 유저 칸 아래 줄은 칸 폭에 맞춰 글자를 줄인다(cqw). */
-.scr-sg.is-m { grid-template-columns: minmax(0, 1fr) repeat(4, clamp(46px, 13vw, 56px)); font-size: var(--fs-11); }
+.scr-sg.is-m { grid-template-columns: minmax(0, 1fr) repeat(4, clamp(50px, 14vw, 62px)); font-size: var(--fs-11); } /* 전적 칸 넓힘 46~56 → 50~62(요청: "너무 좁게 주지 말고") */
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
 .scr-sg.is-m .scr-sg-bar { width: 34px; height: 3px; }
@@ -8063,7 +8063,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-who-sub { font-size: var(--fs-10); gap: 5px; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 3px; }
 /* 아래 줄(APM · 딜 · 피해) 한 줄 — 글자는 크게(12px) · 칸이 좁으면 폭에 비례해 줄인다(7.5cqw · 9.5px 밑으로 안 간다). */
-.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(10px, min(13px, 9.2cqw)); }
+.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(9.5px, min(13px, 9.2cqw)); }
 /* 유저 칸 글자 크게(2026-10-20, 요청: "유저 칸 글자 키우고") — 이름 19px · 아바타 32. */
 .scr-sg.is-m .scr-sg-name { font-size: 15px; } /* 19 → 17 → 15(요청: "크기 적절히" → "아바타·닉네임 너무 큼") */
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 24px !important; height: 24px !important; }
