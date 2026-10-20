@@ -15,7 +15,7 @@ import type { BaseRace, Member, MemberStats } from "../../types";
    종족마다 세 줄 글(MixLines · 2026-10-20, 요청: "펼침 부분을 시안처럼 · 지금 너무 복잡": 순위 번호·공/방 칸 표 대신
    "유닛 마린 · 메딕 · 탱크" · "스킬 …" · "공방업 보병 2.1/1.8 · 차량 1.2/0.9"). 순위·평균 셈은 옛 칸(RaceMixCell)과 같다.
    폰: 종족 펼치기 없이(요청: "모바일은 각 종족 펼치기 제거하고 깔끔하게 그리드로") [유저(아래 APM·데미지) | 전체 | 테 | 프 | 저] —
-   칸마다 회수 위 · 승률(+막대) 아래 두 줄. */
+   칸마다 회수 위 · 승률 아래 두 줄. 승률 막대(시안 C)는 걷었다(2026-10-20, 요청: "통계 그래프 제거"). */
 
 const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
 const RACE_SHORT: Record<BaseRace, string> = { 테란: "테", 프로토스: "프", 저그: "저" };
@@ -33,13 +33,12 @@ function Num({ v, unit }: { v: string | number | null | undefined; unit?: string
   return <span className="scr-sg-v"><b>{v}</b>{unit && <i>{unit}</i>}</span>;
 }
 
-/** 승률 + 막대(시안 C) — 막대 색은 종족 색, 전체 승률은 강조색. */
-function Rate({ s, tone }: { s?: MemberStats; tone: string }) {
+/** 승률 — 옛 막대(시안 C)는 걷었다(2026-10-20, 요청: "통계 그래프 제거"). */
+function Rate({ s }: { s?: MemberStats }) {
   if (!s || s.plays === 0) return <Dash />;
   return (
     <span className="scr-sg-rate">
       <Num v={s.winRate} unit="%" />
-      <span className="scr-sg-bar" aria-hidden><span style={{ width: `${Math.max(0, Math.min(100, s.winRate))}%`, background: tone }} /></span>
     </span>
   );
 }
@@ -82,13 +81,13 @@ function Who({ member }: { member: Member }) {
   );
 }
 
-/** 종족 칸 — "30회 66.7%" + 막대. 클랜원 전체 줄은 회수만(내전이라 승률은 늘 반반). */
-function RaceCell({ s, race, clan }: { s?: MemberStats; race: BaseRace; clan?: boolean }) {
+/** 종족 칸 — "30회 66.7%". 클랜원 전체 줄은 회수만(내전이라 승률은 늘 반반). */
+function RaceCell({ s, clan }: { s?: MemberStats; clan?: boolean }) {
   if (!s || s.plays === 0) return <span className="scr-sg-c"><Dash /></span>;
   return (
     <span className="scr-sg-c scr-sg-race">
       <Num v={s.plays.toLocaleString()} unit="회" />
-      {!clan && <Rate s={s} tone={RACE_TONE[race]} />}
+      {!clan && <Rate s={s} />}
     </span>
   );
 }
@@ -108,10 +107,10 @@ function PcRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boolean
             ? <span className="scr-sg-v"><b>{(games ?? 0).toLocaleString()}</b><i>판</i><i className="scr-sg-paren">({s.plays.toLocaleString()}회)</i></span>
             : <Num v={s.plays > 0 ? s.plays.toLocaleString() : null} unit="회" />}
         </span>
-        <span className="scr-sg-c">{clan ? <Dash /> : <Rate s={s} tone="var(--lighting-accent, #3b82f6)" />}</span>
+        <span className="scr-sg-c">{clan ? <Dash /> : <Rate s={s} />}</span>
         <span className="scr-sg-c"><Num v={s.avgApm} /></span>
         <span className="scr-sg-c">{clan ? <Dash /> : <Dmg s={s} />}</span>
-        {RACES.map((r) => <RaceCell key={r} s={row.byRace?.[r]} race={r} clan={clan} />)}
+        {RACES.map((r) => <RaceCell key={r} s={row.byRace?.[r]} clan={clan} />)}
         <span className="scr-sg-c">
           <button type="button" className="scr-text-btn scr-sg-toggle" aria-expanded={open} aria-label={open ? "접기" : "펼치기"} onClick={() => setOpen((v) => !v)}>
             {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
@@ -172,13 +171,13 @@ function MixLines({ race, stats }: { race: BaseRace; stats?: MemberStats }) {
   );
 }
 
-/** 폰 칸 — 회수 위, 승률(+막대) 아래. */
-function MCell({ s, tone, clan }: { s?: MemberStats; tone: string; clan?: boolean }) {
+/** 폰 칸 — 회수 위, 승률 아래. */
+function MCell({ s, clan }: { s?: MemberStats; clan?: boolean }) {
   if (!s || s.plays === 0) return <span className="scr-sg-c"><Dash /></span>;
   return (
     <span className="scr-sg-c scr-sg-race">
       <Num v={s.plays.toLocaleString()} unit="회" />
-      {!clan && <Rate s={s} tone={tone} />}
+      {!clan && <Rate s={s} />}
     </span>
   );
 }
@@ -202,8 +201,8 @@ function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; gam
           <span className="scr-sg-v"><b>{(games ?? 0).toLocaleString()}</b><i>판</i></span>
           <span className="scr-sg-v scr-sg-small"><b>{s.plays.toLocaleString()}</b><i>회</i></span>
         </span>
-      ) : <MCell s={s} tone="var(--lighting-accent, #3b82f6)" />}
-      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} tone={RACE_TONE[r]} clan={clan} />)}
+      ) : <MCell s={s} />}
+      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} clan={clan} />)}
     </div>
   );
 }
@@ -245,7 +244,7 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   );
 }
 
-/** 종족구성별 전적 — 위 표와 같은 꼴(머리 줄 · 칸 선 · 승률 막대 · 2026-10-20, 요청: "종족구성별 전적 부분도 예쁘게 테마에 맞춰"). */
+/** 종족구성별 전적 — 위 표와 같은 꼴(머리 줄 · 칸 선 · 2026-10-20, 요청: "종족구성별 전적 부분도 예쁘게 테마에 맞춰"). */
 export function CompGrid({ rows }: { rows: { label: string; plays: number; winRate: number }[] }) {
   return (
     <section className="scr-sg-comp-wrap" aria-label="종족구성별 전적">
@@ -263,7 +262,6 @@ export function CompGrid({ rows }: { rows: { label: string; plays: number; winRa
               <span className="scr-sg-c"><Num v={c.plays.toLocaleString()} unit="판" /></span>
               <span className="scr-sg-c scr-sg-comp-rate">
                 <Num v={c.winRate} unit="%" />
-                <span className="scr-sg-bar" aria-hidden><span style={{ width: `${Math.max(0, Math.min(100, c.winRate))}%`, background: "var(--lighting-accent, #3b82f6)" }} /></span>
               </span>
             </div>
           ))}

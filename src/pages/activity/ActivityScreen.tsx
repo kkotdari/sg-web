@@ -5,6 +5,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import ReplayReviewModal from "../../modals/ReplayReviewModal";
 import ChallengeFormModal from "../../modals/ChallengeFormModal";
 import ScheduleFormModal from "../../modals/ScheduleFormModal";
+import { focusFirstLineOnOpen } from "./ScheduleCard";
 import { SCENE_LINK_KEYS9 } from "scplay";
 import { useAppStore } from "../../store/appStore";
 import { isAdminRole } from "../../constants/roles";
@@ -507,7 +508,7 @@ function ActivityRouter() {
           initial={null}
           onClose={() => setScheduleFormOpen(false)}
           /* 등록하면 그 일정의 상세(늘 편집 상태)로 바로 간다(2026-10-20, 요청: "등록하면 바로 상세 편집으로 · 지금은 목록이 나오네"). */
-          onSaved={(s) => { feed.upsertSchedule(s); openItem(scheduleItem(s)); }}
+          onSaved={(s) => { feed.upsertSchedule(s); focusFirstLineOnOpen(s.id); openItem(scheduleItem(s)); }}
         />
       )}
 

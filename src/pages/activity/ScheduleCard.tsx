@@ -483,6 +483,11 @@ const ScheduleCard = memo(ScheduleCardInner, (a, b) => (
 ));
 export default ScheduleCard;
 
+/* 갓 등록한 일정 — 상세가 열리면 첫 글 줄을 만들어 커서를 둔다(2026-10-20, 요청: "등록하면 바로 상세 편집으로" → "커서 포커싱까지").
+   등록 창(ActivityScreen)이 상세로 가기 전에 그 일정 id 를 적어 두고, 카드가 편집 상태가 되는 순간 한 번 쓰고 지운다. */
+let focusFirstLineOf: number | null = null;
+export function focusFirstLineOnOpen(scheduleId: number): void { focusFirstLineOf = scheduleId; }
+
 function ScheduleCardInner({
   schedule, timeText, dateLabel, canEdit, canDelete, onDeleted, footer,
 }: ScheduleCardProps) {
@@ -732,6 +737,12 @@ function ScheduleCardInner({
   /* 편집 모드는 따로 없다(2026-10-18, 요청: "편집 모드 없이 항상 편집 모드로") — 고칠 수 있는 사람에게는 카드가 늘 편집 상태다.
      저장은 단추로만(2026-10-20 · 위 ScheduleHead ★) — 옛 자동 저장(쉼 2초 · 최대 15초 · 사진 넣자마자 · 화면 숨김·떠날 때)은 걷었다. */
   useEffect(() => { if (canEdit && !editing) enter(); }, [canEdit]);
+  useEffect(() => {
+    if (!editing || focusFirstLineOf !== schedule.id) return;
+    focusFirstLineOf = null;
+    if ((draftRef.current?.blocks.length ?? 0) > 0) return;
+    requestAnimationFrame(() => cardRef.current?.querySelector<HTMLElement>(".scr-sb-composer")?.click());
+  }, [editing]);
   /* 늘 편집 상태라 목록의 카드마다 남의 고침을 4초마다 물어 왔다 — 화면에 보이는 카드만 묻는다. 저장은 보이든 말든 한다. */
   const cardRef = useRef<HTMLDivElement | null>(null);
   const onScreen = useRef(false);
