@@ -634,6 +634,13 @@ export const api = {
     return res.blob();
   },
 
+  /** 판의 전술 낱말(운영자 재분석 · sg-api GameResultTactics) — 판을 열 때는 안 부른다. */
+  async putGameTactics(gameResultId: number, words: string[]): Promise<void> {
+    await request<void>(`/api/game-results/${gameResultId}/tactics`, {
+      method: "PUT", body: JSON.stringify({ words }),
+    });
+  },
+
   async reanalyzeGameResult(
     gameResultId: number,
     body: {

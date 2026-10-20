@@ -144,9 +144,11 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
   const memberOpts = useMemo<Opt[]>(() => members.map((m) => ({ value: m.nickname, member: m })), [members]);
   const itemOpts = useMemo<Opt[]>(() => {
     const seen = new Set<string>();
-    return terms.filter((t) => (t.tag === "유닛" || t.tag === "건물" || t.tag === "스킬") && !seen.has(t.value) && (seen.add(t.value), true))
+    return terms.filter((t) => (t.tag === "유닛" || t.tag === "건물" || t.tag === "스킬" || t.tag === "전술") && !seen.has(t.value) && (seen.add(t.value), true))
       .map((t) => ({ value: t.value, tag: t.tag }));
   }, [terms]);
+  /** 한 사람 줄 — 전술은 판 하나의 낱말이라(누가 했는지는 안 적는다) 뺀다. */
+  const linkItemOpts = useMemo<Opt[]>(() => itemOpts.filter((o) => o.tag !== "전술"), [itemOpts]);
   const mapOpts = useMemo<Opt[]>(() => maps.map((m) => ({ value: m, tag: "맵" })), [maps]);
 
   const setLink = (i: number, p: Partial<GameSearchLink>): void =>
@@ -215,8 +217,8 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
               ))}
             </div>
           </Field>
-          <Field label="유닛·건물·스킬" hint="모두 나온 판">
-            <ChipInput values={draft.items} onChange={(v) => set("items", v)} options={itemOpts} placeholder="캐리어 · 사이오닉 스톰 · Carrier" onSubmit={() => apply()} />
+          <Field label="유닛·건물·스킬·전술" hint="모두 나온 판">
+            <ChipInput values={draft.items} onChange={(v) => set("items", v)} options={itemOpts} placeholder="캐리어 · 사이오닉 스톰 · 몰래 배럭" onSubmit={() => apply()} />
           </Field>
           <Field label="게임번호" hint="그중 하나">
             <ChipInput values={draft.nos} onChange={(v) => set("nos", v)} options={[]} placeholder="261019213105 · 앞자리만(261019)도 됨" onSubmit={() => apply()} />
@@ -231,7 +233,7 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
                     <option value="">종족 무관</option>
                     {RACES.map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>
-                  <ChipInput values={l.items} onChange={(v) => setLink(i, { items: v })} options={itemOpts} placeholder="유닛·건물·스킬" onSubmit={() => apply()} />
+                  <ChipInput values={l.items} onChange={(v) => setLink(i, { items: v })} options={linkItemOpts} placeholder="유닛·건물·스킬" onSubmit={() => apply()} />
                   <button type="button" className="scr-icon-btn scr-gs-link-x" aria-label="이 조건 빼기" onClick={() => set("links", draft.links.filter((_, k) => k !== i))}><X size={13} /></button>
                 </div>
               ))}

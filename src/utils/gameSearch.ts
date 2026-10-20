@@ -1,3 +1,4 @@
+import { TACTIC_TERMS9 } from "scplay";
 import { normalizeSearchText } from "./memberSearch";
 import { BUILDING_KO, TECH_KO, UNIT_KO } from "./replayNames";
 
@@ -44,6 +45,9 @@ export function gameSuggestions(mapNames: Iterable<string>): GameSuggestion[] {
   for (const [en, ko] of Object.entries(UNIT_KO)) { add(ko, "유닛"); add(en, "유닛"); }
   for (const [en, ko] of Object.entries(BUILDING_KO)) { add(ko, "건물"); add(en, "건물"); }
   for (const [en, ko] of Object.entries(TECH_KO)) { add(ko, "스킬"); add(en, "스킬"); }
+  /* 전술 낱말(2026-10-20, 요청: "유닛건물스킬에 전술도 · 몰래 배럭 오버로드 사냥 …") — 운영자 재분석이 판마다 적어 둔 것(utils/gameTactics)을 서버가 찾는다.
+     판 하나의 일이라 '한 사람이 직접' 줄에는 안 낸다(GameSearchForm itemOpts). */
+  for (const w of TACTIC_TERMS9) add(w, "전술");
   for (const name of mapNames) add(name, "맵");
   return out;
 }
