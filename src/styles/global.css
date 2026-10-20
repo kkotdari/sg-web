@@ -3339,6 +3339,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; }
 .scr-redo-pick-filters > .scr-redo-pick-from { flex-wrap: wrap; }
 .scr-redo-pick-pub { font-size: var(--fs-caption); }
+.scr-redo-pick-allbtn { margin-left: auto; }
 .scr-redo-pick-foot { flex-wrap: wrap; }
 .scr-redo-pick-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
 

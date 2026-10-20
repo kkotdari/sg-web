@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import Select from "../../components/common/Select";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import { RowCheck, SelectAllToggle } from "../../components/common/Selection";
+import { RowCheck } from "../../components/common/Selection";
 import { GameRowNames, GameRowStatus, ListRow } from "../activity/GameRow";
 import { gamePlayable } from "../../utils/gamePlayable";
 import ReplayBatchButton from "../../components/common/ReplayBatchButton";
@@ -568,6 +568,13 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                       <input type="checkbox" checked={pickFilter.pub} onChange={(e) => changePickFilter({ pub: e.target.checked })} />
                       공방 경기만
                     </label>
+                    {/* 전체 선택 단추(2026-10-20, 요청: "전체선택 버튼도") — 지금 거름(기간·공방·찾기)에 보이는 판을 다 고른다 · 다 골랐으면 선택 해제. 옛 목록 위 체크 줄을 대신한다. */}
+                    <button
+                      type="button" className="scr-compact-rect-btn is-secondary scr-redo-pick-allbtn"
+                      disabled={pickFiltered.length === 0} onClick={toggleAllShown}
+                    >
+                      {allShownPicked ? "선택 해제" : `전체 선택 (${pickFiltered.length}건)`}
+                    </button>
                   </div>
                   <input
                     type="search"
@@ -575,10 +582,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     placeholder="게임번호·날짜·맵·선수로 찾기"
                     value={pickQuery}
                     onChange={(e) => setPickQuery(e.target.value)}
-                  />
-                  <SelectAllToggle
-                    className="scr-redo-pick-all" all={allShownPicked} count={picked.size} onToggle={toggleAllShown}
-                    suffix={pickQuery.trim() ? ` (검색된 ${pickFiltered.length}건)` : ` (${pickFiltered.length}건)`}
                   />
                   {/* 줄 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "재분석 … 게임 목록을 노출하는 부분 전부 모바일 화면의 게임목록처럼"). */}
                   <div className="scr-redo-pick-list scr-activity-rows">
