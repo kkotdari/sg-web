@@ -9,6 +9,7 @@ import ReplayBatchButton from "../../components/common/ReplayBatchButton";
 import VersionManageModal from "../../modals/VersionManageModal";
 import ExtShareManageModal from "../../modals/ExtShareManageModal";
 import DeletedGamesModal from "../../modals/DeletedGamesModal";
+import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
 import { api } from "../../api/client";
 import { parseReplayFile } from "../../utils/replayParser";
 import { createSummaryPool, runLanes } from "../../utils/replaySummaryPool";
@@ -40,6 +41,15 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [versionManageOpen, setVersionManageOpen] = useState(false);
   const [extShareOpen, setExtShareOpen] = useState(false);
   const [deletedGamesOpen, setDeletedGamesOpen] = useState(false);
+  const [unhideOpen, setUnhideOpen] = useState(false);
+  /* 기다리는 숨김 해제 요청 수 — 줄 제목 옆에 센다(창을 닫으면 다시 센다). */
+  const [unhideCount, setUnhideCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (unhideOpen) return;
+    let alive = true;
+    api.listUnhideRequests().then((r) => { if (alive) setUnhideCount(r.length); }).catch(() => {});
+    return () => { alive = false; };
+  }, [unhideOpen]);
   const [togglingNotice, setTogglingNotice] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [redo, setRedo] = useState<{ done: number; total: number; failed: number } | null>(null);
@@ -424,6 +434,22 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   </button>
                 </div>
 
+                {/* 숨김 해제 요청 — 게임 목록의 '해제요청'이 모인다(2026-10-19 · UnhideRequestsModal ★). */}
+                <div className="scr-adm-row">
+                  <div className="scr-adm-row-text">
+                    <span className="scr-adm-row-title">숨김 해제 요청{unhideCount ? ` (${unhideCount})` : ""}</span>
+                    <span className="scr-adm-row-desc">
+                      회원이 숨긴 경기의 해제를 요청하면 여기에 모여요. 해제하면 경기가 다시 보입니다.
+                    </span>
+                  </div>
+                  <button
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
+                    onClick={() => setUnhideOpen(true)}
+                  >
+                    열기
+                  </button>
+                </div>
+
                 {/* 삭제 관리(삭제된 경기 복원·완전 삭제) — 숨김(2026-10-16 요청: "삭제관리 메뉴 숨김처리 · 나중에 되살릴 예정"). SHOW_DELETED_GAMES 를 true 로 돌리면 되살아난다. */}
                 {SHOW_DELETED_GAMES && (
                   <div className="scr-adm-row">
@@ -603,6 +629,9 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
         <ExtShareManageModal onClose={() => setExtShareOpen(false)} />
       )}
 
+      {unhideOpen && (
+        <UnhideRequestsModal onClose={() => setUnhideOpen(false)} />
+      )}
       {deletedGamesOpen && (
         <DeletedGamesModal onClose={() => setDeletedGamesOpen(false)} />
       )}

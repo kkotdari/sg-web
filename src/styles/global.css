@@ -5585,6 +5585,41 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-activity-row-col-names { min-width: 0; max-width: 100%; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
 .scr-activity-row-col-names > .scr-activity-row-em { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: clip; line-height: 1.3; }
 .scr-activity-row-cols > .scr-activity-row-vs { align-self: center; }
+/* ★★ PC 게임 표(GameTable.tsx ★★ · 2026-10-19, 요청: "피시는 배지들 제거하고 완전 그리드 형태(헤더로우도) · 로스터는 모바일과 같은 형태") —
+   머리 줄·줄이 한 열 틀(--gtab-cols)을 쓴다. 칸 사이 세로 줄 · 로스터 칸만 늘고 나머지는 제 글 폭. 폰은 옛 줄(이 규칙은 PC 에서만 선다). */
+.scr-gtab-list {
+  --gtab-cols: 104px 104px 56px minmax(72px, 1fr) minmax(220px, 2.6fr) 60px 40px 48px 84px;
+}
+.scr-gtab {
+  display: grid; grid-template-columns: var(--gtab-cols); align-items: stretch; width: 100%;
+  flex: 1 1 auto; min-width: 0;
+  font-size: var(--fs-caption); color: var(--text);
+}
+.scr-gtab-cell {
+  display: flex; align-items: center; justify-content: center; min-width: 0;
+  padding: 9px 6px; text-align: center; white-space: nowrap; overflow: hidden;
+}
+.scr-gtab-cell + .scr-gtab-cell { border-left: 1px solid var(--line-faint); }
+.scr-gtab-head { font-size: var(--fs-11); font-weight: 700; color: var(--row-dim); background: rgba(var(--overlay-rgb), 0.06); }
+.scr-gtab-head > .scr-gtab-cell { padding-top: 7px; padding-bottom: 7px; }
+.scr-gtab-headwrap { border-bottom: 0.5px solid var(--scr-row-line); }
+.scr-gtab-headwrap + .scr-activity-row-wrap { border-top: none; }
+.scr-gtab-headcheck { visibility: hidden; }
+.scr-gtab-row { cursor: pointer; -webkit-tap-highlight-color: transparent; outline-offset: -2px; }
+@media (hover: hover) { .scr-gtab-row:not(.is-off):hover { background: var(--lighting-hover-bg); } }
+.scr-gtab-row.is-off { cursor: default; }
+.scr-gtab-num, .scr-gtab-no { font-variant-numeric: tabular-nums; }
+.scr-gtab-no { font-size: var(--fs-11); color: var(--row-dim); }
+.scr-gtab-map { justify-content: flex-start; text-align: left; }
+.scr-gtab-map > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.scr-gtab-dim { color: var(--row-dim); opacity: 0.6; }
+.scr-gtab-roster { flex-direction: column; gap: 3px; white-space: normal; }
+.scr-gtab-roster > .scr-activity-row-cols { width: 100%; font-size: var(--fs-body); }
+.scr-gtab-roster .scr-activity-row-col-names { padding: 0 4px; }
+.scr-gtab-league { font-size: var(--fs-10); color: var(--row-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.scr-gtab-hide { flex-direction: column; gap: 4px; }
+.scr-gtab-hidden-text { font-size: var(--fs-11); color: var(--row-dim); }
+.scr-gtab-unhide { padding: 2px 8px; font-size: var(--fs-10); }
 .scr-activity-row-state {
   flex: none; margin-right: 3px;
   font-size: var(--fs-9); font-weight: 800; line-height: 1; white-space: nowrap;
@@ -5618,9 +5653,14 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
      리그 판 머리 줄(has-above)이 있는 줄은 그 아래라 자리를 모른다 — 양옆 auto 여백으로 가운데 어림. */
   /* 윗줄은 격자 [재생 1fr | 맵·시간 | (NEW) 시각 1fr] — 양옆이 같은 1fr 라 맵 배지가 늘 정가운데다(리그 판 머리 줄이 있어도 · 옛 flex 차례 order 1~4 를 덮는다).
      차례(order)로 자리 잡는다: 머리 줄 0 · 재생 1 · 맵 2 · 시각 묶음 3 · 이름 칸 4. 시각 묶음은 contents 를 걷고 제 칸 안 flex 로 오른끝. */
+  /* 줄 사이 3 → 5 · 위아래 7 → 9 · 승패 배지 줄–이름 칸 2 → 4(2026-10-19, 요청: "줄간격들 살짝씩 늘리기(로스터 내 제외)") — 이름끼리 줄 사이는 그대로.
+     이름 칸 좌우 4(같은 요청: "모바일 로스터내 닉네임 좌우 여백좀 남게"). */
   .scr-activity-row-game > .scr-activity-row-main {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 3px 6px;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 5px 6px;
+    padding-top: 9px; padding-bottom: 9px;
   }
+  .scr-activity-row-game .scr-activity-row-cols { row-gap: 4px; }
+  .scr-activity-row-game .scr-activity-row-col-names { padding: 0 4px; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-above { grid-column: 1 / -1; order: 0; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-play-top { grid-column: 1; justify-self: start; order: 1; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-status { grid-column: 2; order: 2; }

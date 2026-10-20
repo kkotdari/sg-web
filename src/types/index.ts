@@ -187,6 +187,18 @@ export interface DeletedGameResult extends GameResult {
   deletedBy: GameResultAuthor | null;
 }
 
+/** 숨긴 경기 해제 요청(운영자 화면 · 서버 game_unhide_requests · 2026-10-19). */
+export interface GameUnhideRequest {
+  id: number;
+  gameResultId: number;
+  matchNo: string;
+  gameDate: string;
+  hiddenAt: string | null;
+  requestedBy: string | null;
+  createdAt: string;
+  status: "pending" | "approved" | "rejected";
+}
+
 export type NewGameResult = Omit<GameResult, "id" | "matchNo" | "createdBy" | "replay" | "mapHash"> & {
   replay: ReplayUpload | null;
   mapData: ReplayMapGrid | null;

@@ -13,6 +13,8 @@ import { useUrlState } from "../../hooks/useUrlState";
 import type { Selection } from "../../hooks/useSelection";
 import type { ActivityGroupKey } from "../../utils/route";
 import type { Challenge, GameResultSlot, Member } from "../../types";
+import { GameTableHead } from "./GameTable";
+import { cx } from "../../utils/format";
 import { ActivityRow, rowPropsOf, useRowClock, type RowAct, type RowView } from "./ActivityRow";
 import { useFeedData } from "./activityFeed";
 import {
@@ -298,7 +300,8 @@ export default memo(function ActivityGroupPage({
           />
         </SelectionBar>
       )}
-      <div className="scr-activity-rows scr-activity-group-page-rows">
+      <div className={cx("scr-activity-rows scr-activity-group-page-rows", groupKey === "gameResult" && !view.isMobile && "scr-gtab-list")}>
+        {groupKey === "gameResult" && !view.isMobile && filtered.length > 0 && <GameTableHead selecting={!!selection} />}
         {filtered.length === 0 ? (
           <div className="scr-empty">{serverBusy ? "찾는 중…" : "결과가 없어요"}</div>
         ) : (

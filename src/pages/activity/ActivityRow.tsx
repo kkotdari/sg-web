@@ -7,6 +7,7 @@ import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
 import { challengeStatusInfo } from "../challenge/ChallengeScreen";
 import { GameRowNames, GameRowStatus, ListRow } from "./GameRow";
+import { GameTableRow } from "./GameTable";
 import { commentStatOf, subscribeComments } from "./ActivityComments";
 import {
   ROW_VOID, STATUS_FADED, commentTargetOf, nameNodes, namesWithRest, rowFlagsOf, rowKeyOf, type DisplayItem,
@@ -132,6 +133,25 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
   const { isMobile, selecting, selMode } = view;
   const secret = item.kind === "gameResult" && isSecretGame(item.gameResult);
   const voided = item.kind === "challenge" && ROW_VOID.has(challengeStatusInfo(item.challenge).text);
+  const check = selecting && (
+    <RowCheck
+      checked={picked} disabled={!pickable}
+      disabledTitle={secret ? "숨긴 경기는 고를 수 없어요" : view.selectionNote}
+      onChange={() => act.current.toggle(key)}
+    />
+  );
+  /* PC 게임 줄은 표 한 줄(GameTable ★★ · 2026-10-19) — 머리 줄은 목록이 단다(ActivityHome · ActivityGroupPage). */
+  if (!isMobile && item.kind === "gameResult") {
+    const lg = item.gameResult.league;
+    return (
+      <GameTableRow
+        game={item.gameResult} memberOf={view.memberOf}
+        check={check} picked={picked} disabled={secret}
+        onClick={() => act.current.open(item)}
+        above={lg ? `${lg.leagueName} · ${lg.roundName} · ${lg.setNo}세트` : undefined}
+      />
+    );
+  }
   return (
     <ListRow
       check={selecting && (

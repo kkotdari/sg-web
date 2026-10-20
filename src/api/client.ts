@@ -12,6 +12,7 @@ import type {
   SceneScrap,
   ExtShareList, ExtShareAddResult,
   DeletedGameResult,
+  GameUnhideRequest,
 } from "../types";
 import type { ReplayMapGrid } from "../utils/replayParser";
 
@@ -490,6 +491,17 @@ export const api = {
 
   async hideGameResult(id: number): Promise<GameResult> {
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}/hide`, { method: "POST" }));
+  },
+
+  /** 숨긴 경기 해제 요청 — 숨김은 누구도 못 되돌리니 운영자에게 청한다(두 번 눌러도 하나 · 2026-10-19). */
+  async requestUnhideGameResult(id: number): Promise<GameUnhideRequest> {
+    return request<GameUnhideRequest>(`/api/game-results/${id}/unhide-request`, { method: "POST" });
+  },
+  async listUnhideRequests(): Promise<GameUnhideRequest[]> {
+    return (await request<{ items: GameUnhideRequest[] }>("/api/game-results/unhide-requests")).items;
+  },
+  async resolveUnhideRequest(rid: number, approve: boolean): Promise<GameUnhideRequest> {
+    return request<GameUnhideRequest>(`/api/game-results/unhide-requests/${rid}/${approve ? "approve" : "reject"}`, { method: "POST" });
   },
 
   async listDeletedGameResults(): Promise<DeletedGameResult[]> {

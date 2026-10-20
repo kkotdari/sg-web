@@ -1,6 +1,8 @@
 import { memo, useEffect, useMemo, useRef, type RefObject } from "react";
 import { LoadingMark } from "../../components/common/Feedback";
 import ComingMatches from "./ComingMatches";
+import { GameTableHead } from "./GameTable";
+import { cx } from "../../utils/format";
 import { ActivityRow, rowPropsOf, useRowClock, type RowAct, type RowView } from "./ActivityRow";
 import { useFeedData } from "./activityFeed";
 import {
@@ -101,7 +103,8 @@ export default memo(function ActivityHome({ gameTab, onGameTab, error, onOpenGro
                 <span className="scr-activity-group-viewall" aria-hidden>전체 보기</span>
               </div>
               {section.key === "gameResult" && <GameTabs value={gameTab} onChange={onGameTab} />}
-              <div className="scr-activity-rows">
+              <div className={cx("scr-activity-rows", section.key === "gameResult" && !view.isMobile && "scr-gtab-list")}>
+                {section.key === "gameResult" && !view.isMobile && <GameTableHead selecting={false} />}
                 {section.rows.map((item) => {
                   const { key, ...p } = rowPropsOf(item, NO_PICK);
                   return <ActivityRow key={key} {...p} minute={minute} view={view} act={act} />;
