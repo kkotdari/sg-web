@@ -8064,12 +8064,12 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-who-sub { font-size: var(--fs-10); gap: 5px; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 3px; }
 /* 아래 줄(APM · 딜 · 피해) 한 줄 — 글자는 크게(12px) · 칸이 좁으면 폭에 비례해 줄인다(7.5cqw · 9.5px 밑으로 안 간다). */
-.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(10px, min(17px, 8.6cqw)); }
+.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(9.5px, min(17px, 8cqw)); }
 /* 유저 칸 글자 크게(2026-10-20, 요청: "유저 칸 글자 키우고") — 이름 19px · 아바타 32. */
 .scr-sg.is-m .scr-sg-name { font-size: 19px; }
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 32px !important; height: 32px !important; }
 /* 아바타·닉네임 줄과 아래 데이터 줄 사이를 넓게(2026-10-20, 요청: 5 → 10 → 14 · 데이터 글자 최대 13 → 14px). */
-.scr-sg.is-m .scr-sg-c.scr-sg-who { padding: 14px 6px 14px 12px; gap: 20px; } /* → "줄간격도 훨 넓혀" 14 → 20 */
+.scr-sg.is-m .scr-sg-c.scr-sg-who { padding: 14px 10px 14px 18px; gap: 20px; } /* 왼 여백 12 → 18 · 오른 6 → 10(요청: "왼쪽 여백 더 · 꽉 맞을 필요 없어") */ /* → "줄간격도 훨 넓혀" 14 → 20 */
 /* 전적 칸 — [종족 | N전 | 승률] 세 칸을 줄마다 맞춘다. 종족 이름은 흐리게 · 승률은 굵게. */
 /* 표 머리는 PC·폰 모두 칸 가운데(2026-10-20, 요청: "통계 그리드 헤더 가운데 정렬") — 유저·전적 머리도. */
 .scr-sg .scr-sg-row.scr-sg-head > .scr-sg-c { justify-content: center; text-align: center; padding-left: 8px; padding-right: 8px; }
