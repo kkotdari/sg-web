@@ -7664,12 +7664,18 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
   background: var(--panel); cursor: zoom-in;
 }
 .scr-sb-photo img { display: block; width: 100%; max-height: 420px; object-fit: contain; }
+/* ★ 큰 사진 칸은 내릴 때 화면 위에 붙어 있다(2026-10-20, 요청: "사진첩 그리드가 길어지면 선택한 사진 보이는 곳이 밀려 올라감" →
+   "1번(위에 붙여 두기) · 일단 줄임 없이 · 프레임은 정사각형") — 사진 목록 블록 안에서만 붙고, 그리드가 그 밑으로 흘러간다.
+   밑으로 지나가는 칸이 비치지 않게 바탕은 불투명(panel 을 panel-solid 위에 깐다). */
 .scr-sb-slides-wrap {
-  position: relative; border: 1px solid var(--line); overflow: hidden;
-  background: var(--panel);
+  position: sticky; top: var(--safe-top, 0px); z-index: 3;
+  /* 정사각 한 변은 블록 폭이되 화면 높이의 60% 까지(PC 는 폭 960 정사각이 화면보다 커 붙는 뜻이 없다) — 좁아지면 가운데. */
+  width: min(100%, 60vh); margin-inline: auto;
+  border: 1px solid var(--line); overflow: hidden;
+  background: linear-gradient(var(--panel), var(--panel)), var(--panel-solid);
 }
 .scr-sb-slides {
-  display: flex; height: min(420px, 75vw);
+  display: flex; aspect-ratio: 1 / 1;
   overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
@@ -7786,7 +7792,8 @@ html.color-lighting .scr-sb-slide-save.is-armed, html.color-lighting .scr-photo-
   touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 .scr-sb-order-cell img, .scr-sb-order-cell video { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-.scr-sb-order-on { border-color: var(--timeline-blue); box-shadow: 0 0 0 1px var(--timeline-blue); }
+/* 고른 칸 테는 안쪽(inset) — 바깥 1px 은 위에 붙은 큰 사진 틀 옆으로 삐져 비쳤다(2026-10-20). */
+.scr-sb-order-on { border-color: var(--timeline-blue); box-shadow: inset 0 0 0 1px var(--timeline-blue); }
 .scr-sb-order-drag {
   z-index: 2; cursor: grabbing; will-change: transform;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--timeline-blue);
