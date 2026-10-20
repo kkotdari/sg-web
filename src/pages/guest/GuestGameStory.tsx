@@ -85,10 +85,13 @@ export default function GuestGameStory({ gameResult, team1, team2, result, membe
     const winLabel = (() => {
         if (result === "draw")
             return "무승부";
+        if (result === "not_held" || result === "unknown")
+            return "";
         const side = o1 === "win" ? t1 : t2;
         if (isMeleeGame({ matchType: gameResult.matchType, team1: t1, team2: t2 })
             || (t1.length === 1 && t2.length === 1)) {
-            return `${alias(resolveSlotName(side[0], [...t1, ...t2], memberOf), side[0])} 승`;
+            // 승자 편이 비면 이름을 못 낸다(GameResultStory 와 같은 막음 · 2026-10-20 — 프리포올 상세가 통째로 죽던 것).
+            return side[0] ? `${alias(resolveSlotName(side[0], [...t1, ...t2], memberOf), side[0])} 승` : "";
         }
         return `${o1 === "win" ? 1 : 2}팀 승`;
     })();

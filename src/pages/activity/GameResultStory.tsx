@@ -75,12 +75,15 @@ export default function GameResultStory({
 
   const o1 = outcomeFor("team1", result);
   const o2 = outcomeFor("team2", result);
+  /* 승자 편이 비면(프리포올을 다 한 편에 두고 결과 미정·승자 칸 빔 등) 이름을 못 낸다 — 예전엔 side[0] 이 없어 화면 전체가 죽었다
+     (2026-10-20, 지적: "프리포올 상세에 아무것도 안 나와 재생기조차"). 미정·미개최는 배지를 안 그리므로 글도 비운다. */
   const winLabel = (() => {
     if (result === "draw") return "무승부";
+    if (result === "not_held" || result === "unknown") return "";
     const side = o1 === "win" ? team1 : team2;
     if (isMeleeGame({ matchType: gameResult.matchType, team1, team2 })
       || (team1.length === 1 && team2.length === 1)) {
-      return `${resolveSlotName(side[0], [...team1, ...team2], memberOf)} 승`;
+      return side[0] ? `${resolveSlotName(side[0], [...team1, ...team2], memberOf)} 승` : "";
     }
     return `${o1 === "win" ? 1 : 2}팀 승`;
   })();
