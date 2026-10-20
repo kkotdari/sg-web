@@ -7872,5 +7872,7 @@ input.scr-sb-list-title { font-weight: 700; }
   font-size: var(--fs-micro); padding: 2px 5px 1px; line-height: 1.3;
 }
 @media (max-width: 960px) {
-  .scr-league-tag { font-size: var(--fs-10); padding: 0 3px; line-height: 1.3; }
+  /* 폰: 글자 한 단 크게(10 → 11) · 안 위아래 0 → 2 · 배지 줄 아래 틈 +3(2026-10-20, 요청: "리그배지 1스텝 키우고 내부 상하패딩과 외부 아래 줄간격 살짝 늘리기"). */
+  .scr-league-tag { font-size: var(--fs-11); padding: 2px 4px; line-height: 1.3; }
+  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-above { margin-bottom: 3px; }
 }
