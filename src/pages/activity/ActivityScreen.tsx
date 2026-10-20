@@ -98,7 +98,8 @@ function ActivityRouter() {
 
   const openGroup = (key: ActivityGroupKey): void => {
     homeScrollRef.current = window.scrollY;
-    go(pathOf({ screen: "activity", group: key }), { search: linkParams(["u", "q"]) });
+    // 게임 탭(tab)은 게임 전체 보기에만 넘긴다(2026-10-20 · App.tsx 같은 요청) — 일정·너 나와! 묶음엔 쓸모가 없다.
+    go(pathOf({ screen: "activity", group: key }), { search: linkParams(key === "gameResult" ? ["u", "q"] : ["u", "q", "tab"]) });
     pushedGroupRef.current = true;
     void api.pingAccess(GROUP_SCREEN_CODE[key]);
   };
