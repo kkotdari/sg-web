@@ -3335,6 +3335,12 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
   padding: 10px 14px; border-top: 1px solid var(--line);
 }
 .scr-redo-pick-count { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+/* 데이터 관리 창(2026-10-20) — 위 거름 줄 [기간 from ~ to | 공방 경기만] · 아래 손잡이 셋 [재분석 · 참값 삭제 · 경기 삭제]. 좁으면 줄을 바꾼다. */
+.scr-redo-pick-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; }
+.scr-redo-pick-filters > .scr-redo-pick-from { flex-wrap: wrap; }
+.scr-redo-pick-pub { font-size: var(--fs-caption); }
+.scr-redo-pick-foot { flex-wrap: wrap; }
+.scr-redo-pick-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
 
 .scr-trash { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
 @media (max-width: 960px) {

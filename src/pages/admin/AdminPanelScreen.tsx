@@ -22,7 +22,7 @@ import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { cx } from "../../utils/format";
 import { versionNumber } from "../../utils/appVersion";
 import { playCreak } from "../../utils/sfx";
-import { fmt, formatAgo, gameNow, todayStr } from "../../utils/date";
+import { formatAgo, todayStr } from "../../utils/date";
 import type { GameResult } from "../../types";
 import { indexGameTactics } from "../../utils/gameTactics";
 
@@ -79,52 +79,40 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     }
   };
 
-  const deleteAllGameResults = async () => {
-    const typed = window.prompt(
-      '모든 경기기록을 삭제합니다(리그 경기에 연결된 판은 남겨요). 첨부 리플레이까지 지워지고 되돌릴 수 없어요.\n삭제하려면 "삭제"를 입력하세요.',
-    );
-    if (typed !== "삭제") return;
-    setBusy(true);
-    try {
-      const { deleted } = await api.deleteAllGameResults();
-      showToast(`${deleted}건의 경기기록을 삭제했어요.`, { kind: "ok" });
-    } catch (e) {
-      showAlert(e instanceof Error ? e.message : "삭제하지 못했어요.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const [purgeUntil, setPurgeUntil] = useState(() => {
-    const d = gameNow();
-    d.setDate(d.getDate() - 30);
-    return fmt(d);
-  });
-  const [confirmPurge, setConfirmPurge] = useState<{ count: number; until: string } | null>(null);
+  /* ★ **데이터 관리**(2026-10-20, 요청: "재분석 참값 삭제 경기 삭제가 비슷한 모달창 사용 · 날짜칸이 제어판에 있지 않고 모달창에 · 버튼도 모두 대상선택 ·
+     아니면 데이터관리 메뉴로 통합해서 모달창 열고 from to 입력칸 주고 버튼 3개 · 공방경기 체크박스도") — 옛 세 줄(경기 재분석 · 참값 지우기(날짜까지) · 모든 경기기록 삭제)을
+     한 창(아래 pickerOpen)으로 모았다: 기간(from~to) · 공방 경기만 · 찾기로 대상을 고르고 [재분석 · 참값 삭제 · 경기 삭제] 중 하나를 **고른 판에만** 건다.
+     리그 경기 세트에 이은 판은 서버가 늘 남긴다(참값 삭제는 외부 공개 판도). */
+  const [confirmPurge, setConfirmPurge] = useState<number[] | null>(null);
   const [purging, setPurging] = useState(false);
-  const askPurgeTruth = async () => {
-    if (!purgeUntil) { showAlert("어느 날짜까지 지울지 골라 주세요."); return; }
-    setPurging(true);
-    try {
-      const { count } = await api.countExpiredTruth(purgeUntil);
-      if (count === 0) { showToast(`${purgeUntil}까지 지울 참값이 없어요.`, { kind: "ok" }); return; }
-      setConfirmPurge({ count, until: purgeUntil });
-    } catch (e) {
-      showAlert(e instanceof Error ? e.message : "세어 보지 못했어요.");
-    } finally {
-      setPurging(false);
-    }
-  };
-  const purgeTruth = async (until: string) => {
+  const purgeTruth = async (ids: number[]) => {
     setConfirmPurge(null);
     setPurging(true);
     try {
-      const { deleted } = await api.purgeExpiredTruth(until);
+      const { deleted } = await api.purgeTruthOf(ids);
       showToast(`${deleted}판의 참값을 지웠어요.`, { kind: "ok" });
+      void loadPickRows();
     } catch (e) {
       showAlert(e instanceof Error ? e.message : "지우지 못했어요.");
     } finally {
       setPurging(false);
+    }
+  };
+  const deleteGames = async (ids: number[]) => {
+    const typed = window.prompt(
+      `고른 경기 ${ids.length}건을 삭제합니다(리그 경기에 연결된 판은 남겨요). 첨부 리플레이까지 지워지고 되돌릴 수 없어요.\n삭제하려면 "삭제"를 입력하세요.`,
+    );
+    if (typed !== "삭제") return;
+    setBusy(true);
+    try {
+      const { deleted } = await api.deleteGamesOf(ids);
+      showToast(`${deleted}건의 경기기록을 삭제했어요.`, { kind: "ok" });
+      setPicked(new Set());
+      void loadPickRows();
+    } catch (e) {
+      showAlert(e instanceof Error ? e.message : "삭제하지 못했어요.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -236,19 +224,18 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [pickRows, setPickRows] = useState<PickRow[] | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [pickQuery, setPickQuery] = useState("");
-  const [pickFrom, setPickFrom] = useState("");
+  type PickFilter = { from: string; to: string; pub: boolean };
+  const [pickFilter, setPickFilter] = useState<PickFilter>({ from: "", to: "", pub: false });
   useLockBodyScroll(pickerOpen, () => setPickerOpen(false));
 
-  const openPicker = async () => {
-    setPickerOpen(true);
-    if (pickRows) return;
+  /** 대상 목록 — 리플레이 없는 판도 든다(참값·경기 삭제의 대상 · 재분석은 리플레이 있는 판만 건다). 지우고 나면 다시 받는다. */
+  const loadPickRows = async () => {
     try {
       const rows: PickRow[] = [];
       let cursor: string | undefined;
       do {
         const page = await api.getGameResultsPage({ cursor, limit: 100 });
         for (const m of page.items) {
-          if (!m.replay) continue;
           const names = [...m.team1, ...m.team2]
             .map((sl) => sl.rawName || "")
             .filter(Boolean);
@@ -265,24 +252,38 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
         cursor = page.nextCursor ?? undefined;
       } while (cursor);
       setPickRows(rows);
+      const alive = new Set(rows.map((r) => r.id));
+      setPicked((prev) => new Set([...prev].filter((id) => alive.has(id))));
     } catch (e) {
       showAlert(e instanceof Error ? e.message : "경기 목록을 받지 못했어요.");
-      setPickRows([]);
+      setPickRows((prev) => prev ?? []);
     }
   };
+  const openPicker = async () => {
+    setPickerOpen(true);
+    if (!pickRows) await loadPickRows();
+  };
 
-  const pickMatches = (r: PickRow, from: string): boolean => {
-    if (from && r.day < from) return false;
+  /** 공방 = 회원이 아닌 참가자가 있는 판(서버가 실어 준 clan · 게임 목록 공방 탭과 같은 셈). */
+  const pickMatches = (r: PickRow, f: PickFilter): boolean => {
+    if (f.from && r.day < f.from) return false;
+    if (f.to && r.day > f.to) return false;
+    if (f.pub && r.game.clan !== false) return false;
     const q = pickQuery.trim().toLowerCase();
     if (!q) return true;
     return `${r.matchNo} ${r.date} ${r.map} ${r.who}`.toLowerCase().includes(q);
   };
-  const pickFiltered = (pickRows ?? []).filter((r) => pickMatches(r, pickFrom));
-  const changePickFrom = (v: string) => {
-    setPickFrom(v);
-    if (!v) return;
-    setPicked(new Set((pickRows ?? []).filter((r) => pickMatches(r, v)).map((r) => r.id)));
+  const pickFiltered = (pickRows ?? []).filter((r) => pickMatches(r, pickFilter));
+  /** 기간·공방을 바꾸면 그 조건에 맞는 판을 모두 고른다(옛 '이 날짜부터'와 같은 손버릇) — 조건을 다 풀면 고른 것은 그대로. */
+  const changePickFilter = (patch: Partial<PickFilter>) => {
+    const next = { ...pickFilter, ...patch };
+    setPickFilter(next);
+    if (!next.from && !next.to && !next.pub) return;
+    setPicked(new Set((pickRows ?? []).filter((r) => pickMatches(r, next)).map((r) => r.id)));
   };
+  const pickedIds = [...picked];
+  const pickedReplayIds = (pickRows ?? []).filter((r) => picked.has(r.id) && r.game.replay).map((r) => r.id);
+  const dataBusy = redo !== null || purging || busy;
   const allShownPicked = pickFiltered.length > 0 && pickFiltered.every((r) => picked.has(r.id));
   const toggleAllShown = () => {
     setPicked((prev) => {
@@ -421,14 +422,14 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
               <div className="scr-adm-rows">
                 <div className="scr-adm-row">
                   <div className="scr-adm-row-text">
-                    <span className="scr-adm-row-title">경기 재분석</span>
+                    <span className="scr-adm-row-title">데이터 관리</span>
                     <span className="scr-adm-row-desc">
-                      고른 경기의 리플레이를 다시 읽어 분석 값을 새로 씁니다. 직접 입력한 값은 그대로예요.
+                      기간·공방 경기로 대상을 골라 재분석하거나 참값(재생 자료)·경기기록을 지웁니다. 리그 경기에 연결된 판은 지우지 않아요.
                     </span>
                   </div>
                   <button
                     type="button" className="scr-rect-btn scr-adm-row-btn"
-                    onClick={() => { void openPicker(); }} disabled={redo !== null}
+                    onClick={() => { void openPicker(); }} disabled={dataBusy}
                   >
                     {redo ? (
                       <>
@@ -436,7 +437,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                         {redo.total > 0 ? `${redo.done}/${redo.total}` : "목록 받는 중"}
                         {redo.failed > 0 ? ` · 실패 ${redo.failed}` : ""}
                       </>
-                    ) : "고르기"}
+                    ) : purging || busy ? <Spinner /> : "대상 선택"}
                   </button>
                 </div>
 
@@ -450,29 +451,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     onClick={downloadReplays} disabled={downloading}
                   >
                     {downloading ? <Spinner /> : "내려받기"}
-                  </button>
-                </div>
-
-                <div className="scr-adm-row">
-                  <div className="scr-adm-row-text">
-                    <span className="scr-adm-row-title">참값 지우기</span>
-                    <span className="scr-adm-row-desc">
-                      고른 날짜까지(그날 포함) 경기의 재생 자료를 지웁니다. 리플레이와 통계는 그대로고, 그 경기는 로스터로만 보여요. 리그 경기에 연결된 판은 남겨요.
-                    </span>
-                    <label className="scr-adm-row-field">
-                      <span className="scr-adm-row-field-label">이 날짜까지</span>
-                      <input
-                        type="date" className="scr-input scr-date-compact"
-                        value={purgeUntil} max={todayStr()}
-                        onChange={(e) => setPurgeUntil(e.target.value)}
-                      />
-                    </label>
-                  </div>
-                  <button
-                    type="button" className="scr-rect-btn scr-adm-row-btn"
-                    onClick={() => { void askPurgeTruth(); }} disabled={purging}
-                  >
-                    {purging ? <Spinner /> : "지우기"}
                   </button>
                 </div>
 
@@ -510,18 +488,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   </div>
                 )}
 
-                <div className="scr-adm-row">
-                  <div className="scr-adm-row-text">
-                    <span className="scr-adm-row-title">모든 경기기록 삭제</span>
-                    <span className="scr-adm-row-desc">첨부 리플레이까지 함께 지워지고 되돌릴 수 없어요. 리그 경기에 연결된 판은 남겨요.</span>
-                  </div>
-                  <button
-                    type="button" className="scr-rect-btn scr-adm-row-btn"
-                    onClick={deleteAllGameResults} disabled={busy}
-                  >
-                    {busy ? <Spinner /> : "삭제"}
-                  </button>
-                </div>
               </div>
             </section>
 
@@ -573,7 +539,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="scr-modal-head">
-              <span>다시 분석할 경기 고르기</span>
+              <span>데이터 관리</span>
               <button className="scr-icon-btn" onClick={() => setPickerOpen(false)} aria-label="닫기"><X size={14} /></button>
             </div>
             <div className="scr-modal-body scr-redo-pick-body">
@@ -583,14 +549,26 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 <div className="scr-redo-pick-empty">게임이 없어요</div>
               ) : (
                 <>
-                  <label className="scr-redo-pick-from">
-                    <span className="scr-redo-pick-from-label">이 날짜부터</span>
-                    <input
-                      type="date" className="scr-input scr-date-compact"
-                      value={pickFrom} max={todayStr()}
-                      onChange={(e) => changePickFrom(e.target.value)}
-                    />
-                  </label>
+                  <div className="scr-redo-pick-filters">
+                    <label className="scr-redo-pick-from">
+                      <span className="scr-redo-pick-from-label">기간</span>
+                      <input
+                        type="date" className="scr-input scr-date-compact" aria-label="시작 날짜"
+                        value={pickFilter.from} max={pickFilter.to || todayStr()}
+                        onChange={(e) => changePickFilter({ from: e.target.value })}
+                      />
+                      <span className="scr-redo-pick-from-label" aria-hidden>~</span>
+                      <input
+                        type="date" className="scr-input scr-date-compact" aria-label="끝 날짜"
+                        value={pickFilter.to} min={pickFilter.from || undefined} max={todayStr()}
+                        onChange={(e) => changePickFilter({ to: e.target.value })}
+                      />
+                    </label>
+                    <label className="scr-checkbox-field scr-redo-pick-pub">
+                      <input type="checkbox" checked={pickFilter.pub} onChange={(e) => changePickFilter({ pub: e.target.checked })} />
+                      공방 경기만
+                    </label>
+                  </div>
                   <input
                     type="search"
                     className="scr-input scr-redo-pick-search"
@@ -625,14 +603,30 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
             </div>
             <div className="scr-modal-foot scr-redo-pick-foot">
               <span className="scr-redo-pick-count">{picked.size}건 선택</span>
-              <button
-                type="button"
-                className="scr-rect-btn"
-                disabled={picked.size === 0}
-                onClick={() => { setPickerOpen(false); setConfirmRedo(true); }}
-              >
-                다시 분석
-              </button>
+              <div className="scr-redo-pick-acts">
+                <button
+                  type="button" className="scr-rect-btn"
+                  disabled={pickedReplayIds.length === 0 || dataBusy}
+                  title={pickedReplayIds.length < picked.size ? `리플레이가 있는 ${pickedReplayIds.length}건만 다시 분석해요` : undefined}
+                  onClick={() => { setPickerOpen(false); setConfirmRedo(true); }}
+                >
+                  재분석
+                </button>
+                <button
+                  type="button" className="scr-rect-btn is-secondary"
+                  disabled={picked.size === 0 || dataBusy}
+                  onClick={() => { setPickerOpen(false); setConfirmPurge(pickedIds); }}
+                >
+                  참값 삭제
+                </button>
+                <button
+                  type="button" className="scr-rect-btn is-secondary"
+                  disabled={picked.size === 0 || dataBusy}
+                  onClick={() => { setPickerOpen(false); void deleteGames(pickedIds); }}
+                >
+                  경기 삭제
+                </button>
+              </div>
             </div>
           </div>
         </div>,
@@ -641,10 +635,10 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
 
       {confirmPurge !== null && (
         <ConfirmDialog
-          title={`${confirmPurge.count}판의 참값을 지울까요?`}
-          message={`${confirmPurge.until}까지(그날 포함) 경기의 재생 자료만 지웁니다(리그 경기에 연결된 판은 남겨요). 리플레이 파일과 통계는 그대로예요. 다시 보려면 그 날짜부터 재분석하면 다시 구워집니다.`}
+          title={`고른 경기 ${confirmPurge.length}건의 참값을 지울까요?`}
+          message="고른 경기의 재생 자료만 지웁니다(리그 경기·외부 공개에 연결된 판은 남겨요). 리플레이 파일과 통계·전술 낱말은 그대로예요. 다시 보려면 그 경기를 재분석하면 다시 구워집니다."
           confirmLabel="지우기"
-          onConfirm={() => { void purgeTruth(confirmPurge.until); }}
+          onConfirm={() => { void purgeTruth(confirmPurge); }}
           onCancel={() => setConfirmPurge(null)}
         />
       )}
@@ -701,10 +695,10 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
 
       {confirmRedo && (
         <ConfirmDialog
-          title={`고른 경기 ${picked.size}건을 다시 분석할까요?`}
+          title={`고른 경기 ${pickedReplayIds.length}건을 다시 분석할까요?`}
           message="리플레이가 붙은 경기를 다시 읽어 분석 결과를 새로 씁니다. 직접 입력한 값(날짜·승패·회원 연결 등)은 그대로예요. 건수가 많으면 몇 분 걸립니다."
           confirmLabel="다시 분석"
-          onConfirm={() => { setConfirmRedo(false); void reanalyzeGames([...picked]); }}
+          onConfirm={() => { setConfirmRedo(false); void reanalyzeGames(pickedReplayIds); }}
           onCancel={() => setConfirmRedo(false)}
         />
       )}

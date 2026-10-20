@@ -521,17 +521,13 @@ export const api = {
     await request<void>(`/api/game-results/${id}/permanent`, { method: "DELETE" });
   },
 
-  async deleteAllGameResults(): Promise<{ deleted: number }> {
-    return request<{ deleted: number }>("/api/game-results/all", { method: "DELETE" });
+  /** 제어판 데이터 관리 — 고른 판들의 참값만 지운다(리그·외부 공개 판은 서버가 남긴다 · 2026-10-20). */
+  async purgeTruthOf(ids: number[]): Promise<{ deleted: number }> {
+    return request<{ deleted: number }>("/api/game-results/admin/purge-truth", { method: "POST", body: JSON.stringify({ ids }) });
   },
-
-  async countExpiredTruth(until?: string): Promise<{ count: number }> {
-    const q = until ? `?until=${encodeURIComponent(until)}` : "";
-    return request<{ count: number }>(`/api/game-results/truth-tracks/expired${q}`);
-  },
-  async purgeExpiredTruth(until?: string): Promise<{ deleted: number }> {
-    const q = until ? `?until=${encodeURIComponent(until)}` : "";
-    return request<{ deleted: number }>(`/api/game-results/truth-tracks/expired${q}`, { method: "DELETE" });
+  /** 제어판 데이터 관리 — 고른 판들을 리플레이째 지운다(되돌릴 수 없다 · 리그 판은 서버가 남긴다). */
+  async deleteGamesOf(ids: number[]): Promise<{ deleted: number }> {
+    return request<{ deleted: number }>("/api/game-results/admin/delete", { method: "POST", body: JSON.stringify({ ids }) });
   },
 
   async recomputeRankingShifts(): Promise<{ changed: boolean }> {
