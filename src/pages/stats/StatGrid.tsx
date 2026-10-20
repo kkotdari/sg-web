@@ -235,7 +235,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
     <div className="scr-sg" role="table" aria-label="통계">
       <div className="scr-sg-row scr-sg-head" role="row">
         {["유저", "경기", "승률", "APM", "데미지"].map((h, i) => <span key={h} className={cx("scr-sg-c", i === 0 && "scr-sg-who")}>{h}</span>)}
-        {RACES.map((r) => <span key={r} className="scr-sg-c"><i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />{r}</span>)}
+        {/* 종족 칸 머리는 색 네모 없이(2026-10-20, 요청: "PC 도 색 네모 제거" · 폰과 같게). */}
+        {RACES.map((r) => <span key={r} className="scr-sg-c">{r}</span>)}
         <span className="scr-sg-c" />
       </div>
       {clanRow && <PcRow row={clanRow} clan games={clanGames} openAll={openAll} />}
