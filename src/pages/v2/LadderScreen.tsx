@@ -10,6 +10,7 @@ import RivalryOverlay from "../rivalry/RivalryOverlay";
 import { rankOf } from "./rankOrder";
 import LadderDetailModal from "./LadderDetailModal";
 import QueenHistoryModal from "./QueenHistoryModal";
+import RatingBoardModal from "./RatingBoardModal";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { monthInputToRange, shiftMonthValue, currentMonthValue } from "../../utils/date";
@@ -41,6 +42,7 @@ export default function LadderScreen() {
   const [period, setPeriod] = useUrlState("period", currentMonthValue());
   const [rivalryOpen, setRivalryOpen] = useState(false);
   const [queensOpen, setQueensOpen] = useState(false);
+  const [ratingOpen, setRatingOpen] = useState(false);
   const [detailMember, setDetailMember] = useState<Member | null>(null);
 
   const [firstMonth, setFirstMonth] = useState<string | null>(null);
@@ -179,6 +181,14 @@ export default function LadderScreen() {
           >
             역대 퀸
           </button>
+          {/* 레이팅 — 처음부터 쌓인 실제 레이팅 순위(RatingBoardModal ★ · 2026-10-20). */}
+          <button
+            type="button"
+            className="scr-compact-rect-btn"
+            onClick={() => setRatingOpen(true)}
+          >
+            레이팅
+          </button>
           <button
             type="button"
             className="scr-compact-rect-btn"
@@ -284,6 +294,9 @@ export default function LadderScreen() {
         )}
       </div>
 
+      {ratingOpen && (
+        <RatingBoardModal poolIds={poolIds} members={members} onClose={() => setRatingOpen(false)} />
+      )}
       {queensOpen && (
         <QueenHistoryModal poolIds={poolIds} members={members} firstMonth={firstMonth} onClose={() => setQueensOpen(false)} />
       )}
