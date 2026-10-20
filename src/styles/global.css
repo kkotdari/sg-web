@@ -3325,6 +3325,9 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 }
 .scr-redo-pick-empty { color: var(--muted); font-size: var(--fs-caption); text-align: center; padding: 16px 0; }
 .scr-redo-pick-err { color: var(--danger, #d9534f); font-size: var(--fs-sm); }
+/* 재분석 실패 창(2026-10-20) — 위 안내 한 줄 · 줄마다 위에 게임번호와 실패 까닭. */
+.scr-redo-fail-note { color: var(--muted); font-size: var(--fs-caption); padding: 2px 0 8px; }
+.scr-redo-fail-why { display: block; min-width: 0; color: var(--danger, #d9534f); font-size: var(--fs-9); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scr-modal-foot, .scr-redo-pick-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 10px 14px; border-top: 1px solid var(--line);

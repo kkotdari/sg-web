@@ -128,39 +128,59 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     }
   };
 
+  /** 재분석이 실패한 판(게임번호 · 까닭) — 끝나면 창으로 보여 주고 그것만 다시 돌린다(2026-10-20, 요청: "실패한 경우 실패한 목록을 마지막에 보여줘야 그거만 다시 분석"). */
+  type RedoFail = { id: number; matchNo: string; why: string };
+  const [redoFails, setRedoFails] = useState<RedoFail[] | null>(null);
+  const [redoTotal, setRedoTotal] = useState(0);
+  useLockBodyScroll(redoFails !== null, () => setRedoFails(null));
+
   const reanalyzeGames = async (only?: number[]) => {
     setRedo({ done: 0, total: 0, failed: 0 });
+    setRedoFails(null);
     let done = 0;
-    let failed = 0;
+    const fails: RedoFail[] = [];
     const pool = createSummaryPool();
     try {
       let ids: number[] = only ?? [];
+      const noOf = new Map<number, string>((pickRows ?? []).map((r) => [r.id, r.matchNo]));
       if (!only) {
         let cursor: string | undefined;
         do {
           const page = await api.getGameResultsPage({ cursor, limit: 100 });
-          page.items.forEach((m) => { if (m.replay) ids.push(m.id); });
+          page.items.forEach((m) => { if (m.replay) { ids.push(m.id); noOf.set(m.id, m.matchNo); } });
           cursor = page.nextCursor ?? undefined;
         } while (cursor);
       }
-      ids = [...new Set(ids)];
+      /* 게임번호 차례로(2026-10-20, 요청: "재분석 요청은 게임번호순으로") — 번호 없는 판은 뒤로. 읽기(파싱)는 여럿이 함께 돌지만 서버에 보내는 것은
+         앞 번호가 끝난(성공·실패) 뒤에야 보낸다 — 아래 turn. */
+      ids = [...new Set(ids)].sort((a, b) => {
+        const na = noOf.get(a) ?? ""; const nb = noOf.get(b) ?? "";
+        if (!na !== !nb) return na ? -1 : 1;
+        return na.localeCompare(nb, undefined, { numeric: true }) || a - b;
+      });
       setRedo({ done: 0, total: ids.length, failed: 0 });
       const tacticLater: number[] = [];
+      const at = new Map(ids.map((id, i) => [id, i] as const));
+      const release: (() => void)[] = [];
+      const turn: Promise<void>[] = ids.map((_, i) => new Promise<void>((r) => { release[i] = r; }));
 
       const one = async (id: number) => {
+        const i = at.get(id)!;
+        let ok = false;
         try {
           const blob = await api.downloadReplay(id);
+          let body: Parameters<typeof api.reanalyzeGameResult>[1];
           if (pool) {
             const r = await pool.run(id, `${id}.rep`, await blob.arrayBuffer());
-            if (!r.ok) throw new Error(r.error);
-            await api.reanalyzeGameResult(id, {
+            if (!r.ok) throw new Error(r.error || "리플레이를 읽지 못했어요");
+            body = {
               mapData: r.mapData,
               mapName: r.mapName, gameStartedAt: r.gameStartedAt,
               durationSeconds: r.durationSeconds, chats: r.chats, slots: r.slots,
-            });
+            };
           } else {
             const parsed = await parseReplayFile(new File([blob], `${id}.rep`));
-            await api.reanalyzeGameResult(id, {
+            body = {
               mapData: parsed.mapGrid ?? null,
               mapName: parsed.mapName || null,
               gameStartedAt: parsed.gameStartedAt ?? null,
@@ -172,26 +192,34 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount,
                 buildCount: p.buildCount,
               })),
-            });
+            };
           }
-        } catch {
-          failed += 1;
-          done += 1;
-          setRedo({ done, total: ids.length, failed });
-          return;
+          if (i > 0) await turn[i - 1];
+          await api.reanalyzeGameResult(id, body);
+          ok = true;
+        } catch (e) {
+          fails.push({ id, matchNo: noOf.get(id) ?? "", why: e instanceof Error && e.message ? e.message : "알 수 없는 오류" });
+        } finally {
+          /* 내 차례가 끝난 것은 앞 번호까지 끝난 뒤다 — 읽기에서 실패한 판이 뒤 번호를 앞서 보내게 두지 않는다. */
+          if (i > 0) await turn[i - 1];
+          release[i]();
         }
-        /* 전술 낱말(utils/gameTactics ★) — 지금 있는 참값 자취로 굽는다. 자취가 없거나(굽는 중 · 지운 판) 못 구우면 끝에 한 번 더 본다. */
-        try { if (await indexGameTactics(id) === "none") tacticLater.push(id); } catch { tacticLater.push(id); }
+        if (ok) {
+          /* 전술 낱말(utils/gameTactics ★) — 지금 있는 참값 자취로 굽는다. 자취가 없거나(굽는 중 · 지운 판) 못 구우면 끝에 한 번 더 본다. */
+          try { if (await indexGameTactics(id) === "none") tacticLater.push(id); } catch { tacticLater.push(id); }
+        }
         done += 1;
-        setRedo({ done, total: ids.length, failed });
+        setRedo({ done, total: ids.length, failed: fails.length });
       };
       await runLanes(ids, (pool?.size ?? 2) * 2, one);
       /* 끝에 한 번 더 — 그사이 서버가 자취를 구웠을 수 있다. 그래도 없으면 그 판의 옛 낱말을 그대로 둔다. */
       await runLanes([...tacticLater], 2, async (id) => { try { await indexGameTactics(id); } catch { /* 다음 재분석에 */ } });
 
       await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
-      if (failed > 0) {
-        showAlert(`경기 ${done - failed}건을 다시 분석했어요. ${failed}건은 리플레이를 읽지 못해 그대로 뒀어요. 참값 자취는 서버가 뒤에서 굽습니다 — 잠시 뒤 재생해 보세요.`);
+      if (fails.length > 0) {
+        fails.sort((a, b) => (at.get(a.id) ?? 0) - (at.get(b.id) ?? 0));
+        setRedoTotal(ids.length);
+        setRedoFails(fails);
       } else {
         showToast(`경기 ${done}건을 다시 분석했어요 — 참값 자취는 서버가 뒤에서 굽습니다.`, { kind: "ok" });
       }
@@ -619,6 +647,56 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
           onConfirm={() => { void purgeTruth(confirmPurge.until); }}
           onCancel={() => setConfirmPurge(null)}
         />
+      )}
+
+      {redoFails !== null && createPortal(
+        <div className="scr-modal-overlay">
+          <div className="scr-modal scr-modal-md scr-redo-pick" onClick={(e) => e.stopPropagation()}>
+            <div className="scr-modal-head">
+              <span>재분석 실패 {redoFails.length}건</span>
+              <button className="scr-icon-btn" onClick={() => setRedoFails(null)} aria-label="닫기"><X size={14} /></button>
+            </div>
+            <div className="scr-modal-body scr-redo-pick-body">
+              <div className="scr-redo-fail-note">
+                {redoFails.length >= redoTotal
+                  ? `고른 ${redoTotal}건을 모두 다시 분석하지 못했어요 — 그대로 두었어요.`
+                  : `${redoTotal - redoFails.length}건은 다시 분석했어요(참값 자취는 서버가 뒤에서 굽습니다). 아래 ${redoFails.length}건은 그대로 두었어요.`}
+              </div>
+              {/* 줄 = 고르기 창과 같은 폰 게임 목록 꼴 · 위에 실패 까닭(2026-10-20). */}
+              <div className="scr-redo-pick-list scr-activity-rows">
+                {redoFails.map((f) => {
+                  const g = (pickRows ?? []).find((r) => r.id === f.id)?.game;
+                  return (
+                    <ListRow
+                      key={f.id}
+                      className="scr-activity-row-game scr-gm"
+                      onClick={() => {}}
+                      above={<span className="scr-redo-fail-why">{f.matchNo || `#${f.id}`} · {f.why}</span>}
+                      status={g ? <GameRowStatus game={g} playable={gamePlayable(g)} /> : null}
+                      desc={g ? <GameRowNames game={g} memberOf={memberOf} mobile playable={gamePlayable(g)} /> : <span>{f.matchNo || `#${f.id}`}</span>}
+                      side={g ? formatAgo(g.gameStartedAt ?? g.date) : ""}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+            <div className="scr-modal-foot scr-redo-pick-foot">
+              <button type="button" className="scr-rect-btn is-secondary" onClick={() => setRedoFails(null)}>닫기</button>
+              <button
+                type="button" className="scr-rect-btn"
+                onClick={() => {
+                  const again = redoFails.map((f) => f.id);
+                  setPicked(new Set(again));
+                  setRedoFails(null);
+                  void reanalyzeGames(again);
+                }}
+              >
+                실패한 {redoFails.length}건 다시 분석
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
       )}
 
       {confirmRedo && (
