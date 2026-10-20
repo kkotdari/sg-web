@@ -1223,13 +1223,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 
 /* 정렬 순서 — 검색창 바로 밑의 **작은** 밑줄 탭(2026-10, 요청: "크기 좀 작게"). 내전·공방 탭과 같은 모양을 한 치 줄여 쓴다. */
-/* "정렬" 글자는 탭 **글줄에 맞춘다**(2026-10, 지적: "정렬 글자가 탭보다 아래로 내려가 보여") — 탭 단추는 밑줄 자리로 아래가 6 더
-   두꺼워, 줄 전체를 가운데로 맞추면 글자가 탭보다 내려앉는다. 아래로 붙이고 같은 만큼 띄운다. */
+/* 앞의 "정렬" 글은 걷었다(2026-10-20, 요청) — 탭 이름이 "승률순 · 딜순 · APM순 · 참여순"이라 뜻이 선다. */
 .scr-stats-sort { display: flex; align-items: flex-end; gap: 8px; margin: -2px 0 2px; flex-wrap: wrap; }
-.scr-stats-sort-label {
-  font-size: var(--fs-11); font-weight: 700; color: var(--text-dim); letter-spacing: 0.02em;
-  padding-bottom: 6px;
-}
 .scr-stats-sort-tabs > .scr-line-tab-btn { font-size: var(--fs-11); padding: 2px 9px 6px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn::after { left: 5px; right: 5px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child { padding-left: 2px; }

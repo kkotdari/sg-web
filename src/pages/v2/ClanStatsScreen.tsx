@@ -43,12 +43,13 @@ const MAP_DEFAULT: MapTab = "fastest";
 const mapTabOf = (v: string): MapTab => (MAP_TABS.some((t) => t.value === v) ? v as MapTab : MAP_DEFAULT);
 const PERIOD_ALL = "all";
 
-/** 정렬 순서 — 검색창 밑의 작은 밑줄 탭(2026-10, 요청). 기본은 참여순(판 수 많은 사람부터). */
+/** 정렬 순서 — 검색창 밑의 작은 밑줄 탭(2026-10, 요청). 기본은 승률순 · 차례 승률·딜·APM·참여 · 앞 "정렬" 글은 걷었다
+ *  (2026-10-20, 요청: "정렬 문구 제거 · 승률순 딜순 APM순 참여순 · 기본 승률순"). */
 const SORT_OPTS = [
-  { value: "plays", label: "참여" },
-  { value: "rate", label: "승률" },
-  { value: "dmg", label: "딜량" },
-  { value: "apm", label: "APM" },
+  { value: "rate", label: "승률순" },
+  { value: "dmg", label: "딜순" },
+  { value: "apm", label: "APM순" },
+  { value: "plays", label: "참여순" },
 ] as const;
 type SortKey = (typeof SORT_OPTS)[number]["value"];
 
@@ -79,7 +80,7 @@ export default function ClanStatsScreen() {
   const [teamBuilder, setTeamBuilder] = useState(false);
   /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
   const [expandAll, setExpandAll] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("plays");
+  const [sortKey, setSortKey] = useState<SortKey>("rate");
   const matchedMembers = useMemo(() => {
     const terms = splitChunks(searchApplied)
       .flatMap((c) => segmentChunk(c, lexicon).map((p) => normalizeSearchText(p.text).trim()))
@@ -325,7 +326,6 @@ export default function ClanStatsScreen() {
       />
 
       <div className="scr-stats-sort">
-        <span className="scr-stats-sort-label">정렬</span>
         <div className="scr-line-tabs scr-stats-sort-tabs" role="tablist" aria-label="정렬 순서">
           {SORT_OPTS.map((o) => (
             <button
