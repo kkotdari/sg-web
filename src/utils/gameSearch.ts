@@ -18,9 +18,12 @@ export interface GameSuggestion { value: string; tag: string; }
    서버(sg-api repository _team_size_cond)가 두 편의 인원(관전자 뺌)을 **차례 없이** 맞춘다 — 2:3 은 3:2 도 걸린다. 개인전(난투)은 안 걸린다.
    "2대3" · "2vs3" · "2v3" 도 같은 낱말로 읽는다. */
 export const TEAM_SIZE_OPTIONS = ["1:1", "2:2", "3:3", "4:4", "1:2", "2:3", "3:4", "1:3", "2:4", "1:4"];
+/** 인원이 아닌 판 종류(2026-10-20, 요청: "유형에 프리포올과 유즈맵도") — 낱말 그대로 서버로(repository any_terms 의 판 종류 조건). */
+export const GAME_KIND_OPTIONS = ["프리포올", "유즈맵"];
 const TEAM_SIZE_RE = /^([1-8])\s*(?::|대|vs|v)\s*([1-8])$/i;
-/** 낱말이 판 유형이면 "a:b"(작은 쪽 먼저), 아니면 null. */
+/** 낱말이 판 유형이면 "a:b"(작은 쪽 먼저) · "프리포올" · "유즈맵", 아니면 null. */
 export function teamSizeTerm(chunk: string): string | null {
+  if (GAME_KIND_OPTIONS.includes(chunk.trim())) return chunk.trim();
   const m = TEAM_SIZE_RE.exec(chunk.trim());
   if (!m) return null;
   const a = Number(m[1]); const b = Number(m[2]);
@@ -37,7 +40,7 @@ export function gameSuggestions(mapNames: Iterable<string>): GameSuggestion[] {
     out.push({ value, tag });
   };
   for (const race of ["테란", "프로토스", "저그"]) add(race, "종족");
-  for (const size of TEAM_SIZE_OPTIONS) add(size, "유형");
+  for (const size of [...TEAM_SIZE_OPTIONS, ...GAME_KIND_OPTIONS]) add(size, "유형");
   for (const [en, ko] of Object.entries(UNIT_KO)) { add(ko, "유닛"); add(en, "유닛"); }
   for (const [en, ko] of Object.entries(BUILDING_KO)) { add(ko, "건물"); add(en, "건물"); }
   for (const [en, ko] of Object.entries(TECH_KO)) { add(ko, "스킬"); add(en, "스킬"); }

@@ -4,7 +4,7 @@ import Avatar from "../../components/common/Avatar";
 import { cx } from "../../utils/format";
 import { normalizeSearchText } from "../../utils/memberSearch";
 import {
-  EMPTY_GAME_SEARCH, TEAM_SIZE_OPTIONS, gameSearchEmpty,
+  EMPTY_GAME_SEARCH, GAME_KIND_OPTIONS, TEAM_SIZE_OPTIONS, gameSearchEmpty,
   type GameSearchForm as Form, type GameSearchLink, type GameSuggestion,
 } from "../../utils/gameSearch";
 import type { Member } from "../../types";
@@ -207,9 +207,9 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
               })}
             </div>
           </Field>
-          <Field label="유형" hint="팀 인원">
+          <Field label="유형" hint="팀 인원 · 판 종류">
             <div className="scr-gs-toggles">
-              {TEAM_SIZE_OPTIONS.map((t) => (
+              {[...TEAM_SIZE_OPTIONS, ...GAME_KIND_OPTIONS].map((t) => (
                 <button key={t} type="button" aria-pressed={draft.size === t} className={cx("scr-gs-tog", draft.size === t && "is-on")}
                   onClick={() => set("size", draft.size === t ? "" : t)}>{t}</button>
               ))}
