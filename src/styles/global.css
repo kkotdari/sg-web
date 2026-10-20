@@ -6868,7 +6868,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 }
 .scr-ladder-row {
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr) 88px 68px 72px;
+  grid-template-columns: 74px minmax(0, 1fr) 88px 150px 72px;   /* 경기수 68 → 전적 150(2026-10-20) */
   align-items: center; gap: 0 8px;
   padding: 12px 16px;
   border-top: 1px solid var(--line-soft);
@@ -6928,7 +6928,7 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 
 @media (max-width: 960px) {
   .scr-ladder-row {
-    grid-template-columns: 58px minmax(0, 1fr) 66px 48px 56px;
+    grid-template-columns: 58px minmax(0, 1fr) 66px 84px 56px;
     padding: 11px 4px; gap: 0 5px;
   }
   .scr-ladder-name-head { padding-left: 0; }
@@ -8062,3 +8062,13 @@ input.scr-sb-list-title { font-weight: 700; }
 
 /* 래더 제목 줄 — 역대 퀸은 오른끝(2026-10-20). */
 .scr-ladder-queens-btn { margin-left: auto; }
+
+/* 래더 전적 칸 "N전 N승 N무 N패" — PC 한 줄 · 폰은 두 줄(N전 / N승 N무 N패). */
+.scr-ladder-record { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.scr-ladder-record > b { font-size: var(--fs-body); font-weight: 700; color: var(--text); line-height: 1.15; }
+.scr-ladder-record > span { font-size: var(--fs-11); color: var(--dim); }
+@media (max-width: 960px) {
+  .scr-ladder-record { flex-direction: column; align-items: inherit; gap: 1px; }
+  .scr-ladder-record > span { font-size: var(--fs-10); }
+  .scr-ladder-record > b { font-size: var(--fs-micro); }
+}

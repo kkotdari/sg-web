@@ -5,7 +5,6 @@ import SearchFilterBar from "../../components/common/SearchFilterBar";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import Avatar from "../../components/common/Avatar";
-import RivalryOverlay from "../rivalry/RivalryOverlay";
 import { rankOf } from "./rankOrder";
 import LadderDetailModal from "./LadderDetailModal";
 import QueenHistoryModal from "./QueenHistoryModal";
@@ -28,6 +27,9 @@ interface LadderRow {
   points: number | null;
   prevPoints: number | null;
   plays: number;
+  wins: number;
+  draws: number;
+  losses: number;
   prevPlays: number | null;
   winRate: number | null;
   prevWinRate: number | null;
@@ -39,7 +41,6 @@ export default function LadderScreen() {
   const user = useAppStore((s) => s.user);
 
   const [period, setPeriod] = useUrlState("period", currentMonthValue());
-  const [rivalryOpen, setRivalryOpen] = useState(false);
   const [queensOpen, setQueensOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [detailMember, setDetailMember] = useState<Member | null>(null);
@@ -148,6 +149,9 @@ export default function LadderScreen() {
           points: e?.rankScore != null ? Math.round(e.rankScore) : null,
           prevPoints: p?.rankScore != null ? Math.round(p.rankScore) : null,
           plays: e?.overall.plays ?? 0,
+          wins: e?.overall.wins ?? 0,
+          draws: e?.overall.draws ?? 0,
+          losses: e?.overall.losses ?? 0,
           prevPlays: p ? p.overall.plays : null,
           winRate: e && e.overall.plays > 0 ? e.overall.winRate : null,
           prevWinRate: p && p.overall.plays > 0 ? p.overall.winRate : null,
@@ -176,13 +180,7 @@ export default function LadderScreen() {
           >
             실력순위
           </button>
-          <button
-            type="button"
-            className="scr-compact-rect-btn"
-            onClick={() => setRivalryOpen(true)}
-          >
-            상성 보기
-          </button>
+          {/* 상성 보기는 걷었다(2026-10-20, 요청: "상성보기 제거"). */}
           {/* 역대 퀸 — 제목 줄 **오른끝**(QueenHistoryModal ★ · 2026-10-20, 요청: "역대퀸 버튼 우측끝 정렬"). */}
           <button
             type="button"
@@ -233,7 +231,7 @@ export default function LadderScreen() {
                 <span className="scr-ladder-rank-head">랭크</span>
                 <span className="scr-ladder-name-head">유저</span>
                 <span>레이팅</span>
-                <span>경기수</span>
+                <span>전적</span>
                 <span>승률</span>
               </div>
               {rows.map((r) => (
@@ -264,7 +262,13 @@ export default function LadderScreen() {
                     <b>{r.points === null ? "-" : `${r.points > 0 ? "+" : ""}${r.points.toLocaleString()}`}</b>
                   </span>
                   <span className="scr-ladder-num">
-                    <b>{r.plays > 0 ? r.plays : "-"}</b>
+                    {/* 경기수 → 전적 "N전 N승 N무 N패"(2026-10-20 요청). */}
+                    {r.plays > 0 ? (
+                      <span className="scr-ladder-record">
+                        <b>{r.plays}전</b>
+                        <span>{r.wins}승 {r.draws}무 {r.losses}패</span>
+                      </span>
+                    ) : <b>-</b>}
                   </span>
                   <span className="scr-ladder-num">
                     <b>{r.winRate === null ? "-" : `${r.winRate.toFixed(1)}%`}</b>
@@ -281,9 +285,6 @@ export default function LadderScreen() {
       )}
       {queensOpen && (
         <QueenHistoryModal poolIds={poolIds} members={members} firstMonth={firstMonth} onClose={() => setQueensOpen(false)} />
-      )}
-      {rivalryOpen && (
-        <RivalryOverlay from={from} to={to} onClose={() => setRivalryOpen(false)} />
       )}
       {detailMember && (
         <LadderDetailModal
