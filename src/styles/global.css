@@ -7542,35 +7542,43 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
    그 요소 위에 올렸을 때·그 안에 커서가 있을 때(폰은 이쪽)·끄는 동안만 보인다.
    숨은 동안엔 폭도 0 이다(요청: "버튼 자리를 남겨 놔서 별로 · 보일 때 왼쪽으로 밀리면서 노출") — 뜰 때 폭이 자라며 내용·접기를 왼쪽으로 민다. */
 .scr-sb-handles { display: inline-flex; align-items: center; gap: 2px; }
+/* 뜨고 질 때 0.5초 쉬었다가 0.2초 동안 서서히(2026-10-20, 요청: "단추 줄 바로 뜨고 없어지지 말고 0.5초 정도 후에 페이드 인·아웃") —
+   지나가며 스치는 마우스·손가락에 깜빡이지 않는다. 다 뜨기 전(투명한 동안)엔 눌리지 않게 visibility 도 같은 때에 바꾼다
+   (뜰 때 0.5초에 보이고, 질 때 0.7초 = 쉼 + 페이드 뒤에 숨는다 · 뜬 쪽 값은 --sb-tools-vis 로 아래 규칙들이 바꾼다). */
 .scr-sb-tools, .scr-sb-handles {
-  opacity: 0; pointer-events: none; max-width: 0; overflow-x: clip; overflow-y: visible;
-  transition: opacity .15s, max-width .18s ease;
+  opacity: 0; visibility: hidden; pointer-events: none; max-width: 0; overflow-x: clip; overflow-y: visible;
+  transition: opacity .2s ease .5s, visibility 0s linear var(--sb-tools-vis, .7s), max-width .18s ease;
 }
 /* 포커스로 띄우는 것은 글 칸(입력·글상자)을 고칠 때와 단추 묶음 안에 포커스가 있을 때만 — 그 밖의 단추(접기·저장·목록 줄 X·사진 칸…)를
    누른 포커스로는 띄우지 않는다(요청: "접기펼치기 버튼도 버튼 보이기로 동작" · "목록의 x 버튼도 … 이런 거 없게"). */
 .scr-sb-block:has(:is(input, textarea):focus) .scr-sb-tools, .scr-sb-block:has(:is(input, textarea):focus) .scr-sb-handles,
 .scr-sb-tools:focus-within, .scr-sb-handles:focus-within,
-.scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; max-width: 140px; }
+.scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles {
+  opacity: 1; visibility: visible; --sb-tools-vis: .5s; pointer-events: auto; max-width: 140px;
+}
 /* 올림으로 띄우는 것은 마우스 화면만 — 폰은 누른 자리에 :hover 가 눌어붙는다(폰은 아래 만져 고른 요소 · .scr-sb-item-picked).
    늘 보이는 단추(접기·전체 저장) 위에 올려도 그대로 띄운다(2026-10-20, 지적: "버튼 줄이 나타나고 없어지는 게 이상 · 원래 있는 단추 눌러도
    보이는 게 맞아") — 옛 예외(그 위에선 숨김)는 단추 줄이 그 단추를 밀어내던 시절의 것이고, 이제 줄은 겹쳐 나타나 밀지 않는다. */
 @media (hover: hover) {
   .scr-sb-block:hover .scr-sb-tools,
   .scr-sb-block:hover .scr-sb-handles {
-    opacity: 1; pointer-events: auto; max-width: 140px;
+    opacity: 1; visibility: visible; --sb-tools-vis: .5s; pointer-events: auto; max-width: 140px;
   }
 }
-/* 폰은 올림(hover)이 없다 — 단추 줄을 글 옆에 끼우지 않고, 그 요소를 고치는 동안에만 아래에 한 줄로 낸다. */
+/* 폰은 올림(hover)이 없다 — 그 요소를 고치는 동안(위 포커스 규칙)·만져 고른 동안만 낸다. 옛 display 끄고 켜기는 걷었다(페이드가 안 돈다). */
 @media (hover: none) {
-  .scr-sb-block > .scr-sb-tools { flex-basis: 100%; max-width: none; height: auto; justify-content: flex-end; display: none; margin-top: 2px; }
-  .scr-sb-block:has(:is(input, textarea):focus) > .scr-sb-tools, .scr-sb-block > .scr-sb-tools:focus-within { display: flex; }
+  .scr-sb-block > .scr-sb-tools { max-width: none; }
   /* 사진·파일 요소(사진 한 장 · 사진 목록 · 파일)는 고칠 글 칸이 없어 위 조건이 한 번도 안 켜졌다(2026-10-20, 지적: "사진 요소 도구바가
      노출 안 됨") — 손가락으로 만져 고른 동안(.scr-sb-item-picked)만 단추 줄을 낸다(요청: "무조건 나오지 말고 선택하면 보이게 · 실수로 만질 수
      있음"). 그 안에 든 들여쓰기·끌기 묶음(.scr-sb-handles)도 편다 — 안 펴면 폭 0 으로 접혀 단추가 한 자리에 겹친다. */
   .scr-sb-item-picked > .scr-sb-block-edit > .scr-sb-tools,
-  .scr-sb-item-picked > .scr-sb-block-edit > .scr-sb-photos-head > .scr-sb-handles { display: flex; opacity: 1; pointer-events: auto; }
+  .scr-sb-item-picked > .scr-sb-block-edit > .scr-sb-photos-head > .scr-sb-handles {
+    opacity: 1; visibility: visible; --sb-tools-vis: .5s; pointer-events: auto;
+  }
   .scr-sb-item-picked > .scr-sb-block-edit > .scr-sb-tools .scr-sb-handles,
-  .scr-sb-item-picked > .scr-sb-block-edit > .scr-sb-photos-head > .scr-sb-handles .scr-sb-handles { opacity: 1; pointer-events: auto; max-width: none; }
+  .scr-sb-item-picked > .scr-sb-block-edit > .scr-sb-photos-head > .scr-sb-handles .scr-sb-handles {
+    opacity: 1; visibility: visible; --sb-tools-vis: .5s; pointer-events: auto; max-width: none;
+  }
 }
 /* ★ 요소의 단추 줄(들여쓰기·끌기·삭제)은 **같은 줄, 늘 있는 단추(접기 · 목록 줄 X)의 바로 왼쪽**에 겹쳐 나타난다(2026-10-20, 지적:
    "제목 요소에 버튼줄이 생기면 높이가 늘어남" · "목록에 버튼줄이 생기면 x 가 왼쪽으로 밀리면서 칸이 좁아짐" → 위에 떠 있는 판 →
@@ -7747,7 +7755,9 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 /* 앨범 제목 줄의 단추 묶음은 폭을 늘 잡아 두고 투명도만 바꾼다 — 폭이 펴지는 전환(max-width)은 매 장 배치를 다시 해, 그 배치가 앨범(슬라이드
    수십~수백 장) 전체로 번졌다(지적: "앨범 제목의 버튼들만 노출될 때 느려 · 작은 버튼 줄만 영향받아야 하는데 전체가 무겁게"). 이 줄은 오른쪽이 빈 칸이라
    밀어낼 것도 없다. */
-.scr-sb-photos-head > .scr-sb-handles { max-width: none; transition: opacity .15s; }
+.scr-sb-photos-head > .scr-sb-handles {
+  max-width: none; transition: opacity .2s ease .5s, visibility 0s linear var(--sb-tools-vis, .7s);
+}
 .scr-sb-slide-count {
   position: absolute; right: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px;
   font-size: 11.5px; font-weight: 700; color: #fff; background: rgba(0, 0, 0, 0.55);
