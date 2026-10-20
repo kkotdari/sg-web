@@ -981,9 +981,10 @@ type RowActs = {
   ask: Ask;
   nav: (b: { key: string }) => BlockNav;
   rowRef: (key: string, el: HTMLDivElement | null) => void;
+  touchPick: (key: string) => void;
 };
-const BlockRow = memo(function BlockRow({ b, kids, folded, canEdit, lifted, sel, focus, act }: {
-  b: DraftBlock; kids: number; folded: boolean; canEdit: boolean; lifted: boolean; sel: boolean;
+const BlockRow = memo(function BlockRow({ b, kids, folded, canEdit, lifted, sel, picked, focus, act }: {
+  b: DraftBlock; kids: number; folded: boolean; canEdit: boolean; lifted: boolean; sel: boolean; picked: boolean;
   focus: FocusReq | null; act: React.RefObject<RowActs>;
 }) {
   const key = b.key;
@@ -1018,7 +1019,8 @@ const BlockRow = memo(function BlockRow({ b, kids, folded, canEdit, lifted, sel,
   return (
     <div
       data-block={key} data-indent={b.indent ?? 0}
-      className={cx("scr-sb-item", lifted && "scr-sb-item-lifted", sel && "scr-sb-item-sel")}
+      className={cx("scr-sb-item", lifted && "scr-sb-item-lifted", sel && "scr-sb-item-sel", picked && "scr-sb-item-picked")}
+      onPointerDown={canEdit ? (e) => { if (e.pointerType === "touch") on().touchPick(key); } : undefined}
       style={b.indent ? ({ "--sb-indent": b.indent } as React.CSSProperties) : undefined}
       ref={rowRef}
     >
@@ -1072,6 +1074,17 @@ export default function ScheduleBlocks({
   } | null>(null);
   const flipFrom = useRef<Map<string, number> | null>(null);
   const [dragKey, setDragKey] = useState<string | null>(null);
+  /* 폰에서 손가락으로 만진 요소(2026-10-20, 요청: "사진 줄도 무조건 나오지 말고 선택하면 보이게 · 실수로 만질 수 있음") — 고칠 글 칸이 없는
+     사진·파일 요소는 만져서 고른 동안만 단추 줄을 낸다. 다른 곳을 만지면 풀린다. */
+  const [touchKey, setTouchKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (touchKey === null) return undefined;
+    const off = (e: PointerEvent): void => {
+      if (!(e.target as Element | null)?.closest?.(`[data-block="${CSS.escape(touchKey)}"]`)) setTouchKey(null);
+    };
+    document.addEventListener("pointerdown", off, true);
+    return () => document.removeEventListener("pointerdown", off, true);
+  }, [touchKey]);
   const [preview, setPreview] = useState<string[] | null>(null);
   const previewRef = useRef<string[] | null>(null);
   const [asking, setAsking] = useState<{ message: string; run: () => void } | null>(null);
@@ -1637,6 +1650,7 @@ export default function ScheduleBlocks({
       else setViewFold((v) => ({ ...v, [b.key]: !foldedOf(b) }));
     },
     rowRef: (key, el) => { if (el) rowRefs.current.set(key, el); else rowRefs.current.delete(key); },
+    touchPick: (key) => setTouchKey(key),
   };
   return (
     <div
@@ -1665,7 +1679,7 @@ export default function ScheduleBlocks({
       })().map(({ b, kids }) => (
         <BlockRow
           key={b.key} b={b} kids={kids} folded={foldedOf(b)} canEdit={canEdit}
-          lifted={dragKey === b.key} sel={selSet.has(b.key)}
+          lifted={dragKey === b.key} sel={selSet.has(b.key)} picked={touchKey === b.key}
           focus={focusReq && focusReq.key === b.key ? focusReq : null} act={rowAct}
         />
       ))}
