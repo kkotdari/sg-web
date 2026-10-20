@@ -197,12 +197,17 @@ export default function LeagueScreen() {
                   key={l.id} type="button" className="scr-league-row"
                   onClick={() => openLeague(l.id)}
                 >
-                  <span className="scr-league-row-name">{l.name}</span>
-                  <span className="scr-league-row-meta">
-                    {MODE_LABEL[l.mode]} · {l.teamCount}{l.mode === "individual" ? "명" : "팀"}
-                  </span>
-                  <span className={cx("scr-league-status-pill", `scr-league-status-${l.status}`)}>
-                    {STATUS_LABEL[l.status]}
+                  {/* 두 줄(2026-10-20, 요청: "리그 목록 제목 두 줄로 · 진행중 배지(작게) · 리그 유형을 윗줄에 그 차례로") — 윗줄 상태 배지 · 유형, 아랫줄 이름. */}
+                  <span className="scr-league-row-body">
+                    <span className="scr-league-row-top">
+                      <span className={cx("scr-league-status-pill scr-league-status-pill-sm", `scr-league-status-${l.status}`)}>
+                        {STATUS_LABEL[l.status]}
+                      </span>
+                      <span className="scr-league-row-meta">
+                        {MODE_LABEL[l.mode]} · {l.teamCount}{l.mode === "individual" ? "명" : "팀"}
+                      </span>
+                    </span>
+                    <span className="scr-league-row-name">{l.name}</span>
                   </span>
                   <ChevronRight size={14} className="scr-league-row-go" />
                 </button>

@@ -4831,6 +4831,10 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-league-row-name { font-size: var(--fs-subhead); font-weight: 700; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scr-league-row-meta { font-size: var(--fs-caption); color: var(--dim); flex: 1 1 auto; }
 .scr-league-row-go { color: var(--dim); flex: 0 0 auto; }
+.scr-league-row-body { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.scr-league-row-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.scr-league-row-top > .scr-league-row-meta { flex: 0 1 auto; }
+.scr-league-status-pill.scr-league-status-pill-sm { padding: 1px 6px; border-radius: 5px; font-size: var(--fs-10); line-height: 1.4; }
 
 .scr-league-summary-card {
   display: flex; flex-direction: column; gap: 10px;
