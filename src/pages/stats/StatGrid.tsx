@@ -127,9 +127,23 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
   );
 }
 
-/** 폰 칸 — 승률만(2026-10-20, 요청: "횟수 제거하고 승률만"). 클랜원 전체 줄은 전체 칸만 비운다(내전이라 늘 반반) — 종족 칸은 쓴다. */
-function MCell({ s, clan }: { s?: MemberStats; clan?: boolean }) {
-  return <span className="scr-sg-c">{clan || !s || s.plays === 0 ? <Dash /> : <Rate s={s} />}</span>;
+/** 폰 전적 칸 — 전체 · 테란 · 프로토스 · 저그를 한 칸에 세로로 "전체 24전 65.2%"(2026-10-20, 요청: "전체·종족별 승률 한 컬럼으로 · 세로로 전체 테란
+ *  프로토스 저그 순 · 폭 적게 · 전체 1전 75% 이렇게 · 컬럼명은 전적"). 그 종족 판이 없으면 "-". 클랜원 전체의 전체 줄은 판 수만(내전이라 승률은 늘 반반). */
+function MStack({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
+  const line = (label: string, st: MemberStats | undefined, plays?: string, noRate?: boolean) => (
+    <Fragment key={label}>
+      <i>{label}</i>
+      {st && st.plays > 0
+        ? <><span className="scr-sg-v"><b>{plays ?? st.plays.toLocaleString()}</b><i>{plays ? "판" : "전"}</i></span>{noRate ? <Dash /> : <Num v={st.winRate} unit="%" />}</>
+        : <><Dash /><span /></>}
+    </Fragment>
+  );
+  return (
+    <span className="scr-sg-c scr-sg-stack">
+      {line("전체", row.stats, clan ? (games ?? 0).toLocaleString() : undefined, clan)}
+      {RACES.map((r) => line(r, row.byRace?.[r]))}
+    </span>
+  );
 }
 
 function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: boolean; games?: number; openAll: boolean; scale: CurveScale }) {
@@ -154,10 +168,7 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
           {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <WhoPlain member={row.member} />}
         </span>
         <span className="scr-sg-who-sub">
-          {/* 판수는 APM 줄 맨 앞에(2026-10-20, 요청: "전체 플레이 전적은 메인 칸에" → "폰도 APM 줄에 같이 넣기 · 몇 회"). 클랜원 전체는 판. */}
-          <span className="scr-sg-v scr-sg-cnt">
-            {clan ? <><b>{(games ?? 0).toLocaleString()}</b><i>판</i></> : <><b>{s.plays.toLocaleString()}</b><i>전</i></>}
-          </span>
+          {/* 판수는 오른쪽 전적 칸의 "전체 N전" 으로 옮겼다(2026-10-20 · 전적 칸 세로 쌓기). */}
           {/* "APM 231" — 라벨이 앞(2026-10-20, 요청: "N APM → APM N 으로 순서 변경"). 딜 · 피해도 라벨이 앞이다. */}
           {/* APM · 딜 · 피해는 줄마다 세로로 맞춘다(2026-10-20, 요청: "모바일 apm 딜 피해 로우 간 세로 줄 맞추기") — 값 칸 폭을 고정하고(CSS),
               APM 이 없는 사람도 "APM -" 로 자리를 지킨다(빠지면 딜·피해가 왼쪽으로 붙었다). */}
@@ -165,8 +176,7 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
           {!clan && <Dmg s={s} compact />}
         </span>
       </span>
-      <MCell s={s} clan={clan} />
-      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} />)}
+      <MStack row={row} clan={clan} games={games} />
     </div>
     {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} /></div>}
     </>
@@ -189,8 +199,7 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
       <div className="scr-sg is-m" role="table" aria-label="통계">
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who">유저</span>
-          {/* 칸 머리 "전체 승률 · 테란 승률 …" — 늘 두 줄(2026-10-20, 요청: "헤더도 전체 승률 테란 승률 이렇게 · 칸 좁으면 두 줄"). 색 네모 없음. */}
-          {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-race-head"><span>{r}</span><span>승률</span></span>)}
+          <span className="scr-sg-c scr-sg-stack-head">전적</span>
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} openAll={openAll} scale={scale} />}
         {rows.map((r) => <MobileRow key={r.member.id} row={r} openAll={openAll} scale={scale} />)}
