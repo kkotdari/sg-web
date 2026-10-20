@@ -166,8 +166,9 @@ export default memo(function ActivityGroupPage({
       if (dead) return;
       show();
       if (y9 === null) return;
+      // 더 받을 게 없거나(커서 없음) 받다 실패하면 그만 — 받은 만큼 둔 채 y 로(짧으면 브라우저가 끝으로 맞춘다).
       while (document.documentElement.scrollHeight < y9 + window.innerHeight && page.nextCursor && !dead) {
-        page = await api.getGameResultsPage({ ...q9, cursor: page.nextCursor });
+        try { page = await api.getGameResultsPage({ ...q9, cursor: page.nextCursor }); } catch { break; }
         items.push(...page.items.map((m) => gameResultItem(m)));
         if (!dead) show();
       }
