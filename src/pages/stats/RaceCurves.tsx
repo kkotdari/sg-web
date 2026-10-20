@@ -142,7 +142,7 @@ export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<
   const av = linesOf(byRace, "av");
   const sc = scale ?? curveScale([byRace]);
   if (wk.length === 0 && av.length === 0) {
-    return <div className="scr-rc-empty">곡선 기록이 아직 없어요 — 참값을 구운(재분석한) 경기부터 쌓여요.</div>;
+    return <div className="scr-rc-empty">표시할 데이터가 아직 없어요</div>;
   }
   const shown = RACES.filter((r) => wk.some((l) => l.race === r) || av.some((l) => l.race === r));
   return (
