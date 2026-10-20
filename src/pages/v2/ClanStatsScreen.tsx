@@ -30,6 +30,17 @@ const SIZE_TABS = [
 ] as const;
 type SizeTab = (typeof SIZE_TABS)[number]["value"];
 const sizeTabOf = (v: string): SizeTab => (SIZE_TABS.some((t) => t.value === v) ? v as SizeTab : "team");
+/* 맵 탭(2026-10-20, 요청: "팀전 필터 밑에 맵 필터 — 전체 빨무 헌터 투혼 그 외") — 서버 mapGroup: 맵 정규 이름·리플레이 맵 이름에 그 낱말이 든 판
+   (sg-api repository MAP_GROUP_LIKES). 그 외 = 셋 다 아닌 판. */
+const MAP_TABS = [
+  { value: "all", label: "전체" },
+  { value: "fastest", label: "빨무" },
+  { value: "hunter", label: "헌터" },
+  { value: "spirit", label: "투혼" },
+  { value: "other", label: "그 외" },
+] as const;
+type MapTab = (typeof MAP_TABS)[number]["value"];
+const mapTabOf = (v: string): MapTab => (MAP_TABS.some((t) => t.value === v) ? v as MapTab : "all");
 const PERIOD_ALL = "all";
 
 /** 정렬 순서 — 검색창 밑의 작은 밑줄 탭(2026-10, 요청). 기본은 참여순(판 수 많은 사람부터). */
@@ -81,11 +92,14 @@ export default function ClanStatsScreen() {
   const [period, setPeriod] = useUrlState("period", currentMonthValue());
   const [sizeRaw, setSize] = useUrlState("size", "team");
   const size = sizeTabOf(sizeRaw);
+  const [mapRaw, setMap] = useUrlState("map", "all");
+  const mapTab = mapTabOf(mapRaw);
   useEffect(() => () => {
     const q = new URLSearchParams(window.location.search);
-    if (!q.has("period") && !q.has("size")) return;
+    if (!q.has("period") && !q.has("size") && !q.has("map")) return;
     q.delete("period");
     q.delete("size");
+    q.delete("map");
     const qs = q.toString();
     window.history.replaceState(
       window.history.state, "",
@@ -97,8 +111,9 @@ export default function ClanStatsScreen() {
       memberIds: matchedMembers.map((m) => m.id).sort().join(","),
       period,
       size,
+      map: mapTab,
     }),
-    [matchedMembers, period, size],
+    [matchedMembers, period, size, mapTab],
   );
   const queryKeySignature = useMemo(() => JSON.stringify(queryKey), [queryKey]);
   const debouncedSignature = useDebouncedValue(queryKeySignature, 300);
@@ -140,6 +155,7 @@ export default function ClanStatsScreen() {
       dateFrom: qRange.from, dateTo: qRange.to, race: "all",
       matchType: debouncedQuery.size === "1" ? SOLO_TYPE : CLAN_TYPE,
       teamSize: debouncedQuery.size === "team" ? undefined : Number(debouncedQuery.size),
+      mapGroup: debouncedQuery.map === "all" ? undefined : debouncedQuery.map,
     }).then((res) => {
       if (cancelled) return;
       setView({
@@ -254,6 +270,18 @@ export default function ClanStatsScreen() {
             aria-selected={t.value === size}
             className={cx("scr-line-tab-btn", t.value === size && "is-on")}
             onClick={() => setSize(t.value)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="scr-line-tabs scr-stats-size-tabs scr-stats-map-tabs" role="tablist" aria-label="맵">
+        {MAP_TABS.map((t) => (
+          <button
+            key={t.value} type="button" role="tab"
+            aria-selected={t.value === mapTab}
+            className={cx("scr-line-tab-btn", t.value === mapTab && "is-on")}
+            onClick={() => setMap(t.value)}
           >
             {t.label}
           </button>

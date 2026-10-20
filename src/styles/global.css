@@ -1204,6 +1204,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-size-tabs { margin: 0 0 10px; }
 .scr-stats-size-tabs > .scr-line-tab-btn:first-child { padding-left: 0; }
 .scr-stats-size-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
+/* 맵 탭은 규모 탭 바로 밑 — 한 치 작게 · 위 줄과 붙인다(2026-10-20). */
+.scr-stats-size-tabs:has(+ .scr-stats-map-tabs) { margin-bottom: 4px; }
+.scr-stats-map-tabs > .scr-line-tab-btn { font-size: var(--fs-11); }
 /* 4:4/3:3/2:2 는 제목 **아래 줄**의 밑줄 탭(내전·공방과 같은 .scr-line-tabs) — 제목 왼끝에 맞춰 첫 탭의 왼 여백을 지운다. */
 .scr-clan-comp-tabs { margin-top: -4px; margin-bottom: -2px; }
 .scr-clan-comp-tabs > .scr-line-tab-btn { font-size: var(--fs-11); }
