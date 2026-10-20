@@ -7665,17 +7665,17 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 }
 .scr-sb-photo img { display: block; width: 100%; max-height: 420px; object-fit: contain; }
 /* ★ 큰 사진 칸은 내릴 때 화면 위에 붙어 있다(2026-10-20, 요청: "사진첩 그리드가 길어지면 선택한 사진 보이는 곳이 밀려 올라감" →
-   "1번(위에 붙여 두기) · 일단 줄임 없이 · 프레임은 정사각형") — 사진 목록 블록 안에서만 붙고, 그리드가 그 밑으로 흘러간다.
+   "1번(위에 붙여 두기) · 일단 줄임 없이") — 사진 목록 블록 안에서만 붙고, 그리드가 그 밑으로 흘러간다.
    밑으로 지나가는 칸이 비치지 않게 바탕은 불투명(panel 을 panel-solid 위에 깐다). */
 .scr-sb-slides-wrap {
   position: sticky; top: var(--safe-top, 0px); z-index: 3;
-  /* 정사각 한 변은 블록 폭이되 화면 높이의 60% 까지(PC 는 폭 960 정사각이 화면보다 커 붙는 뜻이 없다) — 좁아지면 가운데. */
-  width: min(100%, 60vh); margin-inline: auto;
   border: 1px solid var(--line); overflow: hidden;
   background: linear-gradient(var(--panel), var(--panel)), var(--panel-solid);
 }
 .scr-sb-slides {
-  display: flex; aspect-ratio: 1 / 1;
+  /* 높이 = 화면 높이의 45%(2026-10-20, 요청: "정사각형 취소 · 화면 높이의 몇 %로 제한") — 붙어 있어도 그리드 칸이 절반 넘게 보인다.
+     svh(주소창이 나와 있을 때의 높이)라 폰에서 내리는 동안 높이가 출렁이지 않는다. */
+  display: flex; height: 45vh; height: 45svh;
   overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
