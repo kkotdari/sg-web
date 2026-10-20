@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent, type ReactNode } from "react";
-import { Play } from "lucide-react";
+import { Play, Save } from "lucide-react";
+import { downloadReplay } from "../../utils/replayDownload";
 import { cachedReplayMap, useReplayMapTick } from "scplay";
 import { api } from "../../api/client";
 import { showToast } from "../../components/common/Toast";
@@ -21,7 +22,8 @@ import type { GameResult, Member } from "../../types";
 
 /* 리그 칸은 **앞에서 둘째**이고 **리그 탭에서만** 선다(2026-10-20, 요청: "리그 컬럼은 앞에서 두번째로 이동하고 리그 탭에서만 나오게") —
    열 틀은 목록의 .has-league 가 고른다(global.css). */
-const COLS = (league: boolean) => ["시작일시", ...(league ? ["리그"] : []), "게임길이", "맵", "로스터", "유형", "재생", "조회수", "숨김"];
+/* 재생 칸 → **링크** 칸(2026-10-20, 요청: "게임목록에 pc에 다운로드 버튼(디스켓) 아이콘도 추가(링크 컬럼 추가)") — 재생(▶) · 리플레이 받기(💾). */
+const COLS = (league: boolean) => ["시작일시", ...(league ? ["리그"] : []), "게임길이", "맵", "로스터", "유형", "링크", "조회수", "숨김"];
 
 export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
   return (
@@ -152,8 +154,22 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           <GameRowNames game={game} memberOf={memberOf} mobile playable={false} />
         </span>
         <span className="scr-gtab-cell">{secret ? "-" : gameKindText(game)}</span>
-        <span className="scr-gtab-cell">
-          {playable ? <Play size={12} className="scr-activity-row-play" aria-label="재생 가능" fill="currentColor" /> : <span className="scr-gtab-dim">-</span>}
+        <span className="scr-gtab-cell scr-gtab-links">
+          {playable && (
+            <button type="button" className="scr-icon-btn scr-gtab-link" title="재생" aria-label="재생" onClick={(e) => { e.stopPropagation(); open(); }}>
+              <Play size={12} className="scr-activity-row-play" fill="currentColor" />
+            </button>
+          )}
+          {!secret && game.replay && (
+            <button
+              type="button" className="scr-icon-btn scr-gtab-link" title="리플레이 저장" aria-label="리플레이 저장"
+              onClick={(e) => { e.stopPropagation(); void downloadReplay(game); }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <Save size={13} />
+            </button>
+          )}
+          {!playable && (secret || !game.replay) && <span className="scr-gtab-dim">-</span>}
         </span>
         <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : game.viewCount ?? "-"}</span>
         {game.hidden ? <UnhideCell game={game} /> : <span className="scr-gtab-cell scr-gtab-dim">-</span>}

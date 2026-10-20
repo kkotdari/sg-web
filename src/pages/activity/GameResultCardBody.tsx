@@ -1,4 +1,5 @@
 import { useState, useRef, useLayoutEffect } from "react";
+import { downloadReplay } from "../../utils/replayDownload";
 import { createPortal } from "react-dom";
 import { MoreHorizontal } from "lucide-react";
 import GameResultStory from "./GameResultStory";
@@ -33,20 +34,6 @@ interface GameResultCardBodyProps {
   highlightMemberIds?: Set<string>;
   highlightTerms?: string[];
   active?: boolean;
-}
-
-async function downloadReplay(gameResult: GameResult) {
-  if (!gameResult.replay) return;
-  try {
-    const blob = await api.downloadReplay(gameResult.id);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = gameResult.replay.displayName;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch {
-  }
 }
 
 function GameResultOutcomeDialog({ gameResult, memberOf, onChanged, onClose }: {
