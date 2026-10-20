@@ -8042,11 +8042,13 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-rc-charts { grid-template-columns: minmax(0, 1fr); }
 
 /* 폰 — [유저(아래 한 줄: 판수 · APM · 딜 · 피해) | 전체 | 테 | 프 | 저] · 칸마다 승률 · ▾ 는 이름 옆(펼침은 PC 와 같은 곡선). */
-.scr-sg.is-m { grid-template-columns: minmax(0, 1fr) 48px 48px 48px 48px; font-size: var(--fs-11); }
+/* 승률 칸 넷은 넓히고 메인 칸을 줄였다(2026-10-20, 요청: "모바일 전체·테란·프로·저그 승률 칸 너무 좁음 · 메인 칸 줄이고") — 폭에 비례(13vw · 46~56px · 옛 43~48px).
+   메인 칸 아래 줄은 칸 폭에 맞춰 글자를 줄여 한 줄을 지킨다(.scr-sg-who 가 크기 기준 · cqw). */
+.scr-sg.is-m { grid-template-columns: minmax(0, 1fr) repeat(4, clamp(46px, 13vw, 56px)); font-size: var(--fs-11); }
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
 .scr-sg.is-m .scr-sg-bar { width: 34px; height: 3px; }
-.scr-sg.is-m .scr-sg-who { flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; padding-left: 10px; }
+.scr-sg.is-m .scr-sg-who { flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; padding-left: 8px; padding-right: 2px; container-type: inline-size; }
 .scr-sg-who-top { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 /* 아래 줄(APM · 데미지)은 아바타만큼 들이지 않고 칸 왼끝에서(2026-10-20, 요청: "굳이 아바타만큼 왼쪽 여백 남겨둘 필요없음"). */
 /* 한 줄(2026-10-20, 요청: "폰 메인셀 데이터 한줄에 표시") — 접어 내리지 않는다. */
@@ -8065,15 +8067,13 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* 한 줄에 담으려 값도 라벨과 같은 작은 글자 · 딜 묶음과 피해 묶음 사이만 조금 띄운다(360 폭에서 판수·APM·딜·피해가 한 줄). */
 .scr-sg.is-m .scr-sg-who-sub { font-size: var(--fs-10); gap: 5px; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 3px; }
-/* 좁은 폰(≤400) — 승률 칸을 한 치 좁히고 아래 줄 자간·틈을 줄이고 글자를 폭에 맞춰(2.6vw · 360 에서 9.4px) 360 폭(쪽 여백 16)에서도 한 줄에 든다. */
+/* 아래 줄 한 줄 — 글자는 메인 칸 폭에 비례(6.5cqw ≈ 내용 폭 15 글자분 · 10px 를 넘지 않고 8.5px 밑으로 안 간다). 자간·틈도 좁힌다. */
+.scr-sg.is-m .scr-sg-who-sub { gap: 4px; letter-spacing: -0.02em; font-size: max(8.5px, min(var(--fs-10), 6.5cqw)); }
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-v > i, .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > i { font-size: inherit; }
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-cnt { min-width: 2.8em; }
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 2px; }
 @media (max-width: 400px) {
-  .scr-sg.is-m { grid-template-columns: minmax(0, 1fr) 43px 43px 43px 43px; }
-  .scr-sg.is-m .scr-sg-c.scr-sg-who { padding-left: 8px; padding-right: 2px; }
   .scr-sg.is-m .scr-sg-race-head { font-size: var(--fs-10); letter-spacing: -0.04em; }
-  .scr-sg.is-m .scr-sg-who-sub { gap: 4px; letter-spacing: -0.02em; font-size: min(var(--fs-10), 2.6vw); }
-  .scr-sg.is-m .scr-sg-who-sub .scr-sg-v > i, .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > i { font-size: inherit; }
-  .scr-sg.is-m .scr-sg-who-sub .scr-sg-cnt { min-width: 28px; }
-  .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 2px; }
 }
 /* 폰 칸 머리 "테란 / 승률" 두 줄. */
 .scr-sg.is-m .scr-sg-race-head { flex-direction: column; gap: 1px; letter-spacing: -0.02em; white-space: nowrap; line-height: 1.2; }
