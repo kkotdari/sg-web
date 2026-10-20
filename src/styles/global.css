@@ -8021,6 +8021,11 @@ input.scr-sb-list-title { font-weight: 700; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-v > b, .scr-sg.is-m .scr-sg-dmg > b { font-weight: 600; }
 .scr-sg-small { opacity: 0.8; }
 .scr-sg-lab { gap: 3px; }
+/* 폰 APM · 딜 · 피해 세로 맞춤 — 라벨은 글자가 늘 같고, 값 칸은 숫자 폭(tabular)으로 고정한다(APM 3자리 · 배수 "1.4" 3자). */
+.scr-sg.is-m .scr-sg-who-sub { font-variant-numeric: tabular-nums; }
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-lab > b { display: inline-block; min-width: 3ch; }
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b { display: inline-block; min-width: 3ch; }
+.scr-sg.is-m .scr-sg-race-head { letter-spacing: -0.02em; white-space: nowrap; }
 
 /* 종족구성별 전적(CompGrid) — 위 표와 같은 칸 꼴 · [구성 | 경기 | 승률(+막대)] · 폭은 내용만큼(최대 560). */
 .scr-sg-comp-wrap { margin: 4px 0 14px; }

@@ -18,7 +18,6 @@ import type { BaseRace, Member, MemberStats } from "../../types";
    칸마다 회수 위 · 승률 아래 두 줄. 승률 막대(시안 C)는 걷었다(2026-10-20, 요청: "통계 그래프 제거"). */
 
 const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
-const RACE_SHORT: Record<BaseRace, string> = { 테란: "테", 프로토스: "프", 저그: "저" };
 
 export interface StatGridRow {
   member: Member;
@@ -192,7 +191,9 @@ function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; gam
         </span>
         <span className="scr-sg-who-sub">
           {/* "APM 231" — 라벨이 앞(2026-10-20, 요청: "N APM → APM N 으로 순서 변경"). 딜 · 피해도 라벨이 앞이다. */}
-          {s.avgApm !== null && <span className="scr-sg-v scr-sg-lab"><i>APM</i><b>{s.avgApm}</b></span>}
+          {/* APM · 딜 · 피해는 줄마다 세로로 맞춘다(2026-10-20, 요청: "모바일 apm 딜 피해 로우 간 세로 줄 맞추기") — 값 칸 폭을 고정하고(CSS),
+              APM 이 없는 사람도 "APM -" 로 자리를 지킨다(빠지면 딜·피해가 왼쪽으로 붙었다). */}
+          <span className="scr-sg-v scr-sg-lab"><i>APM</i><b>{s.avgApm ?? "-"}</b></span>
           {!clan && <Dmg s={s} compact />}
         </span>
       </span>
@@ -222,7 +223,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who">유저</span>
           <span className="scr-sg-c">전체</span>
-          {RACES.map((r) => <span key={r} className="scr-sg-c"><i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />{RACE_SHORT[r]}</span>)}
+          {/* 종족 칸 머리는 색 네모 없이 온 이름(2026-10-20, 요청: "모바일 테프저 컬럼 라벨 앞에 색 네모 제거하고 풀네임"). */}
+          {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-race-head">{r}</span>)}
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} />}
         {rows.map((r) => <MobileRow key={r.member.id} row={r} />)}
