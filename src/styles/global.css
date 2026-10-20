@@ -7551,11 +7551,12 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-sb-block:has(:is(input, textarea):focus) .scr-sb-tools, .scr-sb-block:has(:is(input, textarea):focus) .scr-sb-handles,
 .scr-sb-tools:focus-within, .scr-sb-handles:focus-within,
 .scr-sb-item-lifted .scr-sb-tools, .scr-sb-item-lifted .scr-sb-handles { opacity: 1; pointer-events: auto; max-width: 140px; }
-/* 올림으로 띄우는 것은 마우스 화면만 — 폰은 누른 자리에 :hover 가 눌어붙어, 접기·저장을 누르면 단추가 펴졌다.
-   늘 보이는 단추(접기·전체 저장) 위에 올렸을 때는 띄우지 않는다(요청: "PC 에서 이미 노출된 버튼에 마우스 가져갈 땐 버튼 노출로 작동 안 하게"). */
+/* 올림으로 띄우는 것은 마우스 화면만 — 폰은 누른 자리에 :hover 가 눌어붙는다(폰은 아래 만져 고른 요소 · .scr-sb-item-picked).
+   늘 보이는 단추(접기·전체 저장) 위에 올려도 그대로 띄운다(2026-10-20, 지적: "버튼 줄이 나타나고 없어지는 게 이상 · 원래 있는 단추 눌러도
+   보이는 게 맞아") — 옛 예외(그 위에선 숨김)는 단추 줄이 그 단추를 밀어내던 시절의 것이고, 이제 줄은 겹쳐 나타나 밀지 않는다. */
 @media (hover: hover) {
-  .scr-sb-block:hover:not(:has(.scr-sb-fold-corner:hover, .scr-sb-saveall:hover, .scr-sb-photos-head [aria-expanded]:hover)) .scr-sb-tools,
-  .scr-sb-block:hover:not(:has(.scr-sb-fold-corner:hover, .scr-sb-saveall:hover, .scr-sb-photos-head [aria-expanded]:hover)) .scr-sb-handles {
+  .scr-sb-block:hover .scr-sb-tools,
+  .scr-sb-block:hover .scr-sb-handles {
     opacity: 1; pointer-events: auto; max-width: 140px;
   }
 }
