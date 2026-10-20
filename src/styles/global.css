@@ -8070,7 +8070,9 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* 아바타·닉네임 줄과 아래 데이터 줄 사이를 넓게(2026-10-20, 요청: 5 → 10 → 14 · 데이터 글자 최대 13 → 14px). */
 .scr-sg.is-m .scr-sg-c.scr-sg-who { padding: 10px 6px 10px 10px; gap: 14px; }
 /* 전적 칸 — [종족 | N전 | 승률] 세 칸을 줄마다 맞춘다. 종족 이름은 흐리게 · 승률은 굵게. */
-.scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-stack-head { justify-content: flex-start; padding-left: 14px; }
+/* 표 머리는 PC·폰 모두 칸 가운데(2026-10-20, 요청: "통계 그리드 헤더 가운데 정렬") — 유저·전적 머리도. */
+.scr-sg .scr-sg-row.scr-sg-head > .scr-sg-c { justify-content: center; text-align: center; padding-left: 8px; padding-right: 8px; }
+.scr-sg.is-m .scr-sg-row.scr-sg-head > .scr-sg-c.scr-sg-who { align-items: center; } /* 폰 유저 칸은 세로 흐름(column)이라 가로는 align-items */
 .scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-stack {
   /* 넉넉하게(2026-10-20, 요청: "전적 컬럼 폭이 너무 좁고 답답") — 글자 13px · 칸 사이 14 · 줄 사이 4 · 옆 여백 14. */
   display: grid; grid-template-columns: auto auto auto; column-gap: 14px; row-gap: 4px; align-content: center; justify-content: start;
