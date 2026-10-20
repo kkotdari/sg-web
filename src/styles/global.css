@@ -7568,6 +7568,17 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   .scr-sb-block-edit.scr-sb-row:has(> .scr-sb-photo) > .scr-sb-tools .scr-sb-handles,
   .scr-sb-block-edit > .scr-sb-photos-head > .scr-sb-handles .scr-sb-handles { opacity: 1; pointer-events: auto; max-width: none; }
 }
+/* ★ 제목·목록의 단추 줄은 요소 오른쪽 위에 **떠 있는 판**(2026-10-20, 지적: "제목 요소에 버튼줄이 생기면 높이가 늘어남" ·
+   "목록에 버튼줄이 생기면 x 가 왼쪽으로 밀리면서 칸이 좁아짐") — 줄 안에 끼면 목록 폭을 줄여 줄 삭제 X 가 밀리고, 폰에선 제목 줄이 단추 키(24)로 높아졌다.
+   판은 요소 윗변 위로 떠(Slack 의 메시지 단추처럼) 내용 자리를 안 건드린다. 보이고 숨는 조건(올림 · 고치는 중)은 옛 그대로다. */
+.scr-sb-row > .scr-sb-tools.scr-sb-tools-float {
+  position: absolute; right: 0; top: 0; z-index: 4; transform: translateY(calc(-100% + 2px));
+  height: auto; max-width: none; overflow: visible; align-items: center;
+  padding: 2px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-solid); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.scr-sb-tools-float .scr-sb-handles { max-width: none; }
+.scr-sb-tools-float > *, .scr-sb-tools-float .scr-sb-handles > * { margin: 0; }
 .scr-sb-icon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; padding: 0;
