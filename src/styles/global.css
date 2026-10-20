@@ -3360,6 +3360,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 /* 폰 게임 줄 꼴 줄(2026-10-20) — 목록은 .scr-activity-rows 를 같이 달아 줄 색·선을 받는다(스크롤은 살린다) · 줄 몸은 ListRow 가 채운다. */
 .scr-trash-list.scr-activity-rows { gap: 0; padding: 0; overflow-y: auto; }
 .scr-trash-list.scr-activity-rows > .scr-trash-row { padding: 0 8px 0 4px; border-radius: 0; }
+.scr-trash-list.scr-activity-rows > .scr-trash-row > .scr-selcell { padding-left: 6px; }   /* 체크박스 왼쪽 10(줄 4 + 6) — 위 게임 줄 꼴 목록과 같게 */
 .scr-trash-list.scr-activity-rows > .scr-trash-row + .scr-trash-row { border-top: 0.5px solid var(--scr-row-line); }
 .scr-trash-main-gm > .scr-activity-row-wrap { min-width: 0; }
 .scr-trash-main-gm .scr-trash-meta { font-size: var(--fs-10); }
@@ -5764,6 +5765,7 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 /* 2026-10-20 — 이 꼴을 쓰는 목록(재분석 · 외부 공개 · 삭제 …)에선 체크박스를 줄 **세로 가운데**로(요청: "게임목록 사용시 체크박스 위치 가운데 정렬 세로"). */
 .scr-activity-row-wrap-sel:has(> .scr-activity-row-game.scr-gm) > .scr-selcell {
   align-items: center; padding-bottom: 0;
+  padding-left: 10px;   /* 2 → 10(같은 날 요청: "체크박스 왼쪽에 여백이 너무 없다") — 이 꼴 목록만 */
 }
 
 .scr-activity-row-fold { display: grid; }
