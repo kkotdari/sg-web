@@ -19,6 +19,8 @@ import type { GameResult, Member } from "../../types";
 
 export interface RowAct {
   open: (item: DisplayItem) => void;
+  /** 한 판 숨기기(확인 창을 띄운다) — PC 게임 표의 링크 칸. */
+  hide: (item: DisplayItem) => void;
   toggle: (key: string) => void;
   setMany: (keys: Iterable<string>, picked: boolean) => void;
 }
@@ -151,6 +153,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
         check={check} picked={picked} disabled={secret}
         onClick={() => act.current.open(item)}
         when={formatAgo(item.time)}
+        onHide={() => act.current.hide(item)}
         leagueCol={view.leagueCol}
         league={lg ? { name: lg.leagueName, round: `${lg.roundName} · ${lg.setNo}세트` } : null}
       />

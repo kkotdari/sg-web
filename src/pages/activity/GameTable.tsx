@@ -1,5 +1,10 @@
 import { useState, type KeyboardEvent, type ReactNode } from "react";
-import { Play, Save } from "lucide-react";
+import { Bookmark, EyeOff, Play, Save, Share2 } from "lucide-react";
+import { useAppStore } from "../../store/appStore";
+import { canManageGame } from "../../utils/gameAccess";
+import { shareToKakao } from "../../utils/kakaoShare";
+import { gameResultShareContent } from "./gameShare";
+import { SCRAP_FORMS } from "./activityItems";
 import { downloadReplay } from "../../utils/replayDownload";
 import { cachedReplayMap, useReplayMapTick } from "scplay";
 import { api } from "../../api/client";
@@ -22,8 +27,11 @@ import type { GameResult, Member } from "../../types";
 
 /* 리그 칸은 **앞에서 둘째**이고 **리그 탭에서만** 선다(2026-10-20, 요청: "리그 컬럼은 앞에서 두번째로 이동하고 리그 탭에서만 나오게") —
    열 틀은 목록의 .has-league 가 고른다(global.css). */
-/* 재생 칸 → **링크** 칸(2026-10-20, 요청: "게임목록에 pc에 다운로드 버튼(디스켓) 아이콘도 추가(링크 컬럼 추가)") — 재생(▶) · 리플레이 받기(💾). */
-const COLS = (league: boolean) => ["시작일시", ...(league ? ["리그"] : []), "게임길이", "맵", "로스터", "유형", "링크", "조회수", "숨김"];
+/* 재생 칸 → **링크** 칸(2026-10-20, 요청: "게임목록에 pc에 다운로드 버튼(디스켓) 아이콘도 추가(링크 컬럼 추가)") — 재생(▶) · 리플레이 받기(💾) ·
+   스크랩 · 공유 · 숨기기(같은 날 요청: "링크에 숨기기 버튼 추가 · 스크랩버튼 공유버튼도"). 스크랩은 선택 막대의 스크랩과 같다(처음 장면 · 묻지 않음) ·
+   공유는 게임 상세의 공유(카카오 · 안 되면 링크 복사) · 숨기기는 뛴 사람·운영자만(확인 창은 활동 화면이 띄운다 — onHide). */
+/* 숨김 칸은 걷었다(2026-10-20, 요청: "숨김 컬럼 제거하고 해제요청 버튼을 숨김 아래로") — 숨긴 판은 로스터 칸의 "비밀" 아래에 해제요청(폰 줄과 같은 꼴). */
+const COLS = (league: boolean) => ["시작일시", ...(league ? ["리그"] : []), "게임길이", "맵", "로스터", "유형", "링크", "조회수"];
 
 export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
   return (
@@ -98,16 +106,7 @@ export function UnhideRequestButton({ game, inRow }: { game: GameResult; inRow?:
   );
 }
 
-function UnhideCell({ game }: { game: GameResult }) {
-  return (
-    <span className="scr-gtab-cell scr-gtab-hide">
-      <span className="scr-gtab-hidden-text">숨김</span>
-      <UnhideRequestButton game={game} />
-    </span>
-  );
-}
-
-export function GameTableRow({ game, memberOf, check, picked, disabled, onClick, onLongPress, when, leagueCol, league }: {
+export function GameTableRow({ game, memberOf, check, picked, disabled, onClick, onLongPress, when, leagueCol, league, onHide }: {
   game: GameResult;
   memberOf: (id: string) => Member | undefined;
   check?: ReactNode;
@@ -121,12 +120,45 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   league?: { name: string; round: string } | null;
   /** 리그 칸을 세우나(리그 탭) — 머리 줄과 같은 값. */
   leagueCol: boolean;
+  /** 숨기기(확인 창은 부르는 쪽) — 없으면 숨기기 단추가 없다. */
+  onHide?: () => void;
 }) {
   useReplayMapTick();
   const hold = useLongPress(onLongPress);
   const secret = isSecretGame(game);
   const map = secret ? "" : cleanMapName(game.mapCanonName ?? cachedReplayMap(game.mapHash)?.canonName ?? game.mapName);
   const playable = !secret && gamePlayable(game);
+  const user = useAppStore((st) => st.user);
+  const canHide = !!onHide && !game.hidden && canManageGame(game, user);
+  const [scrapping, setScrapping] = useState(false);
+  const scrap = async () => {
+    if (scrapping) return;
+    setScrapping(true);
+    try {
+      const c9 = gameResultShareContent(game, memberOf);
+      const key9 = String(game.matchNo || game.id);
+      await api.createSceneScrap({ title: c9.title, subtitle: c9.description ?? "", link: `${window.location.origin}/games/${key9}`, gameNo: key9 });
+      showToast(SCRAP_FORMS.did, { kind: "ok" });
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : SCRAP_FORMS.couldNot, { kind: "warn" });
+    } finally {
+      setScrapping(false);
+    }
+  };
+  const share = async () => {
+    const out = await shareToKakao(gameResultShareContent(game, memberOf));
+    if (out === "copied") showToast("링크를 복사했어요.", { kind: "ok" });
+  };
+  /** 링크 칸 단추 — 줄 열기로 번지지 않게 막는다. */
+  const linkBtn = (key: string, title: string, run: () => void, icon: ReactNode, off = false) => (
+    <button
+      key={key} type="button" className="scr-icon-btn scr-gtab-link" title={title} aria-label={title} disabled={off}
+      onClick={(e) => { e.stopPropagation(); run(); }}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      {icon}
+    </button>
+  );
   const open = () => { if (!disabled) onClick(); };
   return (
     <div className={cx("scr-activity-row-wrap", !!check && "scr-activity-row-wrap-sel", picked && "is-picked")}>
@@ -152,27 +184,18 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         <span className="scr-gtab-cell scr-gtab-map" title={map || undefined}><span>{map || "-"}</span></span>
         <span className="scr-gtab-cell scr-gtab-roster">
           <GameRowNames game={game} memberOf={memberOf} mobile playable={false} />
+          {game.hidden && <UnhideRequestButton game={game} />}
         </span>
         <span className="scr-gtab-cell">{secret ? "-" : gameKindText(game)}</span>
         <span className="scr-gtab-cell scr-gtab-links">
-          {playable && (
-            <button type="button" className="scr-icon-btn scr-gtab-link" title="재생" aria-label="재생" onClick={(e) => { e.stopPropagation(); open(); }}>
-              <Play size={12} className="scr-activity-row-play" fill="currentColor" />
-            </button>
-          )}
-          {!secret && game.replay && (
-            <button
-              type="button" className="scr-icon-btn scr-gtab-link" title="리플레이 저장" aria-label="리플레이 저장"
-              onClick={(e) => { e.stopPropagation(); void downloadReplay(game); }}
-              onKeyDown={(e) => e.stopPropagation()}
-            >
-              <Save size={13} />
-            </button>
-          )}
-          {!playable && (secret || !game.replay) && <span className="scr-gtab-dim">-</span>}
+          {playable && linkBtn("play", "재생", open, <Play size={12} className="scr-activity-row-play" fill="currentColor" />)}
+          {!secret && game.replay && linkBtn("save", "리플레이 저장", () => { void downloadReplay(game); }, <Save size={13} />)}
+          {!secret && linkBtn("scrap", "스크랩", () => { void scrap(); }, <Bookmark size={13} />, scrapping)}
+          {!secret && linkBtn("share", "공유", () => { void share(); }, <Share2 size={13} />)}
+          {canHide && linkBtn("hide", "숨기기", () => onHide?.(), <EyeOff size={13} />)}
+          {secret && <span className="scr-gtab-dim">-</span>}
         </span>
         <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : game.viewCount ?? "-"}</span>
-        {game.hidden ? <UnhideCell game={game} /> : <span className="scr-gtab-cell scr-gtab-dim">-</span>}
       </div>
     </div>
   );

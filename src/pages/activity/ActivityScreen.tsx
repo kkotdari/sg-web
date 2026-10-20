@@ -203,8 +203,9 @@ function ActivityRouter() {
     return it.kind === "gameResult" && canManageGame(it.gameResult, user);
   }, [isAdmin, user]);
   const selectionNote = isAdmin ? "리그 경기는 여기서 지울 수 없어요." : "내가 뛴 게임만 고를 수 있어요.";
-  const rowAct = useRef<RowAct>({ open: openItem, toggle: sel.toggle, setMany: sel.setMany });
-  rowAct.current = { open: openItem, toggle: sel.toggle, setMany: sel.setMany };
+  const hideOne = useCallback((it: DisplayItem) => { setBulkErr(null); setBulkHide([it]); }, []);
+  const rowAct = useRef<RowAct>({ open: openItem, toggle: sel.toggle, setMany: sel.setMany, hide: hideOne });
+  rowAct.current = { open: openItem, toggle: sel.toggle, setMany: sel.setMany, hide: hideOne };
 
   /* ★ 게임 탭 기본값은 **리그**, 다만 최근 7일 안에 리그 판이 없으면 **내전**(2026-10-19, 요청: "게임 탭 기본값은 리그로하고 리그 경기 일주일 이내에 없으면 내전으로").
      주소에 탭이 없을 때만 이 셈을 타고, 사람이 고른 탭은 주소(tab=league|clan|pub)에 남아 그대로 선다. */
@@ -484,7 +485,7 @@ function ActivityRouter() {
 
       {bulkHide && (
         <ConfirmDialog
-          title={`선택한 게임 ${bulkHide.length}개를 숨길까요?`}
+          title={bulkHide.length === 1 && !sel.picked.size ? "이 게임을 숨길까요?" : `선택한 게임 ${bulkHide.length}개를 숨길까요?`}
           message=""
           confirmLabel={bulkProgress ? `숨기는 중... ${bulkProgress.done}/${bulkProgress.total}` : "숨김"}
           error={bulkErr}
