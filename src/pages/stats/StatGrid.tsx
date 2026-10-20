@@ -4,7 +4,7 @@ import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
-import { RACE_TONE, SKILL_LIST_EXCLUDE, UP_TABLE } from "./MemberStatRow";
+import { SKILL_LIST_EXCLUDE, UP_TABLE } from "./MemberStatRow";
 import { topEntries, type TruthMix } from "../../utils/statsMix";
 import { TECH_KO, UNIT_KO } from "../../utils/replayNames";
 import type { BaseRace, Member, MemberStats } from "../../types";
@@ -32,13 +32,12 @@ function Num({ v, unit }: { v: string | number | null | undefined; unit?: string
   return <span className="scr-sg-v"><b>{v}</b>{unit && <i>{unit}</i>}</span>;
 }
 
-/** 승률 — 옛 막대(시안 C)는 걷었다(2026-10-20, 요청: "통계 그래프 제거"). labeled 면 앞에 "승률"을 단다(종족·전체 칸 —
- *  회수와 나란히 서서 무슨 숫자인지 모호했다 · 같은 날 요청: "승률 앞에 승률이라고 적어 주기"). 머리가 '승률'인 PC 칸은 안 단다. */
-function Rate({ s, labeled }: { s?: MemberStats; labeled?: boolean }) {
+/** 승률 — 옛 막대(시안 C)는 걷었다(2026-10-20, 요청: "통계 그래프 제거"). 칸 머리가 '승률'이라 값만 쓴다. */
+function Rate({ s }: { s?: MemberStats }) {
   if (!s || s.plays === 0) return <Dash />;
   return (
     <span className="scr-sg-rate">
-      {labeled ? <span className="scr-sg-v scr-sg-lab"><i>승률</i><b>{s.winRate}</b><i>%</i></span> : <Num v={s.winRate} unit="%" />}
+      <Num v={s.winRate} unit="%" />
     </span>
   );
 }
@@ -81,14 +80,15 @@ function Who({ member }: { member: Member }) {
   );
 }
 
-/** 종족 칸 — "30회 66.7%". 클랜원 전체 줄은 회수만(내전이라 승률은 늘 반반). */
-function RaceCell({ s, clan }: { s?: MemberStats; clan?: boolean }) {
-  if (!s || s.plays === 0) return <span className="scr-sg-c"><Dash /></span>;
+/** 종족 두 칸 — [전적 "30회" | 승률] (2026-10-20, 요청: "각 종족 컬럼을 두 컬럼으로 나눠 전적/승률" → "전적 몇 회로 단순화").
+ *  클랜원 전체 줄은 승률을 안 쓴다(내전이라 늘 반반). */
+function RaceCells({ s, clan }: { s?: MemberStats; clan?: boolean }) {
+  if (!s || s.plays === 0) return <><span className="scr-sg-c"><Dash /></span><span className="scr-sg-c"><Dash /></span></>;
   return (
-    <span className="scr-sg-c scr-sg-race">
-      <Num v={s.plays.toLocaleString()} unit="회" />
-      {!clan && <Rate s={s} labeled />}
-    </span>
+    <>
+      <span className="scr-sg-c scr-sg-race"><Num v={s.plays.toLocaleString()} unit="회" /></span>
+      <span className="scr-sg-c">{clan ? <Dash /> : <Rate s={s} />}</span>
+    </>
   );
 }
 
@@ -110,7 +110,7 @@ function PcRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boolean
         <span className="scr-sg-c">{clan ? <Dash /> : <Rate s={s} />}</span>
         <span className="scr-sg-c"><Num v={s.avgApm} /></span>
         <span className="scr-sg-c">{clan ? <Dash /> : <Dmg s={s} />}</span>
-        {RACES.map((r) => <RaceCell key={r} s={row.byRace?.[r]} clan={clan} />)}
+        {RACES.map((r) => <RaceCells key={r} s={row.byRace?.[r]} clan={clan} />)}
         <span className="scr-sg-c">
           <button type="button" className="scr-text-btn scr-sg-toggle" aria-expanded={open} aria-label={open ? "접기" : "펼치기"} onClick={() => setOpen((v) => !v)}>
             {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
@@ -121,7 +121,8 @@ function PcRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boolean
         <div className="scr-sg-mix">
           {RACES.map((r) => (
             <div key={r} className="scr-sg-mix-race">
-              <span className="scr-sg-mix-head"><i className="scr-clan-band-dot" style={{ backgroundColor: RACE_TONE[r] }} />{r}</span>
+              {/* 색 네모는 걷었다(2026-10-20, 요청: "펼침에도 색 네모 제거"). */}
+              <span className="scr-sg-mix-head">{r}</span>
               <MixLines race={r} stats={row.byRace?.[r]} />
             </div>
           ))}
@@ -171,15 +172,9 @@ function MixLines({ race, stats }: { race: BaseRace; stats?: MemberStats }) {
   );
 }
 
-/** 폰 칸 — 회수 위, 승률 아래. */
+/** 폰 칸 — 승률만(2026-10-20, 요청: "횟수 제거하고 승률만"). 클랜원 전체 줄은 안 쓴다(내전이라 늘 반반). */
 function MCell({ s, clan }: { s?: MemberStats; clan?: boolean }) {
-  if (!s || s.plays === 0) return <span className="scr-sg-c"><Dash /></span>;
-  return (
-    <span className="scr-sg-c scr-sg-race">
-      <Num v={s.plays.toLocaleString()} unit="회" />
-      {!clan && <Rate s={s} labeled />}
-    </span>
-  );
+  return <span className="scr-sg-c">{clan || !s || s.plays === 0 ? <Dash /> : <Rate s={s} />}</span>;
 }
 
 function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
@@ -191,6 +186,10 @@ function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; gam
           {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <Who member={row.member} />}
         </span>
         <span className="scr-sg-who-sub">
+          {/* 판수는 APM 줄 맨 앞에(2026-10-20, 요청: "전체 플레이 전적은 메인 칸에" → "폰도 APM 줄에 같이 넣기 · 몇 회"). 클랜원 전체는 판. */}
+          <span className="scr-sg-v scr-sg-cnt">
+            {clan ? <><b>{(games ?? 0).toLocaleString()}</b><i>판</i></> : <><b>{s.plays.toLocaleString()}</b><i>회</i></>}
+          </span>
           {/* "APM 231" — 라벨이 앞(2026-10-20, 요청: "N APM → APM N 으로 순서 변경"). 딜 · 피해도 라벨이 앞이다. */}
           {/* APM · 딜 · 피해는 줄마다 세로로 맞춘다(2026-10-20, 요청: "모바일 apm 딜 피해 로우 간 세로 줄 맞추기") — 값 칸 폭을 고정하고(CSS),
               APM 이 없는 사람도 "APM -" 로 자리를 지킨다(빠지면 딜·피해가 왼쪽으로 붙었다). */}
@@ -198,12 +197,7 @@ function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; gam
           {!clan && <Dmg s={s} compact />}
         </span>
       </span>
-      {clan ? (
-        <span className="scr-sg-c scr-sg-race">
-          <span className="scr-sg-v"><b>{(games ?? 0).toLocaleString()}</b><i>판</i></span>
-          <span className="scr-sg-v scr-sg-small"><b>{s.plays.toLocaleString()}</b><i>회</i></span>
-        </span>
-      ) : <MCell s={s} />}
+      <MCell s={s} clan={clan} />
       {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} clan={clan} />)}
     </div>
   );
@@ -223,9 +217,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
       <div className="scr-sg is-m" role="table" aria-label="통계">
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who">유저</span>
-          <span className="scr-sg-c">전체</span>
-          {/* 종족 칸 머리는 색 네모 없이 온 이름(2026-10-20, 요청: "모바일 테프저 컬럼 라벨 앞에 색 네모 제거하고 풀네임"). */}
-          {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-race-head">{r}</span>)}
+          {/* 칸 머리 "전체 승률 · 테란 승률 …" — 늘 두 줄(2026-10-20, 요청: "헤더도 전체 승률 테란 승률 이렇게 · 칸 좁으면 두 줄"). 색 네모 없음. */}
+          {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-race-head"><span>{r}</span><span>승률</span></span>)}
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} />}
         {rows.map((r) => <MobileRow key={r.member.id} row={r} />)}
@@ -234,11 +227,12 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   }
   return (
     <div className="scr-sg" role="table" aria-label="통계">
+      {/* 머리는 두 줄 — 종족 이름이 [전적 | 승률] 두 칸을 덮고, 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
-        {["유저", "경기", "승률", "APM", "데미지"].map((h, i) => <span key={h} className={cx("scr-sg-c", i === 0 && "scr-sg-who")}>{h}</span>)}
-        {/* 종족 칸 머리는 색 네모 없이(2026-10-20, 요청: "PC 도 색 네모 제거" · 폰과 같게). */}
-        {RACES.map((r) => <span key={r} className="scr-sg-c">{r}</span>)}
-        <span className="scr-sg-c" />
+        {["유저", "경기", "승률", "APM", "데미지"].map((h, i) => <span key={h} className={cx("scr-sg-c", "scr-sg-h2", i === 0 && "scr-sg-who")}>{h}</span>)}
+        {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hgroup">{r}</span>)}
+        <span className="scr-sg-c scr-sg-h2" />
+        {RACES.map((r) => <Fragment key={r}><span className="scr-sg-c scr-sg-hsub">전적</span><span className="scr-sg-c scr-sg-hsub">승률</span></Fragment>)}
       </div>
       {clanRow && <PcRow row={clanRow} clan games={clanGames} openAll={openAll} />}
       {rows.map((r) => (
