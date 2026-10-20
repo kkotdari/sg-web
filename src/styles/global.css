@@ -8073,6 +8073,8 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-race-head { flex-direction: column; gap: 1px; letter-spacing: -0.02em; white-space: nowrap; line-height: 1.2; }
 .scr-sg.is-m .scr-sg-race-head > span:last-child { font-weight: 600; }
 .scr-sg.is-m .scr-sg-c:not(.scr-sg-who) { padding-left: 2px; padding-right: 2px; }
+/* 폰 줄은 어디를 눌러도 펼치기·접기(StatGrid MobileRow onRow). */
+.scr-sg-tap > .scr-sg-c { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 
 /* 종족구성별 전적(CompGrid) — 위 표와 같은 칸 꼴 · [구성 | 경기 | 승률(+막대)] · 폭은 내용만큼(최대 560). */
 .scr-sg-comp-wrap { margin: 4px 0 14px; }

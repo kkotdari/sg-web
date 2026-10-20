@@ -126,13 +126,23 @@ function MobileRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boo
   const s = row.stats;
   const [open, setOpen] = useState(openAll);
   useEffect(() => { setOpen(openAll); }, [openAll]);
+  /* 줄 어디를 눌러도 펼치기·접기(2026-10-20, 요청: "모바일 열 전체가 펼치기 접기로 작동") — 아바타(사진)·이름(프로필) 단추만 제 일을 한다.
+     React 이벤트는 포털(사진 창)에서도 이 줄로 올라오므로 DOM 으로 줄 안에서 누른 것만 받는다. */
+  const onRow = (e: React.MouseEvent<HTMLDivElement>): void => {
+    const t = e.target as Element;
+    if (!e.currentTarget.contains(t)) return;
+    const btn = t.closest("button, a");
+    if (btn && !btn.classList.contains("scr-sg-toggle")) return;
+    setOpen((v) => !v);
+  };
   return (
     <>
-    <div className={cx("scr-sg-row", clan && "is-clan", open && "is-open")}>
+    <div className={cx("scr-sg-row scr-sg-tap", clan && "is-clan", open && "is-open")} onClick={onRow}>
       <span className="scr-sg-c scr-sg-who">
         <span className="scr-sg-who-top">
           {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <Who member={row.member} />}
-          <button type="button" className="scr-text-btn scr-sg-toggle" aria-expanded={open} aria-label={open ? "접기" : "펼치기"} onClick={() => setOpen((v) => !v)}>
+          {/* 누름은 줄(onRow)이 받는다 — 단추는 키보드·읽기 프로그램 몫. */}
+          <button type="button" className="scr-text-btn scr-sg-toggle" aria-expanded={open} aria-label={open ? "접기" : "펼치기"}>
             {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
           </button>
         </span>
