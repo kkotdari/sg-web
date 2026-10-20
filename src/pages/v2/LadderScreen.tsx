@@ -5,7 +5,6 @@ import SearchFilterBar from "../../components/common/SearchFilterBar";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import Avatar from "../../components/common/Avatar";
-import Delta from "../stats/Delta";
 import RivalryOverlay from "../rivalry/RivalryOverlay";
 import { rankOf } from "./rankOrder";
 import LadderDetailModal from "./LadderDetailModal";
@@ -112,12 +111,8 @@ export default function LadderScreen() {
       memberIds: ids, dateFrom: q.from, dateTo: q.to,
       matchType: LADDER_TYPE, race: "all", ratingScope: "period",
     });
-    const before = q.prevFrom
-      ? api.getGameResultStats({
-        memberIds: ids, dateFrom: q.prevFrom, dateTo: q.prevTo,
-        matchType: LADDER_TYPE, race: "all", ratingScope: "period",
-      }).catch(() => null)
-      : Promise.resolve(null);
+    /* 이전 달 비교는 화면에서 걷었다(아래 ★ · 2026-10-20) — 더는 묻지 않는다. */
+    const before = Promise.resolve(null);
     Promise.all([mine, before]).then(([res, prevRes]) => {
       if (cancelled) return;
       setView({ ...blank, stats: byId(res), prev: prevRes ? byId(prevRes) : {} });
@@ -173,21 +168,13 @@ export default function LadderScreen() {
       <div className="scr-v2-toolbar">
         <div className="scr-v2-toolbar-title-row">
           <h1 className="scr-title scr-v2-toolbar-title">래더</h1>
-          {/* 역대 퀸 — 상성 보기 왼쪽(QueenHistoryModal ★ · 2026-10-20). */}
-          <button
-            type="button"
-            className="scr-compact-rect-btn"
-            onClick={() => setQueensOpen(true)}
-          >
-            역대 퀸
-          </button>
-          {/* 레이팅 — 처음부터 쌓인 실제 레이팅 순위(RatingBoardModal ★ · 2026-10-20). */}
+          {/* 실력순위 — 처음부터 쌓인 실제 레이팅 순위(RatingBoardModal ★ · 2026-10-20 · 옛 이름 '레이팅'). */}
           <button
             type="button"
             className="scr-compact-rect-btn"
             onClick={() => setRatingOpen(true)}
           >
-            레이팅
+            실력순위
           </button>
           <button
             type="button"
@@ -195,6 +182,14 @@ export default function LadderScreen() {
             onClick={() => setRivalryOpen(true)}
           >
             상성 보기
+          </button>
+          {/* 역대 퀸 — 제목 줄 **오른끝**(QueenHistoryModal ★ · 2026-10-20, 요청: "역대퀸 버튼 우측끝 정렬"). */}
+          <button
+            type="button"
+            className="scr-compact-rect-btn scr-ladder-queens-btn"
+            onClick={() => setQueensOpen(true)}
+          >
+            역대 퀸
           </button>
         </div>
       </div>
@@ -214,8 +209,9 @@ export default function LadderScreen() {
                 minMonth={firstMonth} maxMonth={currentMonthValue()}
               />
             </div>
+            {/* 이전 달 대비 변동(▲▼ · 작은 차이 숫자)은 걷었다(2026-10-20, 요청: "기본화면의 이전달 대비 변동 데이터 제거 · 설명도 이 달에 번 점수 순위로"). */}
             <span className="scr-stat-plain-head-sub scr-ladder-legend">
-              아래 수치는 이전 달 대비 변동
+              이 달에 번 점수 순위
             </span>
             <span className="scr-stat-plain-head-sub scr-ladder-asof">{asOf}까지</span>
           </div>
@@ -257,17 +253,6 @@ export default function LadderScreen() {
                           )}
                           <span className="scr-ladder-rank-n">{r.rank}</span>
                         </span>
-                        <span className="scr-ladder-move">
-                          {r.move === "new" ? (
-                            <span className="scr-activity-shift-new">신규</span>
-                          ) : typeof r.move === "number" ? (
-                            <span className={r.move > 0 ? "scr-activity-shift-up" : "scr-activity-shift-down"}>
-                              {r.move > 0 ? `▲${r.move}` : `▼${-r.move}`}
-                            </span>
-                          ) : (
-                            <span className="scr-stat-delta scr-stat-delta-none">-</span>
-                          )}
-                        </span>
                       </>
                     )}
                   </span>
@@ -277,15 +262,12 @@ export default function LadderScreen() {
                   </span>
                   <span className="scr-ladder-num">
                     <b>{r.points === null ? "-" : `${r.points > 0 ? "+" : ""}${r.points.toLocaleString()}`}</b>
-                    <Delta now={r.points} prev={r.prevPoints} />
                   </span>
                   <span className="scr-ladder-num">
                     <b>{r.plays > 0 ? r.plays : "-"}</b>
-                    <Delta now={r.plays} prev={r.prevPlays} />
                   </span>
                   <span className="scr-ladder-num">
                     <b>{r.winRate === null ? "-" : `${r.winRate.toFixed(1)}%`}</b>
-                    <Delta now={r.winRate} prev={r.prevWinRate} digits={1} />
                   </span>
                 </div>
               ))}

@@ -10,7 +10,7 @@ import { rankOf } from "./rankOrder";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import type { GameType, Member, MemberStats } from "../../types";
 
-/* ★ 레이팅(2026-10-20, 요청: "래더에 역대퀸 레이팅 버튼도 추가하고 월별 어닝이 아닌 실제 레이팅 순위와 점수 전적 노출") —
+/* ★ 실력순위(옛 이름 '레이팅' · 2026-10-20, 요청: "래더에 역대퀸 레이팅 버튼도 추가하고 월별 어닝이 아닌 실제 레이팅 순위와 점수 전적 노출") —
    래더 표는 달마다 **번 점수**(ratingScope period)지만, 여기는 **처음부터 쌓인 레이팅**(ratingScope total · 기간 없음) 그대로의 순위 ·
    점수(기준 1000) · 전적(전 기간 일대일). 배치(판이 적어 아직 흔들리는) 중이면 곁에 작게 "배치". */
 
@@ -63,7 +63,7 @@ export default function RatingBoardModal({ poolIds, members, onClose }: {
       <ModalHash hash="rating" onClose={onClose} />
       <div className="scr-modal scr-modal-sm scr-queen-modal scr-rating-modal" onClick={(e) => e.stopPropagation()}>
         <div className="scr-modal-head">
-          <span>레이팅</span>
+          <span>실력순위</span>
           <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
         </div>
         <div className="scr-modal-body">

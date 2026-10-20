@@ -8059,3 +8059,6 @@ input.scr-sb-list-title { font-weight: 700; }
   flex: none; padding: 1px 5px; border-radius: 4px; font-size: var(--fs-10); font-weight: 700;
   color: var(--btn-outline-text); background: var(--btn-outline-bg); border: 1px solid var(--btn-outline-border);
 }
+
+/* 래더 제목 줄 — 역대 퀸은 오른끝(2026-10-20). */
+.scr-ladder-queens-btn { margin-left: auto; }
