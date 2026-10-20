@@ -684,7 +684,9 @@ function ScheduleCardInner({
   };
 
   const refresh = async (): Promise<void> => {
-    if (saving.current || dirty() || sortingNow() || typingNow()) return;
+    /* 저장 안 한 고침이 있어도 남의 고침은 꾸준히 받아 내 고침과 합친다(absorb → merge · 2026-10-20, 요청: "변경 사항 불러오기는 꾸준히") —
+       저장이 단추로만 가니 고침을 쥔 채 오래 머문다. 치거나 끄는 도중·보내는 중에만 건너뛴다. */
+    if (saving.current || sortingNow() || typingNow()) return;
     lastRefreshAt.current = Date.now();
     try {
       const s = await api.getSchedule(latest.current.schedule.id);
@@ -721,8 +723,7 @@ function ScheduleCardInner({
     const tick = (): void => {
       if (saving.current) return;
       const now = Date.now();
-      // 저장 안 한 고침이 있으면 남의 고침을 묻지 않는다(합치기는 저장할 때 서버가 409 로 알려 준다).
-      if (!dirty() && onScreen.current && now - lastRefreshAt.current >= REFRESH_MS) void refresh();
+      if (onScreen.current && now - lastRefreshAt.current >= REFRESH_MS) void refresh();
     };
     const timer = window.setInterval(tick, 1000);
     const onVisibility = (): void => { if (!document.hidden) lastRefreshAt.current = 0; };
