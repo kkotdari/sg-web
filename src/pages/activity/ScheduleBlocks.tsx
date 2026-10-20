@@ -251,9 +251,7 @@ function TextBlock({
       ) : null}
       {foldBtn && <div className="scr-sb-fold-corner">{foldBtn}</div>}
       {canEdit && (
-        /* 제목·목록의 단추 줄은 떠 있는 판(scr-sb-tools-float) — 자리를 안 차지한다(2026-10-20, 지적: "제목 요소에 버튼줄이 생기면 높이가
-           늘어남" · "목록에 버튼줄이 생기면 x 가 왼쪽으로 밀리면서 칸이 좁아짐"). 글 요소는 옛 그대로 민다. */
-        <div className={cx("scr-sb-tools", heading && "scr-sb-tools-float")}>
+        <div className="scr-sb-tools">
           {grip}
           <IconBtn label={heading ? "제목 삭제" : "글 삭제"} onClick={onDelete} danger><Trash2 size={13} /></IconBtn>
         </div>
@@ -515,7 +513,7 @@ function ListBlock({
         </ul>
       )}
       {canEdit && (
-        <div className="scr-sb-tools scr-sb-tools-float">
+        <div className="scr-sb-tools">
           {grip}
           <IconBtn label="목록 삭제" onClick={onDelete} danger><Trash2 size={13} /></IconBtn>
         </div>
