@@ -51,7 +51,7 @@ const RACE_ALT: Record<string, string[]> = {
   terran: ["테란"], protoss: ["프로토스"], toss: ["프로토스"], zerg: ["저그"],
 };
 
-function altsOf(term: string): string {
+export function altsOf(term: string): string {
   const raw = term.replace(/\|/g, " ").trim();
   if (!raw) return "";
   const race = RACE_ALT[raw];
@@ -135,4 +135,114 @@ export function toServerMerged(q: string, lex: Lexicon = EMPTY_LEXICON): ServerQ
     any: any.filter(Boolean).length > 0 ? TAB + any.filter(Boolean).join(TAB) : undefined,
     linked: linked.length > 0 ? TAB + linked.join(TAB) : undefined,
   };
+}
+
+/* ★★ 게임 목록 검색폼(2026-10-20, 요청: "현재 가능한 검색 조합을 모두 별도 검색폼으로 분리 · 각 인풋에서 병렬 검색은 가능") — 칸마다 따로 받고
+   서버 질의(any · linked)는 옛 한 줄 검색과 **같은 꼴**로 만든다(서버는 그대로).
+   · 선수 · 종족 · 유닛/건물/스킬 — 칸 안의 값마다 조건 하나(**모두** 맞아야 · 그 판에 있었나)
+   · 맵 · 경기번호 — 칸 안의 값끼리는 **그중 하나**(한 판엔 맵이 하나라서)
+   · 유형 — 하나만(a:b · 차례 없음)
+   · 한 사람 조건 — 줄마다 [선수 · 종족 · 유닛…] 을 **그 사람이 직접**(옛 붙여 쓰기) */
+export interface GameSearchLink { name: string; race: string; items: string[] }
+export interface GameSearchForm {
+  players: string[];
+  races: string[];
+  items: string[];
+  maps: string[];
+  size: string;
+  nos: string[];
+  links: GameSearchLink[];
+}
+export const EMPTY_GAME_SEARCH: GameSearchForm = { players: [], races: [], items: [], maps: [], size: "", nos: [], links: [] };
+
+export function gameSearchEmpty(f: GameSearchForm): boolean {
+  return f.players.length + f.races.length + f.items.length + f.maps.length + f.nos.length === 0
+    && !f.size && f.links.every((l) => !l.name.trim());
+}
+
+export function formToServer(f: GameSearchForm): ServerQuery {
+  const TAB = "\t";
+  const US = "\u001f";
+  const norm = (x: string): string => altsOf(normalizeSearchText(x));
+  const any: string[] = [];
+  for (const x of [...f.players, ...f.races, ...f.items]) any.push(norm(x));
+  const orOf = (xs: string[]): string => [...new Set(xs.flatMap((x) => norm(x).split("|")).filter(Boolean))].join("|");
+  if (f.maps.length) any.push(orOf(f.maps));
+  if (f.nos.length) any.push(orOf(f.nos));
+  const size = f.size ? teamSizeTerm(f.size) : null;
+  if (size) any.push(size);
+  const linked: string[] = [];
+  for (const l of f.links) {
+    const name = l.name.trim();
+    const rest = [l.race, ...l.items].filter(Boolean);
+    if (!name) continue;
+    if (rest.length === 0) { any.push(norm(name)); continue; }
+    linked.push([normalizeSearchText(name), ...rest.map(norm)].join(US));
+  }
+  const anyOk = any.filter(Boolean);
+  return {
+    any: anyOk.length > 0 ? TAB + anyOk.join(TAB) : undefined,
+    linked: linked.length > 0 ? TAB + linked.join(TAB) : undefined,
+  };
+}
+
+/** 옛 한 줄 검색어(주소 u= · 공유 고리)를 폼으로 옮긴다 — 낱말의 갈래는 자동완성 꼬리표(종족 · 유닛 · 건물 · 스킬 · 맵 · 유형)로 가린다. */
+export function legacyToForm(q: string, lex: Lexicon, options: GameSuggestion[]): GameSearchForm {
+  const tagOf = new Map<string, string>();
+  for (const o of options) if (!tagOf.has(squashTerm(o.value))) tagOf.set(squashTerm(o.value), o.tag);
+  const f: GameSearchForm = { players: [], races: [], items: [], maps: [], size: "", nos: [], links: [] };
+  const put = (text: string): void => {
+    const tag = tagOf.get(squashTerm(text));
+    if (tag === "종족") f.races.push(text);
+    else if (tag === "맵") f.maps.push(text);
+    else if (tag === "유형") f.size = teamSizeTerm(text) ?? f.size;
+    else f.items.push(text);
+  };
+  for (const chunk of splitChunks(q)) {
+    const size = teamSizeTerm(chunk);
+    if (size) { f.size = size; continue; }
+    const parts = segmentChunk(chunk, lex);
+    if (parts.length === 0) continue;
+    // 모르는 낱말 — 숫자·줄표뿐이면 경기번호, 아니면 선수(회원이 아닌 리플레이 이름 따위 · 서버는 이름·내용을 함께 찾는다).
+    if (parts.every((p) => p.kind === "unknown")) { (/^[\d-]+$/.test(chunk) ? f.nos : f.players).push(chunk); continue; }
+    const names = parts.filter((p) => p.kind === "name").map((p) => p.text);
+    const rest = parts.filter((p) => p.kind !== "name").map((p) => p.text);
+    if (names.length > 0 && rest.length > 0) {
+      const race = rest.find((t) => tagOf.get(squashTerm(t)) === "종족") ?? "";
+      f.links.push({ name: names[0], race, items: rest.filter((t) => t !== race) });
+      f.players.push(...names.slice(1));
+      continue;
+    }
+    for (const p of parts) (p.kind === "name" ? f.players.push(p.text) : put(p.text));
+  }
+  return f;
+}
+
+/** 주소(f=) 안의 폼 — 짧은 열쇠의 JSON. 망가진 값은 빈 폼. */
+export function encodeGameSearch(f: GameSearchForm): string {
+  if (gameSearchEmpty(f)) return "";
+  const o: Record<string, unknown> = {};
+  if (f.players.length) o.p = f.players;
+  if (f.races.length) o.r = f.races;
+  if (f.items.length) o.i = f.items;
+  if (f.maps.length) o.m = f.maps;
+  if (f.size) o.s = f.size;
+  if (f.nos.length) o.n = f.nos;
+  const links = f.links.filter((l) => l.name.trim());
+  if (links.length) o.l = links.map((l) => [l.name, l.race, ...l.items]);
+  return JSON.stringify(o);
+}
+export function decodeGameSearch(raw: string): GameSearchForm {
+  if (!raw) return EMPTY_GAME_SEARCH;
+  try {
+    const o = JSON.parse(raw) as Record<string, unknown>;
+    const arr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+    return {
+      players: arr(o.p), races: arr(o.r), items: arr(o.i), maps: arr(o.m),
+      size: typeof o.s === "string" ? o.s : "", nos: arr(o.n),
+      links: Array.isArray(o.l) ? o.l.map((x) => { const a = arr(x); return { name: a[0] ?? "", race: a[1] ?? "", items: a.slice(2) }; }) : [],
+    };
+  } catch {
+    return EMPTY_GAME_SEARCH;
+  }
 }

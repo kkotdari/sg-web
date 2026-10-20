@@ -7,7 +7,8 @@ import { useAppStore } from "../../store/appStore";
 import {
   activeMemberSearchTerms, memberMatchesTerm, normalizeSearchText, splitSearchTerms,
 } from "../../utils/memberSearch";
-import { buildLexicon, gameSuggestions, toServerMerged } from "../../utils/gameSearch";
+import { buildLexicon, decodeGameSearch, encodeGameSearch, formToServer, gameSuggestions, legacyToForm } from "../../utils/gameSearch";
+import GameSearchForm from "./GameSearchForm";
 import { api } from "../../api/client";
 import { useUrlState } from "../../hooks/useUrlState";
 import type { Selection } from "../../hooks/useSelection";
@@ -128,6 +129,17 @@ export default memo(function ActivityGroupPage({
   );
   const lexRef = useRef(lexicon);
   lexRef.current = lexicon;
+  /* ★★ 게임 목록은 검색폼(GameSearchForm · 2026-10-20) — 조건은 주소 f= (JSON). 옛 한 줄 검색어(u=)로 들어오면 한 번 폼으로 옮긴다. */
+  const onGames9 = groupKey === "gameResult";
+  const [formRaw, setFormRaw] = useUrlState("f");
+  const gameForm = useMemo(() => decodeGameSearch(formRaw), [formRaw]);
+  useEffect(() => {
+    if (!onGames9 || !searchApplied) return;
+    const next = legacyToForm(searchApplied, lexicon, gameOptions);
+    setSearchApplied("");
+    setFormRaw(encodeGameSearch(next));
+  }, [onGames9, searchApplied]);
+  const searchKey9 = onGames9 ? formRaw : searchApplied;
   const [serverGames, setServerGames] = useState<
     { items: ActivityItem[]; total: number; cursor: string | null } | null
   >(null);
@@ -135,7 +147,7 @@ export default memo(function ActivityGroupPage({
   const [moreBusy, setMoreBusy] = useState(false);
   useEffect(() => {
     const onGames = groupKey === "gameResult";
-    const merged = onGames ? toServerMerged(searchApplied, lexRef.current)
+    const merged = onGames ? formToServer(decodeGameSearch(formRaw))
       : { any: undefined, linked: undefined };
     if (!onGames) { setServerGames(null); setServerBusy(false); return undefined; }
     let dead = false;
@@ -156,14 +168,14 @@ export default memo(function ActivityGroupPage({
       .catch(() => { if (!dead) setServerGames(null); })
       .finally(() => { if (!dead) setServerBusy(false); });
     return () => { dead = true; };
-  }, [groupKey, searchApplied, gameTab, refreshKey]);
+  }, [groupKey, searchKey9, gameTab, refreshKey]);
 
   const loadMoreGames = useCallback(async () => {
     const cursor = serverGames?.cursor;
     if (!cursor || moreBusy || serverBusy) return;
     setMoreBusy(true);
     try {
-      const merged = toServerMerged(searchApplied, lexRef.current);
+      const merged = formToServer(decodeGameSearch(formRaw));
       const page = await api.getGameResultsPage({
         any: merged.any, linked: merged.linked, limit: 100, sort: "latest",
         ...tabQuery(gameTab), cursor,
@@ -177,7 +189,7 @@ export default memo(function ActivityGroupPage({
     } finally {
       setMoreBusy(false);
     }
-  }, [serverGames?.cursor, moreBusy, serverBusy, searchApplied, gameTab]);
+  }, [serverGames?.cursor, moreBusy, serverBusy, formRaw, gameTab]);
 
   const moreRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -266,8 +278,18 @@ export default memo(function ActivityGroupPage({
           )}
         </div>
       </div>
+      {onGames9 && (
+        <GameSearchForm
+          value={gameForm}
+          onApply={(next) => setFormRaw(encodeGameSearch(next))}
+          members={suggestions.map((s9) => s9.member)}
+          terms={gameOptions}
+          maps={gameOptions.filter((o) => o.tag === "맵").map((o) => o.value)}
+        />
+      )}
       {searchable && (
         <SearchFilterBar
+          showSearch={!onGames9}
           count={serverSearch ? (serverGames?.total ?? 0) : filtered.length}
           countLabel="건"
           countLoading={serverBusy}

@@ -55,7 +55,7 @@ function shareTargetFromUrl(): ShareTarget | null {
 }
 
 /* 메뉴로 화면을 옮길 때 떨구는 화면 제 것 — tab(활동 게임 탭)·size(통계 규모 탭)도(2026-10-20, 요청: "tab 파라미터가 다른 화면까지 남음"). */
-const SCREEN_LOCAL_PARAMS = ["t", "u", "q", "st", "period", "tab", "size"] as const;
+const SCREEN_LOCAL_PARAMS = ["t", "u", "q", "f", "st", "period", "tab", "size"] as const;
 
 
 export default function App() {

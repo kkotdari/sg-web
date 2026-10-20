@@ -109,7 +109,7 @@ function ActivityRouter() {
   };
   const openItem = (item: DisplayItem): void => {
     // 게임 목록의 공방/내전 탭은 목록 주소의 것 — 상세 주소엔 안 싣는다(뒤로 가면 목록 주소에서 되살아난다)
-    const search = linkParams([...SCENE_LINK_KEYS9, "u", "q", "tab"]);
+    const search = linkParams([...SCENE_LINK_KEYS9, "u", "q", "f", "tab"]);
     let path: string;
     if (item.kind === "gameResult") {
       path = pathOf({ screen: "activity", group: "gameResult", item: item.gameResult.matchNo || String(item.gameResult.id) });
