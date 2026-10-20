@@ -10,14 +10,14 @@ import type { BaseRace, Member, MemberStats } from "../../types";
 
 const TOP_N = 5;
 
-const SKILL_LIST_EXCLUDE = new Set([
+export const SKILL_LIST_EXCLUDE = new Set([
   "Tank Siege Mode", "Stim Packs", "Burrowing", "Personnel Cloaking",
 ]);
 
 const UPGRADE_MIN_MIN = 20;
 
 type UpRow = { label: string; title: string; atk?: string; def?: string };
-const UP_TABLE: Record<BaseRace, { rows: UpRow[]; solo?: { label: string; title: string; key: string } }> = {
+export const UP_TABLE: Record<BaseRace, { rows: UpRow[]; solo?: { label: string; title: string; key: string } }> = {
   테란: {
     rows: [
       { label: "보병", title: "보병 공격력 / 보병 방어구",

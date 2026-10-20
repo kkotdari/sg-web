@@ -7952,8 +7952,16 @@ input.scr-sb-list-title { font-weight: 700; }
 .scr-sg-mix-race { min-width: 0; padding: 8px 10px 10px; }
 .scr-sg-mix-race + .scr-sg-mix-race { border-left: 1px solid var(--line-hair, var(--line-faint)); }
 .scr-sg-mix-head { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; font-size: var(--fs-11); font-weight: 800; color: var(--muted); }
-.scr-sg-mix-race .scr-stat-mix-cell { --scr-toplist-w: 110px; }
-.scr-sg-mix-race .scr-stat-mix-row > * { padding: 4px 6px; }
+/* 펼친 줄의 종족 한 칸 = 세 줄 글(유닛 · 스킬 · 공방업 · 2026-10-20 시안) — 이름표는 흐리게, 값은 본문색. */
+.scr-sg-mix-race { padding: 10px 14px 12px; }
+.scr-sg-mix-head { font-size: var(--fs-caption); color: var(--text); margin-bottom: 6px; }
+.scr-sg-mix-lines {
+  display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 8px; row-gap: 5px;
+  margin: 0; font-size: var(--fs-caption); line-height: 1.35;
+}
+.scr-sg-mix-lines dt { color: var(--muted); font-size: var(--fs-11); line-height: inherit; align-self: baseline; }
+.scr-sg-mix-lines dd { margin: 0; min-width: 0; color: var(--text); align-self: baseline; overflow-wrap: anywhere; }
+.scr-sg-mix-none { font-size: var(--fs-11); color: var(--muted); }
 
 /* 폰 — [유저(아래 APM · 데미지) | 전체 | 테 | 프 | 저] · 칸마다 회수 위 · 승률(+막대) 아래 · 펼치기 없음. */
 .scr-sg.is-m { grid-template-columns: minmax(0, 1fr) 54px 50px 50px 50px; font-size: var(--fs-11); }
