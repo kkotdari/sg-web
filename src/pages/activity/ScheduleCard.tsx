@@ -547,9 +547,14 @@ function ScheduleCardInner({
   latestDeleted.current = onDeleted;
 
   const dirty = (): boolean => editVer.current !== savedVer.current;
-  const markEdited = (): void => {
+  /* 저장 단추를 띄울 고침(글·차례·사진…)이 저장 전인가 — 접기·펴기만 바뀐 것은 여기에 안 든다(조용히 곧바로 저장 · 아래 onSaveNow). */
+  const contentDirty = useRef(false);
+  /* 접기·펴기 저장이 다른 저장이 오가는 도중에 들어오면 그 저장이 끝난 뒤 한 번 더 보낸다(2026-10-20, 지적: "폰에서 접기 펼치기 누르면
+     나타났다 사라졌어 · 펼치기 동작은 무시됐고" — 접은 저장이 가는 동안 편 것은 저장되지 않았다). */
+  const foldQueued = useRef(false);
+  const markEdited = (content = true): void => {
     editVer.current += 1;
-    setSaveState("dirty");
+    if (content) { contentDirty.current = true; setSaveState("dirty"); }
   };
 
   const absorb = (s: Schedule): void => {
@@ -580,6 +585,8 @@ function ScheduleCardInner({
     base.current = new Map(d.blocks.map((b) => [b.key, b]));
     editVer.current = 0;
     savedVer.current = 0;
+    contentDirty.current = false;
+    foldQueued.current = false;
     lastRefreshAt.current = Date.now();
     lastKey.current = serverKeyOf(from);
     baseUpdatedAt.current = from.updatedAt;
@@ -614,20 +621,26 @@ function ScheduleCardInner({
     }
     const kept = new Set(next.map((b) => b.key));
     for (const p of d.blocks) if (!kept.has(p.key) && !isNew(p.id)) removed.current.add(p.id);
-    if (changed) markEdited();
+    // 접기·펴기만 바뀌었나(같은 차례 · 접힘 말고는 같음) — 그러면 저장 단추를 안 띄운다.
+    const foldOnly = next.length === d.blocks.length && next.every((b, i) => {
+      const p = d.blocks[i];
+      return p.key === b.key && sameBlock({ ...p, collapsed: b.collapsed }, b);
+    });
+    if (changed) markEdited(!foldOnly);
     setDraft({ ...d, blocks: next });
   };
 
-  const save = async (): Promise<boolean> => {
+  const save = async (quiet = false): Promise<boolean> => {
     const d = draftRef.current;
     if (!d || saving.current || !d.title.trim() || !d.date) return false;
     if (snapOf(d) === savedSnap.current) {
       savedVer.current = editVer.current;
+      contentDirty.current = false;
       setSaveState("saved");
       return true;
     }
     saving.current = true;
-    setSaveState("saving");
+    if (!quiet) setSaveState("saving");
     const ver = editVer.current;
     const sent = d;
     const pending = countNewPhotos(sent);
@@ -657,8 +670,11 @@ function ScheduleCardInner({
         }
       }
       removed.current.clear();
-      if (editVer.current === ver && deferred.size === 0) { savedVer.current = ver; setSaveState("saved"); }
-      else if (deferred.size === 0) setSaveState("dirty");
+      if (editVer.current === ver && deferred.size === 0) {
+        savedVer.current = ver;
+        contentDirty.current = false;
+        setSaveState("saved");
+      } else if (deferred.size === 0) setSaveState(contentDirty.current ? "dirty" : "saved");
       base.current = new Map(draftRef.current?.blocks.map((b) => [b.key, b]) ?? []);
       for (const b of sent.blocks) if (!base.current.has(b.key)) base.current.set(b.key, b);
       absorb(saved);
@@ -671,8 +687,9 @@ function ScheduleCardInner({
           const s = await api.getSchedule(latest.current.schedule.id);
           absorb(s);
         } catch { }
-        showAlert("그새 다른 사람이 고쳐서 그 고침을 합쳤어요. 확인하고 다시 저장해 주세요.");
-        setSaveState(dirty() ? "dirty" : "saved");
+        if (contentDirty.current) showAlert("그새 다른 사람이 고쳐서 그 고침을 합쳤어요. 확인하고 다시 저장해 주세요.");
+        else foldQueued.current = true;
+        setSaveState(contentDirty.current ? "dirty" : "saved");
         return false;
       }
       showAlert(e instanceof Error ? e.message : "저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.");
@@ -680,6 +697,10 @@ function ScheduleCardInner({
       return false;
     } finally {
       saving.current = false;
+      if (foldQueued.current) {
+        foldQueued.current = false;
+        if (dirty() && !contentDirty.current) setTimeout(() => { void save(true); }, 0);
+      }
     }
   };
 
@@ -787,10 +808,14 @@ function ScheduleCardInner({
         <ScheduleBlocks
           blocks={draft ? draft.blocks : readBlocks} canEdit={editing}
           onSaveNow={() => {
-            /* 접기·펴기는 보는 사람도 하는 일이라 그것만 바뀐 때는 곧바로 저장한다(저장 단추를 안 띄운다). 다른 고침이 저장 전이면
-               접기도 그 고침과 함께 저장 단추로 간다. 화면이 먼저 그려진 다음에 보낸다. */
-            if (editVer.current - savedVer.current > 1) return;
-            requestAnimationFrame(() => setTimeout(() => { if (!saving.current) void save(); }, 0));
+            /* 접기·펴기는 보는 사람도 하는 일이라 그것만 바뀐 때는 조용히 곧바로 저장한다(저장 단추를 안 띄운다). 다른 고침이 저장
+               전이면 접기도 그 고침과 함께 저장 단추로 간다. 다른 저장이 오가는 중이면 끝난 뒤 이어 보낸다. 화면이 먼저 그려진 다음에 보낸다. */
+            if (contentDirty.current) return;
+            if (saving.current) { foldQueued.current = true; return; }
+            requestAnimationFrame(() => setTimeout(() => {
+              if (saving.current) foldQueued.current = true;
+              else void save(true);
+            }, 0));
           }}
           onChange={onBlocks}
         />
