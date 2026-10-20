@@ -14,7 +14,7 @@ import type { GameType, Member, MemberStats } from "../../types";
 /* ★ 역대 퀸(2026-10-20, 요청: "래더에 상성보기 왼쪽에 역대 퀸 버튼 추가하고 누르면 각 월별 1위 리스트 · 맨 위가 오래된 순 ·
    2026년 / 7월 퀸 마크 전적 / 8월 퀸 기수 전적 · 한 줄 한 줄 꽤 크게 아바타랑 닉네임 · 전적은 좀 작게").
    달마다 래더 표와 같은 셈(같은 회원 풀 · 같은 유형 · ratingScope period · rankOf)으로 1위를 뽑는다 — 공동 1위면 다 선다.
-   끝난 달만(이번 달은 아직 정해지지 않았다) · 첫 경기 달부터. */
+   첫 경기 달부터 이번 달까지 — 이번 달은 아직 바뀔 수 있어 이름 곁에 "진행 중" 배지(2026-10-20 요청: "아직 진행중인 달은 지금 이사람이고 바뀔 수 있음을 알리는 배지"). */
 
 const LADDER_TYPE: GameType = LADDER_GAME_TYPES[0];
 
@@ -37,10 +37,11 @@ export default function QueenHistoryModal({ poolIds, members, firstMonth, onClos
     const out: string[] = [];
     if (!firstMonth) return out;
     const now = currentMonthValue();
-    for (let m = firstMonth; m < now; m = shiftMonthValue(m, 1)) out.push(m);
+    for (let m = firstMonth; m <= now; m = shiftMonthValue(m, 1)) out.push(m);
     return out;
   }, [firstMonth]);
   const [rows, setRows] = useState<QueenMonth[] | null>(null);
+  const nowMonth = currentMonthValue();
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -95,7 +96,7 @@ export default function QueenHistoryModal({ poolIds, members, firstMonth, onClos
           {rows === null ? (
             <div className="scr-queen-empty"><Spinner /> 불러오는 중…</div>
           ) : years.length === 0 ? (
-            error ? null : <div className="scr-queen-empty">아직 끝난 달이 없어요</div>
+            error ? null : <div className="scr-queen-empty">아직 기록이 없어요</div>
           ) : years.map((y) => (
             <div className="scr-queen-year" key={y.year}>
               <div className="scr-queen-year-head">{y.year}년</div>
@@ -107,7 +108,10 @@ export default function QueenHistoryModal({ poolIds, members, firstMonth, onClos
                     <Avatar member={q.member} size={44} className="scr-queen-avatar-img" />
                     <span className="scr-queen-crown" aria-label="퀸">👑</span>
                   </span>
-                  <span className="scr-queen-name">{q.member.nickname}</span>
+                  <span className="scr-queen-name">
+                    <span className="scr-queen-name-text">{q.member.nickname}</span>
+                    {r.month === nowMonth && <span className="scr-queen-live" title="이번 달은 아직 끝나지 않아 바뀔 수 있어요">진행 중</span>}
+                  </span>
                   <span className="scr-queen-record">{recordText(q.overall)}</span>
                 </div>
               )))}
