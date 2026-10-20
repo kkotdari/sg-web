@@ -281,7 +281,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                     return (
                       <ListRow
                         key={g.id}
-                        check={<RowCheck checked={picked} onChange={() => sel.toggle(key)} label="경기 선택" />}
+                        check={<RowCheck checked={picked} onChange={() => sel.toggle(key)} label="게임 선택" />}
                         picked={picked}
                         className="scr-activity-row-game scr-gm"
                         onClick={() => sel.toggle(key)}
@@ -316,7 +316,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
       {confirmDel && (
         <ConfirmDialog
           title="목록 삭제"
-          message={`"${confirmDel.name}" 목록을 지웁니다. 담긴 경기는 그대로 남아요.`}
+          message={`"${confirmDel.name}" 목록을 지웁니다. 담긴 게임은 그대로 남아요.`}
           confirmLabel="삭제"
           onConfirm={() => void doDelete()}
           onCancel={() => setConfirmDel(null)}
@@ -325,7 +325,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
       {bulkDel && (
         <ConfirmDialog
           title={`선택한 ${bulkDel.length}판을 목록에서 뺄까요?`}
-          message="경기는 그대로 남고 이 목록에서만 빠져요."
+          message="게임은 그대로 남고 이 목록에서만 빠져요."
           confirmLabel={bulkProgress ? `빼는 중... ${bulkProgress.done}/${bulkProgress.total}` : "빼기"}
           error={bulkErr}
           onConfirm={() => { if (!bulkProgress) void runBulkRemove(bulkDel); }}

@@ -120,7 +120,7 @@ export default function ExtShareGamePickModal({ listId, listName, have, onClose,
                   return (
                     <ListRow
                       key={g.id}
-                      check={<RowCheck checked={on || inList} disabled={inList} disabledTitle="이미 담긴 게임" onChange={() => toggle(g.id)} label="경기 선택" />}
+                      check={<RowCheck checked={on || inList} disabled={inList} disabledTitle="이미 담긴 게임" onChange={() => toggle(g.id)} label="게임 선택" />}
                       picked={on}
                       disabled={inList}
                       className={["scr-activity-row-game scr-gm", inList && "is-in"].filter(Boolean).join(" ")}

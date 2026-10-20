@@ -100,13 +100,13 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   };
   const deleteGames = async (ids: number[]) => {
     const typed = window.prompt(
-      `고른 경기 ${ids.length}건을 삭제합니다(리그 경기에 연결된 판은 남겨요). 첨부 리플레이까지 지워지고 되돌릴 수 없어요.\n삭제하려면 "삭제"를 입력하세요.`,
+      `고른 게임 ${ids.length}건을 삭제합니다(리그 경기에 연결된 판은 남겨요). 첨부 리플레이까지 지워지고 되돌릴 수 없어요.\n삭제하려면 "삭제"를 입력하세요.`,
     );
     if (typed !== "삭제") return;
     setBusy(true);
     try {
       const { deleted } = await api.deleteGamesOf(ids);
-      showToast(`${deleted}건의 경기기록을 삭제했어요.`, { kind: "ok" });
+      showToast(`${deleted}건의 게임 기록을 삭제했어요.`, { kind: "ok" });
       setPicked(new Set());
       void loadPickRows();
     } catch (e) {
@@ -209,10 +209,10 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
         setRedoTotal(ids.length);
         setRedoFails(fails);
       } else {
-        showToast(`경기 ${done}건을 다시 분석했어요 — 참값 자취는 서버가 뒤에서 굽습니다.`, { kind: "ok" });
+        showToast(`게임 ${done}건을 다시 분석했어요 — 참값 자취는 서버가 뒤에서 굽습니다.`, { kind: "ok" });
       }
     } catch (e) {
-      showAlert(e instanceof Error ? e.message : "경기를 다시 분석하지 못했어요.");
+      showAlert(e instanceof Error ? e.message : "게임을 다시 분석하지 못했어요.");
     } finally {
       pool?.close();
       setRedo(null);
@@ -255,7 +255,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
       const alive = new Set(rows.map((r) => r.id));
       setPicked((prev) => new Set([...prev].filter((id) => alive.has(id))));
     } catch (e) {
-      showAlert(e instanceof Error ? e.message : "경기 목록을 받지 못했어요.");
+      showAlert(e instanceof Error ? e.message : "게임 목록을 받지 못했어요.");
       setPickRows((prev) => prev ?? []);
     }
   };
@@ -417,14 +417,14 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
 
             <section className="scr-adm-card">
               <div className="scr-adm-card-head">
-                <h2 className="scr-adm-card-title">경기 자료</h2>
+                <h2 className="scr-adm-card-title">게임 자료</h2>
               </div>
               <div className="scr-adm-rows">
                 <div className="scr-adm-row">
                   <div className="scr-adm-row-text">
                     <span className="scr-adm-row-title">데이터 관리</span>
                     <span className="scr-adm-row-desc">
-                      기간·공방 경기로 대상을 골라 재분석하거나 참값(재생 자료)·경기기록을 지웁니다. 리그 경기에 연결된 판은 지우지 않아요.
+                      기간·공방 게임으로 대상을 골라 재분석하거나 참값(재생 자료)·게임 기록을 지웁니다. 리그 경기에 연결된 판은 지우지 않아요.
                     </span>
                   </div>
                   <button
@@ -459,7 +459,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   <div className="scr-adm-row-text">
                     <span className="scr-adm-row-title">숨김 해제 요청{unhideCount ? ` (${unhideCount})` : ""}</span>
                     <span className="scr-adm-row-desc">
-                      회원이 숨긴 경기의 해제를 요청하면 여기에 모여요. 해제하면 경기가 다시 보입니다.
+                      회원이 숨긴 게임의 해제를 요청하면 여기에 모여요. 해제하면 게임이 다시 보입니다.
                     </span>
                   </div>
                   <button
@@ -474,9 +474,9 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 {SHOW_DELETED_GAMES && (
                   <div className="scr-adm-row">
                     <div className="scr-adm-row-text">
-                      <span className="scr-adm-row-title">삭제된 경기</span>
+                      <span className="scr-adm-row-title">삭제된 게임</span>
                       <span className="scr-adm-row-desc">
-                        지운 경기를 복원하거나 완전히 지웁니다. 지운 경기는 등록기가 같은 리플레이를 올려도 다시 등록되지 않아요.
+                        삭제한 게임을 복원하거나 완전히 지웁니다. 완전히 지운 게임은 다시 등록할 수 있어요.
                       </span>
                     </div>
                     <button
@@ -501,7 +501,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     <span className="scr-adm-row-title">게임 관리</span>
                     <span className="scr-adm-row-desc">
                       손님에게 보일 재생 목록을 만들고 이름·비밀번호를 정합니다(비우면 잠금 없음).
-                      경기는 게임 목록에서 골라 '공개'로 담습니다.
+                      담을 게임은 게임 목록에서 골라 '공개'로 담습니다.
                     </span>
                   </div>
                   <button
@@ -544,7 +544,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
             </div>
             <div className="scr-modal-body scr-redo-pick-body">
               {pickRows === null ? (
-                <div className="scr-redo-pick-empty"><Spinner /> 경기 목록을 받는 중…</div>
+                <div className="scr-redo-pick-empty"><Spinner /> 게임 목록을 받는 중…</div>
               ) : pickRows.length === 0 ? (
                 <div className="scr-redo-pick-empty">게임이 없어요</div>
               ) : (
@@ -566,7 +566,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     </label>
                     <label className="scr-checkbox-field scr-redo-pick-pub">
                       <input type="checkbox" checked={pickFilter.pub} onChange={(e) => changePickFilter({ pub: e.target.checked })} />
-                      공방 경기만
+                      공방 게임만
                     </label>
                     {/* 전체 선택 단추(2026-10-20, 요청: "전체선택 버튼도") — 지금 거름(기간·공방·찾기)에 보이는 판을 다 고른다 · 다 골랐으면 선택 해제. 옛 목록 위 체크 줄을 대신한다. */}
                     <button
@@ -627,7 +627,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   disabled={picked.size === 0 || dataBusy}
                   onClick={() => { setPickerOpen(false); void deleteGames(pickedIds); }}
                 >
-                  경기 삭제
+                  게임 삭제
                 </button>
               </div>
             </div>
@@ -638,8 +638,8 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
 
       {confirmPurge !== null && (
         <ConfirmDialog
-          title={`고른 경기 ${confirmPurge.length}건의 참값을 지울까요?`}
-          message="고른 경기의 재생 자료만 지웁니다(리그 경기·외부 공개에 연결된 판은 남겨요). 리플레이 파일과 통계·전술 낱말은 그대로예요. 다시 보려면 그 경기를 재분석하면 다시 구워집니다."
+          title={`고른 게임 ${confirmPurge.length}건의 참값을 지울까요?`}
+          message="고른 게임의 재생 자료만 지웁니다(리그 경기·외부 공개에 연결된 판은 남겨요). 리플레이 파일과 통계·전술 낱말은 그대로예요. 다시 보려면 그 게임을 재분석하면 다시 구워집니다."
           confirmLabel="지우기"
           onConfirm={() => { void purgeTruth(confirmPurge); }}
           onCancel={() => setConfirmPurge(null)}
@@ -698,8 +698,8 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
 
       {confirmRedo && (
         <ConfirmDialog
-          title={`고른 경기 ${pickedReplayIds.length}건을 다시 분석할까요?`}
-          message="리플레이가 붙은 경기를 다시 읽어 분석 결과를 새로 씁니다. 직접 입력한 값(날짜·승패·회원 연결 등)은 그대로예요. 건수가 많으면 몇 분 걸립니다."
+          title={`고른 게임 ${pickedReplayIds.length}건을 다시 분석할까요?`}
+          message="리플레이가 붙은 게임을 다시 읽어 분석 결과를 새로 씁니다. 직접 입력한 값(날짜·승패·회원 연결 등)은 그대로예요. 건수가 많으면 몇 분 걸립니다."
           confirmLabel="다시 분석"
           onConfirm={() => { setConfirmRedo(false); void reanalyzeGames(pickedReplayIds); }}
           onCancel={() => setConfirmRedo(false)}

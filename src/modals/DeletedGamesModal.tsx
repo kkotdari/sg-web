@@ -46,7 +46,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
     try {
       setRows(await api.listDeletedGameResults());
     } catch (e) {
-      showAlert(e instanceof Error ? e.message : "삭제된 경기 목록을 받지 못했어요.");
+      showAlert(e instanceof Error ? e.message : "삭제된 게임 목록을 받지 못했어요.");
       setRows([]);
     }
   }, []);
@@ -91,10 +91,10 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
     try {
       if (kind === "restore") {
         await api.restoreGameResult(game.id);
-        showToast(`${game.matchNo} 경기를 복원했어요.`, { kind: "ok" });
+        showToast(`${game.matchNo} 게임을 복원했어요.`, { kind: "ok" });
       } else {
         await api.purgeGameResult(game.id);
-        showToast(`${game.matchNo} 경기를 완전히 지웠어요.`, { kind: "ok" });
+        showToast(`${game.matchNo} 게임을 완전히 지웠어요.`, { kind: "ok" });
       }
       setRows((prev) => (prev ? prev.filter((g) => g.id !== game.id) : prev));
       setConfirm(null);
@@ -110,16 +110,16 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
       <ModalHash hash="deleted-games" onClose={onClose} />
       <div className="scr-modal scr-modal-md scr-trash" onClick={(e) => e.stopPropagation()}>
         <div className="scr-modal-head">
-          <span>삭제된 경기{rows && rows.length > 0 ? ` (${rows.length})` : ""}</span>
+          <span>삭제된 게임{rows && rows.length > 0 ? ` (${rows.length})` : ""}</span>
           <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
         </div>
         <div className="scr-modal-body scr-trash-body">
           <p className="scr-trash-note">
-            지운 경기는 목록·통계에 안 보이고, 등록기가 같은 리플레이를 올려도 다시 등록되지 않아요.
-            복원하면 그대로 돌아오고, 완전 삭제하면 리플레이 파일까지 지워져 그 뒤엔 새 경기로 등록될 수 있어요.
+            삭제한 게임은 목록·통계에 안 보이고, 등록기가 같은 리플레이를 올려도 다시 등록되지 않아요.
+            복원하면 그대로 돌아오고, 완전히 지운 게임은 리플레이 파일까지 지워져 다시 등록할 수 있어요.
           </p>
           {rows === null ? (
-            <div className="scr-trash-empty"><Spinner /> 삭제된 경기를 받는 중…</div>
+            <div className="scr-trash-empty"><Spinner /> 삭제된 게임을 받는 중…</div>
           ) : rows.length === 0 ? (
             <div className="scr-trash-empty">게임이 없어요</div>
           ) : (
@@ -221,8 +221,8 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
             ? `선택한 ${bulk.games.length}판을 복원할까요?`
             : `선택한 ${bulk.games.length}판을 완전히 지울까요?`}
           message={bulk.kind === "restore"
-            ? "목록·통계·활동에 다시 나타나고, 그 뒤 같은 리플레이가 올라오면 그 경기에 갱신돼요."
-            : "리플레이 파일까지 지워지고 되돌릴 수 없어요. 그 뒤에 같은 리플레이가 올라오면 새 경기로 등록돼요."}
+            ? "목록·통계·활동에 다시 나타나고, 그 뒤 같은 리플레이가 올라오면 그 게임에 갱신돼요."
+            : "리플레이 파일까지 지워지고 되돌릴 수 없어요. 그 뒤에 같은 리플레이가 올라오면 새 게임으로 등록돼요."}
           confirmLabel={bulkProgress
             ? `${bulk.kind === "restore" ? "복원" : "지우는"} 중... ${bulkProgress.done}/${bulkProgress.total}`
             : (bulk.kind === "restore" ? "복원" : "완전 삭제")}
@@ -233,8 +233,8 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
       )}
       {confirm && confirm.kind === "restore" && (
         <ConfirmDialog
-          title={`${confirm.game.matchNo} 경기를 복원할까요?`}
-          message="목록·통계·활동에 다시 나타나고, 그 뒤 같은 리플레이가 올라오면 이 경기에 갱신돼요."
+          title={`${confirm.game.matchNo} 게임을 복원할까요?`}
+          message="목록·통계·활동에 다시 나타나고, 그 뒤 같은 리플레이가 올라오면 이 게임에 갱신돼요."
           confirmLabel={busyId === confirm.game.id ? "복원 중..." : "복원"}
           error={confirmErr}
           onConfirm={() => { void run("restore", confirm.game); }}
@@ -243,8 +243,8 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
       )}
       {confirm && confirm.kind === "purge" && (
         <ConfirmDialog
-          title={`${confirm.game.matchNo} 경기를 완전히 지울까요?`}
-          message="리플레이 파일까지 지워지고 되돌릴 수 없어요. 그 뒤에 같은 리플레이가 올라오면 새 경기로 등록돼요. 다시 올라오면 안 되는 경기라면 지운 채로 두세요."
+          title={`${confirm.game.matchNo} 게임을 완전히 지울까요?`}
+          message="리플레이 파일까지 지워지고 되돌릴 수 없어요. 그 뒤에 같은 리플레이가 올라오면 새 게임으로 등록돼요. 다시 올라오면 안 되는 게임이라면 지운 채로 두세요."
           confirmLabel={busyId === confirm.game.id ? "지우는 중..." : "완전 삭제"}
           error={confirmErr}
           onConfirm={() => { void run("purge", confirm.game); }}

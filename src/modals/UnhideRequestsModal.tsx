@@ -40,7 +40,7 @@ export default function UnhideRequestsModal({ onClose }: { onClose: () => void }
     setConfirmErr(null);
     try {
       await api.resolveUnhideRequest(req.id, kind === "approve");
-      showToast(kind === "approve" ? `${req.matchNo} 경기의 숨김을 풀었어요.` : `${req.matchNo} 해제 요청을 거절했어요.`, { kind: "ok" });
+      showToast(kind === "approve" ? `${req.matchNo} 게임의 숨김을 풀었어요.` : `${req.matchNo} 해제 요청을 거절했어요.`, { kind: "ok" });
       setRows((prev) => (prev ? prev.filter((r) => r.id !== req.id) : prev));
       setConfirm(null);
     } catch (e) {
@@ -60,8 +60,8 @@ export default function UnhideRequestsModal({ onClose }: { onClose: () => void }
         </div>
         <div className="scr-modal-body scr-trash-body">
           <p className="scr-trash-note">
-            숨긴 경기는 누구도 되돌릴 수 없어서, 회원이 게임 목록에서 해제를 요청하면 여기에 모여요.
-            해제하면 경기가 목록·통계·재생에 다시 보이고, 거절하면 숨긴 채로 남아요.
+            숨긴 게임은 누구도 되돌릴 수 없어서, 회원이 게임 목록에서 해제를 요청하면 여기에 모여요.
+            해제하면 게임이 목록·통계·재생에 다시 보이고, 거절하면 숨긴 채로 남아요.
           </p>
           {rows === null ? (
             <div className="scr-trash-empty"><Spinner /> 요청을 받는 중…</div>
@@ -88,7 +88,7 @@ export default function UnhideRequestsModal({ onClose }: { onClose: () => void }
                         type="button" className="scr-rect-btn scr-trash-restore"
                         onClick={() => { setConfirmErr(null); setConfirm({ kind: "approve", req: r }); }}
                         disabled={busyId !== null}
-                        title="해제 — 경기를 다시 보이게 합니다"
+                        title="해제 — 게임을 다시 보이게 합니다"
                       >
                         {busy ? <Spinner size={14} /> : <><Eye size={13} /> 해제</>}
                       </button>
@@ -111,10 +111,10 @@ export default function UnhideRequestsModal({ onClose }: { onClose: () => void }
 
       {confirm && (
         <ConfirmDialog
-          title={confirm.kind === "approve" ? `${confirm.req.matchNo} 경기의 숨김을 풀까요?` : `${confirm.req.matchNo} 해제 요청을 거절할까요?`}
+          title={confirm.kind === "approve" ? `${confirm.req.matchNo} 게임의 숨김을 풀까요?` : `${confirm.req.matchNo} 해제 요청을 거절할까요?`}
           message={confirm.kind === "approve"
-            ? "경기가 목록·통계·재생에 다시 보여요. 다시 숨기려면 뛴 사람이 한 번 더 숨겨야 해요."
-            : "경기는 숨긴 채로 남아요. 요청한 회원은 다시 요청할 수 있어요."}
+            ? "게임이 목록·통계·재생에 다시 보여요. 다시 숨기려면 뛴 사람이 한 번 더 숨겨야 해요."
+            : "게임은 숨긴 채로 남아요. 요청한 회원은 다시 요청할 수 있어요."}
           confirmLabel={busyId === confirm.req.id ? "처리 중..." : confirm.kind === "approve" ? "해제" : "거절"}
           error={confirmErr}
           onConfirm={() => { void run(confirm.kind, confirm.req); }}
