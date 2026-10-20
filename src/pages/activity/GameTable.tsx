@@ -50,7 +50,9 @@ const lengthText = (sec: number | null): string =>
 /** 이 화면에서 해제를 청한 판 — 서버는 같은 판에 기다리는 요청을 하나만 두니 다시 눌러도 되지만, 단추는 '요청됨'으로 잠근다. */
 const requested = new Set<number>();
 
-function UnhideCell({ game }: { game: GameResult }) {
+/** 해제요청 단추 — PC 표의 숨김 칸과 폰 숨긴 줄(ActivityRow)이 같이 쓴다. 폰 줄은 그 자체가 <button> 이라 단추를 못 넣는다 —
+ *  inRow 면 span(role=button)으로 선다(2026-10-20, 요청: "모바일 숨김 경기에도 해제 요청 버튼"). */
+export function UnhideRequestButton({ game, inRow }: { game: GameResult; inRow?: boolean }) {
   const [state, setState] = useState<"idle" | "busy" | "done">(requested.has(game.id) ? "done" : "idle");
   const ask = async () => {
     setState("busy");
@@ -64,17 +66,41 @@ function UnhideCell({ game }: { game: GameResult }) {
       showToast(e instanceof Error ? e.message : "요청하지 못했어요.", { kind: "warn" });
     }
   };
+  const label = state === "done" ? "요청됨" : "해제요청";
+  const press = (e: { stopPropagation: () => void; preventDefault?: () => void }) => {
+    e.stopPropagation();
+    if (state === "idle") void ask();
+  };
+  if (inRow) {
+    return (
+      <span
+        role="button" tabIndex={0} aria-disabled={state !== "idle" ? true : undefined}
+        className={cx("scr-pill-btn scr-gtab-unhide", state !== "idle" && "is-off")}
+        onClick={press}
+        onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); press(e); } }}
+      >
+        {label}
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button" className="scr-pill-btn scr-gtab-unhide"
+      disabled={state !== "idle"}
+      onClick={press}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      {label}
+    </button>
+  );
+}
+
+function UnhideCell({ game }: { game: GameResult }) {
   return (
     <span className="scr-gtab-cell scr-gtab-hide">
       <span className="scr-gtab-hidden-text">숨김</span>
-      <button
-        type="button" className="scr-pill-btn scr-gtab-unhide"
-        disabled={state !== "idle"}
-        onClick={(e) => { e.stopPropagation(); if (state === "idle") void ask(); }}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
-        {state === "done" ? "요청됨" : "해제요청"}
-      </button>
+      <UnhideRequestButton game={game} />
     </span>
   );
 }

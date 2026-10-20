@@ -7,7 +7,7 @@ import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
 import { challengeStatusInfo } from "../challenge/ChallengeScreen";
 import { GameRowNames, GameRowStatus, ListRow } from "./GameRow";
-import { GameTableRow } from "./GameTable";
+import { GameTableRow, UnhideRequestButton } from "./GameTable";
 import { commentStatOf, subscribeComments } from "./ActivityComments";
 import {
   ROW_VOID, STATUS_FADED, commentTargetOf, nameNodes, namesWithRest, rowFlagsOf, rowKeyOf, type DisplayItem,
@@ -189,6 +189,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
       ) : undefined}
       desc={<>
         {rowDesc(item, view)}
+        {secret && <UnhideRequestButton game={item.gameResult} inRow />}
         {notes > 0 && (
           <span className="scr-activity-row-notes" title={`댓글 ${notes}개`}>[{notes}]</span>
         )}
