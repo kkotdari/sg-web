@@ -37,7 +37,7 @@ function niceMax(v: number): number {
 
 const compact = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K` : `${Math.round(v * 10) / 10}`);
 
-function Chart({ title, unit, lines }: { title: string; unit: string; lines: Line[] }) {
+function Chart({ title, unit, lines, note }: { title: string; unit: string; lines: Line[]; note?: string }) {
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   /* 띄운 값 상자는 그래프 밖 어디를 누르든 닫힌다(2026-10-20, 요청: "그래프 누르면 팝업 같은 거 나오는데 다른 데 누르면 닫히게").
@@ -67,7 +67,7 @@ function Chart({ title, unit, lines }: { title: string; unit: string; lines: Lin
   const tipLeft = at === null ? 0 : (x(at) / W) * 100;
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">{title} <i>· 분마다 평균</i></figcaption>
+      <figcaption className="scr-rc-title">{title} <i>· 분마다 평균</i>{note && <small className="scr-rc-note">{note}</small>}</figcaption>
       <div className="scr-rc-plot">
         <svg
           ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="scr-rc-svg" role="img"
@@ -139,7 +139,8 @@ export default function RaceCurves({ byRace }: { byRace?: Partial<Record<BaseRac
       </div>
       <div className="scr-rc-charts">
         <Chart title="일꾼 수" unit="기" lines={wk} />
-        <Chart title="병력 가치" unit="" lines={av} />
+        {/* 짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고") — 셈은 sg-api series.ARMY_COST. */}
+        <Chart title="병력 가치" unit="" lines={av} note="살아 있는 전투 유닛의 미네랄+가스 합 (일꾼·건물·오버로드 제외)" />
       </div>
     </div>
   );

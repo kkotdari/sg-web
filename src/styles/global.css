@@ -8010,10 +8010,11 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-legend em { font-style: normal; font-weight: 600; color: var(--dim); font-variant-numeric: tabular-nums; }
 .scr-rc-key { display: inline-block; flex: none; width: 12px; height: 2px; border-radius: 1px; }
 /* PC 는 판 하나를 440 까지만 — 넓히면 viewBox 가 같이 불어 축 글자가 커진다. */
-.scr-rc-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 440px)); gap: 10px 28px; }
+.scr-rc-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 440px)); gap: 10px 28px; align-items: end; }
 .scr-rc-chart { margin: 0; min-width: 0; }
 .scr-rc-title { margin-bottom: 2px; font-size: var(--fs-11); font-weight: 800; color: var(--text); }
 .scr-rc-title > i { font-style: normal; font-weight: 600; color: var(--dim); }
+.scr-rc-note { display: block; margin-top: 1px; font-size: var(--fs-10); font-weight: 500; color: var(--dim); }
 .scr-rc-plot { position: relative; }
 .scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; cursor: crosshair; }
 .scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }
