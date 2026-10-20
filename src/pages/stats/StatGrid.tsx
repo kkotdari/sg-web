@@ -4,7 +4,7 @@ import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
-import RaceCurves from "./RaceCurves";
+import RaceCurves, { curveScale, type CurveScale } from "./RaceCurves";
 import type { BaseRace, Member, MemberStats } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
@@ -81,13 +81,13 @@ function RaceCells({ s }: { s?: MemberStats }) {
   if (!s || s.plays === 0) return <><span className="scr-sg-c"><Dash /></span><span className="scr-sg-c"><Dash /></span></>;
   return (
     <>
-      <span className="scr-sg-c scr-sg-race"><Num v={s.plays.toLocaleString()} unit="회" /></span>
+      <span className="scr-sg-c scr-sg-race"><Num v={s.plays.toLocaleString()} unit="전" /></span>
       <span className="scr-sg-c"><Rate s={s} /></span>
     </>
   );
 }
 
-function PcRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boolean; games?: number; openAll: boolean }) {
+function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: boolean; games?: number; openAll: boolean; scale: CurveScale }) {
   const [open, setOpen] = useState(openAll);
   useEffect(() => { setOpen(openAll); }, [openAll]);
   const s = row.stats;
@@ -99,8 +99,8 @@ function PcRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boolean
         </span>
         <span className="scr-sg-c">
           {clan
-            ? <span className="scr-sg-v"><b>{(games ?? 0).toLocaleString()}</b><i>판</i><i className="scr-sg-paren">({s.plays.toLocaleString()}회)</i></span>
-            : <Num v={s.plays > 0 ? s.plays.toLocaleString() : null} unit="회" />}
+            ? <span className="scr-sg-v"><b>{(games ?? 0).toLocaleString()}</b><i>판</i><i className="scr-sg-paren">({s.plays.toLocaleString()}전)</i></span>
+            : <Num v={s.plays > 0 ? s.plays.toLocaleString() : null} unit="전" />}
         </span>
         <span className="scr-sg-c">{clan ? <Dash /> : <Rate s={s} />}</span>
         <span className="scr-sg-c"><Num v={s.avgApm} /></span>
@@ -112,7 +112,7 @@ function PcRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boolean
           </button>
         </span>
       </div>
-      {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} /></div>}
+      {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} /></div>}
     </>
   );
 }
@@ -122,7 +122,7 @@ function MCell({ s, clan }: { s?: MemberStats; clan?: boolean }) {
   return <span className="scr-sg-c">{clan || !s || s.plays === 0 ? <Dash /> : <Rate s={s} />}</span>;
 }
 
-function MobileRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boolean; games?: number; openAll: boolean }) {
+function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: boolean; games?: number; openAll: boolean; scale: CurveScale }) {
   const s = row.stats;
   const [open, setOpen] = useState(openAll);
   useEffect(() => { setOpen(openAll); }, [openAll]);
@@ -158,7 +158,7 @@ function MobileRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boo
       <MCell s={s} clan={clan} />
       {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} />)}
     </div>
-    {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} /></div>}
+    {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} /></div>}
     </>
   );
 }
@@ -172,6 +172,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   mobile: boolean;
 }) {
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: "클랜원 전체" } as Member, stats: clan.stats, byRace: clan.byRace } : null;
+  /* 펼친 곡선은 모든 줄이 한 자(눈금)를 쓴다(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이"). */
+  const scale = curveScale([clanRow, ...rows].map((r) => r?.byRace));
   if (mobile) {
     return (
       <div className="scr-sg is-m" role="table" aria-label="통계">
@@ -180,8 +182,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
           {/* 칸 머리 "전체 승률 · 테란 승률 …" — 늘 두 줄(2026-10-20, 요청: "헤더도 전체 승률 테란 승률 이렇게 · 칸 좁으면 두 줄"). 색 네모 없음. */}
           {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-race-head"><span>{r}</span><span>승률</span></span>)}
         </div>
-        {clanRow && <MobileRow row={clanRow} clan games={clanGames} openAll={openAll} />}
-        {rows.map((r) => <MobileRow key={r.member.id} row={r} openAll={openAll} />)}
+        {clanRow && <MobileRow row={clanRow} clan games={clanGames} openAll={openAll} scale={scale} />}
+        {rows.map((r) => <MobileRow key={r.member.id} row={r} openAll={openAll} scale={scale} />)}
       </div>
     );
   }
@@ -194,9 +196,9 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
         <span className="scr-sg-c scr-sg-h2" />
         {RACES.map((r) => <Fragment key={r}><span className="scr-sg-c scr-sg-hsub">전적</span><span className="scr-sg-c scr-sg-hsub">승률</span></Fragment>)}
       </div>
-      {clanRow && <PcRow row={clanRow} clan games={clanGames} openAll={openAll} />}
+      {clanRow && <PcRow row={clanRow} clan games={clanGames} openAll={openAll} scale={scale} />}
       {rows.map((r) => (
-        <Fragment key={r.member.id}><PcRow row={r} openAll={openAll} /></Fragment>
+        <Fragment key={r.member.id}><PcRow row={r} openAll={openAll} scale={scale} /></Fragment>
       ))}
     </div>
   );

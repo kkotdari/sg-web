@@ -16,6 +16,33 @@ const H = 150;
 const PAD = { l: 34, r: 12, t: 10, b: 20 };
 
 type Line = { race: BaseRace; ys: number[] };
+type ByRace = Partial<Record<BaseRace, MemberStats>> | undefined;
+
+/** 모든 줄이 함께 쓰는 자(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이") — 세로는 일꾼 0~100 ·
+ *  병력 0~5K 가 기본이고 넘는 줄이 있으면 그 단(100 · 5K)으로 올려 **모두** 같이 늘린다. 가로는 보이는 줄 중 가장 긴 분. */
+export interface CurveScale { x: number; wk: number; av: number }
+const WK_STEP = 100;
+const AV_STEP = 5000;
+
+const linesOf = (byRace: ByRace, key: "wk" | "av"): Line[] => RACES.flatMap((race) => {
+  const c = byRace?.[race]?.curve;
+  if (!c || c.n.length === 0) return [];
+  const ys = trimmed(c, key);
+  return ys.length >= 2 ? [{ race, ys }] : [];
+});
+
+export function curveScale(all: ByRace[]): CurveScale {
+  let x = 1, wk = 0, av = 0;
+  for (const byRace of all) {
+    for (const l of linesOf(byRace, "wk")) { x = Math.max(x, l.ys.length - 1); wk = Math.max(wk, ...l.ys); }
+    for (const l of linesOf(byRace, "av")) { x = Math.max(x, l.ys.length - 1); av = Math.max(av, ...l.ys); }
+  }
+  return {
+    x,
+    wk: Math.max(WK_STEP, Math.ceil(wk / WK_STEP) * WK_STEP),
+    av: Math.max(AV_STEP, Math.ceil(av / AV_STEP) * AV_STEP),
+  };
+}
 
 /** 판 수가 첫 분의 20%(최소 1판) 밑으로 떨어지기 전까지만. */
 function trimmed(c: StatCurve, key: "wk" | "av"): number[] {
@@ -28,16 +55,11 @@ function trimmed(c: StatCurve, key: "wk" | "av"): number[] {
   return out;
 }
 
-function niceMax(v: number): number {
-  if (v <= 0) return 1;
-  const p = 10 ** Math.floor(Math.log10(v));
-  const m = v / p;
-  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
-}
-
 const compact = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K` : `${Math.round(v * 10) / 10}`);
 
-function Chart({ title, unit, lines, note }: { title: string; unit: string; lines: Line[]; note?: string }) {
+function Chart({ title, unit, lines, note, maxX, maxY }: {
+  title: string; unit: string; lines: Line[]; note?: string; maxX: number; maxY: number;
+}) {
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   /* 띄운 값 상자는 그래프 밖 어디를 누르든 닫힌다(2026-10-20, 요청: "그래프 누르면 팝업 같은 거 나오는데 다른 데 누르면 닫히게").
@@ -50,8 +72,6 @@ function Chart({ title, unit, lines, note }: { title: string; unit: string; line
     document.addEventListener("pointerdown", close, true);
     return () => document.removeEventListener("pointerdown", close, true);
   }, [at]);
-  const maxX = Math.max(1, ...lines.map((l) => l.ys.length - 1));
-  const maxY = niceMax(Math.max(0, ...lines.flatMap((l) => l.ys)));
   const x = (i: number) => PAD.l + (i / maxX) * (W - PAD.l - PAD.r);
   const y = (v: number) => PAD.t + (1 - v / maxY) * (H - PAD.t - PAD.b);
   const ticksY = [0, maxY / 2, maxY];
@@ -116,15 +136,10 @@ function Chart({ title, unit, lines, note }: { title: string; unit: string; line
   );
 }
 
-export default function RaceCurves({ byRace }: { byRace?: Partial<Record<BaseRace, MemberStats>> }) {
-  const of = (key: "wk" | "av"): Line[] => RACES.flatMap((race) => {
-    const c = byRace?.[race]?.curve;
-    if (!c || c.n.length === 0) return [];
-    const ys = trimmed(c, key);
-    return ys.length >= 2 ? [{ race, ys }] : [];
-  });
-  const wk = of("wk");
-  const av = of("av");
+export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale }) {
+  const wk = linesOf(byRace, "wk");
+  const av = linesOf(byRace, "av");
+  const sc = scale ?? curveScale([byRace]);
   if (wk.length === 0 && av.length === 0) {
     return <div className="scr-rc-empty">곡선 기록이 아직 없어요 — 참값을 구운(재분석한) 경기부터 쌓여요.</div>;
   }
@@ -138,9 +153,9 @@ export default function RaceCurves({ byRace }: { byRace?: Partial<Record<BaseRac
         ))}
       </div>
       <div className="scr-rc-charts">
-        <Chart title="일꾼 수" unit="기" lines={wk} />
+        <Chart title="일꾼 수" unit="기" lines={wk} maxX={sc.x} maxY={sc.wk} />
         {/* 짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고") — 셈은 sg-api series.ARMY_COST. */}
-        <Chart title="병력 가치" unit="" lines={av} note="살아 있는 전투 유닛의 미네랄+가스 합 (일꾼·건물·오버로드 제외)" />
+        <Chart title="병력 가치" unit="" lines={av} note="살아 있는 전투 유닛의 미네랄+가스 합 (일꾼·건물·오버로드 제외)" maxX={sc.x} maxY={sc.av} />
       </div>
     </div>
   );
