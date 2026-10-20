@@ -11,6 +11,7 @@ import ActivityComments from "./ActivityComments";
 import { GameResultActionsMenu } from "./GameResultCardBody";
 import GameResultStory from "./GameResultStory";
 import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
+import { dropKeptGame, patchKeptGame } from "./listKeep";
 
 /* ★ 게임 상세는 **목록과 무관한 별도 페이지**다(2026-10-19, 요청: "너나와 리그 게임도 목록과 전혀무관하게 변경 · 별도 페이지임 그냥") —
    들어올 때마다 서버에서 받고, 고친 것을 목록에 알리지 않는다. 제 게임을 제 상태로 든다. */
@@ -69,6 +70,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   }, [game, memberOf]);
 
   const onChanged = (updated: GameResult): void => {
+    patchKeptGame(updated);   // 뒤로 가 되살아날 목록에도(listKeep)
     if (isSecretGame(updated)) { onGone(); return; }
     setGame(updated);
   };
@@ -123,6 +125,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
             setDeleteErr(null);
             try {
               await deleteGameResultAction(pendingDelete.id);
+              dropKeptGame(pendingDelete.id);
               setPendingDelete(null);
               onClose();
             } catch (e) {

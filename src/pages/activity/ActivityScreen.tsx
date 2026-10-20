@@ -11,7 +11,7 @@ import { useAppStore } from "../../store/appStore";
 import { isAdminRole } from "../../constants/roles";
 import { cx } from "../../utils/format";
 import { api } from "../../api/client";
-import { navigateTo, parseRoute, pathOf, type ActivityGroupKey, type Route } from "../../utils/route";
+import { navigateTo, parseRoute, pathOf, rememberListScroll, type ActivityGroupKey, type Route } from "../../utils/route";
 import { showAlert } from "../../components/common/AlertDialog";
 import { showToast } from "../../components/common/Toast";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -109,6 +109,7 @@ function ActivityRouter() {
     go("/", { replace: true, search: window.location.search });
   };
   const openItem = (item: DisplayItem): void => {
+    rememberListScroll();   // 뒤로 오면 목록이 이 자리로(ActivityGroupPage · route.ts)
     // 게임 목록의 공방/내전 탭은 목록 주소의 것 — 상세 주소엔 안 싣는다(뒤로 가면 목록 주소에서 되살아난다)
     const search = linkParams([...SCENE_LINK_KEYS9, "u", "q", "f", "tab"]);
     let path: string;
