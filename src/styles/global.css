@@ -5659,6 +5659,11 @@ span.scr-gtab-unhide { cursor: pointer; }
 span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 /* 폰 숨긴 줄 — "비밀" 곁에 해제요청(ActivityRow). */
 .scr-activity-row-desc > .scr-gtab-unhide { flex: none; margin-left: 8px; }
+/* 폰 숨긴 줄의 "비밀"(과 해제요청)은 줄 가운데(2026-10-20 요청: "비밀 글자 가운데 정렬"). */
+/* 글자 자체가 정가운데 — 양옆 1fr 격자에 "비밀"을 가운데 칸, 해제요청은 오른쪽 칸 왼끝. */
+.scr-activity-row-game.scr-activity-row-secret .scr-activity-row-desc { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.scr-activity-row-game.scr-activity-row-secret .scr-activity-row-desc > .scr-activity-row-names { grid-column: 2; }
+.scr-activity-row-game.scr-activity-row-secret .scr-activity-row-desc > .scr-gtab-unhide { grid-column: 3; justify-self: start; }
 .scr-activity-row-state {
   flex: none; margin-right: 3px;
   font-size: var(--fs-9); font-weight: 800; line-height: 1; white-space: nowrap;
