@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BaseRace, MemberStats, StatCurve } from "../../types";
 
 /* ★ 통계 펼침 = 분당 곡선 두 판(2026-10-20, 요청: "펼친 부분 내용 변경 · 시간별 … 연속 선 그래프로 세 종족을 색을 나눠서 같은 그래프에
@@ -40,6 +40,16 @@ const compact = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(v % 10
 function Chart({ title, unit, lines }: { title: string; unit: string; lines: Line[] }) {
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  /* 띄운 값 상자는 그래프 밖 어디를 누르든 닫힌다(2026-10-20, 요청: "그래프 누르면 팝업 같은 거 나오는데 다른 데 누르면 닫히게").
+     폰은 손가락을 떼도 남아 있어(pointerleave 는 마우스만 닫는다) 이것이 닫는 길이다. */
+  useEffect(() => {
+    if (at === null) return undefined;
+    const close = (e: PointerEvent): void => {
+      if (!svgRef.current?.contains(e.target as Node)) setAt(null);
+    };
+    document.addEventListener("pointerdown", close, true);
+    return () => document.removeEventListener("pointerdown", close, true);
+  }, [at]);
   const maxX = Math.max(1, ...lines.map((l) => l.ys.length - 1));
   const maxY = niceMax(Math.max(0, ...lines.flatMap((l) => l.ys)));
   const x = (i: number) => PAD.l + (i / maxX) * (W - PAD.l - PAD.r);
