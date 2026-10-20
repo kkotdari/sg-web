@@ -8063,17 +8063,19 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-who-sub { font-size: var(--fs-10); gap: 5px; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 3px; }
 /* 아래 줄(APM · 딜 · 피해) 한 줄 — 글자는 크게(12px) · 칸이 좁으면 폭에 비례해 줄인다(7.5cqw · 9.5px 밑으로 안 간다). */
-.scr-sg.is-m .scr-sg-who-sub { gap: 6px; letter-spacing: -0.01em; font-size: max(9.5px, min(12px, 7.5cqw)); }
-.scr-sg.is-m .scr-sg-name { font-size: var(--fs-body); }
+.scr-sg.is-m .scr-sg-who-sub { gap: 6px; letter-spacing: -0.01em; font-size: max(10px, min(13px, 7.6cqw)); }
+/* 유저 칸 글자 한 단 더 크게(2026-10-20, 요청: "유저 컬럼 글자 더 키워도 될 듯"). */
+.scr-sg.is-m .scr-sg-name { font-size: 17px; }
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 28px !important; height: 28px !important; }
 .scr-sg.is-m .scr-sg-c.scr-sg-who { padding: 10px 6px 10px 10px; gap: 5px; }
 /* 전적 칸 — [종족 | N전 | 승률] 세 칸을 줄마다 맞춘다. 종족 이름은 흐리게 · 승률은 굵게. */
-.scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-stack-head { justify-content: flex-start; padding-left: 10px; }
+.scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-stack-head { justify-content: flex-start; padding-left: 14px; }
 .scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-stack {
-  display: grid; grid-template-columns: auto auto auto; column-gap: 8px; row-gap: 2px; align-content: center; justify-content: start;
-  padding: 8px 10px; font-size: var(--fs-11); font-variant-numeric: tabular-nums; line-height: 1.3;
+  /* 넉넉하게(2026-10-20, 요청: "전적 컬럼 폭이 너무 좁고 답답") — 글자 13px · 칸 사이 14 · 줄 사이 4 · 옆 여백 14. */
+  display: grid; grid-template-columns: auto auto auto; column-gap: 14px; row-gap: 4px; align-content: center; justify-content: start;
+  padding: 12px 14px; font-size: 13px; font-variant-numeric: tabular-nums; line-height: 1.3;
 }
-.scr-sg-stack > i { font-style: normal; font-size: var(--fs-10); font-weight: 600; color: var(--dim); }
+.scr-sg-stack > i { font-style: normal; font-size: 12px; font-weight: 600; color: var(--dim); }
 .scr-sg-stack > .scr-sg-v, .scr-sg-stack > .scr-sg-dim { justify-self: end; }
 .scr-sg-stack > .scr-sg-v > b { font-weight: 600; }
 .scr-sg-stack > .scr-sg-v:nth-child(3n) > b { font-weight: 800; }
