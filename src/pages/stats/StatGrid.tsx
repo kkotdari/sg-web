@@ -128,13 +128,13 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
 }
 
 /** 폰 전적 칸 — 전체 · 테란 · 프로토스 · 저그를 한 칸에 세로로 "전체 24전 65.2%"(2026-10-20, 요청: "전체·종족별 승률 한 컬럼으로 · 세로로 전체 테란
- *  프로토스 저그 순 · 폭 적게 · 전체 1전 75% 이렇게 · 컬럼명은 전적"). 그 종족 판이 없으면 "-". 클랜원 전체의 전체 줄은 판 수만(내전이라 승률은 늘 반반). */
+ *  프로토스 저그 순 · 폭 적게 · 전체 1전 75% 이렇게 · 컬럼명은 전적" → "n전 n% 승"). 그 종족 판이 없으면 "-". 클랜원 전체의 전체 줄은 판 수만(내전이라 승률은 늘 반반). */
 function MStack({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
   const line = (label: string, st: MemberStats | undefined, plays?: string, noRate?: boolean) => (
     <Fragment key={label}>
       <i>{label}</i>
       {st && st.plays > 0
-        ? <><span className="scr-sg-v"><b>{plays ?? st.plays.toLocaleString()}</b><i>{plays ? "판" : "전"}</i></span>{noRate ? <Dash /> : <Num v={st.winRate} unit="%" />}</>
+        ? <><span className="scr-sg-v"><b>{plays ?? st.plays.toLocaleString()}</b><i>{plays ? "판" : "전"}</i></span>{noRate ? <Dash /> : <Num v={st.winRate} unit="% 승" />}</>
         : <><Dash /><span /></>}
     </Fragment>
   );
