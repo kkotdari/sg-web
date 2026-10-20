@@ -127,8 +127,9 @@ export default function LeagueMatchSets({
     setOpen(null);
     if (!g) { patch(i, { gameResultId: null }); return; }
     const w = winnerOf(g);
+    // 이긴 쪽은 게임이 정한다(이은 세트엔 승무패 단추가 없다) — 결과 없는 판은 비운다.
     // 이으면 글 칸이 사라진다 — 숨은 글이 남지 않게 비운다(해제하면 빈 글 칸으로 돌아온다).
-    patch(i, { gameResultId: g.id, winner: w ?? sets[i].winner, memo: "" });
+    patch(i, { gameResultId: g.id, winner: w ?? (g.result === "draw" ? "draw" : null), memo: "" });
   };
   const used = new Set(sets.map((s) => s.gameResultId).filter((x): x is number => x !== null));
 
@@ -173,12 +174,10 @@ export default function LeagueMatchSets({
                     </button>
                   )}
                   {linked ? (
-                    g ? (
-                      <span className="scr-league-set-game is-roster">
-                        <span className="scr-league-set-game-meta">{[whenOf(g), cleanMapName(g.mapCanonName ?? g.mapName)].filter(Boolean).join(" · ")}</span>
-                        <GameRowNames game={oriented(g)} memberOf={memberById} mobile playable={false} />
-                      </span>
-                    ) : <span className="scr-league-set-game">{`게임 #${s.gameResultId}`}</span>
+                    /* 이은 게임: 머리 줄엔 시각·맵 글만(테두리 없음) · 로스터는 **머리 줄 아래 줄**(2026-10-20, 요청: "테두리 없이 헤더 아래줄"). */
+                    <span className={cx("scr-league-set-game", g && "is-roster")}>
+                      {g ? [whenOf(g), cleanMapName(g.mapCanonName ?? g.mapName)].filter(Boolean).join(" · ") : `게임 #${s.gameResultId}`}
+                    </span>
                   ) : (
                     <input
                       type="text" className="scr-input scr-league-set-memo" disabled={disabled} maxLength={200}
@@ -204,7 +203,14 @@ export default function LeagueMatchSets({
                     <X size={13} />
                   </button>
                 </div>
-                <div className="scr-league-set-win" role="group" aria-label={`${i + 1}세트 결과`}>
+                {linked && g && (
+                  <div className="scr-league-set-roster">
+                    <GameRowNames game={oriented(g)} memberOf={memberById} mobile playable={false} />
+                  </div>
+                )}
+                {/* 이은 세트는 승무패 단추가 없다 — 이긴 쪽은 그 게임이 정하고 로스터 배지가 보인다(2026-10-20, 요청: "승무패 버튼 불필요").
+                    게임을 못 받았을 때(g 없음)만 손으로 고르게 둔다. */}
+                {!(linked && g) && <div className="scr-league-set-win" role="group" aria-label={`${i + 1}세트 결과`}>
                   {(["a", "draw", "b"] as const).map((side) => (
                     <button
                       key={side} type="button" disabled={disabled}
@@ -215,7 +221,7 @@ export default function LeagueMatchSets({
                       {side === "a" ? `${nameA} 승` : side === "b" ? `${nameB} 승` : "무"}
                     </button>
                   ))}
-                </div>
+                </div>}
                 {open === i && !linked && (
                   <div className="scr-league-set-pick">
                     {games === null ? (
