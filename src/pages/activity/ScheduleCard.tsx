@@ -836,7 +836,8 @@ function ScheduleCardInner({
           onChange={onBlocks}
         />
 
-        <div className="scr-schedule-by">— {schedule.createdBy.nickname}</div>
+        {/* 누가 올렸는지 또렷이(2026-10-20, 요청: "등록자도 누구 등록으로 명확하게") — 옛 "— 정구". */}
+        <div className="scr-schedule-by">{schedule.createdBy.nickname} 등록</div>
       </div>
       {shield && createPortal(
         <div className="scr-save-shield">

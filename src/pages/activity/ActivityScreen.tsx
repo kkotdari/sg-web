@@ -31,7 +31,7 @@ import type { RowAct, RowView } from "./ActivityRow";
 import { FeedProvider, useFeedActions, useRecentLeague } from "./activityFeed";
 import {
   GROUP_DEFS, GROUP_ITEM_KIND, GROUP_SCREEN_CODE, HIDE_FORMS, SCRAP_FORMS, bulkDeleteMessageOf, deletableOf,
-  detailGroupOf, detailIdOf, leagueMatchItem, type DisplayItem, type GameTab,
+  detailGroupOf, detailIdOf, leagueMatchItem, scheduleItem, type DisplayItem, type GameTab,
 } from "./activityItems";
 
 export { GameResultCard } from "./GameResultCard";
@@ -506,7 +506,8 @@ function ActivityRouter() {
         <ScheduleFormModal
           initial={null}
           onClose={() => setScheduleFormOpen(false)}
-          onSaved={feed.upsertSchedule}
+          /* 등록하면 그 일정의 상세(늘 편집 상태)로 바로 간다(2026-10-20, 요청: "등록하면 바로 상세 편집으로 · 지금은 목록이 나오네"). */
+          onSaved={(s) => { feed.upsertSchedule(s); openItem(scheduleItem(s)); }}
         />
       )}
 
