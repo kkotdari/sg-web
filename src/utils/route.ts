@@ -56,24 +56,15 @@ export function wasPushed(): boolean {
   return !!st?.scrPushed;
 }
 
-/* ★ 목록 자리 되살리기(2026-10-20, 요청: "게임 목록 보다가 상세 갔다가 뒤로 가면 스크롤 위치 기억 · 브라우저 뒤로가기에도") — 목록에서 상세로
-   가기 직전에 **지금 기록 칸**(history.state)에 스크롤 위치를 적어 둔다. 앱 ← · 브라우저 뒤로 · 폰 밀기 모두 같은 칸으로 돌아오므로 목록이 그 값을 읽어
-   되돌린다. 주소는 그대로(주소로 화면을 고르는 길도 그대로) — 칸에 덧붙는 값일 뿐이다.
-   목록 자료는 들고 있지 않는다(실시간성 — 뒤로 오면 새로 받는다). 대신 **불러와 있던 줄 수**도 함께 적어, 목록이 그만큼 이어 받은 뒤 그 자리로 내린다. */
+/* ★ 목록 자리 되살리기(2026-10-20) — 목록에서 상세로 가기 직전, 지금 기록 칸(history.state)에 스크롤 y 와 불러와 있던 줄 수 n 을 적는다.
+   앱 ← · 브라우저 뒤로 · 폰 밀기 모두 같은 칸으로 돌아오므로 목록이 이것을 읽어 새로 n 줄 받고 y 로 내린다. 주소도 목록 자료도 들고 있지 않는다. */
 let listCount9 = 0;
-/** 지금 목록이 불러와 있는 줄 수 — 게임 목록(ActivityGroupPage)이 받을 때마다 알린다. */
 export function noteListCount(n: number): void { listCount9 = n; }
 export function rememberListScroll(): void {
-  const st = (window.history.state ?? {}) as Record<string, unknown>;
-  window.history.replaceState({ ...st, scrListY: window.scrollY, scrListN: listCount9 }, "");
+  window.history.replaceState({ ...(window.history.state ?? {}), scrList: { y: window.scrollY, n: listCount9 } }, "");
 }
-export function listScrollOfEntry(): number | null {
-  const st = window.history.state as { scrListY?: unknown } | null;
-  return typeof st?.scrListY === "number" ? st.scrListY : null;
-}
-export function listCountOfEntry(): number | null {
-  const st = window.history.state as { scrListN?: unknown } | null;
-  return typeof st?.scrListN === "number" ? st.scrListN : null;
+export function listRestoreOfEntry(): { y: number; n: number } | null {
+  return (window.history.state as { scrList?: { y: number; n: number } } | null)?.scrList ?? null;
 }
 
 const DEAD_PARAMS = ["screen", "group", "item", "game"] as const;
