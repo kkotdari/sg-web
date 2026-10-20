@@ -80,7 +80,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
 
   const deleteAllGameResults = async () => {
     const typed = window.prompt(
-      '모든 경기기록을 삭제합니다. 첨부 리플레이까지 지워지고 되돌릴 수 없어요.\n삭제하려면 "삭제"를 입력하세요.',
+      '모든 경기기록을 삭제합니다(리그 경기에 연결된 판은 남겨요). 첨부 리플레이까지 지워지고 되돌릴 수 없어요.\n삭제하려면 "삭제"를 입력하세요.',
     );
     if (typed !== "삭제") return;
     setBusy(true);
@@ -420,7 +420,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   <div className="scr-adm-row-text">
                     <span className="scr-adm-row-title">참값 지우기</span>
                     <span className="scr-adm-row-desc">
-                      고른 날짜까지(그날 포함) 경기의 재생 자료를 지웁니다. 리플레이와 통계는 그대로고, 그 경기는 로스터로만 보여요.
+                      고른 날짜까지(그날 포함) 경기의 재생 자료를 지웁니다. 리플레이와 통계는 그대로고, 그 경기는 로스터로만 보여요. 리그 경기에 연결된 판은 남겨요.
                     </span>
                     <label className="scr-adm-row-field">
                       <span className="scr-adm-row-field-label">이 날짜까지</span>
@@ -476,7 +476,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 <div className="scr-adm-row">
                   <div className="scr-adm-row-text">
                     <span className="scr-adm-row-title">모든 경기기록 삭제</span>
-                    <span className="scr-adm-row-desc">첨부 리플레이까지 함께 지워지고 되돌릴 수 없어요.</span>
+                    <span className="scr-adm-row-desc">첨부 리플레이까지 함께 지워지고 되돌릴 수 없어요. 리그 경기에 연결된 판은 남겨요.</span>
                   </div>
                   <button
                     type="button" className="scr-rect-btn scr-adm-row-btn"
@@ -605,7 +605,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
       {confirmPurge !== null && (
         <ConfirmDialog
           title={`${confirmPurge.count}판의 참값을 지울까요?`}
-          message={`${confirmPurge.until}까지(그날 포함) 경기의 재생 자료만 지웁니다. 리플레이 파일과 통계는 그대로예요. 다시 보려면 그 날짜부터 재분석하면 다시 구워집니다.`}
+          message={`${confirmPurge.until}까지(그날 포함) 경기의 재생 자료만 지웁니다(리그 경기에 연결된 판은 남겨요). 리플레이 파일과 통계는 그대로예요. 다시 보려면 그 날짜부터 재분석하면 다시 구워집니다.`}
           confirmLabel="지우기"
           onConfirm={() => { void purgeTruth(confirmPurge.until); }}
           onCancel={() => setConfirmPurge(null)}
