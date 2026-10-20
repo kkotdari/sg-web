@@ -8079,7 +8079,10 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* APM 줄 = 전적 셋째 줄(프로토스) 글줄 · 데미지 줄 = 넷째 줄(저그) 글줄(2026-10-20, 요청: "APM 과 데미지 줄 나누고") — 줄높이 1.2 · 둘 사이 = 전적 줄 간격 24.2. */
 .scr-sg.is-m .scr-sg-who > .scr-sg-who-sub { margin-top: calc(45px - 1em); line-height: 1.2; }
 .scr-sg.is-m .scr-sg-who > .scr-sg-who-sub.scr-sg-who-dmg { margin-top: calc(24.2px - 1.2em); }
-.scr-sg-dmg-lab { font-style: normal; color: var(--dim); font-weight: 600; } /* 왼 여백 12 → 18 · 오른 6 → 10(요청: "왼쪽 여백 더 · 꽉 맞을 필요 없어") */ /* → "줄간격도 훨 넓혀" 14 → 20 */
+.scr-sg-dmg-lab { font-style: normal; color: var(--dim); font-weight: 600; }
+/* APM · 데미지 값의 왼끝을 맞춘다(2026-10-20, 요청) — 두 이름표를 같은 폭("데미지" 3자 + 틈)으로. */
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-lab > i, .scr-sg.is-m .scr-sg-who-sub > .scr-sg-dmg-lab { display: inline-block; width: 3.1em; flex: none; }
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-lab { gap: 0.45em; } /* 왼 여백 12 → 18 · 오른 6 → 10(요청: "왼쪽 여백 더 · 꽉 맞을 필요 없어") */ /* → "줄간격도 훨 넓혀" 14 → 20 */
 /* 전적 칸 — [종족 | N전 | 승률] 세 칸을 줄마다 맞춘다. 종족 이름은 흐리게 · 승률은 굵게. */
 /* 표 머리는 PC·폰 모두 칸 가운데(2026-10-20, 요청: "통계 그리드 헤더 가운데 정렬") — 유저·전적 머리도. */
 .scr-sg .scr-sg-row.scr-sg-head > .scr-sg-c { justify-content: center; text-align: center; padding-left: 8px; padding-right: 8px; }
