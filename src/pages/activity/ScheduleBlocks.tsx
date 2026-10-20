@@ -1016,11 +1016,15 @@ const BlockRow = memo(function BlockRow({ b, kids, folded, canEdit, lifted, sel,
   const onChange = (part: Partial<ScheduleBlock>): void => on().patch(key, part);
   const onDelete = (): void => on().askDrop(key);
   const rowRef = useCallback((el: HTMLDivElement | null) => act.current.rowRef(key, el), [act, key]);
+  const touchDown = useRef(false);
   return (
     <div
       data-block={key} data-indent={b.indent ?? 0}
       className={cx("scr-sb-item", lifted && "scr-sb-item-lifted", sel && "scr-sb-item-sel", picked && "scr-sb-item-picked")}
-      onPointerDown={canEdit ? (e) => { if (e.pointerType === "touch") on().touchPick(key); } : undefined}
+      /* 폰은 만진 요소를 고른다(단추 줄을 낸다) — 누름이 **끝난 뒤**(click)에 고른다. 닿는 순간 고르면 그 자리에 뜬 단추 줄이 손을 뗄 때의
+         누름을 가로채(원래 누르려던 사진·접기 대신 들여쓰기·삭제가 눌림) 원래 단추가 제 일을 못 했다(2026-10-20, 요청: "원래 단추의 작동은 하면서"). */
+      onPointerDown={canEdit ? (e) => { touchDown.current = e.pointerType === "touch"; } : undefined}
+      onClickCapture={canEdit ? () => { if (touchDown.current) on().touchPick(key); } : undefined}
       style={b.indent ? ({ "--sb-indent": b.indent } as React.CSSProperties) : undefined}
       ref={rowRef}
     >
