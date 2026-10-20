@@ -19,7 +19,7 @@ const RACES = ["테란", "프로토스", "저그"] as const;
 const RACE_TONE: Record<string, string> = { 테란: "var(--terran)", 프로토스: "var(--protoss)", 저그: "var(--zerg)" };
 const MAX_OPTS = 30;
 
-/** 칩 입력 — 엔터 · 쉼표 · 자동완성으로 값을 칩으로 담는다(칸 안 여러 값). 빈 칸에서 엔터면 onSubmit. */
+/** 칩 입력 — 엔터 · 띄어쓰기 · 자동완성으로 값을 칩으로 담는다(칸 안 여러 값 · 쉼표는 안 쓴다 · 2026-10-20 요청: "쉼표 사용 제거"). 빈 칸에서 엔터면 onSubmit. */
 function ChipInput({ values, onChange, options, placeholder, onSubmit, single }: {
   values: string[];
   onChange: (next: string[]) => void;
@@ -68,7 +68,7 @@ function ChipInput({ values, onChange, options, placeholder, onSubmit, single }:
       add(open && shown[hi] && normalizeSearchText(shown[hi].value).startsWith(normalizeSearchText(text.trim())) ? shown[hi].value : text);
       return;
     }
-    if (e.key === "," || e.key === "Tab") {
+    if (e.key === "Tab") {
       if (!text.trim()) return;
       e.preventDefault();
       add(open && shown[hi] ? shown[hi].value : text);
@@ -90,8 +90,8 @@ function ChipInput({ values, onChange, options, placeholder, onSubmit, single }:
           className="scr-gs-input" value={text} placeholder={values.length ? "" : placeholder}
           onChange={(e) => {
             const raw = e.target.value;
-            /* 붙여 넣기 — 쉼표가 있으면 쉼표로, 없으면 띄어쓰기로(띄어쓰기 든 이름이 후보에 있는 칸은 통째 한 값). */
-            const parts = raw.includes(",") ? raw.split(/,+/) : options.some((o) => o.value.includes(" ")) ? [raw] : raw.split(/\s+/);
+            /* 붙여 넣기 — 띄어쓰기로 나눈다(띄어쓰기 든 이름이 후보에 있는 칸은 통째 한 값). */
+            const parts = options.some((o) => o.value.includes(" ")) ? [raw] : raw.split(/\s+/);
             if (parts.length > 1) {
               const last = parts.pop() ?? "";
               const fresh = parts.map((x) => x.trim()).filter((x) => x && !values.some((v) => normalizeSearchText(v) === normalizeSearchText(x)));
