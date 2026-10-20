@@ -5761,8 +5761,9 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-row-game.scr-gm .scr-activity-row-em { text-overflow: clip; }
 /* 체크박스는 배지 줄이 아니라 **이름 줄에 높이를 맞춘다**(요청) — 줄 전체를 기준으로 가운데 두면 두 줄 사이에 떠 보인다.
    줄 아래 여백 7 + 이름 줄 높이의 절반에서 체크박스 절반을 뺀 만큼(9) 띄워 아래에 붙인다. */
+/* 2026-10-20 — 이 꼴을 쓰는 목록(재분석 · 외부 공개 · 삭제 …)에선 체크박스를 줄 **세로 가운데**로(요청: "게임목록 사용시 체크박스 위치 가운데 정렬 세로"). */
 .scr-activity-row-wrap-sel:has(> .scr-activity-row-game.scr-gm) > .scr-selcell {
-  align-items: flex-end; padding-bottom: 9px;
+  align-items: center; padding-bottom: 0;
 }
 
 .scr-activity-row-fold { display: grid; }
