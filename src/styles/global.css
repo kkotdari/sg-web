@@ -6160,6 +6160,9 @@ input.scr-schedule-title { font-weight: 800; }
 }
 .scr-schedule-save-state { flex: 0 0 auto; font-size: var(--fs-caption); font-weight: 700; color: var(--dim); white-space: nowrap; }
 .scr-schedule-save-state-failed { color: var(--loss); }
+/* 저장 단추 묶음(2026-10-20 · 저장은 단추로) — 제목 줄 오른쪽, 마지막 저장 시각 자리. */
+.scr-schedule-save-btns { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; }
+.scr-schedule-save-btns .scr-compact-rect-btn { padding: 4px 10px; }
 .scr-schedule-content {
   margin: 0; font-size: var(--fs-caption); color: var(--muted);
   line-height: 1.75; white-space: pre-line; word-break: break-word;

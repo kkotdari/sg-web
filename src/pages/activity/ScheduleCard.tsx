@@ -27,7 +27,8 @@ function whenText(schedule: Schedule): string {
 }
 
 type Head = { title: string; date: string; time: string };
-type SaveState = "saved" | "saving" | "failed";
+/* saved = 서버와 같음 · dirty = 저장 안 한 고침 · saving = 보내는 중 · failed = 보냈는데 실패. */
+type SaveState = "saved" | "dirty" | "saving" | "failed";
 const savedAtText = (iso: string): string => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
@@ -36,7 +37,7 @@ const savedAtText = (iso: string): string => {
 };
 
 function ScheduleHead({
-  head, canEdit, editing, saveState, savedAt, menu, onChange,
+  head, canEdit, editing, saveState, savedAt, menu, onChange, onSave, onDiscard,
 }: {
   head: Head;
   canEdit: boolean;
@@ -45,6 +46,8 @@ function ScheduleHead({
   savedAt: string;
   menu: ReactNode;
   onChange: (part: Partial<Head>) => void;
+  onSave: () => void;
+  onDiscard: () => void;
 }) {
   const [whenOpen, setWhenOpen] = useState(false);
   return (
@@ -59,14 +62,29 @@ function ScheduleHead({
         ) : (
           <h3 className="scr-schedule-title scr-sb-line">{head.title}</h3>
         )}
-        {canEdit && editing && (
-          <span
-            className={cx("scr-schedule-save-state", saveState === "failed" && "scr-schedule-save-state-failed")}
-            role="status" aria-live="polite"
-          >
-            {saveState === "failed" ? "저장 안 됨" : `마지막 저장: ${savedAtText(savedAt)}`}
+        {/* ★ 저장은 단추로(2026-10-20, 요청: "수정 시 저장 버튼 눌러야 서버에 반영") — 고친 게 있으면 [취소 | 저장], 없으면 마지막 저장 시각.
+            취소는 저장 안 한 고침을 버리고 마지막 저장 판으로 돌아간다(옛 요청 "방금 전으로 되돌리기"의 몫). */}
+        {canEdit && editing && (saveState === "saved" ? (
+          <span className="scr-schedule-save-state" role="status" aria-live="polite">
+            마지막 저장: {savedAtText(savedAt)}
           </span>
-        )}
+        ) : (
+          <span className="scr-schedule-save-btns" role="group" aria-label="저장">
+            {saveState === "failed" && <span className="scr-schedule-save-state scr-schedule-save-state-failed" role="status">저장 안 됨</span>}
+            <button
+              type="button" className="scr-compact-rect-btn is-secondary" disabled={saveState === "saving"}
+              onClick={(e) => { e.stopPropagation(); onDiscard(); }}
+            >
+              취소
+            </button>
+            <button
+              type="button" className="scr-compact-rect-btn" disabled={saveState === "saving"}
+              onClick={(e) => { e.stopPropagation(); onSave(); }}
+            >
+              {saveState === "saving" ? "저장 중…" : "저장"}
+            </button>
+          </span>
+        ))}
         {menu}
       </div>
 
@@ -219,12 +237,9 @@ function SchedulePhotos({ photos }: { photos: ScheduleFile[] }) {
   );
 }
 
-const SAVE_IDLE_MS = 2000;
-const SAVE_MAX_MS = 15000;
 /* 남의 고침을 묻는 간격 4 → 8초(2026-10-18, 지적: "드래그 앤 드롭도 너무 느려 · 서버에서 계속 갱신해서 조회하는 거 때문인가") —
    보이는 카드마다 4초마다 받아 와 목록 전체를 다시 그렸다. 이제 바뀐 게 없으면 아무것도 안 하고, 끌거나 치는 동안은 묻지 않는다. */
 const REFRESH_MS = 8000;
-const RETRY_MS = 5000;
 
 const NO_KEYBOARD = new Set(["checkbox", "radio", "button", "submit", "reset", "file", "range", "color", "image"]);
 function typingNow(): boolean {
@@ -517,17 +532,15 @@ function ScheduleCardInner({
   const editVer = useRef(0);
   const savedSnap = useRef("");
   const savedVer = useRef(0);
-  const lastEditAt = useRef(0);
-  const dirtySince = useRef(0);
   const saving = useRef(false);
   const lastRefreshAt = useRef(0);
-  const failedAt = useRef(0);
   const lastKey = useRef("");
   const baseUpdatedAt = useRef("");
   /* ★ 내가 저장해 만든 판(서버 updatedAt)을 기억한다(요청: "일정 저장 버전을 만들어서 내가 수정한 버전이면 업데이트 안 하게") —
      저장 응답이나 다시 묻기(refresh)로 돌아온 판이 이 값이면 내 판이니, 비교 기준(lastKey·base)만 맞추고 화면의 글·차례는
      그대로 둔다. 여태는 내 저장도 서버 꼴로 다시 갈아 끼워 커서·고침이 흔들렸다. 남이 고쳐 판이 바뀐 때만 받아 합친다. */
   const mineAt = useRef("");
+  const lastServer = useRef<Schedule | null>(null);
   const latest = useRef({ schedule });
   latest.current = { schedule };
   const latestDeleted = useRef(onDeleted);
@@ -535,14 +548,12 @@ function ScheduleCardInner({
 
   const dirty = (): boolean => editVer.current !== savedVer.current;
   const markEdited = (): void => {
-    const now = Date.now();
-    if (!dirty()) dirtySince.current = now;
     editVer.current += 1;
-    lastEditAt.current = now;
-    setSaveState("saving");
+    setSaveState("dirty");
   };
 
   const absorb = (s: Schedule): void => {
+    lastServer.current = s;
     baseUpdatedAt.current = s.updatedAt;
     const key = serverKeyOf(s);
     if (key === lastKey.current) return;
@@ -560,22 +571,27 @@ function ScheduleCardInner({
     savedSnap.current = snapOf(server);
   };
 
-  const enter = (): void => {
-    const d = draftOf(schedule);
+  const enter = (from: Schedule = schedule): void => {
+    lastServer.current = from;
+    const d = draftOf(from);
     savedSnap.current = snapOf(d);
     touched.current.clear();
     removed.current.clear();
     base.current = new Map(d.blocks.map((b) => [b.key, b]));
     editVer.current = 0;
     savedVer.current = 0;
-    failedAt.current = 0;
     lastRefreshAt.current = Date.now();
-    lastKey.current = serverKeyOf(schedule);
-    baseUpdatedAt.current = schedule.updatedAt;
+    lastKey.current = serverKeyOf(from);
+    baseUpdatedAt.current = from.updatedAt;
     setSaveState("saved");
-    setSavedAt(schedule.updatedAt);
+    setSavedAt(from.updatedAt);
     setDraft(d);
     setEditing(true);
+  };
+  /* 취소 — 저장 안 한 고침을 버리고 마지막으로 받은 서버 판으로 돌아간다. */
+  const discard = (): void => {
+    if (saving.current) return;
+    enter(lastServer.current ?? schedule);
   };
 
   const edit = (part: Partial<Head>): void => {
@@ -600,7 +616,6 @@ function ScheduleCardInner({
     for (const p of d.blocks) if (!kept.has(p.key) && !isNew(p.id)) removed.current.add(p.id);
     if (changed) markEdited();
     setDraft({ ...d, blocks: next });
-    if (countNewPhotos({ ...d, blocks: next }) > countNewPhotos(d)) void save();
   };
 
   const save = async (): Promise<boolean> => {
@@ -612,6 +627,7 @@ function ScheduleCardInner({
       return true;
     }
     saving.current = true;
+    setSaveState("saving");
     const ver = editVer.current;
     const sent = d;
     const pending = countNewPhotos(sent);
@@ -623,7 +639,6 @@ function ScheduleCardInner({
       const { payload, deferred } = await payloadOf(d, baseUpdatedAt.current);
       const saved = await api.updateSchedule(latest.current.schedule.id, payload);
       mineAt.current = saved.updatedAt;
-      failedAt.current = 0;
       setSavedAt(saved.updatedAt);
       if (deferred.size === 0) { uploadTotal.current = 0; setShield(null); }
       else {
@@ -643,6 +658,7 @@ function ScheduleCardInner({
       }
       removed.current.clear();
       if (editVer.current === ver && deferred.size === 0) { savedVer.current = ver; setSaveState("saved"); }
+      else if (deferred.size === 0) setSaveState("dirty");
       base.current = new Map(draftRef.current?.blocks.map((b) => [b.key, b]) ?? []);
       for (const b of sent.blocks) if (!base.current.has(b.key)) base.current.set(b.key, b);
       absorb(saved);
@@ -655,10 +671,11 @@ function ScheduleCardInner({
           const s = await api.getSchedule(latest.current.schedule.id);
           absorb(s);
         } catch { }
+        showAlert("그새 다른 사람이 고쳐서 그 고침을 합쳤어요. 확인하고 다시 저장해 주세요.");
+        setSaveState(dirty() ? "dirty" : "saved");
         return false;
       }
-      if (!failedAt.current) showAlert(e instanceof Error ? e.message : "저장하지 못했어요. 잠시 뒤 다시 보내요.");
-      failedAt.current = Date.now();
+      showAlert(e instanceof Error ? e.message : "저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.");
       setSaveState("failed");
       return false;
     } finally {
@@ -684,7 +701,7 @@ function ScheduleCardInner({
   };
 
   /* 편집 모드는 따로 없다(2026-10-18, 요청: "편집 모드 없이 항상 편집 모드로") — 고칠 수 있는 사람에게는 카드가 늘 편집 상태다.
-     저장은 그대로 자동(바뀐 것이 있을 때만)이다. */
+     저장은 단추로만(2026-10-20 · 위 ScheduleHead ★) — 옛 자동 저장(쉼 2초 · 최대 15초 · 사진 넣자마자 · 화면 숨김·떠날 때)은 걷었다. */
   useEffect(() => { if (canEdit && !editing) enter(); }, [canEdit]);
   /* 늘 편집 상태라 목록의 카드마다 남의 고침을 4초마다 물어 왔다 — 화면에 보이는 카드만 묻는다. 저장은 보이든 말든 한다. */
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -704,28 +721,19 @@ function ScheduleCardInner({
     const tick = (): void => {
       if (saving.current) return;
       const now = Date.now();
-      if (dirty()) {
-        if (failedAt.current && now - failedAt.current < RETRY_MS) return;
-        if (typingNow() || sortingNow()) return;
-        const rush = draftRef.current ? countNewPhotos(draftRef.current) > 0 : false;
-        if (rush || now - lastEditAt.current >= SAVE_IDLE_MS || now - dirtySince.current >= SAVE_MAX_MS) void save();
-      } else if (onScreen.current && now - lastRefreshAt.current >= REFRESH_MS) {
-        void refresh();
-      }
+      // 저장 안 한 고침이 있으면 남의 고침을 묻지 않는다(합치기는 저장할 때 서버가 409 로 알려 준다).
+      if (!dirty() && onScreen.current && now - lastRefreshAt.current >= REFRESH_MS) void refresh();
     };
     const timer = window.setInterval(tick, 1000);
-    const onVisibility = (): void => {
-      if (document.hidden) { if (dirty() && !saving.current) void save(); } else lastRefreshAt.current = 0;
-    };
+    const onVisibility = (): void => { if (!document.hidden) lastRefreshAt.current = 0; };
     document.addEventListener("visibilitychange", onVisibility);
+    // 저장 안 한 고침이 있는데 창을 닫거나 새로 고치면 브라우저가 묻는다.
+    const onLeave = (e: BeforeUnloadEvent): void => { if (dirty()) { e.preventDefault(); e.returnValue = ""; } };
+    window.addEventListener("beforeunload", onLeave);
     return () => {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibility);
-      const d = draftRef.current;
-      if (d && dirty() && !saving.current && d.title.trim() && d.date) {
-        void payloadOf(d, baseUpdatedAt.current)
-          .then(({ payload }) => api.updateSchedule(latest.current.schedule.id, payload)).catch(() => {});
-      }
+      window.removeEventListener("beforeunload", onLeave);
     };
   }, [editing]);
 
@@ -742,6 +750,7 @@ function ScheduleCardInner({
       <div className="scr-schedule-card" ref={cardRef}>
         <ScheduleHead
           head={head} canEdit={canEdit} editing={editing} saveState={saveState} savedAt={savedAt}
+          onSave={() => { void save(); }} onDiscard={discard}
           menu={<ScheduleActionsMenu schedule={schedule} canDelete={canDelete} onDeleted={(id) => latestDeleted.current(id)} />}
           onChange={edit}
         />
@@ -777,7 +786,9 @@ function ScheduleCardInner({
         <ScheduleBlocks
           blocks={draft ? draft.blocks : readBlocks} canEdit={editing}
           onSaveNow={() => {
-            // 화면이 먼저 그려진 다음에 보낸다 — 저장 준비(지문·본문 만들기)가 그 프레임을 붙잡지 않게.
+            /* 접기·펴기는 보는 사람도 하는 일이라 그것만 바뀐 때는 곧바로 저장한다(저장 단추를 안 띄운다). 다른 고침이 저장 전이면
+               접기도 그 고침과 함께 저장 단추로 간다. 화면이 먼저 그려진 다음에 보낸다. */
+            if (editVer.current - savedVer.current > 1) return;
             requestAnimationFrame(() => setTimeout(() => { if (!saving.current) void save(); }, 0));
           }}
           onChange={onBlocks}
