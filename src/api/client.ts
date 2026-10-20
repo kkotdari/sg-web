@@ -79,6 +79,8 @@ export interface GameResultStatsParams {
   matchType?: GameType | "all";
   race?: Race | "all" | "main";
   ratingScope?: "total" | "period";
+  /** 팀 규모 — 두 편 다 그 머릿수인 판만(통계 화면 탭 4:4 · 3:3 · 2:2 · 1:1 · 2026-10-20). */
+  teamSize?: number;
 }
 
 export interface TeamRankingParams {
@@ -320,6 +322,7 @@ export const api = {
       matchType: params.matchType,
       race: params.race,
       ratingScope: params.ratingScope,
+      teamSize: params.teamSize,
     });
     return request<GameResultStatsResponse>(`/api/game-results/stats${qs}`);
   },

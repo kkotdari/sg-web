@@ -16,6 +16,19 @@ import { cx } from "../../utils/format";
 import type { ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 const CLAN_TYPE: GameType = "0102";
+const SOLO_TYPE: GameType = "0101";
+
+/* ★ 화면 전체 탭(2026-10-20, 요청: "종족구성별 전적의 4:4 · 3:3 · 2:2 를 전체 페이지에 영향을 주는 탭으로 맨 위로 · 그에 따라 모든 데이터가 달라지게 ·
+   맨 왼쪽 팀전 전체와 맨 오른쪽 1:1 추가") — 고른 규모의 판만 센다(서버 teamSize: 두 편 다 그 머릿수). 1:1 은 일대일 판(0101)의 한 명 대 한 명. */
+const SIZE_TABS = [
+  { value: "team", label: "팀전 전체" },
+  { value: "4", label: "4:4" },
+  { value: "3", label: "3:3" },
+  { value: "2", label: "2:2" },
+  { value: "1", label: "1:1" },
+] as const;
+type SizeTab = (typeof SIZE_TABS)[number]["value"];
+const sizeTabOf = (v: string): SizeTab => (SIZE_TABS.some((t) => t.value === v) ? v as SizeTab : "team");
 const PERIOD_ALL = "all";
 
 /** 정렬 순서 — 검색창 밑의 작은 밑줄 탭(2026-10, 요청). 기본은 참여순(판 수 많은 사람부터). */
@@ -32,54 +45,44 @@ const EMPTY_STATS: MemberStats = {
   avgApm: null, avgEapm: null, avgCmd: null, avgEcmd: null, avgBuild: null, truthMix: null, avgWorker5: null, mixPlays: null, mixSeconds: null, upPlays: null,
 };
 
-/** 종족 전적 — 줄마다 꺽쇠로 그 종족의 생산·업그레이드 덱을 펼친다(요청: 따로 서던 '종족별 생산·업그레이드'를 접기·펼치기로 통합).
- *  덱은 개인 카드와 같은 RaceMixCell · 처음엔 모두 접힌 채다. */
-const COMP_FORMATS = ["4:4", "3:3", "2:2"] as const;
-type CompFormat = (typeof COMP_FORMATS)[number];
+/** 종족구성별 전적 — 화면 탭이 규모를 고른다(옛 카드 안 4:4/3:3/2:2 탭은 화면 맨 위 탭으로 올라갔다 · 2026-10-20).
+ *  팀전 전체면 규모마다 작은 머리(4:4 …)를 달아 묶는다. */
+const COMP_ORDER = ["4:4", "3:3", "2:2"];
 
 function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
-  const playsOf = (f: CompFormat): number => rows.filter((c) => c.format === f).reduce((n, c) => n + c.plays, 0);
-  const [format, setFormat] = useState<CompFormat | null>(null);
-  const shown = format ?? COMP_FORMATS.reduce((b, f) => (playsOf(f) > playsOf(b) ? f : b), "2:2" as CompFormat);
-  const list = rows.filter((c) => c.format === shown);
+  const formats = [...new Set(rows.map((c) => c.format))]
+    .sort((a, b) => (COMP_ORDER.indexOf(a) + 99 * Number(!COMP_ORDER.includes(a))) - (COMP_ORDER.indexOf(b) + 99 * Number(!COMP_ORDER.includes(b))) || a.localeCompare(b));
+  const grouped = formats.length > 1;
+  const line = (c: ClanCompEntry) => (
+    <div key={`${c.format}-${c.label}`} className="scr-clan-race">
+      <span className="scr-clan-race-name">{c.label}</span>
+      <span className="scr-statcard-sum-item scr-sum-plays">
+        <span className="scr-stat-record-num-v">
+          <span className="scr-stat-record-num-n">{c.plays.toLocaleString()}</span>
+          <span className="scr-stat-record-num-unit">판</span>
+        </span>
+      </span>
+      <span className="scr-statcard-sum-item scr-sum-rate">
+        <span className="scr-stat-record-num-v">
+          <span className="scr-stat-record-num-n">{c.winRate}</span>
+          <span className="scr-stat-record-num-unit">% 승</span>
+        </span>
+      </span>
+    </div>
+  );
   return (
-    /* 4:4/3:3/2:2 는 **제목 아래 줄**에 내전·공방과 같은 밑줄 탭(.scr-line-tabs)으로 선다(2026-10, 요청) — 한때 제목 오른쪽 끝의
-       알약 탭(PillTabs)이었다. */
     <section className="scr-statcard scr-clan-statcard">
       <header className="scr-statcard-head">
         <span className="scr-stat-name-btn scr-stat-name-plain">종족구성별 전적</span>
       </header>
-      <div className="scr-line-tabs scr-clan-comp-tabs" role="tablist" aria-label="팀 규모">
-        {COMP_FORMATS.map((f) => (
-          <button
-            key={f} type="button" role="tab"
-            aria-selected={f === shown}
-            className={cx("scr-line-tab-btn", f === shown && "is-on")}
-            onClick={() => setFormat(f)}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
       <div className="scr-statcard-decks scr-clan-comp-box">
-      {list.length === 0 ? <p className="scr-clan-panel-empty">기록이 없어요</p> : (
+      {rows.length === 0 ? <p className="scr-clan-panel-empty">기록이 없어요</p> : (
         <div className="scr-clan-races">
-          {list.map((c) => (
-            <div key={c.label} className="scr-clan-race">
-              <span className="scr-clan-race-name">{c.label}</span>
-              <span className="scr-statcard-sum-item scr-sum-plays">
-                <span className="scr-stat-record-num-v">
-                  <span className="scr-stat-record-num-n">{c.plays.toLocaleString()}</span>
-                  <span className="scr-stat-record-num-unit">판</span>
-                </span>
-              </span>
-              <span className="scr-statcard-sum-item scr-sum-rate">
-                <span className="scr-stat-record-num-v">
-                  <span className="scr-stat-record-num-n">{c.winRate}</span>
-                  <span className="scr-stat-record-num-unit">% 승</span>
-                </span>
-              </span>
-            </div>
+          {formats.map((f) => (
+            grouped ? [
+              <div key={`h-${f}`} className="scr-clan-comp-fmt">{f}</div>,
+              ...rows.filter((c) => c.format === f).map(line),
+            ] : rows.filter((c) => c.format === f).map(line)
           ))}
         </div>
       )}
@@ -113,10 +116,13 @@ export default function ClanStatsScreen() {
   }, [members, searchApplied, lexicon]);
 
   const [period, setPeriod] = useUrlState("period", currentMonthValue());
+  const [sizeRaw, setSize] = useUrlState("size", "team");
+  const size = sizeTabOf(sizeRaw);
   useEffect(() => () => {
     const q = new URLSearchParams(window.location.search);
-    if (!q.has("period")) return;
+    if (!q.has("period") && !q.has("size")) return;
     q.delete("period");
+    q.delete("size");
     const qs = q.toString();
     window.history.replaceState(
       window.history.state, "",
@@ -127,8 +133,9 @@ export default function ClanStatsScreen() {
     () => ({
       memberIds: matchedMembers.map((m) => m.id).sort().join(","),
       period,
+      size,
     }),
-    [matchedMembers, period],
+    [matchedMembers, period, size],
   );
   const queryKeySignature = useMemo(() => JSON.stringify(queryKey), [queryKey]);
   const debouncedSignature = useDebouncedValue(queryKeySignature, 300);
@@ -167,7 +174,9 @@ export default function ClanStatsScreen() {
     };
     api.getGameResultStats({
       memberIds,
-      dateFrom: qRange.from, dateTo: qRange.to, matchType: CLAN_TYPE, race: "all",
+      dateFrom: qRange.from, dateTo: qRange.to, race: "all",
+      matchType: debouncedQuery.size === "1" ? SOLO_TYPE : CLAN_TYPE,
+      teamSize: debouncedQuery.size === "team" ? undefined : Number(debouncedQuery.size),
     }).then((res) => {
       if (cancelled) return;
       setView({
@@ -189,10 +198,13 @@ export default function ClanStatsScreen() {
   }, [view, members]);
 
   /** 실제 경기 수 — 편성별 판수(4:4·3:3·2:2 …)의 합이다. 편성은 가짓수가 적어 서버의 상위 5 에 잘릴 일이 없다. */
-  const clanGames = useMemo(
-    () => (view?.clanFormats ?? []).reduce((n, f) => n + f.plays, 0),
-    [view],
-  );
+  /* 1:1 은 편성 셈에 안 든다(서버가 한 명 대 한 명은 편성에서 뺀다) — 내전이라 판마다 두 사람이 다 회원이니 사람 판수의 절반이 경기 수.
+     팀전은 n:m 편성만 더한다(개인전 묶음은 팀전 통계 밖이다). */
+  const clanGames = useMemo(() => {
+    if (!view) return 0;
+    if (size === "1") return Math.round((view.clan?.overall.plays ?? 0) / 2);
+    return view.clanFormats.filter((f) => f.label.includes(":")).reduce((n, f) => n + f.plays, 0);
+  }, [view, size]);
 
   const cards = useMemo(() => {
     const list = viewMembers.map((m) => {
@@ -272,6 +284,19 @@ export default function ClanStatsScreen() {
         </div>
       </div>
 
+      <div className="scr-line-tabs scr-stats-size-tabs" role="tablist" aria-label="팀 규모">
+        {SIZE_TABS.map((t) => (
+          <button
+            key={t.value} type="button" role="tab"
+            aria-selected={t.value === size}
+            className={cx("scr-line-tab-btn", t.value === size && "is-on")}
+            onClick={() => setSize(t.value)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {view?.clan && (
         <section className="scr-clan-dash" aria-label="클랜 전체">
           <header className="scr-clan-dash-head">
@@ -290,7 +315,7 @@ export default function ClanStatsScreen() {
             </button>
           </header>
 
-          <CompRecords rows={view.clanComps} />
+          {size !== "1" && <CompRecords rows={view.clanComps} />}
           <section className="scr-statcard scr-clan-statcard">
             <header className="scr-statcard-head">
               <span className="scr-stat-name-btn scr-stat-name-plain">클랜원 전체</span>

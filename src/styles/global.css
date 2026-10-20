@@ -1200,6 +1200,13 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   font-size: var(--fs-11); font-weight: 700; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
+/* 통계 화면 맨 위 규모 탭(팀전 전체 · 4:4 · 3:3 · 2:2 · 1:1 · 2026-10-20) — 첫 탭 왼 여백을 지워 제목 왼끝에 맞춘다. */
+.scr-stats-size-tabs { margin: 0 0 10px; }
+.scr-stats-size-tabs > .scr-line-tab-btn:first-child { padding-left: 0; }
+.scr-stats-size-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
+/* 팀전 전체일 때 종족구성 줄을 규모마다 묶는 작은 머리. */
+.scr-clan-comp-fmt { padding: 8px 0 2px var(--stat-head-pad-l); font-size: var(--fs-11); font-weight: 800; color: var(--dim); }
+.scr-clan-comp-fmt:first-child { padding-top: 2px; }
 /* 4:4/3:3/2:2 는 제목 **아래 줄**의 밑줄 탭(내전·공방과 같은 .scr-line-tabs) — 제목 왼끝에 맞춰 첫 탭의 왼 여백을 지운다. */
 .scr-clan-comp-tabs { margin-top: -4px; margin-bottom: -2px; }
 .scr-clan-comp-tabs > .scr-line-tab-btn { font-size: var(--fs-11); }
