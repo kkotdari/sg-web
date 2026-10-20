@@ -109,7 +109,8 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
         </span>
         <span className="scr-sg-c">
           {clan
-            ? <span className="scr-sg-v"><b>{(games ?? 0).toLocaleString()}</b><i>판</i><i className="scr-sg-paren">({s.plays.toLocaleString()}전)</i></span>
+            /* 클랜원 전체 = "1,180전 (212경기)" — 사람 몫을 다 더한 전적 + 경기 수(2026-10-20, 요청: "PC 전체 전적을 n전(n경기)로"). */
+            ? <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b><i>전</i><i className="scr-sg-paren">({(games ?? 0).toLocaleString()}경기)</i></span>
             : <Num v={s.plays > 0 ? s.plays.toLocaleString() : null} unit="전" />}
         </span>
         <span className="scr-sg-c">{clan ? <Dash /> : <Rate s={s} />}</span>
