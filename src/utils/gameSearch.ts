@@ -140,7 +140,7 @@ export function toServerMerged(q: string, lex: Lexicon = EMPTY_LEXICON): ServerQ
 /* ★★ 게임 목록 검색폼(2026-10-20, 요청: "현재 가능한 검색 조합을 모두 별도 검색폼으로 분리 · 각 인풋에서 병렬 검색은 가능") — 칸마다 따로 받고
    서버 질의(any · linked)는 옛 한 줄 검색과 **같은 꼴**로 만든다(서버는 그대로).
    · 선수 · 종족 · 유닛/건물/스킬 — 칸 안의 값마다 조건 하나(**모두** 맞아야 · 그 판에 있었나)
-   · 맵 · 경기번호 — 칸 안의 값끼리는 **그중 하나**(한 판엔 맵이 하나라서)
+   · 맵 · 게임번호 — 칸 안의 값끼리는 **그중 하나**(한 판엔 맵이 하나라서)
    · 유형 — 하나만(a:b · 차례 없음)
    · 한 사람 조건 — 줄마다 [선수 · 종족 · 유닛…] 을 **그 사람이 직접**(옛 붙여 쓰기) */
 export interface GameSearchLink { name: string; race: string; items: string[] }
@@ -203,7 +203,7 @@ export function legacyToForm(q: string, lex: Lexicon, options: GameSuggestion[])
     if (size) { f.size = size; continue; }
     const parts = segmentChunk(chunk, lex);
     if (parts.length === 0) continue;
-    // 모르는 낱말 — 숫자·줄표뿐이면 경기번호, 아니면 선수(회원이 아닌 리플레이 이름 따위 · 서버는 이름·내용을 함께 찾는다).
+    // 모르는 낱말 — 숫자·줄표뿐이면 게임번호, 아니면 선수(회원이 아닌 리플레이 이름 따위 · 서버는 이름·내용을 함께 찾는다).
     if (parts.every((p) => p.kind === "unknown")) { (/^[\d-]+$/.test(chunk) ? f.nos : f.players).push(chunk); continue; }
     const names = parts.filter((p) => p.kind === "name").map((p) => p.text);
     const rest = parts.filter((p) => p.kind !== "name").map((p) => p.text);

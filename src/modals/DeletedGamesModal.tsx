@@ -128,7 +128,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                 <input
                   type="search"
                   className="scr-input scr-trash-search"
-                  placeholder="경기번호·날짜·맵·선수·지운 사람으로 찾기"
+                  placeholder="게임번호·날짜·맵·선수·지운 사람으로 찾기"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />

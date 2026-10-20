@@ -20,7 +20,7 @@ const RACE_TONE: Record<string, string> = { 테란: "var(--terran)", 프로토�
 const MAX_OPTS = 30;
 
 /** 칩 입력 — 엔터 · 쉼표 · 자동완성으로 값을 칩으로 담는다(칸 안 여러 값). 빈 칸에서 엔터면 onSubmit. */
-function ChipInput({ values, onChange, options, placeholder, onSubmit, single }: {
+function ChipInput({ values, onChange, options, placeholder, onSubmit, single, spaceSplits }: {
   values: string[];
   onChange: (next: string[]) => void;
   options: Opt[];
@@ -28,6 +28,8 @@ function ChipInput({ values, onChange, options, placeholder, onSubmit, single }:
   onSubmit: () => void;
   /** 하나만(한 사람 조건의 선수) — 새 값이 옛 값을 갈아 끼운다. */
   single?: boolean;
+  /** 띄어쓰기도 값을 끊는다(선수 · 게임번호 — 값에 띄어쓰기가 없다). 맵 · 유닛 칸은 이름에 띄어쓰기가 있어(Fighting Spirit · 사이오닉 스톰) 끊지 않는다. */
+  spaceSplits?: boolean;
 }) {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
@@ -57,7 +59,7 @@ function ChipInput({ values, onChange, options, placeholder, onSubmit, single }:
       onSubmit();
       return;
     }
-    if (e.key === "," || e.key === "Tab") {
+    if (e.key === "," || e.key === "Tab" || (spaceSplits && e.key === " ")) {
       if (!text.trim()) return;
       e.preventDefault();
       add(open && shown[hi] ? shown[hi].value : text);
@@ -77,7 +79,20 @@ function ChipInput({ values, onChange, options, placeholder, onSubmit, single }:
       {(!single || values.length === 0) && (
         <input
           className="scr-gs-input" value={text} placeholder={values.length ? "" : placeholder}
-          onChange={(e) => { setText(e.target.value.replace(/,/g, "")); setOpen(true); }}
+          onChange={(e) => {
+            const raw = e.target.value;
+            /* 붙여 넣은 여러 값 — 쉼표(띄어쓰기를 끊는 칸이면 띄어쓰기도)로 나눠 한꺼번에 칩으로. */
+            const parts = raw.split(spaceSplits ? /[\s,]+/ : /,+/);
+            if (parts.length > 1) {
+              const last = parts.pop() ?? "";
+              const fresh = parts.map((x) => x.trim()).filter((x) => x && !values.some((v) => normalizeSearchText(v) === normalizeSearchText(x)));
+              if (fresh.length) onChange(single ? [fresh[0]] : [...values, ...fresh]);
+              setText(last);
+            } else {
+              setText(raw);
+            }
+            setOpen(true);
+          }}
           onKeyDown={onKey}
           onFocus={() => setOpen(true)}
           onBlur={() => {
@@ -187,10 +202,10 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
       {open && (
         <div className="scr-gs-panel">
           <Field label="선수" hint="모두 뛴 판">
-            <ChipInput values={draft.players} onChange={(v) => set("players", v)} options={memberOpts} placeholder="닉네임" onSubmit={() => apply()} />
+            <ChipInput spaceSplits values={draft.players} onChange={(v) => set("players", v)} options={memberOpts} placeholder="닉네임 · 띄어쓰기나 쉼표로 여럿" onSubmit={() => apply()} />
           </Field>
           <Field label="맵" hint="그중 한 맵">
-            <ChipInput values={draft.maps} onChange={(v) => set("maps", v)} options={mapOpts} placeholder="맵 이름" onSubmit={() => apply()} />
+            <ChipInput values={draft.maps} onChange={(v) => set("maps", v)} options={mapOpts} placeholder="맵 이름 · 쉼표로 여럿" onSubmit={() => apply()} />
           </Field>
           <Field label="종족" hint="그 종족이 있던 판">
             <div className="scr-gs-toggles">
@@ -214,10 +229,10 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
             </div>
           </Field>
           <Field label="유닛·건물·스킬" hint="모두 나온 판">
-            <ChipInput values={draft.items} onChange={(v) => set("items", v)} options={itemOpts} placeholder="캐리어 · 스톰 · Carrier …" onSubmit={() => apply()} />
+            <ChipInput values={draft.items} onChange={(v) => set("items", v)} options={itemOpts} placeholder="캐리어, 사이오닉 스톰 · 쉼표로 여럿" onSubmit={() => apply()} />
           </Field>
-          <Field label="경기번호" hint="그중 하나">
-            <ChipInput values={draft.nos} onChange={(v) => set("nos", v)} options={[]} placeholder="20261019-001" onSubmit={() => apply()} />
+          <Field label="게임번호" hint="그중 하나">
+            <ChipInput spaceSplits values={draft.nos} onChange={(v) => set("nos", v)} options={[]} placeholder="261019213105 · 앞자리만(261019)도 됨" onSubmit={() => apply()} />
           </Field>
           <div className="scr-gs-field scr-gs-links">
             <span className="scr-gs-label">한 사람이 직접<i>그 선수가 그 종족으로 · 그 유닛을</i></span>

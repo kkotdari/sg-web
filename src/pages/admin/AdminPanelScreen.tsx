@@ -557,7 +557,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   <input
                     type="search"
                     className="scr-input scr-redo-pick-search"
-                    placeholder="경기번호·날짜·맵·선수로 찾기"
+                    placeholder="게임번호·날짜·맵·선수로 찾기"
                     value={pickQuery}
                     onChange={(e) => setPickQuery(e.target.value)}
                   />

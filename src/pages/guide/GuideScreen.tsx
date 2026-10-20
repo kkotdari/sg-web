@@ -50,7 +50,7 @@ export default function GuideScreen({ onClose }: { onClose?: () => void } = {}) 
           <Q q="종족">고른 종족이 <b>그 판에 있었던</b> 경기 — 여럿 고르면 그 종족들이 다 있었던 판</Q>
           <Q q="유형">팀 인원 — <code>2:3</code>은 <b>3:2</b>도 함께 걸립니다(개인전은 빠집니다)</Q>
           <Q q="유닛·건물·스킬">넣은 것이 <b>모두 나온</b> 경기 — 한 기라도 떴으면 걸립니다 · 원어(<code>Carrier</code>)도 됩니다</Q>
-          <Q q="경기번호">넣은 번호 <b>중 하나</b></Q>
+          <Q q="게임번호">넣은 번호 <b>중 하나</b> — 번호는 시작 시각 <code>년월일시분초</code> 12자리(<code>261019213105</code> = 26년 10월 19일 21:31:05)라 <b>앞자리만</b> 넣어도 됩니다(<code>261019</code> → 그날 경기 전부)</Q>
         </div>
 
         <h3 className="scr-guide-h3">한 사람에게 몰아 묻기 — <b>한 사람이 직접</b></h3>
@@ -66,6 +66,11 @@ export default function GuideScreen({ onClose }: { onClose?: () => void } = {}) 
         <div className="scr-guide-note">
           <b>선수 칸의 <code>팍규</code> + 유닛 칸의 <code>캐리어</code>와, 한 사람 줄의 <code>팍규 · 캐리어</code>는 다릅니다.</b> 앞은 팍규가
           있고 <i>누군가</i> 캐리어를 뽑은 경기(상대가 뽑았어도 걸립니다), 뒤는 <b>팍규가</b> 뽑은 경기입니다.
+        </div>
+        <div className="scr-guide-note">
+          <b>띄어쓰기는 칸마다 다릅니다.</b> <b>선수</b>·<b>게임번호</b> 칸은 띄어쓰기도 값을 끊습니다 —
+          <code>팍규 Rex</code>는 두 사람입니다. <b>맵</b>·<b>유닛·건물·스킬</b> 칸은 이름에 띄어쓰기가 있어
+          (<code>Fighting Spirit</code> · <code>사이오닉 스톰</code>) <b>쉼표로만</b> 끊습니다. 어느 칸이든 <kbd>,</kbd>로 끊으면 됩니다.
         </div>
         <div className="scr-guide-note">
           칸에 치면 자동완성이 뜹니다 — <kbd>엔터</kbd>·<kbd>탭</kbd>·<kbd>,</kbd>로 값을 칩으로 담고, 빈 칸에서 <kbd>엔터</kbd>를 한 번 더 치면 찾습니다.

@@ -98,7 +98,7 @@ export default function ExtShareGamePickModal({ listId, listName, have, onClose,
         <div className="scr-modal-body scr-redo-pick-body">
           <input
             type="search" className="scr-input scr-redo-pick-search"
-            placeholder="경기번호·맵·선수로 찾기"
+            placeholder="게임번호·맵·선수로 찾기"
             value={query} onChange={(e) => setQuery(e.target.value)}
           />
           {rows !== null && open.length > 0 && (
