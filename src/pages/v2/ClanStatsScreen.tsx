@@ -315,7 +315,8 @@ export default function ClanStatsScreen() {
             </button>
           </header>
 
-          {size !== "1" && <CompRecords rows={view.clanComps} />}
+          {/* 종족구성별 전적은 한 규모(4:4 · 3:3 · 2:2)를 골랐을 때만(2026-10-20, 요청: "팀전 전체에서 종족구성별 전적 숨기기") — 1:1 엔 구성이 없다. */}
+          {size !== "1" && size !== "team" && <CompRecords rows={view.clanComps} />}
           <section className="scr-statcard scr-clan-statcard">
             <header className="scr-statcard-head">
               <span className="scr-stat-name-btn scr-stat-name-plain">클랜원 전체</span>
