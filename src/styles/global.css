@@ -5669,15 +5669,17 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   .scr-activity-row-game .scr-activity-row-cols { row-gap: 4px; }
   .scr-activity-row-game .scr-activity-row-col-names { padding: 0 4px; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-above { grid-column: 1 / -1; order: 0; }
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-play-top { grid-column: 1; justify-self: start; order: 1; }
+  /* 시각 ↔ 재생 자리 바꿈(2026-10-20, 요청: "모바일 게임목록 타임스탬프와 재생배지 위치 교환") — 시각 묶음이 왼끝(1칸) · 재생이 오른끝(3칸). */
+  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-play-top { grid-column: 3; justify-self: end; order: 3; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-status { grid-column: 2; order: 2; }
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-badges { display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: 5px;
-    grid-column: 3; order: 3; margin-left: 0; min-width: 0; }
+  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-badges { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 5px;
+    grid-column: 1; order: 1; margin-left: 0; min-width: 0; }
   .scr-activity-row-game .scr-activity-row-badges > .scr-activity-row-badges-top { margin-left: 0; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-desc { grid-column: 1 / -1; order: 4; }
   .scr-activity-row-game > .scr-activity-row-main:has(> .scr-activity-row-play-top) > .scr-activity-row-desc .scr-activity-row-play { display: none; }
-  .scr-activity-row-game .scr-activity-row-badges-top { order: 2; margin-left: auto; min-height: 0; }
-  .scr-activity-row-game .scr-activity-row-time { order: 3; text-align: right; line-height: 1.25; }
+  /* NEW/UPDATE 는 시각 **오른쪽**(같은 날 요청: "업데이트 뉴는 타임스탬프 오른쪽에"). */
+  .scr-activity-row-game .scr-activity-row-badges-top { order: 2; margin-left: 0; min-height: 0; }
+  .scr-activity-row-game .scr-activity-row-time { order: 1; text-align: left; line-height: 1.25; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-desc { order: 4; flex: 1 0 100%; }
   /* 배지는 한 치 작게(요청) — 글자 12 → 11 · 여백도 한 겹 줄인다. */
   .scr-activity-row-game .scr-activity-row-status-dur {
