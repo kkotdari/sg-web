@@ -8087,6 +8087,8 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg-mrec > .scr-sg-v:first-child > b { font-weight: 600; color: var(--muted); }
 .scr-sg-mrate > b { font-size: 14px; color: var(--text); }
 .scr-sg-mgames > i { font-size: 11px; }
+.scr-sg-mrate-box { display: flex; flex-direction: column; align-items: center; gap: 1px; margin-top: 6px; }
+.scr-sg-mrate-lab { font-style: normal; font-size: 9.5px; font-weight: 600; color: var(--dim); line-height: 1; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-v > i, .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > i { font-size: inherit; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-cnt { min-width: 2.8em; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 2px; }

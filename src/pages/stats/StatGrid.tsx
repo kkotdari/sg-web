@@ -138,7 +138,13 @@ function MCell({ s, games, noRate }: { s?: MemberStats; games?: number; noRate?:
       {/* 클랜원 전체의 전체 칸은 승률 대신 경기 수 "(212경기)" — PC 와 같은 꼴(2026-10-20, 요청: "전체 판이 아니라 전, 괄호하고 (n게임) PC 랑 똑같이"). */}
       {games !== undefined
         ? <span className="scr-sg-v scr-sg-mgames"><i>({games.toLocaleString()}경기)</i></span>
-        : noRate ? <Dash /> : <span className="scr-sg-v scr-sg-mrate"><b>{s.winRate}</b><i>%</i></span>}
+        : noRate ? <Dash /> : (
+          /* 승률 위 작은 "승률" 이름표 · 전수와 사이를 띄운다(2026-10-20, 요청). */
+          <span className="scr-sg-mrate-box">
+            <i className="scr-sg-mrate-lab">승률</i>
+            <span className="scr-sg-v scr-sg-mrate"><b>{s.winRate}</b><i>%</i></span>
+          </span>
+        )}
     </span>
   );
 }
