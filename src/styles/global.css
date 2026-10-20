@@ -8064,7 +8064,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-who-sub { font-size: var(--fs-10); gap: 5px; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 3px; }
 /* 아래 줄(APM · 딜 · 피해) 한 줄 — 글자는 크게(12px) · 칸이 좁으면 폭에 비례해 줄인다(7.5cqw · 9.5px 밑으로 안 간다). */
-.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(9.5px, min(17px, 8cqw)); }
+.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(9.5px, min(16px, 9.2cqw)); }
 /* 유저 칸 글자 크게(2026-10-20, 요청: "유저 칸 글자 키우고") — 이름 19px · 아바타 32. */
 .scr-sg.is-m .scr-sg-name { font-size: 19px; }
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 32px !important; height: 32px !important; }
@@ -8076,7 +8076,10 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
    이름 줄은 아바타가 없는 클랜원 전체 줄도 32 높이. */
 .scr-sg.is-m .scr-sg-tap > .scr-sg-c.scr-sg-who { padding: 12px 10px 12px 18px; gap: 0; justify-content: flex-start; }
 .scr-sg.is-m .scr-sg-who-top { min-height: 32px; }
-.scr-sg.is-m .scr-sg-who > .scr-sg-who-sub { margin-top: calc(69px - 1em); } /* 왼 여백 12 → 18 · 오른 6 → 10(요청: "왼쪽 여백 더 · 꽉 맞을 필요 없어") */ /* → "줄간격도 훨 넓혀" 14 → 20 */
+/* APM 줄 = 전적 셋째 줄(프로토스) 글줄 · 데미지 줄 = 넷째 줄(저그) 글줄(2026-10-20, 요청: "APM 과 데미지 줄 나누고") — 줄높이 1.2 · 둘 사이 = 전적 줄 간격 24.2. */
+.scr-sg.is-m .scr-sg-who > .scr-sg-who-sub { margin-top: calc(45px - 1em); line-height: 1.2; }
+.scr-sg.is-m .scr-sg-who > .scr-sg-who-sub.scr-sg-who-dmg { margin-top: calc(24.2px - 1.2em); }
+.scr-sg-dmg-lab { font-style: normal; color: var(--dim); font-weight: 600; } /* 왼 여백 12 → 18 · 오른 6 → 10(요청: "왼쪽 여백 더 · 꽉 맞을 필요 없어") */ /* → "줄간격도 훨 넓혀" 14 → 20 */
 /* 전적 칸 — [종족 | N전 | 승률] 세 칸을 줄마다 맞춘다. 종족 이름은 흐리게 · 승률은 굵게. */
 /* 표 머리는 PC·폰 모두 칸 가운데(2026-10-20, 요청: "통계 그리드 헤더 가운데 정렬") — 유저·전적 머리도. */
 .scr-sg .scr-sg-row.scr-sg-head > .scr-sg-c { justify-content: center; text-align: center; padding-left: 8px; padding-right: 8px; }

@@ -40,7 +40,7 @@ function Rate({ s }: { s?: MemberStats }) {
 
 function Dmg({ s, compact }: { s: MemberStats; compact?: boolean }) {
   const d = s.dmgDealtRel, t = s.dmgTakenRel;
-  if (typeof d !== "number" || typeof t !== "number") return compact ? null : <Dash />;
+  if (typeof d !== "number" || typeof t !== "number") return <Dash />; // 폰도 "데미지 -"(이름표만 덩그러니 남지 않게)
   /* 폰은 칸이 좁아 "딜 1.4 피해 0.8"(배수만) — "평균의 · 배"는 뜻이 같아 줄인다. 가운뎃점도 뺐다(한 줄에 담으려 · 2026-10-20). */
   if (compact) {
     return (
@@ -174,8 +174,9 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
           {/* APM · 딜 · 피해는 줄마다 세로로 맞춘다(2026-10-20, 요청: "모바일 apm 딜 피해 로우 간 세로 줄 맞추기") — 값 칸 폭을 고정하고(CSS),
               APM 이 없는 사람도 "APM -" 로 자리를 지킨다(빠지면 딜·피해가 왼쪽으로 붙었다). */}
           <span className="scr-sg-v scr-sg-lab"><i>APM</i><b>{s.avgApm ?? "-"}</b></span>
-          {!clan && <Dmg s={s} compact />}
         </span>
+        {/* 데미지는 APM 아래 제 줄 · 앞에 "데미지" 이름표(2026-10-20, 요청: "APM 과 데미지 줄 나누고 데미지 라벨 달아주기"). 클랜원 전체는 없다. */}
+        {!clan && <span className="scr-sg-who-sub scr-sg-who-dmg"><i className="scr-sg-dmg-lab">데미지</i><Dmg s={s} compact /></span>}
       </span>
       <MStack row={row} clan={clan} games={games} />
     </div>
