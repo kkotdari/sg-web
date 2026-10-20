@@ -6,7 +6,8 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { currentMonthValue, monthInputToRange } from "../../utils/date";
-import MemberStatRow, { RaceDecks, StatSum } from "../stats/MemberStatRow";
+import StatGrid, { CompGrid } from "../stats/StatGrid";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { activeMemberSearchTerms, memberMatchesTerm, normalizeSearchText } from "../../utils/memberSearch";
@@ -45,54 +46,16 @@ const EMPTY_STATS: MemberStats = {
   avgApm: null, avgEapm: null, avgCmd: null, avgEcmd: null, avgBuild: null, truthMix: null, avgWorker5: null, mixPlays: null, mixSeconds: null, upPlays: null,
 };
 
-/** 종족구성별 전적 — 화면 탭이 규모를 고른다(옛 카드 안 4:4/3:3/2:2 탭은 화면 맨 위 탭으로 올라갔다 · 2026-10-20).
- *  팀전 전체면 규모마다 작은 머리(4:4 …)를 달아 묶는다. */
-const COMP_ORDER = ["4:4", "3:3", "2:2"];
-
-function CompRecords({ rows }: { rows: ClanCompEntry[] }) {
-  const formats = [...new Set(rows.map((c) => c.format))]
-    .sort((a, b) => (COMP_ORDER.indexOf(a) + 99 * Number(!COMP_ORDER.includes(a))) - (COMP_ORDER.indexOf(b) + 99 * Number(!COMP_ORDER.includes(b))) || a.localeCompare(b));
-  const grouped = formats.length > 1;
-  const line = (c: ClanCompEntry) => (
-    <div key={`${c.format}-${c.label}`} className="scr-clan-race">
-      <span className="scr-clan-race-name">{c.label}</span>
-      <span className="scr-statcard-sum-item scr-sum-plays">
-        <span className="scr-stat-record-num-v">
-          <span className="scr-stat-record-num-n">{c.plays.toLocaleString()}</span>
-          <span className="scr-stat-record-num-unit">판</span>
-        </span>
-      </span>
-      <span className="scr-statcard-sum-item scr-sum-rate">
-        <span className="scr-stat-record-num-v">
-          <span className="scr-stat-record-num-n">{c.winRate}</span>
-          <span className="scr-stat-record-num-unit">% 승</span>
-        </span>
-      </span>
-    </div>
-  );
-  return (
-    <section className="scr-statcard scr-clan-statcard">
-      <header className="scr-statcard-head">
-        <span className="scr-stat-name-btn scr-stat-name-plain">종족구성별 전적</span>
-      </header>
-      <div className="scr-statcard-decks scr-clan-comp-box">
-      {rows.length === 0 ? <p className="scr-clan-panel-empty">기록이 없어요</p> : (
-        <div className="scr-clan-races">
-          {formats.map((f) => (
-            grouped ? [
-              <div key={`h-${f}`} className="scr-clan-comp-fmt">{f}</div>,
-              ...rows.filter((c) => c.format === f).map(line),
-            ] : rows.filter((c) => c.format === f).map(line)
-          ))}
-        </div>
-      )}
-      </div>
-    </section>
-  );
+/** 종족구성별 전적 — 화면 탭이 고른 규모(4:4 · 3:3 · 2:2) 한 가지만(2026-10-20). 받아 둔 줄을 그 규모로 **걸러서** 그린다 —
+ *  탭을 바꾼 순간 새 자료가 오기 전까지 옛 자료(다른 규모 · 팀전 전체의 모든 구성)가 비치던 것을 막는다(요청: "4:4 탭 등 선택시 전체 구성이 떴다가
+ *  4:4만 나오는 문제 · 전체 구성은 이제 쓸 일 없어"). */
+function CompRecords({ rows, format }: { rows: ClanCompEntry[]; format: string }) {
+  return <CompGrid rows={rows.filter((c) => c.format === format)} />;
 }
 
 export default function ClanStatsScreen() {
   const members = useAppStore((s) => s.members);
+  const isMobile = useIsMobile();
   const suggestions = useMemo(() => activeMemberSearchTerms(members), [members]);
 
   const [searchApplied, setSearchApplied] = useUrlState("u");
@@ -303,7 +266,7 @@ export default function ClanStatsScreen() {
             {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다.
                 화면 낭독기에는 감싼 section 의 aria-label 이 남는다. */}
             <span className="scr-clan-dash-sub">{view.memberIds.length}명</span>
-            <button
+            {!isMobile && <button
               type="button" className="scr-text-btn scr-clan-dash-expand"
               aria-pressed={expandAll}
               onClick={() => setExpandAll((v) => !v)}
@@ -312,18 +275,12 @@ export default function ClanStatsScreen() {
                 ? <ChevronsDownUp size={13} aria-hidden />
                 : <ChevronsUpDown size={13} aria-hidden />}
               {expandAll ? "전부 접기" : "전부 펼치기"}
-            </button>
+            </button>}
           </header>
 
           {/* 종족구성별 전적은 한 규모(4:4 · 3:3 · 2:2)를 골랐을 때만(2026-10-20, 요청: "팀전 전체에서 종족구성별 전적 숨기기") — 1:1 엔 구성이 없다. */}
-          {size !== "1" && size !== "team" && <CompRecords rows={view.clanComps} />}
-          <section className="scr-statcard scr-clan-statcard">
-            <header className="scr-statcard-head">
-              <span className="scr-stat-name-btn scr-stat-name-plain">클랜원 전체</span>
-              <StatSum stats={view.clan.overall} games={clanGames} hideRate hideDmg />
-            </header>
-            <RaceDecks byRace={view.clan.byRace} openAll={expandAll} />
-          </section>
+          {size !== "1" && size !== "team" && <CompRecords rows={view.clanComps} format={`${size}:${size}`} />}
+          {/* 클랜원 전체는 아래 표(StatGrid)의 맨 윗줄로 옮겼다(2026-10-20). */}
         </section>
       )}
 
@@ -366,17 +323,14 @@ export default function ClanStatsScreen() {
         ) : cards.length === 0 ? (
           error ? null : <div className="scr-empty">결과가 없어요</div>
         ) : (
-          <div className="scr-stat-cards">
-            {cards.map((c) => (
-              <MemberStatRow
-                key={c.member.id}
-                member={c.member}
-                stats={c.stats}
-                byRace={c.entry?.byRace}
-                openAll={expandAll}
-              />
-            ))}
-          </div>
+          /* ★★ 표(StatGrid · 2026-10-20) — 맨 윗줄 클랜원 전체 · 그 아래 사람마다 한 줄. */
+          <StatGrid
+            clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace } : null}
+            clanGames={clanGames}
+            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace }))}
+            openAll={expandAll}
+            mobile={isMobile}
+          />
         )}
       </div>
 

@@ -1204,9 +1204,6 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-size-tabs { margin: 0 0 10px; }
 .scr-stats-size-tabs > .scr-line-tab-btn:first-child { padding-left: 0; }
 .scr-stats-size-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
-/* 팀전 전체일 때 종족구성 줄을 규모마다 묶는 작은 머리. */
-.scr-clan-comp-fmt { padding: 8px 0 2px var(--stat-head-pad-l); font-size: var(--fs-11); font-weight: 800; color: var(--dim); }
-.scr-clan-comp-fmt:first-child { padding-top: 2px; }
 /* 4:4/3:3/2:2 는 제목 **아래 줄**의 밑줄 탭(내전·공방과 같은 .scr-line-tabs) — 제목 왼끝에 맞춰 첫 탭의 왼 여백을 지운다. */
 .scr-clan-comp-tabs { margin-top: -4px; margin-bottom: -2px; }
 .scr-clan-comp-tabs > .scr-line-tab-btn { font-size: var(--fs-11); }
@@ -7900,3 +7897,76 @@ input.scr-sb-list-title { font-weight: 700; }
   .scr-league-tag { font-size: var(--fs-11); padding: 2px 4px; line-height: 1.3; }
   .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-above { margin-bottom: 3px; }
 }
+
+/* ★★ 통계 표(StatGrid · 2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A + C 의 승률 막대).
+   줄(.scr-sg-row)은 display:contents — 칸이 바로 표 격자에 선다. 펼친 줄(.scr-sg-mix)은 한 줄을 다 쓴다. */
+.scr-sg {
+  display: grid; width: 100%;
+  grid-template-columns: minmax(150px, 1.3fr) 104px 84px 60px 196px repeat(3, minmax(96px, 1fr)) 36px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden;
+  font-size: var(--fs-caption); color: var(--text);
+}
+.scr-sg-row { display: contents; }
+.scr-sg-c {
+  display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0;
+  padding: 9px 8px; border-top: 1px solid var(--line-faint); white-space: nowrap;
+}
+.scr-sg-c + .scr-sg-c { border-left: 1px solid var(--line-hair, var(--line-faint)); }
+.scr-sg-head > .scr-sg-c { border-top: none; padding: 7px 8px; background: rgba(var(--overlay-rgb), 0.06); font-size: var(--fs-11); font-weight: 700; color: var(--dim); }
+.scr-sg-head .scr-clan-band-dot { margin-right: 3px; }
+.scr-sg-row.is-clan > .scr-sg-c { background: rgba(var(--overlay-rgb), 0.035); }
+.scr-sg-who { justify-content: flex-start; gap: 8px; padding-left: 12px; }
+.scr-sg-avatar { flex: none; padding: 0; border: none; background: none; cursor: pointer; display: flex; }
+.scr-sg-avatar .scr-avatar { width: 28px !important; height: 28px !important; border-radius: 50% !important; }
+.scr-sg-name {
+  min-width: 0; padding: 0; border: none; background: none; cursor: pointer; font: inherit;
+  font-size: var(--fs-body); font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.scr-sg-name-plain { cursor: default; }
+.scr-sg-v { display: inline-flex; align-items: baseline; gap: 2px; font-variant-numeric: tabular-nums; }
+.scr-sg-v > b { font-weight: 700; }
+.scr-sg-v > i, .scr-sg-dmg > i { font-style: normal; font-size: var(--fs-10); font-weight: 600; color: var(--dim); }
+.scr-sg-paren { margin-left: 3px; }
+.scr-sg-dim { color: var(--dim); opacity: 0.7; }
+.scr-sg-rate { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
+.scr-sg-bar { display: block; width: 44px; height: 4px; border-radius: 2px; background: rgba(var(--overlay-rgb), 0.12); overflow: hidden; }
+.scr-sg-bar > span { display: block; height: 100%; border-radius: 2px; }
+.scr-sg-race { gap: 8px; }
+.scr-sg-dmg { display: inline-flex; align-items: baseline; gap: 2px; font-variant-numeric: tabular-nums; }
+.scr-sg-dmg > b { font-weight: 700; }
+.scr-sg-dmg > b.is-dealt { color: var(--win, #16a34a); }
+.scr-sg-dmg > b.is-taken { color: var(--loss, #dc2626); }
+.scr-sg-dmg > .scr-sg-dim { margin: 0 2px; }
+.scr-sg-toggle { padding: 2px; color: var(--dim); }
+.scr-sg-mix {
+  grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line-faint); background: rgba(var(--overlay-rgb), 0.025);
+}
+.scr-sg-mix-race { min-width: 0; padding: 8px 10px 10px; }
+.scr-sg-mix-race + .scr-sg-mix-race { border-left: 1px solid var(--line-hair, var(--line-faint)); }
+.scr-sg-mix-head { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; font-size: var(--fs-11); font-weight: 800; color: var(--muted); }
+.scr-sg-mix-race .scr-stat-mix-cell { --scr-toplist-w: 110px; }
+.scr-sg-mix-race .scr-stat-mix-row > * { padding: 4px 6px; }
+
+/* 폰 — [유저(아래 APM · 데미지) | 전체 | 테 | 프 | 저] · 칸마다 회수 위 · 승률(+막대) 아래 · 펼치기 없음. */
+.scr-sg.is-m { grid-template-columns: minmax(0, 1fr) 54px 50px 50px 50px; font-size: var(--fs-11); }
+.scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
+.scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
+.scr-sg.is-m .scr-sg-bar { width: 34px; height: 3px; }
+.scr-sg.is-m .scr-sg-who { flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; padding-left: 10px; }
+.scr-sg-who-top { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+/* 아래 줄(APM · 데미지)은 아바타만큼 들이지 않고 칸 왼끝에서(2026-10-20, 요청: "굳이 아바타만큼 왼쪽 여백 남겨둘 필요없음"). */
+.scr-sg-who-sub { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; max-width: 100%; overflow: hidden; }
+.scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 24px !important; height: 24px !important; }
+.scr-sg.is-m .scr-sg-name { font-size: var(--fs-caption); }
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-v > b, .scr-sg.is-m .scr-sg-dmg > b { font-weight: 600; }
+.scr-sg-small { opacity: 0.8; }
+.scr-sg-lab { gap: 3px; }
+
+/* 종족구성별 전적(CompGrid) — 위 표와 같은 칸 꼴 · [구성 | 경기 | 승률(+막대)] · 폭은 내용만큼(최대 560). */
+.scr-sg-comp-wrap { margin: 4px 0 14px; }
+.scr-sg-title { margin: 0 0 6px; font-size: var(--fs-body); font-weight: 800; color: var(--text); }
+.scr-sg.scr-sg-comp { grid-template-columns: minmax(120px, 1fr) 84px 120px; max-width: 560px; }
+.scr-sg-comp-label { font-weight: 700; color: var(--muted); }
+.scr-sg-comp-rate { gap: 8px; }
+.scr-sg.scr-sg-comp .scr-sg-c { padding-top: 7px; padding-bottom: 7px; }
