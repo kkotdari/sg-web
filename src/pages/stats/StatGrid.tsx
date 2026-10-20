@@ -4,18 +4,14 @@ import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
-import { SKILL_LIST_EXCLUDE, UP_TABLE } from "./MemberStatRow";
-import { topEntries, type TruthMix } from "../../utils/statsMix";
-import { TECH_KO, UNIT_KO } from "../../utils/replayNames";
+import RaceCurves from "./RaceCurves";
 import type { BaseRace, Member, MemberStats } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
    C 의 승률 막대를 얹어(요청: "A에 C의 그래프를 시각적으로 도입")).
-   PC: [유저 | 경기 | 승률 | APM | 데미지 | 테란 | 프로토스 | 저그 | ▾] · ▾ 는 그 줄 아래에 종족별 유닛·스킬·공방업을 편다 —
-   종족마다 세 줄 글(MixLines · 2026-10-20, 요청: "펼침 부분을 시안처럼 · 지금 너무 복잡": 순위 번호·공/방 칸 표 대신
-   "유닛 마린 · 메딕 · 탱크" · "스킬 …" · "공방업 보병 2.1/1.8 · 차량 1.2/0.9"). 순위·평균 셈은 옛 칸(RaceMixCell)과 같다.
-   폰: 종족 펼치기 없이(요청: "모바일은 각 종족 펼치기 제거하고 깔끔하게 그리드로") [유저(아래 APM·데미지) | 전체 | 테 | 프 | 저] —
-   칸마다 회수 위 · 승률 아래 두 줄. 승률 막대(시안 C)는 걷었다(2026-10-20, 요청: "통계 그래프 제거"). */
+   PC: [유저 | 경기 | 승률 | APM | 데미지 | 테란·프로토스·저그 (전적 | 승률) | ▾] · 폰: [유저(아래 한 줄: 판수 · APM · 딜 · 피해) | 전체·종족 승률 | ▾].
+   ▾ 는 PC·폰 모두 그 줄 아래에 **분당 곡선 두 판**(일꾼 수 · 병력 가치, 세 종족 겹침 — RaceCurves)을 편다(2026-10-20, 요청: "펼친 부분 내용 변경 ·
+   폰 피시 공통"). 옛 펼침(종족마다 유닛·스킬·공방업 글 · MixLines)과 폰의 '펼치기 없음'은 걷었다. 승률 막대(시안 C)도 걷었다. */
 
 const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
 
@@ -45,12 +41,11 @@ function Rate({ s }: { s?: MemberStats }) {
 function Dmg({ s, compact }: { s: MemberStats; compact?: boolean }) {
   const d = s.dmgDealtRel, t = s.dmgTakenRel;
   if (typeof d !== "number" || typeof t !== "number") return compact ? null : <Dash />;
-  /* 폰은 칸이 좁아 "딜 1.4 · 피해 0.8"(배수만) — "평균의 · 배"는 뜻이 같아 줄인다. */
+  /* 폰은 칸이 좁아 "딜 1.4 피해 0.8"(배수만) — "평균의 · 배"는 뜻이 같아 줄인다. 가운뎃점도 뺐다(한 줄에 담으려 · 2026-10-20). */
   if (compact) {
     return (
       <span className="scr-sg-dmg" title="준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)">
         <i>딜</i><b className="is-dealt">{(d / 100).toFixed(1)}</b>
-        <span className="scr-sg-dim">·</span>
         <i>피해</i><b className="is-taken">{(t / 100).toFixed(1)}</b>
       </span>
     );
@@ -117,58 +112,8 @@ function PcRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boolean
           </button>
         </span>
       </div>
-      {open && (
-        <div className="scr-sg-mix">
-          {RACES.map((r) => (
-            <div key={r} className="scr-sg-mix-race">
-              {/* 색 네모는 걷었다(2026-10-20, 요청: "펼침에도 색 네모 제거"). */}
-              <span className="scr-sg-mix-head">{r}</span>
-              <MixLines race={r} stats={row.byRace?.[r]} />
-            </div>
-          ))}
-        </div>
-      )}
+      {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} /></div>}
     </>
-  );
-}
-
-const MIX_TOP = 3;
-
-/** 공방업 한 줄 글 — 경기당 평균 단계. 공·방 둘 다 있는 갈래는 "보병 2.1/1.8", 하나뿐이면 "근접 1.9", 공통 방어는 "실드 0.8". */
-function upText(mix: TruthMix, race: BaseRace): string | null {
-  const avg = (key?: string): string | null => {
-    const n = key ? mix.upCounts?.[key] ?? 0 : 0;
-    return key && n > 0 ? ((mix.ups?.[key] ?? 0) / n).toFixed(1) : null;
-  };
-  const table = UP_TABLE[race];
-  const parts: string[] = [];
-  for (const r of table.rows) {
-    const a = avg(r.atk);
-    const d = avg(r.def);
-    if (a === null && d === null) continue;
-    parts.push(r.def ? `${r.label} ${a ?? "-"}/${d ?? "-"}` : `${r.label} ${a}`);
-  }
-  const solo = table.solo ? avg(table.solo.key) : null;
-  if (table.solo && solo !== null) parts.push(`${table.solo.label} ${solo}`);
-  return parts.length ? parts.join(" · ") : null;
-}
-
-/** 펼친 줄의 한 종족 — 유닛·스킬은 많이 쓴 셋, 공방업은 평균 단계. */
-function MixLines({ race, stats }: { race: BaseRace; stats?: MemberStats }) {
-  const mix = stats && stats.plays > 0 ? stats.truthMix ?? stats.buildMix ?? null : null;
-  if (!mix) return <span className="scr-sg-mix-none">{stats && stats.plays > 0 ? "기록 없음" : "경기 없음"}</span>;
-  const names = (items: { name: string }[]) => items.length ? items.map((it) => it.name).join(" · ") : null;
-  const lines: [string, string | null][] = [
-    ["유닛", names(topEntries(mix.units, UNIT_KO, MIX_TOP, mix.unitSecs))],
-    ["스킬", names(topEntries(mix.skills, TECH_KO, MIX_TOP, mix.skillSecs, SKILL_LIST_EXCLUDE))],
-    ["공방업", upText(mix, race)],
-  ];
-  return (
-    <dl className="scr-sg-mix-lines">
-      {lines.map(([k, v]) => (
-        <Fragment key={k}><dt>{k}</dt><dd>{v ?? <Dash />}</dd></Fragment>
-      ))}
-    </dl>
   );
 }
 
@@ -177,13 +122,19 @@ function MCell({ s, clan }: { s?: MemberStats; clan?: boolean }) {
   return <span className="scr-sg-c">{clan || !s || s.plays === 0 ? <Dash /> : <Rate s={s} />}</span>;
 }
 
-function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
+function MobileRow({ row, clan, games, openAll }: { row: StatGridRow; clan?: boolean; games?: number; openAll: boolean }) {
   const s = row.stats;
+  const [open, setOpen] = useState(openAll);
+  useEffect(() => { setOpen(openAll); }, [openAll]);
   return (
-    <div className={cx("scr-sg-row", clan && "is-clan")}>
+    <>
+    <div className={cx("scr-sg-row", clan && "is-clan", open && "is-open")}>
       <span className="scr-sg-c scr-sg-who">
         <span className="scr-sg-who-top">
           {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <Who member={row.member} />}
+          <button type="button" className="scr-text-btn scr-sg-toggle" aria-expanded={open} aria-label={open ? "접기" : "펼치기"} onClick={() => setOpen((v) => !v)}>
+            {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
+          </button>
         </span>
         <span className="scr-sg-who-sub">
           {/* 판수는 APM 줄 맨 앞에(2026-10-20, 요청: "전체 플레이 전적은 메인 칸에" → "폰도 APM 줄에 같이 넣기 · 몇 회"). 클랜원 전체는 판. */}
@@ -200,6 +151,8 @@ function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; gam
       <MCell s={s} clan={clan} />
       {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} clan={clan} />)}
     </div>
+    {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} /></div>}
+    </>
   );
 }
 
@@ -220,8 +173,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
           {/* 칸 머리 "전체 승률 · 테란 승률 …" — 늘 두 줄(2026-10-20, 요청: "헤더도 전체 승률 테란 승률 이렇게 · 칸 좁으면 두 줄"). 색 네모 없음. */}
           {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-race-head"><span>{r}</span><span>승률</span></span>)}
         </div>
-        {clanRow && <MobileRow row={clanRow} clan games={clanGames} />}
-        {rows.map((r) => <MobileRow key={r.member.id} row={r} />)}
+        {clanRow && <MobileRow row={clanRow} clan games={clanGames} openAll={openAll} />}
+        {rows.map((r) => <MobileRow key={r.member.id} row={r} openAll={openAll} />)}
       </div>
     );
   }

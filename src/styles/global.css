@@ -7995,24 +7995,47 @@ input.scr-sb-list-title { font-weight: 700; }
 .scr-sg-dmg > .scr-sg-dim { margin: 0 2px; }
 .scr-sg-toggle { padding: 2px; color: var(--dim); }
 .scr-sg-mix {
-  grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-column: 1 / -1; min-width: 0; padding: 10px 14px 12px;
   border-top: 1px solid var(--line-faint); background: rgba(var(--overlay-rgb), 0.025);
 }
-.scr-sg-mix-race { min-width: 0; padding: 8px 10px 10px; }
-.scr-sg-mix-race + .scr-sg-mix-race { border-left: 1px solid var(--line-hair, var(--line-faint)); }
-.scr-sg-mix-head { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; font-size: var(--fs-11); font-weight: 800; color: var(--muted); }
-/* 펼친 줄의 종족 한 칸 = 세 줄 글(유닛 · 스킬 · 공방업 · 2026-10-20 시안) — 이름표는 흐리게, 값은 본문색. */
-.scr-sg-mix-race { padding: 10px 14px 12px; }
-.scr-sg-mix-head { font-size: var(--fs-caption); color: var(--text); margin-bottom: 6px; }
-.scr-sg-mix-lines {
-  display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 8px; row-gap: 5px;
-  margin: 0; font-size: var(--fs-caption); line-height: 1.35;
-}
-.scr-sg-mix-lines dt { color: var(--muted); font-size: var(--fs-11); line-height: inherit; align-self: baseline; }
-.scr-sg-mix-lines dd { margin: 0; min-width: 0; color: var(--text); align-self: baseline; overflow-wrap: anywhere; }
-.scr-sg-mix-none { font-size: var(--fs-11); color: var(--muted); }
 
-/* 폰 — [유저(아래 APM · 데미지) | 전체 | 테 | 프 | 저] · 칸마다 회수 위 · 승률(+막대) 아래 · 펼치기 없음. */
+/* ★ 펼침 곡선(RaceCurves · 2026-10-20) — 일꾼 수 · 병력 가치 두 판, 세 종족 겹침. 선 색은 그래프 전용 짝(dataviz 검사기 통과 —
+   어두운 바탕 #101011 · 밝은 바탕 #fff 각각). 앱의 종족색(--race-*)은 밝은 바탕에서 노랑이 선으로 안 읽혀 따로 둔다.
+   글자는 본문·흐린 잉크만 — 선 색은 옆의 짧은 줄(.scr-rc-key)만 입는다. */
+:root { --race-chart-terran: #3f95ec; --race-chart-protoss: #ad8a08; --race-chart-zerg: #ad5fe6; }
+html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a00; --race-chart-zerg: #9a4fd6; }
+.scr-rc { min-width: 0; }
+.scr-rc-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 8px; font-size: var(--fs-11); font-weight: 700; color: var(--text); }
+.scr-rc-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.scr-rc-legend em { font-style: normal; font-weight: 600; color: var(--dim); font-variant-numeric: tabular-nums; }
+.scr-rc-key { display: inline-block; flex: none; width: 12px; height: 2px; border-radius: 1px; }
+/* PC 는 판 하나를 440 까지만 — 넓히면 viewBox 가 같이 불어 축 글자가 커진다. */
+.scr-rc-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 440px)); gap: 10px 28px; }
+.scr-rc-chart { margin: 0; min-width: 0; }
+.scr-rc-title { margin-bottom: 2px; font-size: var(--fs-11); font-weight: 800; color: var(--text); }
+.scr-rc-title > i { font-style: normal; font-weight: 600; color: var(--dim); }
+.scr-rc-plot { position: relative; }
+.scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; cursor: crosshair; }
+.scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }
+.scr-rc-axis { fill: var(--dim); font-size: 9px; font-variant-numeric: tabular-nums; }
+.scr-rc-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.scr-rc-end, .scr-rc-dot { stroke: var(--card-bg, #101011); stroke-width: 2; }
+.scr-rc-cross { stroke: rgba(var(--overlay-rgb), 0.35); stroke-width: 1; stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; }
+.scr-rc-tip {
+  position: absolute; top: 0; z-index: 2; margin-left: 10px; padding: 5px 8px; min-width: 92px; pointer-events: none;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-solid, #18181a);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); font-size: var(--fs-11); color: var(--text); white-space: nowrap;
+}
+.scr-rc-tip.is-left { transform: translateX(-100%); margin-left: -10px; }
+.scr-rc-tip-head { margin-bottom: 2px; font-weight: 800; color: var(--dim); }
+.scr-rc-tip-row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.scr-rc-tip-row > b { min-width: 4ch; font-weight: 700; }
+.scr-rc-tip-row > span { color: var(--muted); }
+.scr-rc-empty { padding: 4px 0; font-size: var(--fs-11); color: var(--muted); }
+.scr-sg.is-m .scr-sg-mix { padding: 10px 10px 12px; }
+.scr-sg.is-m .scr-rc-charts { grid-template-columns: minmax(0, 1fr); }
+
+/* 폰 — [유저(아래 한 줄: 판수 · APM · 딜 · 피해) | 전체 | 테 | 프 | 저] · 칸마다 승률 · ▾ 는 이름 옆(펼침은 PC 와 같은 곡선). */
 .scr-sg.is-m { grid-template-columns: minmax(0, 1fr) 48px 48px 48px 48px; font-size: var(--fs-11); }
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
@@ -8020,7 +8043,8 @@ input.scr-sb-list-title { font-weight: 700; }
 .scr-sg.is-m .scr-sg-who { flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; padding-left: 10px; }
 .scr-sg-who-top { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 /* 아래 줄(APM · 데미지)은 아바타만큼 들이지 않고 칸 왼끝에서(2026-10-20, 요청: "굳이 아바타만큼 왼쪽 여백 남겨둘 필요없음"). */
-.scr-sg-who-sub { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; max-width: 100%; overflow: hidden; }
+/* 한 줄(2026-10-20, 요청: "폰 메인셀 데이터 한줄에 표시") — 접어 내리지 않는다. */
+.scr-sg-who-sub { display: flex; flex-wrap: nowrap; align-items: baseline; gap: 6px; min-width: 0; max-width: 100%; overflow: hidden; white-space: nowrap; }
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 24px !important; height: 24px !important; }
 .scr-sg.is-m .scr-sg-name { font-size: var(--fs-caption); }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-v > b, .scr-sg.is-m .scr-sg-dmg > b { font-weight: 600; }
@@ -8030,8 +8054,21 @@ input.scr-sb-list-title { font-weight: 700; }
 .scr-sg.is-m .scr-sg-who-sub { font-variant-numeric: tabular-nums; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-lab > b { display: inline-block; min-width: 3ch; }
 /* 판수 칸("112회")은 폭을 고정해 왼쪽에 붙인다 — 뒤 APM 이 줄마다 같은 자리에 선다. */
-.scr-sg.is-m .scr-sg-who-sub .scr-sg-cnt { min-width: 38px; }
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-cnt { min-width: 30px; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b { display: inline-block; min-width: 3ch; }
+/* 한 줄에 담으려 값도 라벨과 같은 작은 글자 · 딜 묶음과 피해 묶음 사이만 조금 띄운다(360 폭에서 판수·APM·딜·피해가 한 줄). */
+.scr-sg.is-m .scr-sg-who-sub { font-size: var(--fs-10); gap: 5px; }
+.scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 3px; }
+/* 좁은 폰(≤400) — 승률 칸을 한 치 좁히고 아래 줄 자간·틈을 줄이고 글자를 폭에 맞춰(2.6vw · 360 에서 9.4px) 360 폭(쪽 여백 16)에서도 한 줄에 든다. */
+@media (max-width: 400px) {
+  .scr-sg.is-m { grid-template-columns: minmax(0, 1fr) 43px 43px 43px 43px; }
+  .scr-sg.is-m .scr-sg-c.scr-sg-who { padding-left: 8px; padding-right: 2px; }
+  .scr-sg.is-m .scr-sg-race-head { font-size: var(--fs-10); letter-spacing: -0.04em; }
+  .scr-sg.is-m .scr-sg-who-sub { gap: 4px; letter-spacing: -0.02em; font-size: min(var(--fs-10), 2.6vw); }
+  .scr-sg.is-m .scr-sg-who-sub .scr-sg-v > i, .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > i { font-size: inherit; }
+  .scr-sg.is-m .scr-sg-who-sub .scr-sg-cnt { min-width: 28px; }
+  .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 2px; }
+}
 /* 폰 칸 머리 "테란 / 승률" 두 줄. */
 .scr-sg.is-m .scr-sg-race-head { flex-direction: column; gap: 1px; letter-spacing: -0.02em; white-space: nowrap; line-height: 1.2; }
 .scr-sg.is-m .scr-sg-race-head > span:last-child { font-weight: 600; }
