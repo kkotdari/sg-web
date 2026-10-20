@@ -30,17 +30,17 @@ const SIZE_TABS = [
 ] as const;
 type SizeTab = (typeof SIZE_TABS)[number]["value"];
 const sizeTabOf = (v: string): SizeTab => (SIZE_TABS.some((t) => t.value === v) ? v as SizeTab : "team");
-/* 맵 탭(2026-10-20, 요청: "팀전 필터 밑에 맵 필터 — 전체 빨무 헌터 투혼 그 외") — 서버 mapGroup: 맵 정규 이름·리플레이 맵 이름에 그 낱말이 든 판
-   (sg-api repository MAP_GROUP_LIKES). 그 외 = 셋 다 아닌 판. */
+/* 맵 탭(2026-10-20, 요청: "팀전 필터 밑에 맵 필터" → "기본은 빨무 · 빨무 헌터 투혼 전체 순 · 대표맵 빨무 헌터 투혼은 이미 만들어져 있음 · 그 외는 없애기")
+   — 서버 mapGroup: 그 대표맵(map_canon)에 묶인 맵의 판(sg-api repository MAP_GROUP_LIKES). 전체 = 맵을 안 가림. */
 const MAP_TABS = [
-  { value: "all", label: "전체" },
   { value: "fastest", label: "빨무" },
   { value: "hunter", label: "헌터" },
   { value: "spirit", label: "투혼" },
-  { value: "other", label: "그 외" },
+  { value: "all", label: "전체" },
 ] as const;
 type MapTab = (typeof MAP_TABS)[number]["value"];
-const mapTabOf = (v: string): MapTab => (MAP_TABS.some((t) => t.value === v) ? v as MapTab : "all");
+const MAP_DEFAULT: MapTab = "fastest";
+const mapTabOf = (v: string): MapTab => (MAP_TABS.some((t) => t.value === v) ? v as MapTab : MAP_DEFAULT);
 const PERIOD_ALL = "all";
 
 /** 정렬 순서 — 검색창 밑의 작은 밑줄 탭(2026-10, 요청). 기본은 참여순(판 수 많은 사람부터). */
@@ -92,7 +92,7 @@ export default function ClanStatsScreen() {
   const [period, setPeriod] = useUrlState("period", currentMonthValue());
   const [sizeRaw, setSize] = useUrlState("size", "team");
   const size = sizeTabOf(sizeRaw);
-  const [mapRaw, setMap] = useUrlState("map", "all");
+  const [mapRaw, setMap] = useUrlState("map", MAP_DEFAULT);
   const mapTab = mapTabOf(mapRaw);
   useEffect(() => () => {
     const q = new URLSearchParams(window.location.search);

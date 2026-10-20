@@ -81,8 +81,8 @@ export interface GameResultStatsParams {
   ratingScope?: "total" | "period";
   /** 팀 규모 — 두 편 다 그 머릿수인 판만(통계 화면 탭 4:4 · 3:3 · 2:2 · 1:1 · 2026-10-20). */
   teamSize?: number;
-  /** 맵 무리 — 빨무 · 헌터 · 투혼 · 그 외(셋 다 아님) · 2026-10-20. 없으면 모든 맵. */
-  mapGroup?: "fastest" | "hunter" | "spirit" | "other";
+  /** 맵 무리 — 그 대표맵(빨무 · 헌터 · 투혼)에 묶인 맵의 판만 · 2026-10-20. 없으면 모든 맵. */
+  mapGroup?: "fastest" | "hunter" | "spirit";
 }
 
 export interface TeamRankingParams {
