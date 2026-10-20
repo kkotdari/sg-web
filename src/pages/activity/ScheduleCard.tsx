@@ -556,6 +556,12 @@ function ScheduleCardInner({
     editVer.current += 1;
     if (content) { contentDirty.current = true; setSaveState("dirty"); }
   };
+  /* 저장 단추는 서버에 보낼 꼴(snapOf)이 마지막 저장과 달라졌을 때만 — 빈 곳을 눌러 생긴 빈 줄·쳤다 지운 글처럼 보낼 것이 같으면 띄우지 않는다. */
+  const markContent = (next: Draft): void => {
+    editVer.current += 1;
+    contentDirty.current = snapOf(next) !== savedSnap.current;
+    setSaveState(contentDirty.current ? "dirty" : "saved");
+  };
 
   const absorb = (s: Schedule): void => {
     lastServer.current = s;
@@ -606,7 +612,7 @@ function ScheduleCardInner({
     if (!d) return;
     let changed = false;
     for (const k of HEAD_KEYS) if (part[k] !== undefined && part[k] !== d[k]) { touched.current.add(k); changed = true; }
-    if (changed) markEdited();
+    if (changed) markContent({ ...d, ...part });
     setDraft({ ...d, ...part });
   };
 
@@ -626,7 +632,7 @@ function ScheduleCardInner({
       const p = d.blocks[i];
       return p.key === b.key && sameBlock({ ...p, collapsed: b.collapsed }, b);
     });
-    if (changed) markEdited(!foldOnly);
+    if (changed) { if (foldOnly) markEdited(false); else markContent({ ...d, blocks: next }); }
     setDraft({ ...d, blocks: next });
   };
 
@@ -750,7 +756,7 @@ function ScheduleCardInner({
     const onVisibility = (): void => { if (!document.hidden) lastRefreshAt.current = 0; };
     document.addEventListener("visibilitychange", onVisibility);
     // 저장 안 한 고침이 있는데 창을 닫거나 새로 고치면 브라우저가 묻는다.
-    const onLeave = (e: BeforeUnloadEvent): void => { if (dirty()) { e.preventDefault(); e.returnValue = ""; } };
+    const onLeave = (e: BeforeUnloadEvent): void => { if (contentDirty.current) { e.preventDefault(); e.returnValue = ""; } };
     window.addEventListener("beforeunload", onLeave);
     return () => {
       window.clearInterval(timer);
@@ -769,7 +775,17 @@ function ScheduleCardInner({
       timeText={timeText}
       comment={footer}
     >
-      <div className="scr-schedule-card" ref={cardRef}>
+      {/* ★ 본문이 빈 일정(갓 만든 일정)은 카드의 빈 곳 어디를 눌러도 첫 글 줄이 생기고 그 맨 앞에 커서가 선다(2026-10-20, 요청: "처음 일정
+          만들고 글쓰기할 때 아무 데나 클릭해도 커서가 생겨야 해 · 당연히 처음 위치에") — 글쓰기 칸(.scr-sb-composer)을 대신 누른다(누름 안에서
+          불러야 폰 자판이 뜬다). 제목·일시·메뉴·저장처럼 제 일이 있는 것을 누른 때는 건드리지 않는다. */}
+      <div
+        className="scr-schedule-card" ref={cardRef}
+        onClick={(e) => {
+          if (!editing || !draftRef.current || draftRef.current.blocks.length > 0) return;
+          if ((e.target as Element).closest("button, a, input, textarea, select, label, [role=button], [role=menu], [role=dialog], .scr-sb-item")) return;
+          cardRef.current?.querySelector<HTMLElement>(".scr-sb-composer")?.click();
+        }}
+      >
         <ScheduleHead
           head={head} canEdit={canEdit} editing={editing} saveState={saveState} savedAt={savedAt}
           onSave={() => { void save(); }} onDiscard={discard}

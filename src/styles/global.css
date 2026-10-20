@@ -7645,6 +7645,8 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
   color: var(--muted); font-size: 13px; cursor: text;
 }
 .scr-sb-composer-hint { opacity: 0; transition: opacity .15s; }
+/* 본문이 빈 일정의 글쓰기 칸은 넉넉히(2026-10-20 · 빈 곳 어디를 눌러도 첫 줄에 커서 — ScheduleCard ★). */
+.scr-sb-composer-empty { min-height: 96px; }
 @media (hover: hover) { .scr-sb-composer:hover .scr-sb-composer-hint { opacity: 0.6; } }
 .scr-sb-composer:focus-visible { outline: 2px solid var(--timeline-blue); outline-offset: 1px; }
 .scr-sb-slot-on { background: color-mix(in srgb, var(--text) 10%, transparent); }

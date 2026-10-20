@@ -1690,7 +1690,7 @@ export default function ScheduleBlocks({
 
       {canEdit && (
         <div
-          className="scr-sb-composer" role="button" tabIndex={0}
+          className={cx("scr-sb-composer", blocks.length === 0 && "scr-sb-composer-empty")} role="button" tabIndex={0}
           onClick={(e) => { e.stopPropagation(); openComposer(); }}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); openComposer(); } }}
         >
