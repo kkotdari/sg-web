@@ -3383,9 +3383,9 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-trash-purge { --btn-icon-text-hover: var(--btn-danger-text); --btn-icon-hover-bg: var(--btn-danger-hover-bg); --btn-hover-glow: var(--btn-danger-glow); }
 .scr-trash-empty { color: var(--muted); font-size: var(--fs-caption); text-align: center; padding: 16px 0; display: flex; justify-content: center; gap: 8px; }
 
-/* 체크박스 왼쪽 여백은 **거의 없다**(2026-10, 요청: "체크박스의 왼쪽 여백을 줄이라는거야 전체 선택에서도 마찬가지") — 줄 체크칸도
-   전체선택도 10 씩 띄워 두어 그만큼 줄 폭을 버렸다. 체크박스를 줄 위로 올리는 판은 되물렸다(그건 요청이 아니었다). */
-.scr-sel-all { flex: 0 0 auto; gap: 8px; padding-left: 2px; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+/* 체크박스 왼쪽 여백 — 한때 **거의 없게**(2 · 2026-10, 요청: "체크박스의 왼쪽 여백을 줄이라는거야 전체 선택에서도 마찬가지") 했다가
+   2026-10-20 되물림(요청: "체크박스 왼쪽에 여백이 너무 없다" → 다른 화면도) — 줄 체크칸·전체선택 모두 10. 체크박스를 줄 위로 올리는 판은 되물렸다. */
+.scr-sel-all { flex: 0 0 auto; gap: 8px; padding-left: 10px; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
 .scr-sel-all:has(input:checked) { color: var(--text); }
 @media (hover: hover) { .scr-sel-all:hover { color: var(--text); } }
 .scr-selbar {
@@ -3409,7 +3409,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 @media (max-width: 960px) {
   .scr-activity-row, .scr-scrap-main, .scr-trash-main { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 }
-.scr-selcell { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 6px 0 2px; cursor: pointer; }
+.scr-selcell { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 6px 0 10px; cursor: pointer; }   /* 왼 2 → 10(2026-10-20 · 위 .scr-sel-all) */
 .scr-selcell.is-off { opacity: 0.3; cursor: default; }
 .scr-selcell input { cursor: inherit; }
 .scr-sel-wrap { display: flex; align-items: center; gap: 4px; min-width: 0; }
@@ -3435,7 +3435,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-trash-tools { display: flex; align-items: center; gap: 8px; }
 .scr-trash-tools .scr-trash-search { flex: 1 1 auto; min-width: 0; }
 .scr-trash-row.scr-trash-row-sel { grid-template-columns: auto 1fr auto; }
-.scr-trash-row.scr-trash-row-sel .scr-selcell { padding-left: 2px; }
+.scr-trash-row.scr-trash-row-sel .scr-selcell { padding-left: 2px; }   /* 줄 안 여백 8 + 2 = 10 */
 .scr-trash-row.is-picked { background: var(--lighting-picked-bg); }
 
 .scr-replay-review-filters { display: flex; flex-wrap: wrap; gap: 8px 18px; }
@@ -5765,7 +5765,6 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 /* 2026-10-20 — 이 꼴을 쓰는 목록(재분석 · 외부 공개 · 삭제 …)에선 체크박스를 줄 **세로 가운데**로(요청: "게임목록 사용시 체크박스 위치 가운데 정렬 세로"). */
 .scr-activity-row-wrap-sel:has(> .scr-activity-row-game.scr-gm) > .scr-selcell {
   align-items: center; padding-bottom: 0;
-  padding-left: 10px;   /* 2 → 10(같은 날 요청: "체크박스 왼쪽에 여백이 너무 없다") — 이 꼴 목록만 */
 }
 
 .scr-activity-row-fold { display: grid; }
