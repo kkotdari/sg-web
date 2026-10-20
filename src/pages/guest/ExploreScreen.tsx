@@ -300,7 +300,7 @@ export default function ExploreScreen() {
           {[...games].sort((a, b) => gameTime(b).localeCompare(gameTime(a))).map((g) => (
             <ListRow
               key={g.id}
-              className="scr-activity-row-game"
+              className="scr-activity-row-game scr-gm"
               onClick={() => openGame(g.id)}
               status={<GameRowStatus game={g} />}
               desc={<>

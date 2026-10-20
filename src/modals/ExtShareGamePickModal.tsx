@@ -6,7 +6,6 @@ import { RowCheck, SelectAllToggle } from "../components/common/Selection";
 import { showToast } from "../components/common/Toast";
 import { api } from "../api/client";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { useIsMobile } from "../hooks/useIsMobile";
 import { useAppStore } from "../store/appStore";
 import { formatAgo } from "../utils/date";
 import { gamePlayable } from "../utils/gamePlayable";
@@ -26,7 +25,6 @@ export default function ExtShareGamePickModal({ listId, listName, have, onClose,
   onDone: () => void;
 }) {
   const memberOf = useAppStore((s) => s.memberOf);
-  const isMobile = useIsMobile();
   const [query, setQuery] = useState("");
   const q = useDebouncedValue(query.trim(), 300);
   const [rows, setRows] = useState<GameResult[] | null>(null);
@@ -125,10 +123,10 @@ export default function ExtShareGamePickModal({ listId, listName, have, onClose,
                       check={<RowCheck checked={on || inList} disabled={inList} disabledTitle="이미 담긴 게임" onChange={() => toggle(g.id)} label="경기 선택" />}
                       picked={on}
                       disabled={inList}
-                      className={["scr-activity-row-game", inList && "is-in"].filter(Boolean).join(" ")}
+                      className={["scr-activity-row-game scr-gm", inList && "is-in"].filter(Boolean).join(" ")}
                       onClick={() => toggle(g.id)}
-                      status={<GameRowStatus game={g} />}
-                      desc={<GameRowNames game={g} memberOf={memberOf} mobile={isMobile} playable={gamePlayable(g)} />}
+                      status={<GameRowStatus game={g} playable={gamePlayable(g)} />}
+                      desc={<GameRowNames game={g} memberOf={memberOf} mobile playable={gamePlayable(g)} />}
                       top={inList ? <span className="scr-extshare-add-in">담김</span> : undefined}
                       side={formatAgo(g.gameStartedAt ?? g.date)}
                     />

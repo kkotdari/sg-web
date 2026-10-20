@@ -7,7 +7,8 @@ import { cx } from "../../utils/format";
 import { cleanMapName } from "../../utils/mapName";
 import { gamePlayable } from "../../utils/gamePlayable";
 import { navigateTo, pathOf } from "../../utils/route";
-import { GameRowNames } from "../activity/GameRow";
+import { GameRowNames, GameRowStatus, ListRow } from "../activity/GameRow";
+import { formatAgo } from "../../utils/date";
 import type { GameResult, GameResultSlot, League, LeagueMatch, LeagueMatchSet, LeagueMatchSide } from "../../types";
 
 /* 경기 결과 입력창의 세트 목록(요청: "리그 결과 입력창에서 세트 추가하고 게임 결과 중 해당 매치 게임을 선택 가능하게").
@@ -109,12 +110,6 @@ export default function LeagueMatchSets({
     const hm = t && !Number.isNaN(t.getTime()) ? ` ${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}` : "";
     return `${mo}/${d}${hm}`;
   };
-  const vsOf = (g: GameResult): string => {
-    const seat = aSeat(g);
-    const names = (slots: GameResultSlot[]) => slots.filter((sl) => !sl.observer).map(nickOf).join("·");
-    const [left, right] = seat === "team2" ? [g.team2, g.team1] : [g.team1, g.team2];
-    return `${names(left)} vs ${names(right)}`;
-  };
   /** 이은 게임을 게임 목록 로스터 꼴로(2026-10-20, 요청: "게임 연결시 게임목록 로스터형태로 표시") — A 팀이 왼쪽이 되게 자리를 돌린다. */
   const oriented = (g: GameResult): GameResult => {
     if (aSeat(g) !== "team2") return g;
@@ -122,7 +117,6 @@ export default function LeagueMatchSets({
     return { ...g, team1: g.team2, team2: g.team1, result: flip };
   };
   const memberById = (id: string) => memberOf.get(id);
-  const labelOf = (g: GameResult): string => [whenOf(g), cleanMapName(g.mapCanonName ?? g.mapName), vsOf(g)].filter(Boolean).join(" · ");
 
   const patch = (i: number, p: Partial<LeagueMatchSet>): void => onChange(sets.map((s, k) => (k === i ? { ...s, ...p } : s)));
   const pick = (i: number, g: GameResult | null): void => {
@@ -260,22 +254,25 @@ export default function LeagueMatchSets({
                     ) : games.length === 0 ? (
                       <div className="scr-league-set-pick-empty">{loadErr || "두 팀이 맞선 게임 결과가 없어요."}</div>
                     ) : (
-                      games.map((c) => {
-                        const w = winnerOf(c);
-                        const taken = used.has(c.id);
-                        return (
-                          <button
-                            key={c.id} type="button" disabled={taken}
-                            className="scr-league-set-cand"
-                            onClick={() => pick(i, c)}
-                          >
-                            <span className="scr-league-set-cand-main">{labelOf(c)}</span>
-                            <span className="scr-league-set-cand-tag">
-                              {taken ? "다른 세트" : w === "a" ? `${nameA} 승` : w === "b" ? `${nameB} 승` : "결과 없음"}
-                            </span>
-                          </button>
-                        );
-                      })
+                      /* 후보 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "리그의 경기결과 입력창의 게임연결창 … 모바일 화면의 게임목록처럼") — A 팀이 왼쪽. */
+                      <div className="scr-activity-rows">
+                        {games.map((c) => {
+                          const taken = used.has(c.id);
+                          const oc = oriented(c);
+                          return (
+                            <ListRow
+                              key={c.id}
+                              className={cx("scr-activity-row-game scr-gm", taken && "is-in")}
+                              disabled={taken}
+                              onClick={() => pick(i, c)}
+                              status={<GameRowStatus game={oc} playable={gamePlayable(c)} />}
+                              desc={<GameRowNames game={oc} memberOf={memberById} mobile playable={gamePlayable(c)} />}
+                              top={taken ? <span className="scr-extshare-add-in">다른 세트</span> : undefined}
+                              side={formatAgo(c.gameStartedAt ?? c.date)}
+                            />
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 )}

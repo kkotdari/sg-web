@@ -4,7 +4,9 @@ import { X } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import Select from "../../components/common/Select";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import { SelectAllToggle } from "../../components/common/Selection";
+import { RowCheck, SelectAllToggle } from "../../components/common/Selection";
+import { GameRowNames, GameRowStatus, ListRow } from "../activity/GameRow";
+import { gamePlayable } from "../../utils/gamePlayable";
 import ReplayBatchButton from "../../components/common/ReplayBatchButton";
 import VersionManageModal from "../../modals/VersionManageModal";
 import ExtShareManageModal from "../../modals/ExtShareManageModal";
@@ -20,10 +22,11 @@ import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { cx } from "../../utils/format";
 import { versionNumber } from "../../utils/appVersion";
 import { playCreak } from "../../utils/sfx";
-import { fmt, gameNow, todayStr } from "../../utils/date";
+import { fmt, formatAgo, gameNow, todayStr } from "../../utils/date";
+import type { GameResult } from "../../types";
 
 /** 제어판의 삭제 관리(삭제된 경기 — 복원·완전 삭제) 줄을 보이나 — 숨김(2026-10-16, 나중에 되살릴 예정 · true 면 되살아난다). */
-const SHOW_DELETED_GAMES = false;
+const SHOW_DELETED_GAMES = true;   // 되살림(2026-10-20, 요청: "삭제게임 목록 기능 다시 보이게")
 
 interface AdminPanelScreenProps {
   isAdmin: boolean;
@@ -32,6 +35,7 @@ interface AdminPanelScreenProps {
 export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   useEffect(() => { playCreak(); }, []);
   const appVersion = useAppStore((s) => s.appVersion);
+  const memberOf = useAppStore((s) => s.memberOf);
   const appVersions = useAppStore((s) => s.appVersions);
   const setAppVersion = useAppStore((s) => s.setAppVersion);
   const noticeEnabled = useAppStore((s) => s.noticeEnabled);
@@ -190,7 +194,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     }
   };
 
-  type PickRow = { id: number; matchNo: string; date: string; day: string; map: string; who: string };
+  type PickRow = { id: number; matchNo: string; date: string; day: string; map: string; who: string; game: GameResult };
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickRows, setPickRows] = useState<PickRow[] | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
@@ -218,6 +222,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
             day: m.date,
             map: m.mapName || "(맵 미상)",
             who: names.join(" · "),
+            game: m,
           });
         }
         cursor = page.nextCursor ?? undefined;
@@ -560,23 +565,19 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     className="scr-redo-pick-all" all={allShownPicked} count={picked.size} onToggle={toggleAllShown}
                     suffix={pickQuery.trim() ? ` (검색된 ${pickFiltered.length}건)` : ` (${pickFiltered.length}건)`}
                   />
-                  <div className="scr-redo-pick-list">
+                  {/* 줄 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "재분석 … 게임 목록을 노출하는 부분 전부 모바일 화면의 게임목록처럼"). */}
+                  <div className="scr-redo-pick-list scr-activity-rows">
                     {pickFiltered.map((r) => (
-                      <label key={r.id} className={cx("scr-redo-pick-row", picked.has(r.id) && "is-on")}>
-                        <input
-                          type="checkbox"
-                          checked={picked.has(r.id)}
-                          onChange={() => togglePick(r.id)}
-                        />
-                        <span className="scr-redo-pick-main">
-                          <span className="scr-redo-pick-top">
-                            <span className="scr-redo-pick-no">{r.matchNo}</span>
-                            <span className="scr-redo-pick-map">{r.map}</span>
-                            <span className="scr-redo-pick-date">{r.date}</span>
-                          </span>
-                          <span className="scr-redo-pick-who">{r.who}</span>
-                        </span>
-                      </label>
+                      <ListRow
+                        key={r.id}
+                        check={<RowCheck checked={picked.has(r.id)} onChange={() => togglePick(r.id)} label={`${r.matchNo} 선택`} />}
+                        picked={picked.has(r.id)}
+                        className="scr-activity-row-game scr-gm"
+                        onClick={() => togglePick(r.id)}
+                        status={<GameRowStatus game={r.game} playable={gamePlayable(r.game)} />}
+                        desc={<GameRowNames game={r.game} memberOf={memberOf} mobile playable={gamePlayable(r.game)} />}
+                        side={formatAgo(r.game.gameStartedAt ?? r.game.date)}
+                      />
                     ))}
                     {pickFiltered.length === 0 && (
                       <div className="scr-redo-pick-empty">결과가 없어요</div>

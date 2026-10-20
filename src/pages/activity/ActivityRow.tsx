@@ -167,7 +167,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
       )}
       picked={picked}
       className={cx(
-        item.kind === "gameResult" && "scr-activity-row-game",
+        item.kind === "gameResult" && "scr-activity-row-game scr-gm",
         voided && "scr-activity-row-void", secret && "scr-activity-row-secret",
       )}
       disabled={secret && !(isMobile && selMode)}

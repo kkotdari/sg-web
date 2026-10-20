@@ -3292,6 +3292,8 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
   display: flex; flex-direction: column; gap: 2px;
   border: 1px solid var(--line); border-radius: 8px; padding: 4px;
 }
+/* 폰 게임 줄 꼴 목록(.scr-activity-rows) — 줄 틈·안 여백 없이 · 스크롤은 살린다(.scr-activity-rows 의 overflow hidden 을 덮는다). */
+.scr-redo-pick-list.scr-activity-rows { gap: 0; padding: 0; overflow-y: auto; }
 .scr-redo-pick-row {
   display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px;
   padding: 5px 8px; border-radius: 6px; cursor: pointer;
@@ -3348,6 +3350,12 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 }
 .scr-trash-row:hover { background: var(--surface-2); }
 .scr-trash-row.is-busy { opacity: 0.7; }
+/* 폰 게임 줄 꼴 줄(2026-10-20) — 목록은 .scr-activity-rows 를 같이 달아 줄 색·선을 받는다(스크롤은 살린다) · 줄 몸은 ListRow 가 채운다. */
+.scr-trash-list.scr-activity-rows { gap: 0; padding: 0; overflow-y: auto; }
+.scr-trash-list.scr-activity-rows > .scr-trash-row { padding: 0 8px 0 4px; border-radius: 0; }
+.scr-trash-list.scr-activity-rows > .scr-trash-row + .scr-trash-row { border-top: 0.5px solid var(--scr-row-line); }
+.scr-trash-main-gm > .scr-activity-row-wrap { min-width: 0; }
+.scr-trash-main-gm .scr-trash-meta { font-size: var(--fs-10); }
 .scr-trash-main { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
 .scr-trash-top { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .scr-trash-no { flex: none; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text); }
@@ -5694,60 +5702,62 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
   .scr-activity-row > * + * { padding-left: 8px; }
   .scr-activity-row > * { padding-right: 8px; }
   .scr-activity-row > *:last-child { padding-right: 0; }
-
-  /* ★ 폰 게임 줄은 **두 줄**(2026-10, 요청) — 윗줄은 **양쪽 정렬**로 맵 배지가 왼끝 · 시각이 오른끝(그 사이 오른쪽에 NEW/UPDATE) ·
-     아랫줄에 이름. 옛 판은 배지가 이름 앞에 끼고 시각은 오른쪽 칸에 세로로 섰고, 그 다음 판은 시각이 왼쪽이었다(되물렸다).
-     줄마다 배지는 왼끝 · 시각은 오른끝이라 세로줄은 저절로 맞는다 — 칸 폭을 못 박을 것이 없다.
-     묶음(.scr-activity-row-badges)은 display:contents 로 풀어 제 자식(NEW·시각)이 직접 줄에 서게 한다 — 그래야 order 가 먹는다.
-     오른쪽으로 미는 것은 **NEW 칸 하나뿐**이다(auto 여백이 둘이면 남는 폭을 반씩 나눠 가져 NEW 가 한가운데로 간다).
-     줄 사이는 1, 위아래 여백은 11 → 7 로 좁혀 한 줄이 한 덩이로 모인다(요청: "타이트하게"). */
-  .scr-activity-row-game > .scr-activity-row-main {
-    flex-wrap: wrap; align-items: center; gap: 3px 6px;
-    padding-top: 7px; padding-bottom: 7px;
-  }
-  .scr-activity-row-game .scr-activity-row-badges { display: contents; }
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-status { order: 1; }
-  /* ★ 재생 배지는 맵 배지 **바로 옆**(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") — 같은 order 1 이라 DOM 차례대로 배지 뒤에 선다 ·
-     옛 자리(이름 줄 끝)는 그 줄이 윗줄 배지를 가질 때만 숨긴다(배지를 안 넘기는 모달 목록은 그대로). */
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-play-top { display: block; order: 0; }
-  /* ★ 윗줄 = [재생 배지 왼끝 · 맵·시간 배지 **정가운데** · (NEW) 시각 오른끝](2026-10-19, 요청 위 ★★) — 맵 배지는 줄 몸의 가운데에 절대 자리(위 여백 7 = 줄 몸 위 패딩).
-     리그 판 머리 줄(has-above)이 있는 줄은 그 아래라 자리를 모른다 — 양옆 auto 여백으로 가운데 어림. */
-  /* 윗줄은 격자 [재생 1fr | 맵·시간 | (NEW) 시각 1fr] — 양옆이 같은 1fr 라 맵 배지가 늘 정가운데다(리그 판 머리 줄이 있어도 · 옛 flex 차례 order 1~4 를 덮는다).
-     차례(order)로 자리 잡는다: 머리 줄 0 · 재생 1 · 맵 2 · 시각 묶음 3 · 이름 칸 4. 시각 묶음은 contents 를 걷고 제 칸 안 flex 로 오른끝. */
-  /* 줄 사이 3 → 5 · 위아래 7 → 9 · 승패 배지 줄–이름 칸 2 → 4(2026-10-19, 요청: "줄간격들 살짝씩 늘리기(로스터 내 제외)") — 이름끼리 줄 사이는 그대로.
-     이름 칸 좌우 4(같은 요청: "모바일 로스터내 닉네임 좌우 여백좀 남게"). */
-  .scr-activity-row-game > .scr-activity-row-main {
-    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 5px 6px;
-    padding-top: 9px; padding-bottom: 9px;
-  }
-  .scr-activity-row-game .scr-activity-row-cols { row-gap: 4px; }
-  .scr-activity-row-game .scr-activity-row-col-names { padding: 0 4px; }
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-above { grid-column: 1 / -1; order: 0; }
-  /* 시각 ↔ 재생 자리 바꿈(2026-10-20, 요청: "모바일 게임목록 타임스탬프와 재생배지 위치 교환") — 시각 묶음이 왼끝(1칸) · 재생이 오른끝(3칸). */
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-play-top { grid-column: 3; justify-self: end; order: 3; }
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-status { grid-column: 2; order: 2; }
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-badges { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 5px;
-    grid-column: 1; order: 1; margin-left: 0; min-width: 0; }
-  .scr-activity-row-game .scr-activity-row-badges > .scr-activity-row-badges-top { margin-left: 0; }
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-desc { grid-column: 1 / -1; order: 4; }
-  .scr-activity-row-game > .scr-activity-row-main:has(> .scr-activity-row-play-top) > .scr-activity-row-desc .scr-activity-row-play { display: none; }
-  /* NEW/UPDATE 는 시각 **오른쪽**(같은 날 요청: "업데이트 뉴는 타임스탬프 오른쪽에"). */
-  .scr-activity-row-game .scr-activity-row-badges-top { order: 2; margin-left: 0; min-height: 0; }
-  .scr-activity-row-game .scr-activity-row-time { order: 1; text-align: left; line-height: 1.25; }
-  .scr-activity-row-game > .scr-activity-row-main > .scr-activity-row-desc { order: 4; flex: 1 0 100%; }
-  /* 배지는 한 치 작게(요청) — 글자 12 → 11 · 여백도 한 겹 줄인다. */
-  .scr-activity-row-game .scr-activity-row-status-dur {
-    font-size: var(--fs-10); padding: 0 3px; gap: 2px; line-height: 1.3;
-  }
-  /* 이름이 넘치면 **말줄임표 없이 그냥 자른다**(2026-10, 요청: "말줌임표 넣지말고 그자리에 글자를 한글자 더 넣어주면 돼") —
-     "…" 가 한 글자를 잡아먹어 두 자 이름이 한 자로 보였다. */
-  .scr-activity-row-game .scr-activity-row-em { text-overflow: clip; }
-  /* 체크박스는 배지 줄이 아니라 **이름 줄에 높이를 맞춘다**(요청) — 줄 전체를 기준으로 가운데 두면 두 줄 사이에 떠 보인다.
-     줄 아래 여백 7 + 이름 줄 높이의 절반에서 체크박스 절반을 뺀 만큼(9) 띄워 아래에 붙인다. */
-  .scr-activity-row-wrap-sel:has(> .scr-activity-row-game) > .scr-selcell {
-    align-items: flex-end; padding-bottom: 9px;
-  }
 }
+/* ★★ 폰 게임 줄 꼴 = **.scr-gm**(2026-10-20, 요청: "재분석·외부공개·리그 게임연결창 등 게임 목록을 노출하는 부분을 전부 모바일 화면의 게임목록처럼") —
+   옛 폰 미디어 블록의 게임 줄 규칙을 그대로 폭과 상관없이 .scr-activity-row-game.scr-gm 에 건다. 활동 목록(폰 · PC 는 표)·외부 공개·재분석·삭제 목록이 이 꼴을 쓴다. */
+/* ★ 폰 게임 줄은 **두 줄**(2026-10, 요청) — 윗줄은 **양쪽 정렬**로 맵 배지가 왼끝 · 시각이 오른끝(그 사이 오른쪽에 NEW/UPDATE) ·
+   아랫줄에 이름. 옛 판은 배지가 이름 앞에 끼고 시각은 오른쪽 칸에 세로로 섰고, 그 다음 판은 시각이 왼쪽이었다(되물렸다).
+   줄마다 배지는 왼끝 · 시각은 오른끝이라 세로줄은 저절로 맞는다 — 칸 폭을 못 박을 것이 없다.
+   묶음(.scr-activity-row-badges)은 display:contents 로 풀어 제 자식(NEW·시각)이 직접 줄에 서게 한다 — 그래야 order 가 먹는다.
+   오른쪽으로 미는 것은 **NEW 칸 하나뿐**이다(auto 여백이 둘이면 남는 폭을 반씩 나눠 가져 NEW 가 한가운데로 간다).
+   줄 사이는 1, 위아래 여백은 11 → 7 로 좁혀 한 줄이 한 덩이로 모인다(요청: "타이트하게"). */
+.scr-activity-row-game.scr-gm > .scr-activity-row-main {
+  flex-wrap: wrap; align-items: center; gap: 3px 6px;
+  padding-top: 7px; padding-bottom: 7px;
+}
+.scr-activity-row-game.scr-gm .scr-activity-row-badges { display: contents; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-status { order: 1; }
+/* ★ 재생 배지는 맵 배지 **바로 옆**(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") — 같은 order 1 이라 DOM 차례대로 배지 뒤에 선다 ·
+   옛 자리(이름 줄 끝)는 그 줄이 윗줄 배지를 가질 때만 숨긴다(배지를 안 넘기는 모달 목록은 그대로). */
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-play-top { display: block; order: 0; }
+/* ★ 윗줄 = [재생 배지 왼끝 · 맵·시간 배지 **정가운데** · (NEW) 시각 오른끝](2026-10-19, 요청 위 ★★) — 맵 배지는 줄 몸의 가운데에 절대 자리(위 여백 7 = 줄 몸 위 패딩).
+   리그 판 머리 줄(has-above)이 있는 줄은 그 아래라 자리를 모른다 — 양옆 auto 여백으로 가운데 어림. */
+/* 윗줄은 격자 [재생 1fr | 맵·시간 | (NEW) 시각 1fr] — 양옆이 같은 1fr 라 맵 배지가 늘 정가운데다(리그 판 머리 줄이 있어도 · 옛 flex 차례 order 1~4 를 덮는다).
+   차례(order)로 자리 잡는다: 머리 줄 0 · 재생 1 · 맵 2 · 시각 묶음 3 · 이름 칸 4. 시각 묶음은 contents 를 걷고 제 칸 안 flex 로 오른끝. */
+/* 줄 사이 3 → 5 · 위아래 7 → 9 · 승패 배지 줄–이름 칸 2 → 4(2026-10-19, 요청: "줄간격들 살짝씩 늘리기(로스터 내 제외)") — 이름끼리 줄 사이는 그대로.
+   이름 칸 좌우 4(같은 요청: "모바일 로스터내 닉네임 좌우 여백좀 남게"). */
+.scr-activity-row-game.scr-gm > .scr-activity-row-main {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 5px 6px;
+  padding-top: 9px; padding-bottom: 9px;
+}
+.scr-activity-row-game.scr-gm .scr-activity-row-cols { row-gap: 4px; }
+.scr-activity-row-game.scr-gm .scr-activity-row-col-names { padding: 0 4px; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-above { grid-column: 1 / -1; order: 0; }
+/* 시각 ↔ 재생 자리 바꿈(2026-10-20, 요청: "모바일 게임목록 타임스탬프와 재생배지 위치 교환") — 시각 묶음이 왼끝(1칸) · 재생이 오른끝(3칸). */
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-play-top { grid-column: 3; justify-self: end; order: 3; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-status { grid-column: 2; order: 2; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-badges { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 5px;
+  grid-column: 1; order: 1; margin-left: 0; min-width: 0; }
+.scr-activity-row-game.scr-gm .scr-activity-row-badges > .scr-activity-row-badges-top { margin-left: 0; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc { grid-column: 1 / -1; order: 4; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main:has(> .scr-activity-row-play-top) > .scr-activity-row-desc .scr-activity-row-play { display: none; }
+/* NEW/UPDATE 는 시각 **오른쪽**(같은 날 요청: "업데이트 뉴는 타임스탬프 오른쪽에"). */
+.scr-activity-row-game.scr-gm .scr-activity-row-badges-top { order: 2; margin-left: 0; min-height: 0; }
+.scr-activity-row-game.scr-gm .scr-activity-row-time { order: 1; text-align: left; line-height: 1.25; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc { order: 4; flex: 1 0 100%; }
+/* 배지는 한 치 작게(요청) — 글자 12 → 11 · 여백도 한 겹 줄인다. */
+.scr-activity-row-game.scr-gm .scr-activity-row-status-dur {
+  font-size: var(--fs-10); padding: 0 3px; gap: 2px; line-height: 1.3;
+}
+/* 이름이 넘치면 **말줄임표 없이 그냥 자른다**(2026-10, 요청: "말줌임표 넣지말고 그자리에 글자를 한글자 더 넣어주면 돼") —
+   "…" 가 한 글자를 잡아먹어 두 자 이름이 한 자로 보였다. */
+.scr-activity-row-game.scr-gm .scr-activity-row-em { text-overflow: clip; }
+/* 체크박스는 배지 줄이 아니라 **이름 줄에 높이를 맞춘다**(요청) — 줄 전체를 기준으로 가운데 두면 두 줄 사이에 떠 보인다.
+   줄 아래 여백 7 + 이름 줄 높이의 절반에서 체크박스 절반을 뺀 만큼(9) 띄워 아래에 붙인다. */
+.scr-activity-row-wrap-sel:has(> .scr-activity-row-game.scr-gm) > .scr-selcell {
+  align-items: flex-end; padding-bottom: 9px;
+}
+
 .scr-activity-row-fold { display: grid; }
 .scr-activity-row-fold > * { overflow: hidden; min-height: 0; }
 .scr-activity-row-fold-open { animation: scr-row-open .22s ease-out backwards; }
@@ -7403,6 +7413,7 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-extshare-add > .scr-redo-pick-body { flex: 1 1 auto; }
 .scr-extshare-add-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .scr-extshare-add-list .scr-activity-row-wrap:has(.is-in) { opacity: 0.5; }
+.scr-league-set-pick .scr-activity-row-wrap:has(.is-in) { opacity: 0.5; }
 .scr-extshare-add-in {
   font-size: var(--fs-micro); font-weight: 700; color: var(--text-dim);
   padding: 0 6px; border: 1px solid var(--line); border-radius: 6px;
