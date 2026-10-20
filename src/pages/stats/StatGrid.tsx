@@ -129,15 +129,16 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
 }
 
 /** 폰 전적 칸 — 위 "N전" · 아래 승률(2026-10-20, 요청: "원래대로 · 유저 | 전체 | 테 | 프 | 저 전적으로 · 각 전적 칸은 위 전수 아래 승률").
- *  그 종족 판이 없으면 "-". 클랜원 전체의 전체 칸은 "N판" 위 · 승률 "-"(내전이라 늘 반반). */
+ *  그 종족 판이 없으면 "-". 클랜원 전체의 전체 칸은 "N전" 위 · "(N경기)" 아래(내전이라 승률은 늘 반반). */
 function MCell({ s, games, noRate }: { s?: MemberStats; games?: number; noRate?: boolean }) {
   if (!s || s.plays === 0) return <span className="scr-sg-c scr-sg-mrec"><Dash /></span>;
   return (
     <span className="scr-sg-c scr-sg-mrec">
+      <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b><i>전</i></span>
+      {/* 클랜원 전체의 전체 칸은 승률 대신 경기 수 "(212경기)" — PC 와 같은 꼴(2026-10-20, 요청: "전체 판이 아니라 전, 괄호하고 (n게임) PC 랑 똑같이"). */}
       {games !== undefined
-        ? <span className="scr-sg-v"><b>{games.toLocaleString()}</b><i>판</i></span>
-        : <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b><i>전</i></span>}
-      {noRate ? <Dash /> : <span className="scr-sg-v scr-sg-mrate"><b>{s.winRate}</b><i>%</i></span>}
+        ? <span className="scr-sg-v scr-sg-mgames"><i>({games.toLocaleString()}경기)</i></span>
+        : noRate ? <Dash /> : <span className="scr-sg-v scr-sg-mrate"><b>{s.winRate}</b><i>%</i></span>}
     </span>
   );
 }
