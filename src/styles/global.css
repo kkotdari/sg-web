@@ -4957,7 +4957,20 @@ span.scr-league-set-game { cursor: default; }
 .scr-league-set-roster { display: flex; padding: 2px 0 4px; }
 .scr-league-set-roster > .scr-activity-row-cols { width: 100%; }
 .scr-league-set-roster .scr-activity-row-col-names { padding: 0 4px; }
-.scr-league-set-memo { flex: 1 1 auto; min-width: 0; height: 28px; padding: 3px 8px; font-size: var(--fs-micro); }
+/* 안 이은 세트(2026-10-20) — 글 칸은 로스터 이름 자리: 테두리 없이 밑줄 하나 · 이름과 같은 글 크기 · 가운데. */
+.scr-league-set-memo {
+  width: 100%; min-width: 0; height: 26px; padding: 2px 6px; box-sizing: border-box;
+  border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; outline: none;
+  color: var(--text); font: inherit; font-size: var(--fs-caption); text-align: center;
+}
+.scr-league-set-memo:focus { border-bottom-color: var(--timeline-blue); }
+.scr-league-set-memo::placeholder { color: var(--muted); }
+/* 승패 배지 단추 — 로스터 배지와 같은 칸·모양(.scr-activity-row-wl) · 누를 자리는 둘레로 넓힌다. 안 고른 쪽은 흐리게. */
+.scr-league-set-wl { position: relative; cursor: pointer; font-family: inherit; }
+.scr-league-set-wl::after { content: ""; position: absolute; inset: -8px; }
+.scr-league-set-wl.is-idle:not(.is-loss) { opacity: 0.45; }
+.scr-league-set-wl:disabled { cursor: default; }
+.scr-league-set-manual .scr-activity-row-cols { row-gap: 4px; }
 .scr-league-set-link { flex: 0 0 auto; width: 28px; height: 28px; }
 .scr-league-set-link.is-on { color: var(--timeline-blue); }
 .scr-league-set-win > .scr-league-set-draw { flex: 0 0 52px; }

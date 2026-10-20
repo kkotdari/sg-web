@@ -179,11 +179,9 @@ export default function LeagueMatchSets({
                       {g ? [whenOf(g), cleanMapName(g.mapCanonName ?? g.mapName)].filter(Boolean).join(" · ") : `게임 #${s.gameResultId}`}
                     </span>
                   ) : (
-                    <input
-                      type="text" className="scr-input scr-league-set-memo" disabled={disabled} maxLength={200}
-                      value={s.memo ?? ""} placeholder="세트 내용(예: 홍탑 승)" aria-label={`${i + 1}세트 내용`}
-                      onChange={(e) => patch(i, { memo: e.target.value })}
-                    />
+                    /* 안 이은 세트도 이은 세트와 같은 꼴(2026-10-20, 요청: "수기입력 칸 위치와 모양 크기 · 승무패 버튼 위치와 모양 크기를 게임 연결한 세트와 맞게") —
+                       머리 줄의 시각·맵 자리엔 "직접 입력" · 아래 줄은 로스터 자리: 윗줄 승패 배지 단추(팀 칸 가운데 · 무는 vs 칸) · 아랫줄 글 칸(이름 자리 · 테두리 없음). */
+                    <span className="scr-league-set-game is-roster">직접 입력</span>
                   )}
                   {linked && g && gamePlayable(g) && (
                     <button
@@ -208,9 +206,39 @@ export default function LeagueMatchSets({
                     <GameRowNames game={oriented(g)} memberOf={memberById} mobile playable={false} />
                   </div>
                 )}
+                {!linked && (
+                  <div className="scr-league-set-roster scr-league-set-manual">
+                    <span className="scr-activity-row-cols" style={{ gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)" }}>
+                      {(["a", "draw", "b"] as const).map((side, k) => {
+                        const text = side === "draw" ? "무" : s.winner === null || s.winner === "draw" || s.winner === side ? "승" : "패";
+                        const on = s.winner === side;
+                        return (
+                          <span className="scr-activity-row-col-wl" key={side} style={{ gridColumn: k + 1, gridRow: 1 }}>
+                            <button
+                              type="button" disabled={disabled}
+                              className={cx("scr-activity-row-wl scr-league-set-wl", on && "is-win", !on && "is-idle", s.winner !== null && s.winner !== "draw" && !on && side !== "draw" && "is-loss")}
+                              aria-pressed={on}
+                              aria-label={side === "a" ? `${nameA} 승` : side === "b" ? `${nameB} 승` : "무승부"}
+                              title={side === "a" ? `${nameA} 승` : side === "b" ? `${nameB} 승` : "무승부"}
+                              onClick={() => patch(i, { winner: on ? null : side })}
+                            >
+                              {text}
+                            </button>
+                          </span>
+                        );
+                      })}
+                      <input
+                        type="text" className="scr-league-set-memo" disabled={disabled} maxLength={200}
+                        style={{ gridColumn: "1 / -1", gridRow: 2 }}
+                        value={s.memo ?? ""} placeholder="세트 내용(예: 홍탑 승)" aria-label={`${i + 1}세트 내용`}
+                        onChange={(e) => patch(i, { memo: e.target.value })}
+                      />
+                    </span>
+                  </div>
+                )}
                 {/* 이은 세트는 승무패 단추가 없다 — 이긴 쪽은 그 게임이 정하고 로스터 배지가 보인다(2026-10-20, 요청: "승무패 버튼 불필요").
                     게임을 못 받았을 때(g 없음)만 손으로 고르게 둔다. */}
-                {!(linked && g) && <div className="scr-league-set-win" role="group" aria-label={`${i + 1}세트 결과`}>
+                {linked && !g && <div className="scr-league-set-win" role="group" aria-label={`${i + 1}세트 결과`}>
                   {(["a", "draw", "b"] as const).map((side) => (
                     <button
                       key={side} type="button" disabled={disabled}
