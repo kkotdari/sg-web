@@ -128,21 +128,16 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
   );
 }
 
-/** 폰 전적 칸 — 전체 · 테란 · 프로토스 · 저그를 한 칸에 세로로 "전체 24전 65.2%"(2026-10-20, 요청: "전체·종족별 승률 한 컬럼으로 · 세로로 전체 테란
- *  프로토스 저그 순 · 폭 적게 · 전체 1전 75% 이렇게 · 컬럼명은 전적" → "n전 n% 승"). 그 종족 판이 없으면 "-". 클랜원 전체의 전체 줄은 판 수만(내전이라 승률은 늘 반반). */
-function MStack({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
-  const line = (label: string, st: MemberStats | undefined, plays?: string, noRate?: boolean) => (
-    <Fragment key={label}>
-      <i>{label}</i>
-      {st && st.plays > 0
-        ? <><span className="scr-sg-v"><b>{plays ?? st.plays.toLocaleString()}</b><i>{plays ? "판" : "전"}</i></span>{noRate ? <Dash /> : <Num v={st.winRate} unit="% 승" />}</>
-        : <><Dash /><span /></>}
-    </Fragment>
-  );
+/** 폰 전적 칸 — 위 "N전" · 아래 승률(2026-10-20, 요청: "원래대로 · 유저 | 전체 | 테 | 프 | 저 전적으로 · 각 전적 칸은 위 전수 아래 승률").
+ *  그 종족 판이 없으면 "-". 클랜원 전체의 전체 칸은 "N판" 위 · 승률 "-"(내전이라 늘 반반). */
+function MCell({ s, games, noRate }: { s?: MemberStats; games?: number; noRate?: boolean }) {
+  if (!s || s.plays === 0) return <span className="scr-sg-c scr-sg-mrec"><Dash /></span>;
   return (
-    <span className="scr-sg-c scr-sg-stack">
-      {line("전체", row.stats, clan ? (games ?? 0).toLocaleString() : undefined, clan)}
-      {RACES.map((r) => line(r, row.byRace?.[r]))}
+    <span className="scr-sg-c scr-sg-mrec">
+      {games !== undefined
+        ? <span className="scr-sg-v"><b>{games.toLocaleString()}</b><i>판</i></span>
+        : <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b><i>전</i></span>}
+      {noRate ? <Dash /> : <span className="scr-sg-v scr-sg-mrate"><b>{s.winRate}</b><i>%</i></span>}
     </span>
   );
 }
@@ -178,7 +173,8 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
         {/* 데미지는 APM 아래 제 줄 · 앞에 "데미지" 이름표(2026-10-20, 요청: "APM 과 데미지 줄 나누고 데미지 라벨 달아주기"). 클랜원 전체는 없다. */}
         {!clan && <span className="scr-sg-who-sub scr-sg-who-dmg"><i className="scr-sg-dmg-lab">데미지</i><Dmg s={s} compact /></span>}
       </span>
-      <MStack row={row} clan={clan} games={games} />
+      <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} />
+      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} />)}
     </div>
     {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} /></div>}
     </>
@@ -201,7 +197,7 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
       <div className="scr-sg is-m" role="table" aria-label="통계">
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who">유저</span>
-          <span className="scr-sg-c scr-sg-stack-head">전적</span>
+          {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-race-head">{r}</span>)}
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} openAll={openAll} scale={scale} />}
         {rows.map((r) => <MobileRow key={r.member.id} row={r} openAll={openAll} scale={scale} />)}
