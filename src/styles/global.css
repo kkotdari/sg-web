@@ -8026,6 +8026,11 @@ input.scr-sb-list-title { font-weight: 700; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-lab > b { display: inline-block; min-width: 3ch; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b { display: inline-block; min-width: 3ch; }
 .scr-sg.is-m .scr-sg-race-head { letter-spacing: -0.02em; white-space: nowrap; }
+/* 폰 회수·승률 칸(50px)에 "승률 62.5%"가 들게 — 칸 옆 여백·라벨 틈을 줄인다(2026-10-20 · 승률 라벨). */
+.scr-sg.is-m .scr-sg-race { padding-left: 2px; padding-right: 2px; }
+.scr-sg.is-m .scr-sg-rate .scr-sg-lab { gap: 1px; letter-spacing: -0.03em; }
+.scr-sg.is-m .scr-sg-rate .scr-sg-lab > i:first-child { margin-right: 1px; font-size: 9px; }
+.scr-sg.is-m .scr-sg-rate .scr-sg-lab > b { font-size: 10px; }
 
 /* 종족구성별 전적(CompGrid) — 위 표와 같은 칸 꼴 · [구성 | 경기 | 승률(+막대)] · 폭은 내용만큼(최대 560). */
 .scr-sg-comp-wrap { margin: 4px 0 14px; }

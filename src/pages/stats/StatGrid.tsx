@@ -32,12 +32,13 @@ function Num({ v, unit }: { v: string | number | null | undefined; unit?: string
   return <span className="scr-sg-v"><b>{v}</b>{unit && <i>{unit}</i>}</span>;
 }
 
-/** 승률 — 옛 막대(시안 C)는 걷었다(2026-10-20, 요청: "통계 그래프 제거"). */
-function Rate({ s }: { s?: MemberStats }) {
+/** 승률 — 옛 막대(시안 C)는 걷었다(2026-10-20, 요청: "통계 그래프 제거"). labeled 면 앞에 "승률"을 단다(종족·전체 칸 —
+ *  회수와 나란히 서서 무슨 숫자인지 모호했다 · 같은 날 요청: "승률 앞에 승률이라고 적어 주기"). 머리가 '승률'인 PC 칸은 안 단다. */
+function Rate({ s, labeled }: { s?: MemberStats; labeled?: boolean }) {
   if (!s || s.plays === 0) return <Dash />;
   return (
     <span className="scr-sg-rate">
-      <Num v={s.winRate} unit="%" />
+      {labeled ? <span className="scr-sg-v scr-sg-lab"><i>승률</i><b>{s.winRate}</b><i>%</i></span> : <Num v={s.winRate} unit="%" />}
     </span>
   );
 }
@@ -86,7 +87,7 @@ function RaceCell({ s, clan }: { s?: MemberStats; clan?: boolean }) {
   return (
     <span className="scr-sg-c scr-sg-race">
       <Num v={s.plays.toLocaleString()} unit="회" />
-      {!clan && <Rate s={s} />}
+      {!clan && <Rate s={s} labeled />}
     </span>
   );
 }
@@ -176,7 +177,7 @@ function MCell({ s, clan }: { s?: MemberStats; clan?: boolean }) {
   return (
     <span className="scr-sg-c scr-sg-race">
       <Num v={s.plays.toLocaleString()} unit="회" />
-      {!clan && <Rate s={s} />}
+      {!clan && <Rate s={s} labeled />}
     </span>
   );
 }
