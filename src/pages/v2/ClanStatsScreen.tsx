@@ -289,30 +289,8 @@ export default function ClanStatsScreen() {
         ))}
       </div>
 
-      {view?.clan && (
-        <section className="scr-clan-dash" aria-label="클랜 전체">
-          <header className="scr-clan-dash-head">
-            {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다.
-                화면 낭독기에는 감싼 section 의 aria-label 이 남는다. */}
-            <span className="scr-clan-dash-sub">{view.memberIds.length}명</span>
-            {!isMobile && <button
-              type="button" className="scr-text-btn scr-clan-dash-expand"
-              aria-pressed={expandAll}
-              onClick={() => setExpandAll((v) => !v)}
-            >
-              {expandAll
-                ? <ChevronsDownUp size={13} aria-hidden />
-                : <ChevronsUpDown size={13} aria-hidden />}
-              {expandAll ? "전부 접기" : "전부 펼치기"}
-            </button>}
-          </header>
-
-          {/* 종족구성별 전적은 한 규모(4:4 · 3:3 · 2:2)를 골랐을 때만(2026-10-20, 요청: "팀전 전체에서 종족구성별 전적 숨기기") — 1:1 엔 구성이 없다. */}
-          {size !== "1" && size !== "team" && <CompRecords rows={view.clanComps} format={`${size}:${size}`} />}
-          {/* 클랜원 전체는 아래 표(StatGrid)의 맨 윗줄로 옮겼다(2026-10-20). */}
-        </section>
-      )}
-
+      {/* 검색창과 명수 자리 바꿈(2026-10-20, 요청: "통계의 명수와 검색창 위치 바꾸기") — 검색창이 맵 탭 바로 아래(옛 명수 자리) · 명수와 "전부 펼치기"는
+          정렬 줄 바로 위(옛 검색창 자리)로. 종족구성별 전적은 그대로 검색창 아래다. */}
       <SearchFilterBar
         count={cards.length}
         countLabel="명"
@@ -324,6 +302,30 @@ export default function ClanStatsScreen() {
         suggestions={suggestions}
         lexicon={lexicon}
       />
+      {/* 종족구성별 전적은 한 규모(4:4 · 3:3 · 2:2)를 골랐을 때만(2026-10-20, 요청: "팀전 전체에서 종족구성별 전적 숨기기") — 1:1 엔 구성이 없다.
+          클랜원 전체는 아래 표(StatGrid)의 맨 윗줄로 옮겼다(2026-10-20). */}
+      {view?.clan && size !== "1" && size !== "team" && (
+        <section className="scr-clan-dash" aria-label="클랜 전체">
+          <CompRecords rows={view.clanComps} format={`${size}:${size}`} />
+        </section>
+      )}
+
+      {view?.clan && (
+        <header className="scr-clan-dash-head scr-stats-count-row">
+          {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다. */}
+          <span className="scr-clan-dash-sub">{view.memberIds.length}명</span>
+          {!isMobile && <button
+            type="button" className="scr-text-btn scr-clan-dash-expand"
+            aria-pressed={expandAll}
+            onClick={() => setExpandAll((v) => !v)}
+          >
+            {expandAll
+              ? <ChevronsDownUp size={13} aria-hidden />
+              : <ChevronsUpDown size={13} aria-hidden />}
+            {expandAll ? "전부 접기" : "전부 펼치기"}
+          </button>}
+        </header>
+      )}
 
       <div className="scr-stats-sort">
         <div className="scr-line-tabs scr-stats-sort-tabs" role="tablist" aria-label="정렬 순서">
