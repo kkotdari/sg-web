@@ -7,6 +7,7 @@ import { cx } from "../../utils/format";
 import { cleanMapName } from "../../utils/mapName";
 import { gamePlayable } from "../../utils/gamePlayable";
 import { navigateTo, pathOf } from "../../utils/route";
+import { GameRowNames } from "../activity/GameRow";
 import type { GameResult, GameResultSlot, League, LeagueMatch, LeagueMatchSet, LeagueMatchSide } from "../../types";
 
 /* 경기 결과 입력창의 세트 목록(요청: "리그 결과 입력창에서 세트 추가하고 게임 결과 중 해당 매치 게임을 선택 가능하게").
@@ -112,6 +113,13 @@ export default function LeagueMatchSets({
     const [left, right] = seat === "team2" ? [g.team2, g.team1] : [g.team1, g.team2];
     return `${names(left)} vs ${names(right)}`;
   };
+  /** 이은 게임을 게임 목록 로스터 꼴로(2026-10-20, 요청: "게임 연결시 게임목록 로스터형태로 표시") — A 팀이 왼쪽이 되게 자리를 돌린다. */
+  const oriented = (g: GameResult): GameResult => {
+    if (aSeat(g) !== "team2") return g;
+    const flip = g.result === "team1" ? "team2" : g.result === "team2" ? "team1" : g.result;
+    return { ...g, team1: g.team2, team2: g.team1, result: flip };
+  };
+  const memberById = (id: string) => memberOf.get(id);
   const labelOf = (g: GameResult): string => [whenOf(g), cleanMapName(g.mapCanonName ?? g.mapName), vsOf(g)].filter(Boolean).join(" · ");
 
   const patch = (i: number, p: Partial<LeagueMatchSet>): void => onChange(sets.map((s, k) => (k === i ? { ...s, ...p } : s)));
@@ -165,7 +173,12 @@ export default function LeagueMatchSets({
                     </button>
                   )}
                   {linked ? (
-                    <span className="scr-league-set-game">{g ? labelOf(g) : `게임 #${s.gameResultId}`}</span>
+                    g ? (
+                      <span className="scr-league-set-game is-roster">
+                        <span className="scr-league-set-game-meta">{[whenOf(g), cleanMapName(g.mapCanonName ?? g.mapName)].filter(Boolean).join(" · ")}</span>
+                        <GameRowNames game={oriented(g)} memberOf={memberById} mobile playable={false} />
+                      </span>
+                    ) : <span className="scr-league-set-game">{`게임 #${s.gameResultId}`}</span>
                   ) : (
                     <input
                       type="text" className="scr-input scr-league-set-memo" disabled={disabled} maxLength={200}
