@@ -12,8 +12,7 @@ import GameSearchForm from "./GameSearchForm";
 import { api } from "../../api/client";
 import { useUrlState } from "../../hooks/useUrlState";
 import type { Selection } from "../../hooks/useSelection";
-import { listScrollOfEntry, type ActivityGroupKey } from "../../utils/route";
-import { keepGames, keptGames, type GamesPage9 } from "./listKeep";
+import { listCountOfEntry, listScrollOfEntry, noteListCount, type ActivityGroupKey } from "../../utils/route";
 import type { Challenge, GameResultSlot, Member } from "../../types";
 import { GameTableHead } from "./GameTable";
 import { cx } from "../../utils/format";
@@ -141,15 +140,18 @@ export default memo(function ActivityGroupPage({
     setFormRaw(encodeGameSearch(next));
   }, [onGames9, searchApplied]);
   const searchKey9 = onGames9 ? formRaw : searchApplied;
-  /* 뒤로 온 기록 칸이면(상세 가기 전에 적어 둔 스크롤 · route.ts rememberListScroll) 받아 둔 목록으로 바로 그린다. */
-  const keepKey9 = `${groupKey}|${searchKey9}|${gameTab}|${refreshKey}`;
+  /* ★ 목록 자리 되살리기(2026-10-20, 요청: "목록 데이터를 들고 있는 건 실시간성에 위배 · 위치만 기억하고 뒤로 갔을 때 원래 불러왔던 데까지 불러오기") —
+     상세 가기 전 기록 칸에 적어 둔 스크롤 · 불러온 줄 수(route.ts rememberListScroll)를 읽어, 뒤로 온 첫 받기는 **새로** 그 줄 수까지 이어 받은 뒤 그 자리로
+     내린다. 목록 자료는 들고 있지 않는다. 검색·탭을 바꾸면(열쇠가 달라지면) 되살리기는 그만둔다. */
+  type GamesPage9 = { items: ActivityItem[]; total: number; cursor: string | null };
+  const listKey9 = `${groupKey}|${searchKey9}|${gameTab}|${refreshKey}`;
   const restoreY9 = useRef(listScrollOfEntry());
-  const restoredGames9 = useRef(restoreY9.current !== null ? keptGames(keepKey9) : null);
-  /* 되살린 판의 열쇠 — 이 열쇠인 동안은 다시 받지 않는다(효과가 두 번 돌아도 같다 · StrictMode). 검색·탭이 바뀌면 열쇠가 달라 새로 받는다. */
-  const restoredKey9 = useRef(restoredGames9.current ? keepKey9 : null);
+  const restoreN9 = useRef(listCountOfEntry());
+  const restoreKey9 = useRef(restoreY9.current !== null ? listKey9 : null);
   const restoreGroup9 = useRef(groupKey);
-  const [serverGames, setServerGames] = useState<GamesPage9 | null>(() => restoredGames9.current);
-  useEffect(() => { if (serverGames) keepGames(keepKey9, serverGames); }, [serverGames]);
+  const pendingY9 = useRef<number | null>(null);
+  const [serverGames, setServerGames] = useState<GamesPage9 | null>(null);
+  useEffect(() => { noteListCount(serverGames?.items.length ?? 0); }, [serverGames]);
   const [serverBusy, setServerBusy] = useState(false);
   const [moreBusy, setMoreBusy] = useState(false);
   useEffect(() => {
@@ -157,23 +159,27 @@ export default memo(function ActivityGroupPage({
     const merged = onGames ? formToServer(decodeGameSearch(formRaw))
       : { any: undefined, linked: undefined };
     if (!onGames) { setServerGames(null); setServerBusy(false); return undefined; }
-    // 되살린 판은 다시 받지 않는다(받으면 목록이 비었다 다시 차며 자리를 잃는다).
-    if (restoredKey9.current === keepKey9) return undefined;
-    restoredKey9.current = null;
+    const restoring9 = restoreKey9.current === listKey9;
+    if (!restoring9) restoreKey9.current = null;
+    const want9 = restoring9 ? Math.max(1, restoreN9.current ?? 0) : 0;
     let dead = false;
     setServerGames(null);
     setServerBusy(true);
-    api.getGameResultsPage({
-      any: merged.any, linked: merged.linked, limit: 100, sort: "latest",
-      ...tabQuery(gameTab),
-    })
-      .then((page) => {
+    (async (): Promise<GamesPage9> => {
+      const q9 = { any: merged.any, linked: merged.linked, limit: 100, sort: "latest" as const, ...tabQuery(gameTab) };
+      let page = await api.getGameResultsPage(q9);
+      const items = page.items.map((m) => gameResultItem(m));
+      // 뒤로 온 첫 받기 — 떠나기 전에 불러와 있던 줄 수까지 이어 받는다(한 번에 100 이 끝이라 커서로).
+      while (restoring9 && items.length < want9 && page.nextCursor && !dead) {
+        page = await api.getGameResultsPage({ ...q9, cursor: page.nextCursor });
+        items.push(...page.items.map((m) => gameResultItem(m)));
+      }
+      return { items, total: page.total ?? items.length, cursor: page.nextCursor };
+    })()
+      .then((got) => {
         if (dead) return;
-        setServerGames({
-          items: page.items.map((m) => gameResultItem(m)),
-          total: page.total ?? page.items.length,
-          cursor: page.nextCursor,
-        });
+        if (restoring9) { pendingY9.current = restoreY9.current; restoreKey9.current = null; }
+        setServerGames(got);
       })
       .catch(() => { if (!dead) setServerGames(null); })
       .finally(() => { if (!dead) setServerBusy(false); });
@@ -257,12 +263,16 @@ export default memo(function ActivityGroupPage({
   const keepOnly = selection?.keepOnly;
   useEffect(() => { keepOnly?.(selectable.map(rowKeyOf)); }, [keepOnly, selectable]);
 
-  /* 처음 열면 맨 위 · 상세에서 뒤로 온 것이면 적어 둔 자리로(게임 목록은 받아 둔 목록이 있을 때만 — 없으면 아직 빈 목록이라 맨 위). */
+  /* 처음 열면 맨 위 · 상세에서 뒤로 온 것이면 적어 둔 자리로 — 일정·너 나와!(피드 자료)는 바로, 게임은 새로 받아 줄이 다 찬 뒤(아래 효과). */
   useLayoutEffect(() => {
-    const y9 = groupKey === restoreGroup9.current ? restoreY9.current : null;
-    const canRestore9 = y9 !== null && (groupKey !== "gameResult" || restoredGames9.current !== null);
-    window.scrollTo({ top: canRestore9 ? y9 : 0, behavior: "instant" });
+    const y9 = groupKey === restoreGroup9.current && groupKey !== "gameResult" ? restoreY9.current : null;
+    window.scrollTo({ top: y9 ?? 0, behavior: "instant" });
   }, [groupKey]);
+  useLayoutEffect(() => {
+    if (pendingY9.current === null || !serverGames) return;
+    window.scrollTo({ top: pendingY9.current, behavior: "instant" });
+    pendingY9.current = null;
+  }, [serverGames]);
 
   return (
     <div className="scr-activity-group-page">
