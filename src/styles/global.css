@@ -3096,6 +3096,20 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 }
 
 .scr-modal-rank-detail { max-width: 480px; }
+/* 역대 퀸(QueenHistoryModal ★ · 2026-10-20) — 해마다 머리 · 달마다 한 줄 꽤 크게 [달 | 퀸 | 아바타 44 | 닉네임 | 전적(작게)]. 맨 위가 오래된 달. */
+.scr-queen-modal { max-width: 440px; }
+.scr-queen-modal .scr-modal-body > * { flex-shrink: 0; }
+.scr-queen-empty { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 28px 0; color: var(--dim); }
+.scr-queen-year + .scr-queen-year { margin-top: 14px; }
+.scr-queen-year-head { font-size: var(--fs-body); font-weight: 800; color: var(--dim); padding: 2px 2px 6px; border-bottom: 1px solid var(--line-faint); }
+.scr-queen-row {
+  display: grid; grid-template-columns: 40px 26px 44px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 10px 2px; border-bottom: 1px solid var(--line-faint);
+}
+.scr-queen-month { font-size: var(--fs-body); font-weight: 700; color: var(--dim); font-variant-numeric: tabular-nums; }
+.scr-queen-crown { font-size: var(--fs-body); font-weight: 800; color: #e6b422; text-align: center; }
+.scr-queen-name { font-size: 18px; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr-queen-record { font-size: var(--fs-11); color: var(--dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .scr-modal.scr-modal-rank-detail { padding-right: 8px; }
 .scr-modal-rank-detail .scr-modal-body { padding-bottom: 18px; }
 .scr-modal-rank-detail .scr-modal-body > * { flex-shrink: 0; }

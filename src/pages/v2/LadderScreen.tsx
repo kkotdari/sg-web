@@ -9,6 +9,7 @@ import Delta from "../stats/Delta";
 import RivalryOverlay from "../rivalry/RivalryOverlay";
 import { rankOf } from "./rankOrder";
 import LadderDetailModal from "./LadderDetailModal";
+import QueenHistoryModal from "./QueenHistoryModal";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { monthInputToRange, shiftMonthValue, currentMonthValue } from "../../utils/date";
@@ -39,6 +40,7 @@ export default function LadderScreen() {
 
   const [period, setPeriod] = useUrlState("period", currentMonthValue());
   const [rivalryOpen, setRivalryOpen] = useState(false);
+  const [queensOpen, setQueensOpen] = useState(false);
   const [detailMember, setDetailMember] = useState<Member | null>(null);
 
   const [firstMonth, setFirstMonth] = useState<string | null>(null);
@@ -169,6 +171,14 @@ export default function LadderScreen() {
       <div className="scr-v2-toolbar">
         <div className="scr-v2-toolbar-title-row">
           <h1 className="scr-title scr-v2-toolbar-title">래더</h1>
+          {/* 역대 퀸 — 상성 보기 왼쪽(QueenHistoryModal ★ · 2026-10-20). */}
+          <button
+            type="button"
+            className="scr-compact-rect-btn"
+            onClick={() => setQueensOpen(true)}
+          >
+            역대 퀸
+          </button>
           <button
             type="button"
             className="scr-compact-rect-btn"
@@ -274,6 +284,9 @@ export default function LadderScreen() {
         )}
       </div>
 
+      {queensOpen && (
+        <QueenHistoryModal poolIds={poolIds} members={members} firstMonth={firstMonth} onClose={() => setQueensOpen(false)} />
+      )}
       {rivalryOpen && (
         <RivalryOverlay from={from} to={to} onClose={() => setRivalryOpen(false)} />
       )}
