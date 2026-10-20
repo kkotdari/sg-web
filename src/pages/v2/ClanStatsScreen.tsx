@@ -320,7 +320,7 @@ export default function ClanStatsScreen() {
         searchValue={search}
         onSearchChange={setSearch}
         onSearchEnter={(v) => setSearchApplied(v)}
-        searchPlaceholder="유저 입력 (스페이스로 여럿, 엔터로 검색)"
+        searchPlaceholder="조회할 유저들을 선택 후 엔터"
         suggestions={suggestions}
         lexicon={lexicon}
       />
