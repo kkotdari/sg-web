@@ -8014,7 +8014,6 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-chart { margin: 0; min-width: 0; }
 .scr-rc-title { margin-bottom: 2px; font-size: var(--fs-11); font-weight: 800; color: var(--text); }
 .scr-rc-title > i { font-style: normal; font-weight: 600; color: var(--dim); }
-.scr-rc-note { display: block; margin-top: 1px; font-size: var(--fs-10); font-weight: 500; color: var(--dim); }
 .scr-rc-plot { position: relative; }
 .scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; cursor: crosshair; }
 .scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }

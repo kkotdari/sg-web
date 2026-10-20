@@ -88,7 +88,7 @@ function Chart({ title, unit, lines, note, maxX, maxY }: {
   const tipLeft = at === null ? 0 : (x(at) / W) * 100;
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">{title} <i>· 분마다 평균</i>{note && <small className="scr-rc-note">{note}</small>}</figcaption>
+      <figcaption className="scr-rc-title">{title}{note && <i> · {note}</i>}</figcaption>
       <div className="scr-rc-plot">
         <svg
           ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="scr-rc-svg" role="img"
@@ -155,8 +155,8 @@ export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<
       </div>
       <div className="scr-rc-charts">
         <Chart title="일꾼 수" unit="기" lines={wk} maxX={sc.x} maxY={sc.wk} />
-        {/* 짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고") — 셈은 sg-api series.ARMY_COST. */}
-        <Chart title="병력 가치" unit="" lines={av} note="살아 있는 전투 유닛의 미네랄+가스 합 (일꾼·건물·오버로드 제외)" maxX={sc.x} maxY={sc.av} />
+        {/* 짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
+        <Chart title="병력 가치" unit="" lines={av} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} />
       </div>
     </div>
   );
