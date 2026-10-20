@@ -102,8 +102,11 @@ export default function QueenHistoryModal({ poolIds, members, firstMonth, onClos
               {y.items.map((r) => r.queens.map((q, i) => (
                 <div className="scr-queen-row" key={`${r.month}-${q.member.id}`}>
                   <span className="scr-queen-month">{i === 0 ? `${Number(r.month.slice(5, 7))}월` : ""}</span>
-                  <span className="scr-queen-crown">퀸</span>
-                  <Avatar member={q.member} size={44} />
+                  {/* 왕관은 아바타 **위 가운데**에 살짝 겹쳐 얹는다 · 아바타는 동그랗게(2026-10-20 요청). */}
+                  <span className="scr-queen-avatar">
+                    <Avatar member={q.member} size={44} className="scr-queen-avatar-img" />
+                    <span className="scr-queen-crown" aria-label="퀸">👑</span>
+                  </span>
                   <span className="scr-queen-name">{q.member.nickname}</span>
                   <span className="scr-queen-record">{recordText(q.overall)}</span>
                 </div>
