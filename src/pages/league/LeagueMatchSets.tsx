@@ -77,11 +77,12 @@ export default function LeagueMatchSets({
     return () => { alive = false; };
   }, [sideA, sideB]);
 
-  // 이미 고른 게임이 후보(최근 PICK_LIMIT 판)에 없으면 따로 받아 이름을 보인다.
+  /* 이은 게임은 후보 목록을 기다리지 않고 **바로** 따로 받는다(2026-10-20 — 후보를 다 받은 뒤에 받던 때는 창이 "게임 #2399" + 승무패 단추로 떴다가 바뀌었다).
+     tried 는 받아 본 id(실패 포함) — 받는 동안은 "불러오는 중", 실패한 것만 옛 꼴(번호 + 손 승무패)로 둔다. */
+  const [tried, setTried] = useState<Set<number>>(new Set());
   useEffect(() => {
-    if (!games) return;
-    const have = new Set(games.map((g) => g.id));
-    const want = sets.map((s) => s.gameResultId).filter((id): id is number => id !== null && !have.has(id) && !extra.has(id));
+    const have = new Set((games ?? []).map((g) => g.id));
+    const want = sets.map((s) => s.gameResultId).filter((id): id is number => id !== null && !have.has(id) && !extra.has(id) && !tried.has(id));
     if (want.length === 0) return;
     let alive = true;
     void Promise.all(want.map((id) => api.getGameResult(id).catch(() => null))).then((got) => {
@@ -91,9 +92,10 @@ export default function LeagueMatchSets({
         for (const g of got) if (g) next.set(g.id, g);
         return next;
       });
+      setTried((prev) => new Set([...prev, ...want]));
     });
     return () => { alive = false; };
-  }, [games, sets]);
+  }, [sets]);
 
   const byId = useMemo(() => {
     const m = new Map<number, GameResult>(extra);
@@ -152,6 +154,7 @@ export default function LeagueMatchSets({
           {sets.map((s, i) => {
             const linked = s.gameResultId !== null;
             const g = linked ? byId.get(s.gameResultId as number) : undefined;
+            const loading = linked && !g && !tried.has(s.gameResultId as number);
             return (
               <li key={i} className="scr-league-set">
                 <div className="scr-league-set-row">
@@ -175,8 +178,8 @@ export default function LeagueMatchSets({
                   )}
                   {linked ? (
                     /* 이은 게임: 머리 줄엔 시각·맵 글만(테두리 없음) · 로스터는 **머리 줄 아래 줄**(2026-10-20, 요청: "테두리 없이 헤더 아래줄"). */
-                    <span className={cx("scr-league-set-game", g && "is-roster")}>
-                      {g ? [whenOf(g), cleanMapName(g.mapCanonName ?? g.mapName)].filter(Boolean).join(" · ") : `게임 #${s.gameResultId}`}
+                    <span className={cx("scr-league-set-game", (g || loading) && "is-roster")}>
+                      {g ? [whenOf(g), cleanMapName(g.mapCanonName ?? g.mapName)].filter(Boolean).join(" · ") : loading ? <><Spinner size={12} /> 불러오는 중</> : `게임 #${s.gameResultId}`}
                     </span>
                   ) : (
                     /* 안 이은 세트도 이은 세트와 같은 꼴(2026-10-20, 요청: "수기입력 칸 위치와 모양 크기 · 승무패 버튼 위치와 모양 크기를 게임 연결한 세트와 맞게") —
@@ -238,7 +241,7 @@ export default function LeagueMatchSets({
                 )}
                 {/* 이은 세트는 승무패 단추가 없다 — 이긴 쪽은 그 게임이 정하고 로스터 배지가 보인다(2026-10-20, 요청: "승무패 버튼 불필요").
                     게임을 못 받았을 때(g 없음)만 손으로 고르게 둔다. */}
-                {linked && !g && <div className="scr-league-set-win" role="group" aria-label={`${i + 1}세트 결과`}>
+                {linked && !g && !loading && <div className="scr-league-set-win" role="group" aria-label={`${i + 1}세트 결과`}>
                   {(["a", "draw", "b"] as const).map((side) => (
                     <button
                       key={side} type="button" disabled={disabled}
