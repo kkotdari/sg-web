@@ -68,12 +68,12 @@ export default function GuideScreen({ onClose }: { onClose?: () => void } = {}) 
           있고 <i>누군가</i> 캐리어를 뽑은 경기(상대가 뽑았어도 걸립니다), 뒤는 <b>팍규가</b> 뽑은 경기입니다.
         </div>
         <div className="scr-guide-note">
-          <b>띄어쓰기는 칸마다 다릅니다.</b> <b>선수</b>·<b>게임번호</b> 칸은 띄어쓰기도 값을 끊습니다 —
-          <code>팍규 Rex</code>는 두 사람입니다. <b>맵</b>·<b>유닛·건물·스킬</b> 칸은 이름에 띄어쓰기가 있어
-          (<code>Fighting Spirit</code> · <code>사이오닉 스톰</code>) <b>쉼표로만</b> 끊습니다. 어느 칸이든 <kbd>,</kbd>로 끊으면 됩니다.
+          <b>띄어쓰기로 여럿을 넣습니다.</b> <code>팍규 Rex</code>는 두 사람, <code>캐리어 셔틀</code>은 두 유닛입니다.
+          <code>Fighting Spirit</code> · <code>사이오닉 스톰</code>처럼 <b>이름에 띄어쓰기가 있는 맵·유닛</b>은 치는 동안 알아서 한 이름으로 잇습니다 —
+          자동완성에서 골라도 됩니다. 쉼표(<kbd>,</kbd>)로 끊어도 같습니다.
         </div>
         <div className="scr-guide-note">
-          칸에 치면 자동완성이 뜹니다 — <kbd>엔터</kbd>·<kbd>탭</kbd>·<kbd>,</kbd>로 값을 칩으로 담고, 빈 칸에서 <kbd>엔터</kbd>를 한 번 더 치면 찾습니다.
+          칸에 치면 자동완성이 뜹니다 — <kbd>엔터</kbd>·<kbd>스페이스</kbd>·<kbd>,</kbd>로 값을 칩으로 담고, 빈 칸에서 <kbd>엔터</kbd>를 한 번 더 치면 찾습니다.
           고른 조건은 접힌 줄에 칩으로 남고, 칩의 <kbd>×</kbd>로 그 조건만 바로 뺄 수 있습니다.
         </div>
       </section>
