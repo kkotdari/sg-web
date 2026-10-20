@@ -18,7 +18,6 @@ import { cx } from "../../utils/format";
 import type { GameResultStatsResponse, GameType, Member, MemberStatsEntry } from "../../types";
 
 const LADDER_TYPE: GameType = LADDER_GAME_TYPES[0];
-const MEDALS = ["🥇", "🥈", "🥉"];
 
 interface LadderRow {
   member: Member;
@@ -165,8 +164,6 @@ export default function LadderScreen() {
     });
   }, [view, members]);
 
-  const medalOn = view !== null && view.period < currentMonthValue();
-
   return (
     <div className="scr-screen scr-ladder-screen">
       <div className="scr-v2-toolbar">
@@ -225,57 +222,30 @@ export default function LadderScreen() {
         ) : rows.length === 0 ? (
           error ? null : <div className="scr-empty">회원이 없어요</div>
         ) : (
-          <div className="scr-stat-table-clip">
-            <div className="scr-ladder-table scr-scroll">
-              <div className="scr-ladder-row scr-ladder-row-head">
-                <span className="scr-ladder-rank-head">랭크</span>
-                <span className="scr-ladder-name-head">유저</span>
-                <span>레이팅</span>
-                <span>전적</span>
-                <span>승률</span>
+          /* ★ 래더 = 실력순위 창과 같은 줄 꼴(2026-10-20, 요청: "래더 기본 페이지를 레이팅 페이지처럼 예쁘게 · 단 메달은 제거") —
+             [순위 | 아바타 | 닉네임(아래 전적 · 승률) | 이 달에 번 점수]. 줄을 누르면 그 사람의 래더 자세히(LadderDetailModal). */
+          <div className="scr-ladder-board">
+            {rows.map((r) => (
+              <div
+                key={r.member.id}
+                className={cx("scr-rating-row", "scr-ladder-board-row", r.member.id === user?.id && "is-me")}
+                onClick={() => setDetailMember(r.member)}
+              >
+                <span className="scr-rating-rank">{r.rank === null ? "-" : r.rank}</span>
+                <Avatar member={r.member} size={36} className="scr-queen-avatar-img" />
+                <span className="scr-rating-who">
+                  <span className="scr-rating-name">{r.member.nickname}</span>
+                  <span className="scr-rating-rec">
+                    {r.plays > 0
+                      ? `${r.plays}전 ${r.wins}승 ${r.draws}무 ${r.losses}패 · ${r.winRate === null ? "-" : `${r.winRate.toFixed(1)}%`}`
+                      : "이 달 경기 없음"}
+                  </span>
+                </span>
+                <span className="scr-rating-score">
+                  {r.points === null ? <span className="scr-stat-points-empty">-</span> : `${r.points > 0 ? "+" : ""}${r.points.toLocaleString()}`}
+                </span>
               </div>
-              {rows.map((r) => (
-                <div
-                  key={r.member.id}
-                  className={cx("scr-ladder-row", "scr-ladder-row-click", r.member.id === user?.id && "scr-stat-row-me")}
-                  onClick={() => setDetailMember(r.member)}
-                >
-                  <span className="scr-ladder-rank">
-                    {r.rank === null ? (
-                      <span className="scr-stat-points-empty">-</span>
-                    ) : (
-                      <>
-                        <span className="scr-ladder-rank-val">
-                          {medalOn && r.rank <= MEDALS.length && (
-                            <span className="scr-ladder-medal">{MEDALS[r.rank - 1]}</span>
-                          )}
-                          <span className="scr-ladder-rank-n">{r.rank}</span>
-                        </span>
-                      </>
-                    )}
-                  </span>
-                  <span className="scr-ladder-name">
-                    <Avatar member={r.member} size={32} />
-                    <span className="scr-stat-name-btn">{r.member.nickname}</span>
-                  </span>
-                  <span className="scr-ladder-num">
-                    <b>{r.points === null ? "-" : `${r.points > 0 ? "+" : ""}${r.points.toLocaleString()}`}</b>
-                  </span>
-                  <span className="scr-ladder-num">
-                    {/* 경기수 → 전적 "N전 N승 N무 N패"(2026-10-20 요청). */}
-                    {r.plays > 0 ? (
-                      <span className="scr-ladder-record">
-                        <b>{r.plays}전</b>
-                        <span>{r.wins}승 {r.draws}무 {r.losses}패</span>
-                      </span>
-                    ) : <b>-</b>}
-                  </span>
-                  <span className="scr-ladder-num">
-                    <b>{r.winRate === null ? "-" : `${r.winRate.toFixed(1)}%`}</b>
-                  </span>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         )}
       </div>

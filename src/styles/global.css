@@ -8072,3 +8072,11 @@ input.scr-sb-list-title { font-weight: 700; }
   .scr-ladder-record > span { font-size: var(--fs-10); }
   .scr-ladder-record > b { font-size: var(--fs-micro); }
 }
+
+/* 래더 기본 화면(2026-10-20) — 실력순위 창(.scr-rating-row)과 같은 줄 · 메달 없음 · 줄 누르면 자세히 · 내 줄은 옅은 바탕. */
+.scr-ladder-board { display: flex; flex-direction: column; }
+.scr-ladder-board-row { cursor: pointer; padding-left: 6px; padding-right: 10px; }
+.scr-ladder-board-row:last-child { border-bottom: none; }
+@media (hover: hover) { .scr-ladder-board-row:hover { background: var(--lighting-hover-bg, rgba(var(--overlay-rgb), 0.06)); } }
+.scr-ladder-board-row.is-me { background: rgba(var(--overlay-rgb), 0.05); }
+.scr-ladder-board .scr-rating-rank { font-size: var(--fs-subhead, 18px); color: var(--text); }
