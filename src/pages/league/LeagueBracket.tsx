@@ -278,6 +278,8 @@ function MatchEditModal({
           <span>경기 정보</span>
           <button type="button" className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
         </div>
+        {/* 안쪽만 스크롤(.scr-modal-body) — 창 자체가 스크롤되면 반투명 바탕(::before)이 내용과 함께 밀려 올라가 아래로 뒤 페이지가 비쳤다(2026-10-20). */}
+        <div className="scr-modal-body scr-league-match-body">
         <div className="scr-league-match-vs">
           <span>{nameOf(teamA, "미정")}</span>
           <span className="scr-league-match-vs-sep">vs</span>
@@ -316,6 +318,7 @@ function MatchEditModal({
         )}
 
         {err && <div className="scr-err" role="alert">{err}</div>}
+        </div>
         <div className="scr-form-actions">
           <button type="button" className="scr-rect-btn is-secondary" onClick={onClose} disabled={busy}>취소</button>
           <button type="button" className="scr-rect-btn" onClick={save} disabled={busy}>

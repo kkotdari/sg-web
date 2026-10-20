@@ -4941,7 +4941,8 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   font-size: var(--fs-micro); color: #5a616b; white-space: nowrap; opacity: 0.85;
 }
 .scr-league-bracket-badge-btn:hover .scr-league-bracket-badge-add { opacity: 1; }
-.scr-league-match-modal { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.scr-league-match-modal { display: flex; flex-direction: column; gap: 12px; }
+.scr-league-match-body { gap: 12px; padding-bottom: 2px; }
 .scr-league-match-vs {
   display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
   font-size: var(--fs-caption); font-weight: 700; color: var(--text); text-align: center;
