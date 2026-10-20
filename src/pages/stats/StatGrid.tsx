@@ -172,7 +172,7 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   mobile: boolean;
 }) {
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: "클랜원 전체" } as Member, stats: clan.stats, byRace: clan.byRace } : null;
-  /* 펼친 곡선은 모든 줄이 한 자(눈금)를 쓴다(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이"). */
+  /* 펼친 곡선은 모든 줄이 한 자(눈금)를 쓴다(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이" → 병력 "20K"). */
   const scale = curveScale([clanRow, ...rows].map((r) => r?.byRace));
   if (mobile) {
     return (

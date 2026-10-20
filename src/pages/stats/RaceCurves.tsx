@@ -18,11 +18,12 @@ const PAD = { l: 34, r: 12, t: 10, b: 20 };
 type Line = { race: BaseRace; ys: number[] };
 type ByRace = Partial<Record<BaseRace, MemberStats>> | undefined;
 
-/** 모든 줄이 함께 쓰는 자(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이") — 세로는 일꾼 0~100 ·
- *  병력 0~5K 가 기본이고 넘는 줄이 있으면 그 단(100 · 5K)으로 올려 **모두** 같이 늘린다. 가로는 보이는 줄 중 가장 긴 분. */
+/** 모든 줄이 함께 쓰는 자(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이" → 병력 "20K") — 세로는 일꾼 0~100 ·
+ *  병력 0~20K 가 기본이고 넘는 줄이 있으면 그 단(100 · 5K)으로 올려 **모두** 같이 늘린다. 가로는 보이는 줄 중 가장 긴 분. */
 export interface CurveScale { x: number; wk: number; av: number }
 const WK_STEP = 100;
 const AV_STEP = 5000;
+const AV_MIN = 20000; // 병력 가치 세로 자 기본 0~20K(2026-10-20, 요청: "5K" → "20K")
 
 const linesOf = (byRace: ByRace, key: "wk" | "av"): Line[] => RACES.flatMap((race) => {
   const c = byRace?.[race]?.curve;
@@ -40,7 +41,7 @@ export function curveScale(all: ByRace[]): CurveScale {
   return {
     x,
     wk: Math.max(WK_STEP, Math.ceil(wk / WK_STEP) * WK_STEP),
-    av: Math.max(AV_STEP, Math.ceil(av / AV_STEP) * AV_STEP),
+    av: Math.max(AV_MIN, Math.ceil(av / AV_STEP) * AV_STEP),
   };
 }
 
