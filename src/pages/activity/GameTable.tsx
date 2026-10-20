@@ -6,7 +6,7 @@ import { showToast } from "../../components/common/Toast";
 import { useLongPress } from "../../hooks/useLongPress";
 import { cleanMapName } from "../../utils/mapName";
 import { cx } from "../../utils/format";
-import { pad, serverMs } from "../../utils/date";
+import { pad } from "../../utils/date";
 import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
 import { isMeleeGame } from "./GameResultSides";
@@ -15,10 +15,11 @@ import type { GameResult, Member } from "../../types";
 
 /* ★★ PC 게임 목록 = **표**(2026-10-19, 요청: "피시는 오히려 배지들 제거하고 완전 그리드 형태로 변경(헤더로우도 만듦) · 로스터는 모바일과 같은 형태 ·
    컬럼: 게임번호 시작일시 게임길이 맵 로스터 유형(팀전, 유즈맵, 프리포올 등) 재생가능여부 조회수 숨김 · 숨긴 게임은 해제요청 버튼").
+   2026-10-20: 게임번호 칸 뺌 · 리그는 제 칸 · 일시는 기본 타임스탬프 · 맵 칸 좁히고 가운데(요청).
    머리 줄(GameTableHead)과 줄(GameTableRow)이 같은 열 틀(--gtab-cols · global.css)을 쓴다 — 맵·시간·재생·NEW·'몇 분 전' 배지는 없다.
    로스터 칸은 폰과 같은 꼴(GameRowNames mobile — 팀마다 승패 배지 · 세로 이름 · vs). 폰은 옛 줄(ActivityRow → ListRow) 그대로. */
 
-const COLS = ["게임번호", "시작일시", "게임길이", "맵", "로스터", "유형", "재생", "조회수", "숨김"] as const;
+const COLS = ["시작일시", "게임길이", "맵", "로스터", "유형", "리그", "재생", "조회수", "숨김"] as const;
 
 export function GameTableHead({ selecting }: { selecting: boolean }) {
   return (
@@ -39,13 +40,6 @@ export function gameKindText(g: GameResult): string {
   if (g.matchType === "0101") return "1:1";
   if (g.matchType === "0102") return "팀전";
   return "-";
-}
-
-function startText(g: GameResult): string {
-  if (!g.gameStartedAt) return g.date ? g.date.slice(2).replace(/-/g, ".") : "-";
-  const d = new Date(serverMs(g.gameStartedAt));
-  if (!Number.isFinite(d.getTime())) return "-";
-  return `${pad(d.getFullYear() % 100)}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 const lengthText = (sec: number | null): string =>
@@ -83,7 +77,7 @@ function UnhideCell({ game }: { game: GameResult }) {
   );
 }
 
-export function GameTableRow({ game, memberOf, check, picked, disabled, onClick, onLongPress, above }: {
+export function GameTableRow({ game, memberOf, check, picked, disabled, onClick, onLongPress, when, league }: {
   game: GameResult;
   memberOf: (id: string) => Member | undefined;
   check?: ReactNode;
@@ -91,8 +85,10 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   disabled?: boolean;
   onClick: () => void;
   onLongPress?: () => void;
-  /** 리그 판 자리("2026 팀리그 · 결승 · 1세트") — 배지가 아니라 로스터 칸 위 작은 글로. */
-  above?: string;
+  /** 시작일시 칸 — 목록의 기본 타임스탬프(formatAgo · 폰 줄 오른끝과 같은 글 · 2026-10-20 요청: "일시는 기본 타임스탬프 형식"). */
+  when: string;
+  /** 리그 칸("2026 팀리그" / "결승 · 1세트") — 리그 판이 아니면 "-"(같은 요청: "로스터에서 리그 정보 별도 컬럼으로"). */
+  league?: { name: string; round: string } | null;
 }) {
   useReplayMapTick();
   const hold = useLongPress(onLongPress);
@@ -114,15 +110,18 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           e.preventDefault(); open();
         }}
       >
-        <span className="scr-gtab-cell scr-gtab-no">{game.matchNo}</span>
-        <span className="scr-gtab-cell scr-gtab-num">{startText(game)}</span>
+        <span className="scr-gtab-cell scr-gtab-num">{when}</span>
         <span className="scr-gtab-cell scr-gtab-num">{lengthText(game.durationSeconds)}</span>
         <span className="scr-gtab-cell scr-gtab-map" title={map || undefined}><span>{map || "-"}</span></span>
         <span className="scr-gtab-cell scr-gtab-roster">
-          {above && <span className="scr-gtab-league">{above}</span>}
           <GameRowNames game={game} memberOf={memberOf} mobile playable={false} />
         </span>
         <span className="scr-gtab-cell">{secret ? "-" : gameKindText(game)}</span>
+        {league ? (
+          <span className="scr-gtab-cell scr-gtab-league" title={`${league.name} · ${league.round}`}>
+            <span>{league.name}</span><span>{league.round}</span>
+          </span>
+        ) : <span className="scr-gtab-cell scr-gtab-dim">-</span>}
         <span className="scr-gtab-cell">
           {playable ? <Play size={12} className="scr-activity-row-play" aria-label="재생 가능" fill="currentColor" /> : <span className="scr-gtab-dim">-</span>}
         </span>

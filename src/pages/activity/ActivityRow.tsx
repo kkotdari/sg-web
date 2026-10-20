@@ -148,7 +148,8 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
         game={item.gameResult} memberOf={view.memberOf}
         check={check} picked={picked} disabled={secret}
         onClick={() => act.current.open(item)}
-        above={lg ? `${lg.leagueName} · ${lg.roundName} · ${lg.setNo}세트` : undefined}
+        when={formatAgo(item.time)}
+        league={lg ? { name: lg.leagueName, round: `${lg.roundName} · ${lg.setNo}세트` } : null}
       />
     );
   }
