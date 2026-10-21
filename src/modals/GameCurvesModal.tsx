@@ -411,12 +411,11 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   const colorOf = (p: GameCurve): string => (mode !== "player"
     ? TEAM_COLOR[teamNo(p.team)]
     : personalOk && p.color ? p.color : BW_PALETTE[Math.max(0, (players ?? []).indexOf(p)) % BW_PALETTE.length]);
-  /* 볼 사람(2026-10-21, 요청: "맨 위에 유저 선택 체크박스 추가해서 볼 유저만 선택 가능하게 하고 팀 구분해서 표시") — 뺀 사람은 모든 판에서 빠진다(팀 합산도).
-     한 사람은 늘 남긴다. */
+  /* 볼 사람(2026-10-21, 요청: "맨 위에 유저 선택 체크박스 추가해서 볼 유저만 선택 가능하게 하고 팀 구분해서 표시" → "모두 해제 · 모두 선택 단추") —
+     뺀 사람은 모든 판에서 빠진다(팀 합산도). */
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
   const shown = useMemo(() => (players ?? []).filter((p) => !hidden.has(p.playerName)), [players, hidden]);
   const toggleShown = (key: string): void => {
-    if (!hidden.has(key) && shown.length <= 1) return;
     setHidden((h) => { const n = new Set(h); if (n.has(key)) n.delete(key); else n.add(key); return n; });
     setFocus((f) => (f === key ? null : f));
   };
@@ -469,6 +468,10 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
           ) : (
             <div className="scr-gc" ref={boxRef}>
               <div className="scr-gc-users" aria-label="볼 사람">
+                <div className="scr-gc-uall">
+                  <button type="button" className="scr-compact-rect-btn is-secondary" disabled={hidden.size === 0} onClick={() => setHidden(new Set())}>모두 선택</button>
+                  <button type="button" className="scr-compact-rect-btn is-secondary" disabled={shown.length === 0} onClick={() => { setHidden(new Set((players ?? []).map((p) => p.playerName))); setFocus(null); }}>모두 해제</button>
+                </div>
                 {userGroups.map((g) => (
                   <div key={g.t} className="scr-gc-ugroup">
                     {g.t > 0 && <span className="scr-gc-ulabel" style={{ color: TEAM_COLOR[g.t] }}>{g.t}팀</span>}
