@@ -271,8 +271,9 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   /* 세로선 자리의 값 — 사람(종족)마다 제 색 글자로 점 옆에(팝업 대신 · 2026-10-21, 요청: "팝업 제거, 세로선만 유지하고 가로축에 그 시각 표시 ·
      세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점 옆 · 겹치면 위로 민다(spreadAbove). */
   const vals = at === null ? [] : spreadAbove(
-    /* 고른 사람이 있으면 그 사람 값만(2026-10-21, 요청: "선택한 경우 그 사람 값만 나오게"). */
-    lines.filter((l) => at < l.ys.length && (!focus || l.key === focus)).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0, w: textW(compact(l.ys[at]), FS) })),
+    /* 고른 사람이 있으면 그 사람 값만(2026-10-21, 요청: "선택한 경우 그 사람 값만 나오게"). 0 은 안 띄운다 — 바닥에 깔린 선(병력 0)의 값이
+       바닥 칩을 비키느라 열 전체를 멀리 끌고 가던 것(2026-10-21, 지적: "크리스 칩까지만 피하면 되는데 너무 멀리 감"). */
+    lines.filter((l) => at < l.ys.length && l.ys[at] > 0 && (!focus || l.key === focus)).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0, w: textW(compact(l.ys[at]), FS) })),
     FS + 1 * k, PAD.t + FS / 2,
   );
   /* 값 열은 한 줄(세로 정렬) — 세로선 오른편(왼끝 맞춤)이 기본이고, 판 오른끝을 넘거나 보이는 값이 **실제로 가리는** 끝 칩(닉네임)이 있을 때만
