@@ -37,11 +37,12 @@ const TECH_LABEL: Record<number, string> = {
 };
 const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
 
-type Lane = { key: string; name: string; color: string; techs: GameCurve["techs"] };
+/** color = 칩 테두리(선 색과 같다) · strip = 칩 앞 띠 — 팀색이면 띠만 개인색으로 사람을 가른다(2026-10-21 요청). */
+type Lane = { key: string; name: string; color: string; strip: string; techs: GameCurve["techs"] };
 const PL = CHART_PAD.l;
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
- *  앞 칩과 겹치면 아랫단으로(겹치는 줄만 두 단 · 칩은 칸의 세로 가운데). 짓기 시작은 칩에 손을 얹으면(title) 나온다. */
+ *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 짓기 시작은 칩에 손을 얹으면(title) 나온다. */
 function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
   const CH = 15;
   const GAP = 8;
@@ -51,21 +52,29 @@ function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
   const chipW = (s: string): number => s.length * 9.5 + 10;
   /* 칩 자리를 먼저 정한다 — 겹치는 칩이 있는 줄만 두 단. */
   let y0 = 4;
+  /* 칩은 칸의 세로 가운데 · **겹치는 칩끼리만** 가운데 위아래로 가른다(2026-10-21, 요청: "겹치는것들만 위아래로 배치").
+     가로로 겹치는 칩들을 한 무리로 묶고, 한 칩뿐인 무리는 가운데 · 여럿인 무리는 윗단 · 아랫단에 번갈아(앞 칩 끝을 넘으면 같은 단). */
   const rows = lanes.map((l) => {
-    const ends = [-Infinity, -Infinity];
-    const chips = l.techs.map((t) => {
-      const xe = x(t.e);
+    const items = l.techs.map((t) => {
       const label = TECH_LABEL[t.t] ?? `#${t.t}`;
-      const w = chipW(label);
-      const tier = xe >= ends[0] ? 0 : xe >= ends[1] ? 1 : 0;
-      ends[tier] = xe + w + 3;
-      return { t, xe, label, w, tier };
+      return { t, xe: x(t.e), label, w: chipW(label), slot: 0 as -1 | 0 | 1 };
     });
-    const tiers = chips.some((c) => c.tier === 1) ? 2 : 1;
-    const h = ROW_H;
-    /* 칩(한 단이든 두 단이든)은 그 사람 칸의 세로 가운데(2026-10-21 요청) — 칸 높이는 모두 같게(두 단이 들어가는 높이). */
-    const row = { l, chips, top: y0, h, lift: (h - (tiers * CH + (tiers - 1) * 2)) / 2 };
-    y0 += h;
+    for (let a = 0; a < items.length;) {
+      let b = a + 1;
+      let end = items[a].xe + items[a].w + 3;
+      while (b < items.length && items[b].xe < end) { end = Math.max(end, items[b].xe + items[b].w + 3); b += 1; }
+      if (b - a > 1) {
+        const ends = { [-1]: -Infinity, 1: -Infinity } as Record<-1 | 1, number>;
+        for (let k = a; k < b; k += 1) {
+          const slot: -1 | 1 = items[k].xe >= ends[-1] ? -1 : items[k].xe >= ends[1] ? 1 : -1;
+          ends[slot] = items[k].xe + items[k].w + 3;
+          items[k].slot = slot;
+        }
+      }
+      a = b;
+    }
+    const row = { l, chips: items, top: y0, h: ROW_H };
+    y0 += ROW_H;
     return row;
   });
   const H = y0 + AXIS;
@@ -73,16 +82,17 @@ function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">테크 건물<i> · 다 지은 때</i></figcaption>
       <svg viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때">
-        {rows.map(({ l, chips, top, h, lift }) => (
+        {rows.map(({ l, chips, top, h }) => (
           <g key={l.key}>
             <line className="scr-rc-grid" x1={PL} x2={CW - CHART_PAD.r} y1={top + h} y2={top + h} />
-            {chips.map(({ t, xe, label, w, tier }) => {
-              const y = top + lift + tier * (CH + 2);
+            {chips.map(({ t, xe, label, w, slot }) => {
+              const mid = top + h / 2;
+              const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - 1 : mid + 1;
               return (
                 <g key={t.t}>
                   <title>{`${l.name} ${label} — 다 지음 ${clock(t.e)} (짓기 시작 ${clock(t.s)})`}</title>
                   <rect className="scr-tl-chip" x={xe} y={y} width={w} height={CH} rx={4} style={{ stroke: l.color }} />
-                  <rect x={xe} y={y} width={3} height={CH} rx={1.5} style={{ fill: l.color }} />
+                  <rect x={xe} y={y} width={3} height={CH} rx={1.5} style={{ fill: l.strip }} />
                   <text className="scr-tl-label" x={xe + 7} y={y + CH / 2} dominantBaseline="central">{label}</text>
                 </g>
               );
@@ -119,9 +129,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
     const cs = (players ?? []).map((p) => p.color).filter((c): c is string => !!c);
     return cs.length === (players ?? []).length && new Set(cs).size > 1;
   }, [players]);
-  const colorOf = (p: GameCurve, i: number): string => (mode === "team"
-    ? TEAM_COLOR[teamNo(p.team)]
-    : personalOk && p.color ? p.color : BW_PALETTE[i % BW_PALETTE.length]);
+  const personalOf = (p: GameCurve, i: number): string => (personalOk && p.color ? p.color : BW_PALETTE[i % BW_PALETTE.length]);
+  const colorOf = (p: GameCurve, i: number): string => (mode === "team" ? TEAM_COLOR[teamNo(p.team)] : personalOf(p, i));
   const nameOf = (p: GameCurve): string => memberOf(p.memberId)?.nickname ?? p.playerName;
   const sc = useMemo(() => scaleOf((players ?? []).map((p) => p.wk), (players ?? []).map((p) => p.av)), [players]);
   const linesOf = (key: "wk" | "av"): ChartLine[] => (players ?? []).flatMap((p, i) => (off.has(p.playerName) || p[key].length < 2
@@ -171,7 +180,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
               </div>
               <TechLanes
                 maxX={sc.x}
-                lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
+                lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), strip: personalOf(p, i), techs: p.techs }]))}
               />
               <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk} width={CW} />
               <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} width={CW} />
