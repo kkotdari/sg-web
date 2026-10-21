@@ -8,7 +8,6 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { api } from "../../api/client";
 import { showAlert } from "../../components/common/AlertDialog";
 import { showToast } from "../../components/common/Toast";
-import { hasComputerSlot } from "../../utils/gamePlayable";
 import { useAppStore } from "../../store/appStore";
 import { isAdminRole } from "../../constants/roles";
 import { canManageGame } from "../../utils/gameAccess";
@@ -116,15 +115,6 @@ export function GameResultActionsMenu({
     if (!open || !anchorRef.current || !dropRef.current) return;
     return attachPopover(anchorRef.current, dropRef.current, { growToContent: true, maxWidth: 200 });
   }, [open]);
-  const bakeTracks = (): void => {
-    if (hasComputerSlot(gameResult)) {
-      showAlert("컴퓨터가 낀 경기는 애초에 참값을 구울 수 없습니다.");
-      return;
-    }
-    void api.bakeGameTracks(gameResult.id)
-      .then((r) => showToast(r.message, { kind: "ok" }))
-      .catch((e) => showAlert(e instanceof Error ? e.message : "굽기를 시작하지 못했어요."));
-  };
 
   const confirmHide = async (): Promise<void> => {
     setHiding(true);
@@ -143,7 +133,6 @@ export function GameResultActionsMenu({
 
   const items: { key: string; label: string; danger?: boolean; onSelect: () => void }[] = [
     ...(gameResult.replay ? [{ key: "download", label: "리플레이 저장", onSelect: () => void downloadReplay(gameResult) }] : []),
-    ...(isAdmin && gameResult.replay ? [{ key: "bake", label: "참값 굽기", onSelect: bakeTracks }] : []),
     ...(isAdmin && gameResult.result === "unknown"
       ? [{ key: "outcome", label: "결과 입력", onSelect: () => setOutcomeOpen(true) }] : []),
     ...(canDelete && !gameResult.hidden ? [{ key: "hide", label: "숨김", onSelect: () => setHideOpen(true) }] : []),

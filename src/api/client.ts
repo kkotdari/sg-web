@@ -286,10 +286,6 @@ export const api = {
     return page.total ?? page.items.length;
   },
 
-  async bakeGameTracks(id: number): Promise<{ message: string }> {
-    return request<{ message: string }>(`/api/game-results/${id}/bake-tracks`, { method: "POST" });
-  },
-
   async setGameOutcome(id: number, result: GameOutcome, winnerPlayerName?: string): Promise<GameResult> {
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}/result`, {
       method: "PUT", body: JSON.stringify({ result, winnerPlayerName }),

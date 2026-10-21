@@ -3409,6 +3409,8 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; }
 .scr-redo-pick-filters > .scr-redo-pick-from { flex-wrap: wrap; }
 .scr-redo-pick-pub { font-size: var(--fs-caption); }
+/* 검색 글은 한 줄을 다 쓰고 조회는 그 아래 오른끝(2026-10-21, 요청: "조회 버튼을 아래에 배치"). */
+.scr-redo-pick-filters > .scr-redo-pick-search { flex: 1 0 100%; }
 .scr-redo-pick-go { margin-left: auto; padding: 6px 14px; }
 .scr-redo-pick-foot { flex-wrap: wrap; }
 .scr-redo-pick-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }

@@ -221,17 +221,17 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     }
   };
 
-  type PickRow = { id: number; matchNo: string; date: string; day: string; map: string; who: string; game: GameResult };
+  type PickRow = { id: number; matchNo: string; game: GameResult };
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickRows, setPickRows] = useState<PickRow[] | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
-  const [pickQuery, setPickQuery] = useState("");
-  type PickFilter = { from: string; to: string; pub: boolean };
-  const [pickFilter, setPickFilter] = useState<PickFilter>({ from: "", to: "", pub: false });
+  type PickFilter = { from: string; to: string; pub: boolean; q: string };
+  const [pickFilter, setPickFilter] = useState<PickFilter>({ from: "", to: "", pub: false, q: "" });
   useLockBodyScroll(pickerOpen, () => setPickerOpen(false));
 
   /** 대상 목록 — 리플레이 없는 판도 든다(참값·경기 삭제의 대상 · 재분석은 리플레이 있는 판만 건다). 지우고 나면 다시 받는다. */
-  /* 조회 단추로만 받는다(2026-10-21, 요청: "데이터관리에서 모든 게임 조회 X · 조회버튼 추가") — 기간 · 공방 게임만은 서버 조건이고 검색 글은 받은 줄을 거른다. */
+  /* 조회 단추로만 받는다(2026-10-21, 요청: "데이터관리에서 모든 게임 조회 X · 조회버튼 추가") — 기간 · 공방 게임만 · 검색 글 모두 서버 조건
+     (검색 글은 게임 목록 검색창과 같은 any 조건 · 2026-10-21, 요청: "조회 버튼을 아래에 · 검색창 입력해도 바로 필터되는 게 아니라 조회 눌러야 api 로 요청"). */
   const [pickLoading, setPickLoading] = useState(false);
   const loadPickRows = async (f: PickFilter = pickFilter) => {
     setPickLoading(true);
@@ -241,21 +241,9 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
       do {
         const page = await api.getGameResultsPage({
           cursor, limit: 100, dateFrom: f.from || undefined, dateTo: f.to || undefined, pubOnly: f.pub || undefined,
+          any: f.q.trim() || undefined,
         });
-        for (const m of page.items) {
-          const names = [...m.team1, ...m.team2]
-            .map((sl) => sl.rawName || "")
-            .filter(Boolean);
-          rows.push({
-            id: m.id,
-            matchNo: m.matchNo,
-            date: m.gameStartedAt ? m.gameStartedAt.slice(0, 10) : m.date,
-            day: m.date,
-            map: m.mapName || "(맵 미상)",
-            who: names.join(" · "),
-            game: m,
-          });
-        }
+        for (const m of page.items) rows.push({ id: m.id, matchNo: m.matchNo, game: m });
         cursor = page.nextCursor ?? undefined;
       } while (cursor);
       setPickRows(rows);
@@ -270,30 +258,24 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   };
   const openPicker = () => {
     /* 열 때마다 조건·고른 판을 비운다(2026-10-21, 지적: "선택조건이 닫았다 열어도 유지") — 닫을 때 비우면 닫은 뒤 뜨는 확인 창이 고른 판을 잃는다. */
-    setPickFilter({ from: "", to: "", pub: false });
-    setPickQuery("");
+    setPickFilter({ from: "", to: "", pub: false, q: "" });
     setPicked(new Set());
     setPickRows(null);
     setPickerOpen(true);
   };
 
-  const pickMatches = (r: PickRow): boolean => {
-    const q = pickQuery.trim().toLowerCase();
-    if (!q) return true;
-    return `${r.matchNo} ${r.date} ${r.map} ${r.who}`.toLowerCase().includes(q);
-  };
-  const pickFiltered = (pickRows ?? []).filter(pickMatches);
+  const pickShown = pickRows ?? [];
   const changePickFilter = (patch: Partial<PickFilter>) => setPickFilter((f) => ({ ...f, ...patch }));
   const searchPicks = () => { setPicked(new Set()); void loadPickRows(pickFilter); };
   const pickedIds = [...picked];
   const pickedReplayIds = (pickRows ?? []).filter((r) => picked.has(r.id) && r.game.replay).map((r) => r.id);
   const dataBusy = redo !== null || purging || deletingGames;
-  const allShownPicked = pickFiltered.length > 0 && pickFiltered.every((r) => picked.has(r.id));
+  const allShownPicked = pickShown.length > 0 && pickShown.every((r) => picked.has(r.id));
   const toggleAllShown = () => {
     setPicked((prev) => {
       const next = new Set(prev);
-      if (allShownPicked) pickFiltered.forEach((r) => next.delete(r.id));
-      else pickFiltered.forEach((r) => next.add(r.id));
+      if (allShownPicked) pickShown.forEach((r) => next.delete(r.id));
+      else pickShown.forEach((r) => next.add(r.id));
       return next;
     });
   };
@@ -566,6 +548,14 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   <input type="checkbox" checked={pickFilter.pub} onChange={(e) => changePickFilter({ pub: e.target.checked })} />
                   공방 게임만
                 </label>
+                <input
+                  type="search"
+                  className="scr-input scr-redo-pick-search"
+                  placeholder="게임번호·맵·선수로 찾기"
+                  value={pickFilter.q}
+                  onChange={(e) => changePickFilter({ q: e.target.value })}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !pickLoading && !dataBusy) searchPicks(); }}
+                />
                 <button type="button" className="scr-rect-btn scr-redo-pick-go" onClick={searchPicks} disabled={pickLoading || dataBusy}>
                   {pickLoading ? <Spinner /> : "조회"}
                 </button>
@@ -576,21 +566,14 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 <div className="scr-redo-pick-empty">게임이 없어요</div>
               ) : (
                 <>
-                  <input
-                    type="search"
-                    className="scr-input scr-redo-pick-search"
-                    placeholder="게임번호·날짜·맵·선수로 찾기"
-                    value={pickQuery}
-                    onChange={(e) => setPickQuery(e.target.value)}
-                  />
                   {/* 전체 선택은 다른 화면과 같은 공용 꼴(SelectAllToggle — PC 체크 · 폰 글자 단추 · 2026-10-20, 요청: "전체선택은 다른 화면과 똑같이 가자"). */}
                   <SelectAllToggle
                     className="scr-redo-pick-all" all={allShownPicked} count={picked.size} onToggle={toggleAllShown}
-                    suffix={pickQuery.trim() ? ` (검색된 ${pickFiltered.length}건)` : ` (${pickFiltered.length}건)`}
+                    suffix={` (${pickShown.length}건)`}
                   />
                   {/* 줄 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "재분석 … 게임 목록을 노출하는 부분 전부 모바일 화면의 게임목록처럼"). */}
                   <div className="scr-redo-pick-list scr-activity-rows">
-                    {pickFiltered.map((r) => (
+                    {pickShown.map((r) => (
                       <ListRow
                         key={r.id}
                         check={<RowCheck checked={picked.has(r.id)} onChange={() => togglePick(r.id)} label={`${r.matchNo} 선택`} />}
@@ -602,9 +585,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                         side={formatAgo(r.game.gameStartedAt ?? r.game.date)}
                       />
                     ))}
-                    {pickFiltered.length === 0 && (
-                      <div className="scr-redo-pick-empty">결과가 없어요</div>
-                    )}
                   </div>
                 </>
               )}
