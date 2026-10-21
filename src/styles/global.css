@@ -7898,10 +7898,11 @@ html.color-lighting .scr-sb-slide-save.is-armed, html.color-lighting .scr-photo-
 .scr-sb-file-row > .scr-sb-file { flex: 0 1 auto; min-width: 0; margin-right: 0; }
 
 .scr-sb-file-row > .scr-sb-icon { flex: 0 0 auto; }
-/* 썸네일 칸은 늘 보인다(요청: "앨범도 아래 그리드 항상 표시 · 좌우 여백은 자동으로 같게") — 칸이 56px 이상에서 줄 폭을
-   똑같이 나눠 가져(minmax(56px, 1fr)) 양 끝이 위 슬라이드 끝과 맞고 칸 사이도 같다. 칸은 정사각. */
+/* 썸네일 칸은 늘 보인다(요청: "앨범도 아래 그리드 항상 표시 · 좌우 여백은 자동으로 같게") — 칸이 96px 이상에서 줄 폭을
+   똑같이 나눠 가져(minmax(96px, 1fr)) 양 끝이 위 슬라이드 끝과 맞고 칸 사이도 같다. 칸은 정사각.
+   최소 56 → 96(2026-10-21, 요청: "일정 사진 그리드 섬네일 크기 1.5~2배"). */
 .scr-sb-order {
-  position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px;
+  position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px;
   margin-top: 6px;
 }
 .scr-sb-order-view .scr-sb-order-cell { cursor: pointer; touch-action: manipulation; }
