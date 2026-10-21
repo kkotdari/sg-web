@@ -1067,6 +1067,10 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-install-guide-steps + .scr-install-guide-lead,
 .scr-install-guide-note + .scr-install-guide-lead { margin-top: 16px; }
 .scr-install-guide-modal .scr-modal-body { padding-bottom: 18px; }
+/* 업로더 설치 창(2026-10-21) — 내려받기 단추를 세로로 · 쓰는 PC 것이 맨 위. */
+.scr-uploader-install-modal .scr-modal-body { padding-bottom: 18px; }
+.scr-uploader-files { display: flex; flex-direction: column; gap: 8px; }
+.scr-uploader-file { justify-content: flex-start; gap: 8px; text-decoration: none; }
 
 @keyframes scr-period-swap { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 

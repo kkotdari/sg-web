@@ -5,8 +5,7 @@ import AdminMenu from "./AdminMenu";
 import MobileTabBar from "./MobileTabBar";
 import Avatar from "../components/common/Avatar";
 import BrandLogo from "../components/common/BrandLogo";
-import InstallGuideModal from "../components/common/InstallGuideModal";
-import { usePwaInstall } from "../hooks/usePwaInstall";
+import UploaderInstallModal from "../components/common/UploaderInstallModal";
 import { cx } from "../utils/format";
 import { attachPopover } from "../utils/popover";
 import { useIsNarrow } from "../utils/useIsNarrow";
@@ -39,13 +38,9 @@ export default function Header({
 
   const [lightTheme, setLightTheme] = useLightTheme();
 
-  const { installed, promptInstall } = usePwaInstall();
-  const [installGuideOpen, setInstallGuideOpen] = useState(false);
-  const onInstallClick = async () => {
-    const r = await promptInstall();
-    if (r === "ios" || r === "unavailable") setInstallGuideOpen(true);
-    else setMenuOpen(false);
-  };
+  /* 메뉴의 "앱 설치"(PWA)는 걷고 그 자리에 업로더 설치(2026-10-21, 요청) — 내려받기 창을 연다. */
+  const [uploaderOpen, setUploaderOpen] = useState(false);
+
 
   const [drawerRendered, setDrawerRendered] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -195,11 +190,9 @@ export default function Header({
           >
             테마
           </button>
-          {!installed && (
-            <button type="button" className="scr-text-btn" onClick={onInstallClick}>
-              앱 설치
-            </button>
-          )}
+          <button type="button" className="scr-text-btn" onClick={() => setUploaderOpen(true)}>
+            업로더 설치
+          </button>
           <button
             className="scr-user-chip" ref={profileAnchorRef}
             onClick={() => setProfileMenuOpen((v) => !v)}
@@ -262,11 +255,9 @@ export default function Header({
               <button className="scr-rect-btn is-secondary" onClick={() => setLightTheme((v) => !v)}>
                 테마
               </button>
-              {!installed && (
-                <button className="scr-rect-btn is-secondary" onClick={onInstallClick}>
-                  앱 설치
-                </button>
-              )}
+              <button className="scr-rect-btn is-secondary" onClick={() => setUploaderOpen(true)}>
+                업로더 설치
+              </button>
               <button className="scr-rect-btn is-secondary" onClick={() => { onOpenProfile(); setMenuOpen(false); }}>
                 내 정보
               </button>
@@ -281,8 +272,8 @@ export default function Header({
         document.body,
       )}
 
-      {installGuideOpen && (
-        <InstallGuideModal onClose={() => { setInstallGuideOpen(false); setMenuOpen(false); }} />
+      {uploaderOpen && (
+        <UploaderInstallModal onClose={() => { setUploaderOpen(false); setMenuOpen(false); }} />
       )}
 
       <MobileTabBar
