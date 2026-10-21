@@ -238,9 +238,9 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
         </div>
         <div className="scr-modal-body">
           {players === null ? (
-            <div className="scr-rc-empty"><Spinner /> 불러오는 중…</div>
+            <div className="scr-rc-empty scr-gc-wait"><Spinner /> 불러오는 중…</div>
           ) : players.length === 0 ? (
-            <div className="scr-rc-empty">{error || "표시할 데이터가 아직 없어요 — 재분석하면 생겨요"}</div>
+            <div className="scr-rc-empty scr-gc-wait">{error || "표시할 데이터가 아직 없어요 — 재분석하면 생겨요"}</div>
           ) : (
             <div className="scr-gc" ref={boxRef}>
               <div className="scr-rc-mode" role="radiogroup" aria-label="선 색">
