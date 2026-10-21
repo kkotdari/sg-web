@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { BaseRace, MemberStats, StatCurve } from "../../types";
 
 /* ★ 통계 펼침 = 분당 곡선 두 판(2026-10-20, 요청: "펼친 부분 내용 변경 · 시간별 … 연속 선 그래프로 세 종족을 색을 나눠서 같은 그래프에
@@ -208,6 +208,27 @@ export function useSharedCross(): [number | null, (m: number | null) => void] {
   return [at, setAt];
 }
 
+/* 통계 화면의 세로선(분)은 모든 펼침(클랜원 전체 · 사람마다)이 하나를 같이 쓴다 — 칩 고르기는 펼침마다 따로
+   (2026-10-21, 요청: "통계에서 칩 선택은 말고 점선 위치는 모든 그래프가 동기화 · 다른 사람 것, 전체 것도"). 판 밖을 누르면 걷히고, 펼침이 다 닫히면 비운다. */
+const statsCross = { at: null as number | null, subs: new Set<() => void>() };
+const closeStatsCross = (e: PointerEvent): void => {
+  if (!(e.target as Element | null)?.closest?.(".scr-rc-svg")) setStatsCross(null);
+};
+function setStatsCross(m: number | null): void {
+  if (statsCross.at === m) return;
+  if (statsCross.at === null) document.addEventListener("pointerdown", closeStatsCross, true);
+  else if (m === null) document.removeEventListener("pointerdown", closeStatsCross, true);
+  statsCross.at = m;
+  statsCross.subs.forEach((f) => f());
+}
+const subStatsCross = (f: () => void): (() => void) => {
+  statsCross.subs.add(f);
+  return () => { statsCross.subs.delete(f); if (statsCross.subs.size === 0) setStatsCross(null); };
+};
+function useStatsCross(): [number | null, (m: number | null) => void] {
+  return [useSyncExternalStore(subStatsCross, () => statsCross.at), setStatsCross];
+}
+
 export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fontK: k = 1, axisK = 1, padB: PB = PAD.b, padR: padROverride, at: atRaw, onAt }: {
   title: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
@@ -367,7 +388,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
 export default function RaceCurves({ byRace, scale, fontK, axisK }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale; fontK?: number; axisK?: number }) {
   /* 줄 끝 칩을 누르면 그 종족 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신). 두 판이 한 상태를 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
-  const [at, setAt] = useSharedCross();
+  const [at, setAt] = useStatsCross();
   const allWk = linesOf(byRace, "wk");
   const allAv = linesOf(byRace, "av");
   const sc = scale ?? curveScale([byRace]);
