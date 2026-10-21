@@ -225,6 +225,9 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
     FS + 1 * k, PAD.t + FS / 2,
   );
   const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
+  /* 칩을 누른 사람(종족)만 또렷이 — 그 선은 굵게 · 칩은 살짝 크게, 나머지는 선·점·칩·값 모두 흐리게(2026-10-21, 요청: "액티브 칩은 살짝 확대만 ·
+     나머지 사람들 거 딤 처리 · 나머지 그래프 선도 딤"). */
+  const dim = (key: string): string => (focus && focus !== key ? " is-dim" : "");
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">{title}{note && <i> · {note}</i>}</figcaption>
@@ -262,17 +265,18 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
           {at !== null && <text className="scr-rc-at" x={x(at)} y={H - 5} textAnchor="middle" style={{ fontSize: FS }}>{at}분</text>}
           {ordered.map((l) => (
             <path
-              key={l.key} className={`scr-rc-line${focus === l.key ? " is-focus" : ""}`} style={{ stroke: l.color }}
+              key={l.key} className={`scr-rc-line${focus === l.key ? " is-focus" : ""}${dim(l.key)}`} style={{ stroke: l.color }}
               d={smoothPath(l.ys.map((v, i) => [x(i), y(v)]))}
             />
           ))}
           {ordered.map((l) => {
             const i = l.ys.length - 1;
-            return <circle key={l.key} className="scr-rc-end" cx={x(i)} cy={y(l.ys[i])} r={focus === l.key ? 5 : 4} style={{ fill: l.color }} />;
+            return <circle key={l.key} className={`scr-rc-end${dim(l.key)}`} cx={x(i)} cy={y(l.ys[i])} r={focus === l.key ? 5 : 4} style={{ fill: l.color }} />;
           })}
           {chips.map((c) => (
             <g
-              key={c.l.key} className={`scr-rc-chip${focus === c.l.key ? " is-focus" : ""}`} role="button" tabIndex={0}
+              key={c.l.key} className={`scr-rc-chip${focus === c.l.key ? " is-focus" : ""}${dim(c.l.key)}`} role="button" tabIndex={0}
+              transform={focus === c.l.key ? `translate(${c.cx + c.w / 2} ${c.ty}) scale(1.15) translate(${-(c.cx + c.w / 2)} ${-c.ty})` : undefined}
               aria-pressed={focus === c.l.key} aria-label={`${c.l.label} 굵게 보기`}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onFocus?.(c.l.key); }}
@@ -284,10 +288,10 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
             </g>
           ))}
           {at !== null && <line className="scr-rc-cross" x1={x(at)} x2={x(at)} y1={PAD.t} y2={H - PAD.b} />}
-          {vals.map(({ l, y: py }) => <circle key={l.key} className="scr-rc-dot" cx={x(at ?? 0)} cy={py} r={4} style={{ fill: l.color }} />)}
+          {vals.map(({ l, y: py }) => <circle key={l.key} className={`scr-rc-dot${dim(l.key)}`} cx={x(at ?? 0)} cy={py} r={4} style={{ fill: l.color }} />)}
           {vals.map(({ l, v, ty: vy }) => (
             <text
-              key={l.key} className="scr-rc-val" x={x(at ?? 0) + (valsRight ? 8 : -8) * k} y={vy}
+              key={l.key} className={`scr-rc-val${dim(l.key)}`} x={x(at ?? 0) + (valsRight ? 8 : -8) * k} y={vy}
               textAnchor={valsRight ? "start" : "end"} dominantBaseline="central" style={{ fontSize: FS, fill: l.color }}
             >{compact(v)}</text>
           ))}
