@@ -8055,13 +8055,14 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* PC 는 판 하나를 440 까지만 — 넓히면 viewBox 가 같이 불어 축 글자가 커진다. */
 .scr-rc-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 440px)); gap: 10px 28px; align-items: end; }
 .scr-rc-chart { margin: 0; min-width: 0; }
-.scr-rc-title { margin-bottom: 2px; font-size: var(--fs-11); font-weight: 800; color: var(--text); }
+/* 제목 · 값 상자 글자는 눈금(PC 화면 약 14.9px)에 맞춰 키운다(2026-10-21, 요청: "테크트리와 기타 제목등도 맞춰서 키우기") — 폰 통계는 판이 좁아 눈금이 약 11.4px 라 그만큼. */
+.scr-rc-title { margin-bottom: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
 .scr-rc-title > i { font-style: normal; font-weight: 600; color: var(--dim); }
 .scr-rc-plot { position: relative; }
 .scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; cursor: crosshair; }
 .scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }
-/* 눈금 글자 9 → 10.8(2026-10-21, 요청: "그래프 눈금글자 20프로 확대") */
-.scr-rc-axis { fill: var(--dim); font-size: 10.8px; font-variant-numeric: tabular-nums; }
+/* 눈금 글자 크기는 판 자로 그 자리에 적는다(AXIS_FS × 글자 배수 · RaceCurves). */
+.scr-rc-axis { fill: var(--dim); font-variant-numeric: tabular-nums; }
 .scr-rc-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 /* 줄 끝 칩(통계 · 게임 그래프 · 2026-10-21) — 누르면 그 줄을 끄고 켠다 · 끈 줄은 칩만 흐리게 남는다. */
 .scr-rc-chip { cursor: pointer; outline: none; }
@@ -8075,7 +8076,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-tip {
   position: absolute; top: 0; z-index: 2; margin-left: 10px; padding: 5px 8px; min-width: 92px; pointer-events: none;
   border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-solid, #18181a);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); font-size: var(--fs-11); color: var(--text); white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); font-size: 13px; color: var(--text); white-space: nowrap;
 }
 .scr-rc-tip.is-left { transform: translateX(-100%); margin-left: -10px; }
 .scr-rc-tip-head { margin-bottom: 2px; font-weight: 800; color: var(--dim); }
@@ -8085,6 +8086,8 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-empty { padding: 4px 0; font-size: var(--fs-11); color: var(--muted); }
 .scr-sg.is-m .scr-sg-mix { padding: 10px 10px 12px; }
 .scr-sg.is-m .scr-rc-charts { grid-template-columns: minmax(0, 1fr); }
+.scr-sg.is-m .scr-rc-title { font-size: 12px; }
+.scr-sg.is-m .scr-rc-tip { font-size: var(--fs-11); }
 
 /* 폰 — [유저(아래 한 줄: 판수 · APM · 딜 · 피해) | 전체 | 테 | 프 | 저] · 칸마다 승률 · ▾ 는 이름 옆(펼침은 PC 와 같은 곡선). */
 /* 폰 — [유저 | 전체 | 테란 | 프로토스 | 저그](2026-10-20, 요청: "원래대로 · 유저 전체 테 프 저 전적으로 · 유저 칸 세 줄 유지 · 각 전적 칸은 위 전수 아래 승률").

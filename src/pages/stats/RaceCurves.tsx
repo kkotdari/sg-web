@@ -84,12 +84,14 @@ export function inkOn(color: string): string {
   return lum > 150 ? "#111" : "#fff";
 }
 
-/** 컴팩트 네모 단추(.scr-compact-rect-btn)의 치수 — 글자 12px/600 · 높이 22(글줄 12 + 위아래 4 + 테 1) · 좌우 7(6 + 테 1) · 모서리 6.
-    끝 칩 · 게임 그래프 테크 줄의 닉네임 칩은 이 치수의 0.75 배(CHIP_K)를 화면 px 로 쓴다(2026-10-21, 요청: "컴팩트네모버튼이야 · 패딩같은거는"). */
-/* 칩은 단추의 0.75 배(2026-10-21, 요청: "둘다 크기 25프로 줄여야겠어" — 끝 칩 · 닉네임 칩) → 그 1.2 배 = 0.9 배(요청: "칩 · 테크 글자 · 눈금 글자 20프로 확대 ·
-   잘 안보여") — 글자 10.8 · 높이 19.8 · 좌우 6.3 · 모서리 5.4. */
-const CHIP_K = 0.9;
-export const BTN = { fs: 12 * CHIP_K, h: 22 * CHIP_K, px: 7 * CHIP_K, r: 6 * CHIP_K };
+/** 눈금 글자(판 자 · 2026-10-21, 요청: "눈금글자 20프로 확대" 9 → 10.8). 통계 판은 viewBox 320 을 칸 폭(PC 440)으로 늘려 그린다. */
+export const AXIS_FS = 10.8;
+/** 게임 그래프(잰 크기 1:1)의 글자 배수 — 통계 PC 판이 늘어나는 비(440/320)라, 눈금·칩 글자가 통계 그래프 눈금과 같은 화면 크기가 된다
+    (2026-10-21, 요청: "칩과 눈금 폰트사이즈가 통계 그래프의 눈금 폰트 크기와 같게"). */
+export const GAME_FONT_K = 440 / 320;
+/** 칩 = 눈금 글자 크기의 컴팩트 네모 단추 꼴(.scr-compact-rect-btn 12px 의 비: 높이 22 · 좌우 7 · 모서리 6) — 판 자로 적어 판과 함께 늘고 준다.
+    끝 칩 · 게임 그래프 테크 줄의 닉네임 칩이 쓴다(요청: "컴팩트네모버튼이야 · 패딩같은거는" → 크기는 눈금 글자에 맞춤). */
+export const BTN = { fs: AXIS_FS, h: (AXIS_FS * 22) / 12, px: (AXIS_FS * 7) / 12, r: AXIS_FS / 2 };
 let measureCtx: CanvasRenderingContext2D | null = null;
 /** 글자 폭(px · 굵기 600 · 본문 글꼴) — 칩 폭을 글자에 딱 맞춰 좌우 여백이 같게. */
 export function textW(s: string, fs: number): number {
@@ -99,10 +101,10 @@ export function textW(s: string, fs: number): number {
   return measureCtx.measureText(s).width;
 }
 export const chipWOf = (s: string): number => textW(s, BTN.fs) + 2 * BTN.px;
-/** 끝 칩을 단 판의 오른쪽 여백(k = 화면 1px 의 판 자) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
+/** 끝 칩을 단 판의 오른쪽 여백(k = 글자 배수) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
 export const chipGutter = (labels: string[], k = 1): number => PAD.r + k * (8 + Math.max(0, ...labels.map(chipWOf)));
 
-export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height, onToggle, ticksX: tx, ticksY: ty }: {
+export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height, onToggle, ticksX: tx, ticksY: ty, fontK: k = 1 }: {
   title: string; unit: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
   ticksX?: number[]; ticksY?: number[];
@@ -114,21 +116,14 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   height?: number;
   /** 끝 칩을 누르면 그 줄을 끄고 켠다(줄의 key). */
   onToggle?: (key: string) => void;
+  /** 글자 배수(기본 1 — 통계) — 게임 그래프는 GAME_FONT_K. 눈금·칩 글자와 칩이 함께 커진다. */
+  fontK?: number;
 }) {
   const W = width ?? W0;
   const H = height ?? H0;
   const PL = padL ?? PAD.l;
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  /* 판은 viewBox 로 늘고 준다 — 칩은 단추와 같은 화면 px 이어야 해서 화면 1px 이 판 자로 몇인지(k) 잰다. */
-  const [k, setK] = useState(1);
-  useEffect(() => {
-    const el = svgRef.current;
-    if (!el || !onToggle) return undefined;
-    const ro = new ResizeObserver(() => { if (el.clientWidth > 0) setK(W / el.clientWidth); });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [W, onToggle]);
   const PR = onToggle ? chipGutter(lines.map((l) => l.label), k) : PAD.r;
   const CHIP_H = BTN.h * k;
   const shown = lines.filter((l) => !l.off);
@@ -181,11 +176,11 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
           {ticksY.map((v) => (
             <g key={v}>
               <line className="scr-rc-grid" x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} />
-              <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle">{compact(v)}</text>
+              <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: AXIS_FS * k }}>{compact(v)}</text>
             </g>
           ))}
           {ticksX.map((m) => (
-            <text key={m} className="scr-rc-axis" x={x(m)} y={H - 5} textAnchor="middle">{m}분</text>
+            <text key={m} className="scr-rc-axis" x={x(m)} y={H - 5} textAnchor="middle" style={{ fontSize: AXIS_FS * k }}>{m}분</text>
           ))}
           {shown.map((l) => (
             <polyline
