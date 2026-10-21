@@ -24,7 +24,7 @@ import type { GameCurve, GameResult } from "../types";
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ColorMode = "player" | "team";
 /** 판의 가로 자 — 테크 줄과 두 판이 같이 쓴다. */
-const CW = 1000;
+const CW = 1400;
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
 const TECH_LABEL: Record<number, string> = {
@@ -47,30 +47,38 @@ const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` 
 function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ lane: Lane; tech: GameCurve["techs"][number]; label: string; x0: number; x1: number; cy: number } | null>(null);
-  const CH = 15;
+  const CH = 17;
   const GAP = 8;
   const ROW_H = CH * 2 + 2 + GAP;
   const AXIS = 18;
   const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - CHART_PAD.r);
-  const chipW = (s: string): number => s.length * 9.5 + 10;
+  const chipW = (s: string): number => s.length * 11 + 11;
   let y0 = 4;
   /* 칩은 칸의 세로 가운데 · **겹치는 칩끼리만** 가운데 위아래로 가른다(2026-10-21, 요청: "겹치는것들만 위아래로 배치").
-     가로로 겹치는 칩들을 한 무리로 묶고, 한 칩뿐인 무리는 가운데 · 여럿인 무리는 윗단 · 아랫단에 번갈아(앞 칩 끝을 넘으면 같은 단). */
+     칩의 왼끝 = 다 지은 때 · 오른끝을 넘는 칩은 거꾸로 칩의 오른끝을 그때에 맞춘다(띠도 오른쪽 · 요청: "테크 칩 화면밖으로 나감").
+     가로로 겹치는 칩들을 한 무리로 묶고, 한 칩뿐인 무리는 가운데 · 여럿인 무리는 윗단 · 아랫단에 — 두 단에도 안 들어가면 앞 칩 뒤로 민다
+     (정확한 때는 팝업에 있다). */
+  const RIGHT = CW - CHART_PAD.r;
   const rows = lanes.map((l) => {
     const items = l.techs.map((t) => {
       const label = TECH_LABEL[t.t] ?? `#${t.t}`;
-      return { t, xe: x(t.e), label, w: chipW(label), slot: 0 as -1 | 0 | 1 };
-    });
+      const xe = x(t.e);
+      const w = chipW(label);
+      const flip = xe + w > RIGHT;
+      return { t, x: flip ? xe - w : xe, label, w, flip, slot: 0 as -1 | 0 | 1 };
+    }).sort((p, q) => p.x - q.x);
     for (let a = 0; a < items.length;) {
       let b = a + 1;
-      let end = items[a].xe + items[a].w + 3;
-      while (b < items.length && items[b].xe < end) { end = Math.max(end, items[b].xe + items[b].w + 3); b += 1; }
+      let end = items[a].x + items[a].w + 3;
+      while (b < items.length && items[b].x < end) { end = Math.max(end, items[b].x + items[b].w + 3); b += 1; }
       if (b - a > 1) {
         const ends = { [-1]: -Infinity, 1: -Infinity } as Record<-1 | 1, number>;
         for (let k = a; k < b; k += 1) {
-          const slot: -1 | 1 = items[k].xe >= ends[-1] ? -1 : items[k].xe >= ends[1] ? 1 : -1;
-          ends[slot] = items[k].xe + items[k].w + 3;
-          items[k].slot = slot;
+          const it = items[k];
+          const slot: -1 | 1 = it.x >= ends[-1] ? -1 : it.x >= ends[1] ? 1 : ends[-1] <= ends[1] ? -1 : 1;
+          it.x = Math.min(Math.max(it.x, ends[slot]), RIGHT - it.w);
+          ends[slot] = it.x + it.w + 3;
+          it.slot = slot;
         }
       }
       a = b;
@@ -89,18 +97,18 @@ function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
           <g key={l.key}>
             <line className="scr-rc-grid" x1={PL} x2={CW - CHART_PAD.r} y1={top + h} y2={top + h} />
             <text className="scr-rc-axis" x={PL - 5} y={top + h / 2} textAnchor="end" dominantBaseline="central">{shortName(l.name)}</text>
-            {chips.map(({ t, xe, label, w, slot }) => {
+            {chips.map(({ t, x: cx, label, w, slot, flip }) => {
               const mid = top + h / 2;
               const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - 1 : mid + 1;
               return (
                 <g
                   key={t.t} className="scr-tl-hit"
-                  onPointerEnter={() => setHover({ lane: l, tech: t, label, x0: xe, x1: xe + w, cy: y })}
+                  onPointerEnter={() => setHover({ lane: l, tech: t, label, x0: cx, x1: cx + w, cy: y })}
                   onPointerLeave={() => setHover(null)}
                 >
-                  <rect className="scr-tl-chip" x={xe} y={y} width={w} height={CH} rx={4} style={{ stroke: l.color }} />
-                  <rect x={xe} y={y} width={3} height={CH} rx={1.5} style={{ fill: l.color }} />
-                  <text className="scr-tl-label" x={xe + 7} y={y + CH / 2} dominantBaseline="central">{label}</text>
+                  <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} rx={4} style={{ stroke: l.color }} />
+                  <rect x={flip ? cx + w - 3 : cx} y={y} width={3} height={CH} rx={1.5} style={{ fill: l.color }} />
+                  <text className="scr-tl-label" x={cx + (flip ? 4 : 7)} y={y + CH / 2} dominantBaseline="central">{label}</text>
                 </g>
               );
             })}
