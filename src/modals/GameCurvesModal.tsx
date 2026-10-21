@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { Maximize2, Minimize2, X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
@@ -52,6 +52,9 @@ const TL = {
 } as const;
 /** 가로축 눈금 숫자를 가로축에서 더 띄우는 몫(2026-10-21, 요청: "가로축 눈금 숫자를 가로축에서 좀 더 아래로 · 데이터 창만") — 세 판 모두. */
 const AXIS_DROP = 6;
+/** 전체화면 2열 — 판 폭 이만큼이면 둘로 나눈다(한 열 ≈ 650) · 열 사이. */
+const FULL_TWO_COL = 1340;
+const FULL_COL_GAP = 40;
 /** 닉네임 칩 글 — 폭으로 자른다(칩 글자 6.5 자 폭 · 2026-10-21, 요청: "닉네임 칩 가로폭 봐서 적절히 글자수 제한"). 끝 칩 · 테크 줄 앞머리가 같이 쓴다. */
 const shortName = (s: string, fs: number): string => fitText(s, fs, fs * 6.5);
 
@@ -382,20 +385,47 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
      잰 크기 그대로(1:1) 그려 글자·선이 늘거나 줄지 않는다. */
   const boxRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
+  /* 전체화면(PC · 2026-10-21, 요청: "데이터창 전체화면 확대 버튼(우상단) — 폭이 허락하면 2열, 왼쪽 건설 · 오른쪽 자원 인구") —
+     창 자체를 브라우저 전체화면으로 · Esc 로 나오면 원래 창. 막혀도 창은 화면을 채운다. */
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    const onChange = (): void => { if (!document.fullscreenElement) setFull(false); };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onChange);
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    };
+  }, []);
+  const toggleFull = (): void => {
+    if (full) {
+      setFull(false);
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    } else {
+      setFull(true);
+      void modalRef.current?.requestFullscreen?.().catch(() => {});
+    }
+  };
+  const twoCol = full && box.w >= FULL_TWO_COL;
+  const colW = twoCol ? Math.floor((box.w - FULL_COL_GAP) / 2) : box.w;
   useLayoutEffect(() => {
     const el = boxRef.current;
     if (!el) return undefined;
     /* 테크 판 높이는 사람 수에 비례(TechLanes · TL.row) — 여기 높이는 두 곡선 판의 것. */
-    const measure = (): void => setBox({
-      w: Math.floor(el.clientWidth),
-      h: Math.max(216, Math.floor((window.innerHeight - 330) / 3)),
-    });
+    /* 전체화면 2열이면 오른쪽 네 판이 화면 높이를 나눈다. */
+    const measure = (): void => {
+      const w = Math.floor(el.clientWidth);
+      setBox({
+        w,
+        h: full && w >= FULL_TWO_COL ? Math.max(200, Math.floor((window.innerHeight - 330) / 4)) : Math.max(216, Math.floor((window.innerHeight - 330) / 3)),
+      });
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     window.addEventListener("resize", measure);
     return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
-  }, [players]);
+  }, [players, full]);
   const [error, setError] = useState("");
   /* 보기(팀전만 · 2026-10-21, 요청: "팀 보기 토글 — 켜면 팀색 · 두 그래프는 팀 합산" → "유저별(개인색) / 유저별(팀색) / 팀별 합산 세 개로") —
      팀별 합산이면 두 곡선 판은 팀마다 한 줄이고, 테크 줄은 사람마다 그대로(색만 팀색) · 칩을 누르면 그 사람의 팀을 고른다. */
@@ -474,13 +504,42 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   const PL = mobile ? 30 : 13 + Math.max(0, ...names.map((n) => chipWOf(n, font.label)));
   const pickFocus = (k: string): void => setFocus((f) => (f === k ? null : k));
 
+  const lanesEl = mobile ? (
+    <TechLanes
+      maxX={sc.x} ticksX={sc.xt} w={colW} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
+      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), techs: p.techs }))}
+    />
+  ) : (
+    <BuildLanes
+      maxX={sc.x} ticksX={sc.xt} w={colW} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
+      techOnly={techOnly} onTechOnly={setTechOnly}
+      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds }))}
+    />
+  );
+  const chartOf = (k: CurveKey, title: string, extra: { note?: string; titleExtra?: ReactNode } = {}): ReactNode => (
+    <Chart
+      title={title} {...extra}
+      lines={linesOf(k)} maxX={sc.x} maxY={sc[k][sc[k].length - 1]} ticksX={sc.xt} ticksY={sc[k]} width={colW} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
+  );
+  const spEl = chartOf(spKey, "인구", { titleExtra: <TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} /> });
+  const wkEl = chartOf("wk", "일꾼 수");
+  const rmEl = !mobile && chartOf("rm", "미네랄", { note: "그때 쥔 양" });
+  const rgEl = !mobile && chartOf("rg", "가스", { note: "그때 쥔 양" });
+
   return createPortal(
     <div className="scr-modal-overlay" onClick={(e) => { e.stopPropagation(); onClose(); }}>
       <ModalHash hash="game-curves" onClose={onClose} />
-      <div className="scr-modal scr-modal-graph" onClick={(e) => e.stopPropagation()}>
+      <div className={cx("scr-modal scr-modal-graph", full && "is-full")} ref={modalRef} onClick={(e) => e.stopPropagation()}>
         <div className="scr-modal-head">
           <span>데이터<i className="scr-gc-sub">게임번호: {game.matchNo}</i></span>
-          <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
+          <span className="scr-gc-headbtns">
+            {!mobile && (
+              <button className="scr-icon-btn" onClick={toggleFull} aria-label={full ? "전체화면 끝" : "전체화면"} title={full ? "전체화면 끝" : "전체화면"}>
+                {full ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              </button>
+            )}
+            <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
+          </span>
         </div>
         <div className="scr-modal-body">
           {players === null ? (
@@ -518,28 +577,14 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                   ))}
                 </div>
               )}
-              {box.w > 0 && (
-                <>
-                  {mobile ? (
-                    <TechLanes
-                      maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
-                      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), techs: p.techs }))}
-                    />
-                  ) : (
-                    <BuildLanes
-                      maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
-                      techOnly={techOnly} onTechOnly={setTechOnly}
-                      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds }))}
-                    />
-                  )}
-                  <Chart
-                    title="인구" titleExtra={<TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} />}
-                    lines={linesOf(spKey)} maxX={sc.x} maxY={sc[spKey][sc[spKey].length - 1]} ticksX={sc.xt} ticksY={sc[spKey]} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
-                  <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
-                  {!mobile && <Chart title="미네랄" note="그때 쥔 양" lines={linesOf("rm")} maxX={sc.x} maxY={sc.rm[sc.rm.length - 1]} ticksX={sc.xt} ticksY={sc.rm} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />}
-                  {!mobile && <Chart title="가스" note="그때 쥔 양" lines={linesOf("rg")} maxX={sc.x} maxY={sc.rg[sc.rg.length - 1]} ticksX={sc.xt} ticksY={sc.rg} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />}
-                </>
-              )}
+              {box.w > 0 && (twoCol ? (
+                <div className="scr-gc-cols">
+                  <div className="scr-gc-col" style={{ width: colW }}>{lanesEl}</div>
+                  <div className="scr-gc-col" style={{ width: colW }}>{rmEl}{rgEl}{spEl}{wkEl}</div>
+                </div>
+              ) : (
+                <>{lanesEl}{spEl}{wkEl}{rmEl}{rgEl}</>
+              ))}
             </div>
           )}
         </div>

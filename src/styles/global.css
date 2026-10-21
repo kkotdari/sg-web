@@ -3308,7 +3308,13 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 }
 /* 판 사이를 띄워 가른다(요청: "그래프간 줄간격좀 띄워서 구분") — 판마다 위 가는 줄. */
 .scr-gc { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
-.scr-gc > .scr-rc-chart { padding-top: 14px; border-top: 1px solid var(--line-faint); }
+.scr-gc > .scr-rc-chart, .scr-gc-col > .scr-rc-chart { padding-top: 14px; border-top: 1px solid var(--line-faint); }
+/* 전체화면(PC · 2026-10-21) — 창이 화면 가득 · 바탕 불투명 · 폭이 되면 2열(왼쪽 건설 · 오른쪽 미네랄 · 가스 · 인구 · 일꾼). */
+.scr-gc-headbtns { display: flex; align-items: center; gap: 4px; }
+.scr-modal.scr-modal-graph.is-full { max-width: none; width: 100vw; height: 100vh; border-radius: 0; }
+.scr-modal.scr-modal-graph.is-full::before { border-radius: 0; background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.scr-gc-cols { display: flex; gap: 40px; align-items: flex-start; }
+.scr-gc-col { flex: none; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .scr-rc-mode { display: flex; gap: 4px; }
 /* 볼 사람 고르기(2026-10-21) — 팀마다 한 줄 · 앞에 팀 이름(팀색) · 이름 앞 작은 색 점(그 선 색). */
 .scr-gc-users { display: flex; flex-direction: column; gap: 6px; }
