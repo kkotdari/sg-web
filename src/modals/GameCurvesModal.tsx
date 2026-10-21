@@ -49,8 +49,6 @@ const TL_TIER = TL_FS * 0.15;
 /** 판 아래 눈금 띠 · 한 칸 최소 높이(두 단 + 위아래 숨) — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
 const TL_AXIS = TL_AXIS_FS + 8;
 const TL_ROW_MIN = Math.ceil(2 * TL_CH + 2 * TL_TIER + TL_FS * 0.9);
-/** 강조 칩 색 — 테마 강조색(어두운 테마 --point 금빛 · 밝은 테마 파랑). */
-const HL_COLOR = "var(--lighting-accent)";
 const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` : s);
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
@@ -129,7 +127,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
               const mid = top + h / 2;
               const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - TL_TIER : mid + TL_TIER;
               /* 얹은 테크와 같은 종류(모든 사람)는 강조색 칩으로(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로 강조해줘") —
-                 보이지 않던 마우스 상자를 강조색으로 칠하고 글자는 그 위 흰/검정(재생기 칩 문턱). */
+                 보이지 않던 마우스 상자를 강조색으로 칠한다 · 글자색은 그대로(요청: "폰트색은 그대로"). */
               const hl = hover !== null && hover.tech.t === t.t;
               return (
                 <g
@@ -140,7 +138,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
                   <rect className={`scr-tl-chip${hl ? " is-hl" : ""}`} x={cx} y={y} width={w} height={CH} rx={RX} />
                   <text
                     className="scr-tl-label" x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central"
-                    style={{ fontSize: FS, fill: hl ? inkOn(HL_COLOR) : undefined }}
+                    style={{ fontSize: FS }}
                   >{label}</text>
                 </g>
               );
