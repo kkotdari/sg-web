@@ -5,7 +5,7 @@ import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
-import { currentMonthValue, monthInputToRange } from "../../utils/date";
+import { currentMonthValue, fmt, monthInputToRange, todayStr } from "../../utils/date";
 import StatGrid, { CompGrid } from "../stats/StatGrid";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
@@ -41,6 +41,15 @@ type MapTab = (typeof MAP_TABS)[number]["value"];
 const MAP_DEFAULT: MapTab = "fastest";
 const mapTabOf = (v: string): MapTab => (MAP_TABS.some((t) => t.value === v) ? v as MapTab : MAP_DEFAULT);
 const PERIOD_ALL = "all";
+/* 하루 고르기 — 달력의 [전체 기간] 옆 [어제] [오늘](2026-10-21 요청). 값은 주소 period= 에 그대로 남는다. */
+const PERIOD_DAYS = [{ value: "yesterday", label: "어제" }, { value: "today", label: "오늘" }];
+const dayOfPeriod = (p: string): string | null => {
+  if (p === "today") return todayStr();
+  if (p !== "yesterday") return null;
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return fmt(d);
+};
 
 /** 정렬 순서 — 검색창 밑의 작은 밑줄 탭(2026-10, 요청). 기본은 승률순 · 차례 승률·딜·APM·참여 · 앞 "정렬" 글은 걷었다
  *  (2026-10-20, 요청: "정렬 문구 제거 · 승률순 딜순 APM순 참여순 · 기본 승률순"). */
@@ -144,9 +153,10 @@ export default function ClanStatsScreen() {
       key: debouncedSignature,
       memberIds,
     };
+    const oneDay = dayOfPeriod(debouncedQuery.period);
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
-      : monthInputToRange(debouncedQuery.period);
+      : oneDay ? { from: oneDay, to: oneDay } : monthInputToRange(debouncedQuery.period);
     if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [] }); return; }
     let cancelled = false;
     setError("");
@@ -256,6 +266,7 @@ export default function ClanStatsScreen() {
             value={period} onChange={setPeriod}
             maxMonth={currentMonthValue()}
             allValue={PERIOD_ALL}
+            days={PERIOD_DAYS}
             className="scr-v2-toolbar-month"
           />
           <button

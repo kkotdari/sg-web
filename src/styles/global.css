@@ -2471,7 +2471,8 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 .scr-light-theme .scr-month-cal-all.scr-month-cal-cell-on {
   color: #10151a; background: var(--lighting-pill-bg); box-shadow: var(--lighting-pill-glow);
 }
-.scr-month-cal-all { width: 100%; margin-top: 2px; }
+.scr-month-cal-extra { display: flex; gap: 6px; margin-top: 2px; }
+.scr-month-cal-all { flex: 1 1 0; min-width: 0; }
 
 .scr-stat-upgrades-empty { align-content: center; }
 
