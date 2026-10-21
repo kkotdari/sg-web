@@ -8,6 +8,7 @@ import { AXIS_FS, Chart, chipBox, chipGutter, chipWOf, GAME_FONT_K, inkOn, textW
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { cx } from "../utils/format";
 import { pad } from "../utils/date";
 import type { GameCurve, GameResult } from "../types";
@@ -41,39 +42,59 @@ type Lane = { key: string; name: string; color: string; techs: GameCurve["techs"
     눈금·닉네임 칩 글자 = AXIS_FS × GAME_FONT_K(통계 PC 눈금과 같은 화면 크기) · 테크 글자는 11px(요청: "테크트리 글자 굵기 줄이고 크기 한단만 낮춰줘" — 0.8 배 11.9 → 11 · 굵기 600 → 500).
     테크는 글자만 — 글자를 감싼 컴팩트 네모 칩 상자는 평소 보이지 않는 마우스 자리로 남아 겹침 가르기와 팝업 자리를 재고, 같은 종류 강조 때만 칠한다
     (요청: "직사각형 음영" → "테크트리 음영제거" → "칩형태로 강조 · 컴팩트 네모칩"). 칸 사이·두 단 사이도 글자에 비례 — 번잡하지 않게. */
-const TL_AXIS_FS = AXIS_FS * GAME_FONT_K;
-const TL_FS = 11;
-const TL_CH = TL_FS * 1.35;   /* 칸 최소 높이 셈에만 — 그리는 높이는 컴팩트 네모 칩 비(chipBox) */
-const TL_GAP = TL_FS * 0.4;
-const TL_TIER = TL_FS * 0.15;
-/** 판 아래 눈금 띠 · 한 칸 최소 높이(두 단 + 위아래 숨) — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
-const TL_AXIS = TL_AXIS_FS + 8;
-const TL_ROW_MIN = Math.ceil(2 * TL_CH + 2 * TL_TIER + TL_FS * 0.9);
+function tlDims(k: number) {
+  const axisFs = AXIS_FS * k;
+  /* 테크 글자 — PC 11px · 폰(k 1) 9.5px(2026-10-21, 요청: "모바일에서도 볼 수 있게"). */
+  const fs = k > 1 ? 11 : 9.5;
+  const ch = fs * 1.35;   /* 칸 최소 높이 셈에만 — 그리는 높이는 컴팩트 네모 칩 비(chipBox) */
+  const tier = fs * 0.15;
+  /** axis: 판 아래 눈금 띠 · rowMin: 한 칸 최소 높이(두 단 + 위아래 숨) — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
+  return { axisFs, fs, gap: fs * 0.4, tier, axis: axisFs + 8, rowMin: Math.ceil(2 * ch + 2 * tier + fs * 0.9) };
+}
 const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` : s);
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
  *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 마우스를 얹으면 완공 시각 팝업 · 같은 종류 테크(모든 사람)는 강조색. */
-function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes: Lane[]; maxX: number; ticksX: number[]; w: number; h: number; padL: number; padR: number }) {
+function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, scrollW }: {
+  lanes: Lane[]; maxX: number; ticksX: number[]; w: number; h: number; padL: number; padR: number;
+  /** 글자 배수(PC GAME_FONT_K · 폰 1). */
+  k: number;
+  /** 판 폭(보이는 폭 w 보다 크면 가로로 민다 — 폰 · 2026-10-21, 요청: "모바일에서도"). 닉네임 칩은 왼쪽에 박혀 안 밀린다. */
+  scrollW: number;
+}) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ tech: GameCurve["techs"][number]; x0: number; x1: number; cy: number } | null>(null);
   /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것(2026-10-21, 요청: "세 판 높이 통일"). */
-  const ROW_H = (H - TL_AXIS - 4) / Math.max(1, lanes.length);
+  const D = tlDims(k);
+  const SW = Math.max(CW, scrollW);
+  const ROW_H = (H - D.axis - 4) / Math.max(1, lanes.length);
+  /* 마우스는 얹으면 · 손가락은 누르면 뜨고(다시 누르거나 딴 데 누르면 닫힌다 — 터치는 떼는 순간 pointerleave 가 와서 얹기가 못 버틴다). */
+  const plotRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (hover === null) return undefined;
+    const close = (e: PointerEvent): void => {
+      const t = e.target as Element | null;
+      if (!t?.closest?.(".scr-tl-hit") || !plotRef.current?.contains(t)) setHover(null);
+    };
+    document.addEventListener("pointerdown", close, true);
+    return () => document.removeEventListener("pointerdown", close, true);
+  }, [hover]);
   /* 테크 상자 = 컴팩트 네모 칩(.scr-compact-rect-chip 의 높이·좌우·모서리 비 · chipBox)을 테크 글자 크기로 — 평소엔 안 보이고, 같은 종류 강조 때 칠한다
      (2026-10-21, 요청: "칩형태로 강조" → "컴팩트 네모칩"). */
-  const FS = TL_FS;
+  const FS = D.fs;
   const cb = chipBox();
   const CH = (FS * cb.h) / cb.fs;
   const PX = (FS * cb.px) / cb.fs;
   const RX = (FS * cb.r) / cb.fs;
-  const GAP = TL_GAP;
-  const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - padR);
+  const GAP = D.gap;
+  const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (SW - PL - padR);
   const chipW = (s: string): number => textW(s, FS) + 2 * PX;
   let y0 = 4;
   /* 칩은 칸의 세로 가운데 · **겹치는 칩끼리만** 가운데 위아래로 가른다(2026-10-21, 요청: "겹치는것들만 위아래로 배치").
      칩의 왼끝 = 다 지은 때 · 오른끝을 넘는 칩은 거꾸로 칩의 오른끝을 그때에 맞춘다(요청: "테크 칩 화면밖으로 나감") · 칩은 그 줄 색으로 칠하고 글자는 가운데(좌우 여백 같게).
      가로로 겹치는 칩들을 한 무리로 묶고, 한 칩뿐인 무리는 가운데 · 여럿인 무리는 윗단 · 아랫단에 — 두 단에도 안 들어가면 앞 칩 뒤로 민다
      (정확한 때는 팝업에 있다). */
-  const RIGHT = CW - padR;
+  const RIGHT = SW - padR;
   const rows = lanes.map((l) => {
     const items = l.techs.map((t) => {
       const label = TECH_LABEL[t.t] ?? `#${t.t}`;
@@ -105,39 +126,30 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">테크 건물<i> · 다 지은 때</i></figcaption>
-      <div className="scr-rc-plot">
-      <svg viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때">
+      <div className="scr-rc-plot scr-tl-plot" ref={plotRef}>
+      <div className={cx("scr-tl-scroll", SW > CW && "is-scroll")}>
+      <div className="scr-tl-canvas" style={{ width: SW }}>
+      <svg viewBox={`0 0 ${SW} ${H}`} width={SW} height={H} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때">
         {rows.map(({ l, chips, top, h }) => (
           <g key={l.key}>
-            <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
-            {(() => {
-              /* 앞머리 닉네임은 그 사람 색 칩(2026-10-21, 요청: "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거") — 끝 칩과 같은 컴팩트 네모 칩(chipBox). */
-              const name = shortName(l.name);
-              const k = GAME_FONT_K;
-              const CB = chipBox();
-              const nw = chipWOf(name) * k;
-              return (
-                <g className="scr-tl-name">
-                  <rect x={PL - 6 * k - nw} y={top + h / 2 - (CB.h * k) / 2} width={nw} height={CB.h * k} rx={CB.r * k} style={{ fill: l.color }} />
-                  <text x={PL - 6 * k - nw / 2} y={top + h / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: CB.fs * k, fill: inkOn(l.color) }}>{name}</text>
-                </g>
-              );
-            })()}
-            {chips.map(({ t, x: cx, label, w, slot }) => {
+            <line className="scr-rc-grid" x1={PL} x2={SW - padR} y1={top + h} y2={top + h} />
+            {chips.map(({ t, x: cx0, label, w, slot }) => {
               const mid = top + h / 2;
-              const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - TL_TIER : mid + TL_TIER;
+              const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - D.tier : mid + D.tier;
               /* 얹은 테크와 같은 종류(모든 사람)는 강조색 칩으로(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로 강조해줘") —
                  보이지 않던 마우스 상자를 강조색으로 칠한다 · 글자색은 그대로(요청: "폰트색은 그대로"). */
               const hl = hover !== null && hover.tech.t === t.t;
+              const show = (): void => setHover({ tech: t, x0: cx0, x1: cx0 + w, cy: y });
               return (
                 <g
                   key={t.t} className="scr-tl-hit"
-                  onPointerEnter={() => setHover({ tech: t, x0: cx, x1: cx + w, cy: y })}
-                  onPointerLeave={() => setHover(null)}
+                  onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
+                  onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
+                  onClick={(e) => { if ((e.nativeEvent as PointerEvent).pointerType !== "mouse") { if (hover?.tech === t) setHover(null); else show(); } }}
                 >
-                  <rect className={`scr-tl-chip${hl ? " is-hl" : ""}`} x={cx} y={y} width={w} height={CH} rx={RX} />
+                  <rect className={`scr-tl-chip${hl ? " is-hl" : ""}`} x={cx0} y={y} width={w} height={CH} rx={RX} />
                   <text
-                    className="scr-tl-label" x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central"
+                    className="scr-tl-label" x={cx0 + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central"
                     style={{ fontSize: FS }}
                   >{label}</text>
                 </g>
@@ -146,18 +158,35 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
           </g>
         ))}
         {ticksX.map((m) => (
-          <text key={m} className="scr-rc-axis" x={x(m * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: TL_AXIS_FS }}>{m}분</text>
+          <text key={m} className="scr-rc-axis" x={x(m * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: D.axisFs }}>{m}분</text>
         ))}
       </svg>
       {hover && (
         <div
-          className={`scr-rc-tip${hover.x1 / CW > 0.8 ? " is-left" : ""}`} role="status"
-          style={{ left: `${((hover.x1 / CW > 0.8 ? hover.x0 : hover.x1) / CW) * 100}%`, top: `${(hover.cy / H) * 100}%`, minWidth: 0 }}
+          className={`scr-rc-tip${hover.x1 / SW > 0.8 ? " is-left" : ""}`} role="status"
+          style={{ left: hover.x1 / SW > 0.8 ? hover.x0 : hover.x1, top: hover.cy, minWidth: 0 }}
         >
           {/* 팝업은 완공 시각 한 줄만(2026-10-21, 요청: "완공: 15:03 이런 식으로 간단히 표시하고 아무것도 넣지 말기"). */}
           <div className="scr-rc-tip-row">완공: {clock(hover.tech.e)}</div>
         </div>
       )}
+      </div>
+      </div>
+      {/* 앞머리 닉네임은 그 사람 색 칩(2026-10-21, 요청: "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거") — 끝 칩과 같은 컴팩트 네모 칩(chipBox).
+          판 위에 따로 얹어 가로로 밀어도 제자리(폰). 밀 때는 바탕을 깔아 밀린 테크가 비치지 않게. */}
+      <svg className="scr-tl-names" width={PL} height={H} viewBox={`0 0 ${PL} ${H}`} aria-hidden>
+        {SW > CW && <rect className="scr-tl-names-bg" x={0} y={0} width={PL - 2} height={H - D.axis} />}
+        {rows.map(({ l, top, h }) => {
+          const name = shortName(l.name);
+          const nw = chipWOf(name) * k;
+          return (
+            <g key={l.key} className="scr-tl-name">
+              <rect x={PL - 6 * k - nw} y={top + h / 2 - (cb.h * k) / 2} width={nw} height={cb.h * k} rx={cb.r * k} style={{ fill: l.color }} />
+              <text x={PL - 6 * k - nw / 2} y={top + h / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: cb.fs * k, fill: inkOn(l.color) }}>{name}</text>
+            </g>
+          );
+        })}
+      </svg>
       </div>
     </figure>
   );
@@ -176,6 +205,9 @@ function niceTicks(v: number, n = 5): number[] {
 export default function GameCurvesModal({ game, onClose }: { game: GameResult; onClose: () => void }) {
   useLockBodyScroll();
   const memberOf = useAppStore((s) => s.memberOf);
+  /* 폰(2026-10-21, 요청: "모바일에서도 볼 수 있게") — 화면 가득 · 글자는 통계 폰 눈금 크기(배수 1) · 테크 판은 넓게 그려 가로로 민다. */
+  const mobile = useIsMobile();
+  const fontK = mobile ? 1 : GAME_FONT_K;
   const [players, setPlayers] = useState<GameCurve[] | null>(null);
   /* 세 판(테크 · 일꾼 · 병력)은 같은 높이(2026-10-21 요청) — 판 폭은 잰 그대로, 높이는 창 안에 셋이 들어가게((화면 높이 − 머리·범례·제목) ÷ 3 · 최소 180).
      잰 크기 그대로(1:1) 그려 글자·선이 늘거나 줄지 않는다. */
@@ -184,8 +216,9 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   useLayoutEffect(() => {
     const el = boxRef.current;
     if (!el) return undefined;
-    /* 테크 줄 한 칸은 TL_ROW_MIN 아래로 안 줄인다 — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
-    const lanesMin = (players ?? []).length * TL_ROW_MIN + TL_AXIS + 4;
+    /* 테크 줄 한 칸은 rowMin 아래로 안 줄인다 — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
+    const D = tlDims(fontK);
+    const lanesMin = (players ?? []).length * D.rowMin + D.axis + 4;
     const measure = (): void => setBox({
       w: Math.floor(el.clientWidth),
       h: Math.max(216, lanesMin, Math.floor((window.innerHeight - 330) / 3)),
@@ -195,7 +228,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
     ro.observe(el);
     window.addEventListener("resize", measure);
     return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
-  }, [players]);
+  }, [players, fontK]);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<ColorMode>("player");
   const [off, setOff] = useState<ReadonlySet<string>>(() => new Set());
@@ -225,9 +258,9 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   }, [players]);
   const linesOf = (key: "wk" | "av"): ChartLine[] => (players ?? []).flatMap((p, i) => (p[key].length < 2
     ? [] : [{ key: p.playerName, label: shortName(nameOf(p)), color: colorOf(p, i), ys: p[key], off: off.has(p.playerName) }]));
-  const padR = chipGutter((players ?? []).map((p) => shortName(nameOf(p))), GAME_FONT_K);
+  const padR = chipGutter((players ?? []).map((p) => shortName(nameOf(p))), fontK);
   /* 왼쪽 여백 = 가장 긴 닉네임 칩 + 여백 — 두 판도 같은 여백이라 가로 자가 같다. */
-  const PL = 12 * GAME_FONT_K + GAME_FONT_K * Math.max(0, ...(players ?? []).map((p) => chipWOf(shortName(nameOf(p)))));
+  const PL = 12 * fontK + fontK * Math.max(0, ...(players ?? []).map((p) => chipWOf(shortName(nameOf(p)))));
   const toggle = (k: string): void => setOff((prev) => {
     const next = new Set(prev);
     if (next.has(k)) next.delete(k); else next.add(k);
@@ -262,11 +295,11 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
               {box.w > 0 && (
                 <>
                   <TechLanes
-                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR}
+                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR} k={fontK} scrollW={mobile ? Math.max(box.w, 680) : box.w}
                     lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
                   />
-                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={GAME_FONT_K} />
-                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={GAME_FONT_K} />
+                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={fontK} />
+                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={fontK} />
                 </>
               )}
             </div>

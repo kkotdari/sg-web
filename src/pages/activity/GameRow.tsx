@@ -1,11 +1,13 @@
-import { type ReactNode } from "react";
-import { Play } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ChartLine, Play } from "lucide-react";
 import { cachedReplayMap } from "scplay";
 import { isMeleeGame, resolveSlotName } from "./GameResultSides";
 import { cleanMapName } from "../../utils/mapName";
 import { cx } from "../../utils/format";
 import { useLongPress } from "../../hooks/useLongPress";
 import { isSecretGame } from "../../utils/gameAccess";
+import { api } from "../../api/client";
+import GameCurvesModal from "../../modals/GameCurvesModal";
 import type { GameResult, GameResultSlot, Member } from "../../types";
 
 /** 이름 줄(PC) — 넘치면 **말줄임으로 자른다**(2026-10, 요청: "글자 좌우 압축 제거 · 글자가 잘리면 할수없이 자르기").
@@ -18,8 +20,26 @@ export function FlatLine({ children }: { children: ReactNode }) {
   );
 }
 
+/** 데이터 단추(폰 게임 줄 윗줄 오른끝 · 2026-10-21, 요청: "모바일에서 재생버튼 살짝 왼쪽으로 밀고 그자리에 데이터 아이콘") — 누르면 데이터 모달(GameCurvesModal).
+ *  모달은 포털이지만 React 이벤트는 이 줄로 거슬러 올라온다 — 줄의 누름(열기·길게 눌러 고르기)이 안 타게 감싸 막는다. */
+export function GameDataButton({ game }: { game: GameResult }) {
+  const [open, setOpen] = useState(false);
+  const stop = (e: { stopPropagation: () => void }): void => e.stopPropagation();
+  return (
+    <span className="scr-activity-row-data-wrap" onPointerDown={stop} onPointerUp={stop} onClick={stop} onKeyDown={stop} onContextMenu={stop}>
+      <button
+        type="button" className="scr-icon-btn scr-activity-row-data" title="데이터 그래프" aria-label="데이터 그래프"
+        onClick={() => { setOpen(true); void api.pingGameAction("graph", game); }}
+      >
+        <ChartLine size={15} />
+      </button>
+      {open && <GameCurvesModal game={game} onClose={() => setOpen(false)} />}
+    </span>
+  );
+}
+
 /** playable — 폰 게임 줄은 재생 배지를 맵 배지 **바로 옆**(윗줄)에 단다(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") · PC 는 숨고 이름 줄 끝 그대로(global.css). */
-export function GameRowStatus({ game, playable }: { game: GameResult; playable?: boolean }) {
+export function GameRowStatus({ game, playable, data }: { game: GameResult; playable?: boolean; data?: boolean }) {
   if (isSecretGame(game)) {
     return (
       <span className="scr-activity-row-status scr-activity-row-status-dur scr-activity-row-status-secret" title="숨긴 경기">
@@ -32,13 +52,21 @@ export function GameRowStatus({ game, playable }: { game: GameResult; playable?:
     ?? cachedReplayMap(game.mapHash)?.canonName
     ?? game.mapName);
   const map = full.length > 5 ? full.slice(0, 5) : full;
-  if (sec == null && !map) return null;
+  const tail = playable || (data && !game.ums);
+  if (sec == null && !map && !tail) return null;
   return (<>
-    <span className="scr-activity-row-status scr-activity-row-status-dur" title={full || undefined}>
-      {map !== "" && <span>{map}</span>}
-      {sec != null && <span>{Math.round(sec / 60)}분</span>}
-    </span>
-    {playable && <Play size={12} className="scr-activity-row-play scr-activity-row-play-top" aria-hidden fill="currentColor" />}
+    {(sec != null || map !== "") && (
+      <span className="scr-activity-row-status scr-activity-row-status-dur" title={full || undefined}>
+        {map !== "" && <span>{map}</span>}
+        {sec != null && <span>{Math.round(sec / 60)}분</span>}
+      </span>
+    )}
+    {tail && (
+      <span className="scr-activity-row-play-top">
+        {playable && <Play size={12} className="scr-activity-row-play" aria-hidden fill="currentColor" />}
+        {data && !game.ums && <GameDataButton game={game} />}
+      </span>
+    )}
   </>);
 }
 
