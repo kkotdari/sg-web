@@ -7500,6 +7500,7 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-extshare-title { flex: 1 1 auto; text-align: center; }
 /* 손님 탭바의 로그인 창(2026-10-21, 요청: "아주 단순한 팝업 로그인창") — 폰에서도 화면 가득이 아니라 작은 창. */
 .scr-login-popup { width: min(320px, calc(100vw - 32px)); }
+.scr-login-popup > .scr-modal-body { padding-bottom: 18px; }   /* 창은 아래 패딩이 0(보통 꼬리 단추 줄이 채운다) — 로그인 단추 아래 숨(지적: "로그인 팝업 아래 여백이 없는데?") */
 /* 외부 공개 관리 + → 게임 담기 창(2026-10-12) — 게임 목록 줄 그대로 · 이미 담긴 줄은 흐리게 '담김'. */
 .scr-modal.scr-extshare-add { height: min(78vh, 720px); }
 .scr-extshare-add > .scr-redo-pick-body { flex: 1 1 auto; }
