@@ -1152,6 +1152,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-clan-dash-sub { font-size: var(--fs-micro, 12px); color: var(--text-dim); }
 /* 명수 줄은 정렬 줄 바로 위(2026-10-20, 요청: "통계의 명수와 검색창 위치 바꾸기") — 옛 검색창 자리. */
 .scr-stats-count-row { margin: 0 0 8px; }
+/* 통계 유저 검색 = 칩 입력(ChipInput · 게임 검색폼 칸과 같은 꼴 · 2026-10-21) — 옛 검색창(.scr-filter-inline-stack)의 아래 틈 14px 그대로. */
+.scr-stats-search { margin: 0 0 14px; }
+.scr-stats-search > .scr-gs-chips { min-height: 38px; padding: 3px 8px; }
 /* 곁글은 **명수만**(2026-10, 요청: "20명 전체 기간 → 명수만") — 기간은 위 달력 단추가 이미 말한다. 그 옆의 "전부 펼치기"는
    클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다. 글자 단추지만 머리글 자에 맞춰 한 치 작고 여백도 좁다. */
 .scr-clan-dash-expand {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronsDownUp, ChevronsUpDown, Users } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
-import SearchFilterBar from "../../components/common/SearchFilterBar";
+import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
@@ -10,8 +10,7 @@ import StatGrid, { CompGrid } from "../stats/StatGrid";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
-import { activeMemberSearchTerms, memberMatchesTerm, normalizeSearchText } from "../../utils/memberSearch";
-import { buildLexicon, segmentChunk, splitChunks } from "../../utils/gameSearch";
+import { memberMatchesTerm, normalizeSearchText } from "../../utils/memberSearch";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { cx } from "../../utils/format";
 import type { ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
@@ -65,30 +64,35 @@ function CompRecords({ rows, format }: { rows: ClanCompEntry[]; format: string }
   return <CompGrid rows={rows.filter((c) => c.format === format)} />;
 }
 
+/** 주소 u= → 칩. 칩 배열(JSON)이 아니면 옛 한 줄 검색어 — 띄어쓰기·쉼표로 끊는다. */
+function chipsOfUrl(raw: string): string[] {
+  if (raw.startsWith("[")) {
+    try {
+      const v: unknown = JSON.parse(raw);
+      if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string" && x.trim() !== "");
+    } catch { /* 옛 글로 읽는다 */ }
+  }
+  return raw.split(/[\s,]+/).filter(Boolean);
+}
+
 export default function ClanStatsScreen() {
   const members = useAppStore((s) => s.members);
   const isMobile = useIsMobile();
-  const suggestions = useMemo(() => activeMemberSearchTerms(members), [members]);
-
-  const [searchApplied, setSearchApplied] = useUrlState("u");
-  const [search, setSearch] = useState(() => searchApplied);
-  useEffect(() => { setSearch(searchApplied); }, [searchApplied]);
-  const lexicon = useMemo(
-    () => buildLexicon(suggestions.flatMap((s) => s.matchTexts), []),
-    [suggestions],
-  );
+  /* 유저 검색 = 칩 입력(2026-10-21, 요청: "통계 검색창 칩형태로 변경(게임목록처럼)") — 칩을 담거나 빼는 순간 걸린다 · 주소 u= 는 칩 배열(JSON).
+     옛 한 줄 검색어(띄어쓰기로 이은 글)로 들어오면 낱말마다 칩 하나로 읽는다. */
+  const [userRaw, setUserRaw] = useUrlState("u");
+  const users = useMemo(() => chipsOfUrl(userRaw), [userRaw]);
+  const setUsers = (next: string[]): void => setUserRaw(next.length ? JSON.stringify(next) : "");
+  const activeMembers = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended"), [members]);
+  const userOpts = useMemo<ChipOpt[]>(() => activeMembers.map((m) => ({ value: m.nickname, member: m })), [activeMembers]);
   const [teamBuilder, setTeamBuilder] = useState(false);
   /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
   const [expandAll, setExpandAll] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("rate");
   const matchedMembers = useMemo(() => {
-    const terms = splitChunks(searchApplied)
-      .flatMap((c) => segmentChunk(c, lexicon).map((p) => normalizeSearchText(p.text).trim()))
-      .filter(Boolean);
-    return members.filter((m) =>
-      m.status !== "withdrawn" && m.status !== "suspended"
-      && (terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t))));
-  }, [members, searchApplied, lexicon]);
+    const terms = users.map((u) => normalizeSearchText(u).trim()).filter(Boolean);
+    return activeMembers.filter((m) => terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t)));
+  }, [activeMembers, users]);
 
   const [period, setPeriod] = useUrlState("period", currentMonthValue());
   const [sizeRaw, setSize] = useUrlState("size", "team");
@@ -291,17 +295,9 @@ export default function ClanStatsScreen() {
 
       {/* 검색창과 명수 자리 바꿈(2026-10-20, 요청: "통계의 명수와 검색창 위치 바꾸기") — 검색창이 맵 탭 바로 아래(옛 명수 자리) · 명수와 "전부 펼치기"는
           정렬 줄 바로 위(옛 검색창 자리)로. 종족구성별 전적은 그대로 검색창 아래다. */}
-      <SearchFilterBar
-        count={cards.length}
-        countLabel="명"
-        showCount={false}
-        searchValue={search}
-        onSearchChange={setSearch}
-        onSearchEnter={(v) => setSearchApplied(v)}
-        searchPlaceholder="조회할 유저들을 선택 후 엔터"
-        suggestions={suggestions}
-        lexicon={lexicon}
-      />
+      <div className="scr-stats-search">
+        <ChipInput values={users} onChange={setUsers} options={userOpts} placeholder="조회할 유저 닉네임" />
+      </div>
       {/* 종족구성별 전적은 한 규모(4:4 · 3:3 · 2:2)를 골랐을 때만(2026-10-20, 요청: "팀전 전체에서 종족구성별 전적 숨기기") — 1:1 엔 구성이 없다.
           클랜원 전체는 아래 표(StatGrid)의 맨 윗줄로 옮겼다(2026-10-20). */}
       {view?.clan && size !== "1" && size !== "team" && (
