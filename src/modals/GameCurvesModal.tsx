@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
-import { CHART_PAD, Chart, chipBox, chipGutter, chipWOf, fitText, GRAPH_FS, inkOn, textW, useScrub, useSharedCross, type ChartLine } from "../pages/stats/RaceCurves";
+import { CHART_PAD, Chart, chipBox, chipGutter, chipWOf, fitText, GRAPH_FS, inkOn, textW, TitleSwitch, useScrub, useSharedCross, type ChartLine } from "../pages/stats/RaceCurves";
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
@@ -16,7 +16,7 @@ import type { GameCurve, GameResult } from "../types";
 /* ★ 게임 그래프(2026-10-21, 요청: "게임 목록에서 PC에 그래프 보기 버튼 · 참가자 전원의 일꾼 및 병력 가치 그래프(한 그래프에 합쳐서) · 색은 임자색 ·
    범례에 색깔과 종족 닉네임 · 통계랑 똑같이 선택 · 팀컬러 모드로 변경도" → "두 그래프를 세로로 · PC 는 모달 폭 넓게" → "게임목록 폭 거의 다 ·
    그래프를 최대한 크게 · 각 플레이어 테크 건물 건설 시간을 그래프 위에 · 범례도 위로 · 폰에서는 제공되지 않는 기능").
-   차례: [보기 셋(팀전만)] → 테크 줄(사람마다 세 단 · 다 지은 때) → 병력 → 일꾼 수. 셋 다 같은 가로 자(잰 폭 · 끝 칩 여백 chipGutter) · 같은 높이
+   차례: [보기 셋(팀전만)] → 테크 줄(사람마다 세 단 · 다 지은 때) → 인구(병력 가치 대신 · 2026-10-21) → 일꾼 수. 셋 다 같은 가로 자(잰 폭 · 끝 칩 여백 chipGutter) · 같은 높이
    · 같은 분 눈금(niceTicks). 테크 줄 앞머리엔 그 사람 색 닉네임 칩 · 테크 음영은 무채색(요청: "칸 앞머리에 심플하게 닉네임" → "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거").
    곡선·개인색은 서버의 통계용 참값 표(GET /{id}/curves) — 판(Chart)은 통계 펼침(RaceCurves)과 같은 것 · 눈금은 판마다 그 판에 맞춘 둥근 간격(niceTicks · 가로는 그 판 길이).
    범례 대신 줄 끝 닉네임 칩(누르면 그 사람을 끄고 켠다 — 테크 줄도 같이 · 2026-10-21 요청).
@@ -24,6 +24,7 @@ import type { GameCurve, GameResult } from "../types";
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
+type CurveKey = "wk" | "sp" | "sx";
 const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
@@ -225,7 +226,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   /* 글자(px) — PC 는 통계 PC 와 같은 GRAPH_FS.pc · 폰은 GRAPH_FS.gameMobile. 테크 글자는 TL. */
   const font = mobile ? GRAPH_FS.gameMobile : GRAPH_FS.pc;
   const [players, setPlayers] = useState<GameCurve[] | null>(null);
-  /* 두 곡선 판(병력 · 일꾼)은 같은 높이 — 판 폭은 잰 그대로, 높이는 (화면 높이 − 머리·제목) ÷ 3 · 최소 216. 테크 판은 사람 수에 비례(TL.row).
+  /* 두 곡선 판(인구 · 일꾼)은 같은 높이 — 판 폭은 잰 그대로, 높이는 (화면 높이 − 머리·제목) ÷ 3 · 최소 216. 테크 판은 사람 수에 비례(TL.row).
      잰 크기 그대로(1:1) 그려 글자·선이 늘거나 줄지 않는다. */
   const boxRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
@@ -247,6 +248,9 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   /* 보기(팀전만 · 2026-10-21, 요청: "팀 보기 토글 — 켜면 팀색 · 두 그래프는 팀 합산" → "유저별(개인색) / 유저별(팀색) / 팀별 합산 세 개로") —
      팀별 합산이면 두 곡선 판은 팀마다 한 줄이고, 테크 줄은 사람마다 그대로(색만 팀색) · 칩을 누르면 그 사람의 팀을 고른다. */
   const [view, setView] = useState<ViewMode>("player");
+  /* 인구 그래프의 '일꾼 제외'(2026-10-21, 요청: "인구 그래프 타이틀 옆에 일꾼 제외 라벨드 토글") — 켜면 일꾼 뺀 인구(sx). */
+  const [noWorker, setNoWorker] = useState(false);
+  const spKey: CurveKey = noWorker ? "sx" : "sp";
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   /* 세 판이 한 세로선(분)을 같이 쓴다(요청: "세로선을 모든 테크 & 그래프 간 동기화"). */
@@ -275,24 +279,25 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
     ? TEAM_COLOR[teamNo(p.team)]
     : personalOk && p.color ? p.color : BW_PALETTE[i % BW_PALETTE.length]);
   const nameOf = (p: GameCurve): string => memberOf(p.memberId)?.nickname ?? p.playerName;
-  /* 눈금은 이 판에 맞춘다(2026-10-21, 요청: "게임마다 적절한 눈금") — 통계의 고정 자(일꾼 100 · 병력 20K · 0/반/끝)가 아니라
+  /* 눈금은 이 판에 맞춘다(2026-10-21, 요청: "게임마다 적절한 눈금") — 통계의 고정 자(일꾼 100 · 인구 100 · 0/반/끝)가 아니라
      이 판 최댓값을 덮는 둥근 간격 눈금(세로 ≤5칸 · 가로 분 ≤7칸). */
   /* 그릴 줄 — 팀 보기면 팀마다 분별 합(그 팀에서 아직 선이 있는 사람만 더한다 · 길이는 그 팀에서 가장 긴 사람). */
-  const series = useMemo((): { key: string; p: GameCurve | null; team: 1 | 2; wk: number[]; av: number[] }[] => {
+  const series = useMemo((): { key: string; p: GameCurve | null; team: 1 | 2; wk: number[]; sp: number[]; sx: number[] }[] => {
     const ps = players ?? [];
-    if (!teamOn) return ps.map((p) => ({ key: p.playerName, p, team: teamNo(p.team), wk: p.wk, av: p.av }));
-    const sum = (ms: GameCurve[], k: "wk" | "av"): number[] =>
+    if (!teamOn) return ps.map((p) => ({ key: p.playerName, p, team: teamNo(p.team), wk: p.wk, sp: p.sp, sx: p.sx }));
+    const sum = (ms: GameCurve[], k: CurveKey): number[] =>
       Array.from({ length: Math.max(0, ...ms.map((p) => p[k].length)) }, (_, m) => ms.reduce((a, p) => a + (p[k][m] ?? 0), 0));
     return ([1, 2] as const).map((t) => {
       const ms = ps.filter((p) => teamNo(p.team) === t);
-      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), av: sum(ms, "av") };
+      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx") };
     });
   }, [players, teamOn]);
   const sc = useMemo(() => {
-    const x = Math.max(1, ...series.map((s) => Math.max(s.wk.length, s.av.length) - 1));
-    return { x, xt: niceTicks(x, 7), wk: niceTicks(Math.max(0, ...series.flatMap((s) => s.wk))), av: niceTicks(Math.max(0, ...series.flatMap((s) => s.av))) };
+    const x = Math.max(1, ...series.map((s) => Math.max(s.wk.length, s.sp.length) - 1));
+    const ticks = (k: CurveKey): number[] => niceTicks(Math.max(0, ...series.flatMap((s) => s[k])));
+    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx") };
   }, [series]);
-  const linesOf = (key: "wk" | "av"): ChartLine[] => series.flatMap((s, i) => (s[key].length < 2 ? [] : [s.p
+  const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s, i) => (s[key].length < 2 ? [] : [s.p
     ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p, i), ys: s[key] }
     : { key: s.key, label: `${s.team}팀`, color: TEAM_COLOR[s.team], ys: s[key] }]));
   /* 좌우 여백 — PC 는 닉네임 칩·끝 칩이 다 들어가게. 폰은 좁게(2026-10-21, 요청: "모바일 그래프 왼쪽 패딩 줄이고 테크트리의 닉네임칩 자리 모자라면
@@ -334,7 +339,9 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                     maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
                     lanes={players.map((p, i) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
                   />
-                  <Chart title="병력" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
+                  <Chart
+                    title="인구" titleExtra={<TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} />}
+                    lines={linesOf(spKey)} maxX={sc.x} maxY={sc[spKey][sc[spKey].length - 1]} ticksX={sc.xt} ticksY={sc[spKey]} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
                   <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
                 </>
               )}

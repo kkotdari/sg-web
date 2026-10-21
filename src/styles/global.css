@@ -8091,6 +8091,11 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* 제목 · 값 상자 글자는 눈금(PC 화면 약 14.9px)에 맞춰 키운다(2026-10-21, 요청: "테크트리와 기타 제목등도 맞춰서 키우기") — 폰 통계는 판이 좁아 눈금이 약 11.4px 라 그만큼. */
 .scr-rc-title { margin-bottom: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
 .scr-rc-title > i { font-style: normal; font-weight: 600; color: var(--dim); }
+/* 제목 옆 라벨 달린 작은 스위치(인구 그래프의 '일꾼 제외' · 2026-10-21) — 관리자 화면 스위치(.scr-notice-switch)를 작게. */
+.scr-rc-switch { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; padding: 0; border: 0; background: none; cursor: pointer; vertical-align: middle; font-size: 12px; font-weight: 600; color: var(--dim); }
+.scr-rc-switch > .scr-notice-switch { display: block; width: 32px; height: 18px; }
+.scr-rc-switch .scr-notice-switch-knob { top: 1px; left: 1px; width: 14px; height: 14px; }
+.scr-rc-switch .scr-notice-switch-on .scr-notice-switch-knob { transform: translateX(14px); }
 /* PC 통계 펼침의 제목만 20% 작게(2026-10-21, 요청: "통계 그래프에서만 타이틀도 20프로 축소" 15 → 12) — 폰 통계(.scr-sg.is-m)는 제 규칙 · 게임 그래프는 그대로. */
 .scr-rc .scr-rc-title { font-size: 12px; }
 .scr-rc-plot { position: relative; }

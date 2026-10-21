@@ -79,7 +79,9 @@ export interface GameCurve {
   race: Race | "";
   color: string | null;
   wk: number[];
-  av: number[];
+  /** 분마다 인구 · 일꾼 뺀 인구(2026-10-21 · 병력 가치 대신). */
+  sp: number[];
+  sx: number[];
   /** 테크 건물 종류별 첫 한 채 — t 유닛 종류 · s 짓기 시작 초 · e 다 지은 초. */
   techs: { t: number; s: number; e: number }[];
 }
@@ -262,11 +264,11 @@ export interface MemberStats {
   dmgTakenRel?: number | null;
   dmgRelPlays?: number | null;
   /** 통계용 참값의 분당 평균 곡선(서버 game_result_participant_curves · 2026-10-20) — 0분부터 1분 간격.
-   *  wk 일꾼 수 · av 병력 가치(미네랄+가스) · n 그 분까지 간 판 수. 곡선 있는 판이 없으면 null. */
+   *  wk 일꾼 수 · sp 인구 · sx 일꾼 뺀 인구 · n 그 분까지 간 판 수. 곡선 있는 판이 없으면 null. */
   curve?: StatCurve | null;
 }
 
-export interface StatCurve { wk: number[]; av: number[]; n: number[] }
+export interface StatCurve { wk: number[]; sp: number[]; sx: number[]; n: number[] }
 
 export interface MemberStatsEntry {
   memberId: string;

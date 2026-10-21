@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { BaseRace, MemberStats, StatCurve } from "../../types";
 
 /* ★ 통계 펼침 = 분당 곡선 두 판(2026-10-20, 요청: "펼친 부분 내용 변경 · 시간별 … 연속 선 그래프로 세 종족을 색을 나눠서 같은 그래프에
-   겹쳐서" → "일꾼 수랑 병력 가치로"). 서버의 통계용 참값(game_result_participant_curves → curve {wk, av, n})을 종족마다 한 줄로 겹친다.
-   두 값은 자가 달라(명 · 미네랄+가스) 한 축에 안 싣고 판을 둘로 나눈다. 판 수가 처음의 20% 밑으로 줄어든 꼬리 분은 자른다(한두 판이
+   겹쳐서" → "일꾼 수랑 병력 가치로" → "병력 그래프를 인구 그래프로"). 서버의 통계용 참값(curve {wk, sp, sx, n})을 종족마다 한 줄로 겹친다.
+   두 값은 자가 달라 한 축에 안 싣고 판을 둘로 나눈다. 판 수가 처음의 20% 밑으로 줄어든 꼬리 분은 자른다(한두 판이
    곡선을 흔들지 않게). 선 색은 그래프 전용(--race-chart-*) — 앱의 종족색은 밝은 바탕에서 노랑이 1.47:1 이라 선으로 못 읽혀 검사기
    (dataviz validate_palette)를 통과한 한 단 진한 짝을 쓴다. 손가락·마우스가 닿은 분에 세로 선과 세 종족 값을 띄운다. */
 
@@ -21,38 +21,35 @@ type Line = { race: BaseRace; ys: number[] };
 export type ChartLine = { key: string; label: string; color: string; ys: number[] };
 type ByRace = Partial<Record<BaseRace, MemberStats>> | undefined;
 
-/** 모든 줄이 함께 쓰는 자(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이" → 병력 "20K") — 세로는 일꾼 0~100 ·
- *  병력 0~20K 가 기본이고 넘는 줄이 있으면 그 단(100 · 5K)으로 올려 **모두** 같이 늘린다. 가로는 보이는 줄 중 가장 긴 분. */
-export interface CurveScale { x: number; wk: number; av: number }
+/** 모든 줄이 함께 쓰는 자(2026-10-20, 요청: "일꾼 수 100 · … 세로 눈금 똑같이 · 가로도 똑같이") — 세로는 일꾼 0~100 · 인구 0~100 이 기본이고
+ *  넘는 줄이 있으면 그 단(일꾼 100 · 인구 50)으로 올려 **모두** 같이 늘린다. 인구(sp)와 일꾼 뺀 인구(sx)는 제 자를 따로 잰다. 가로는 보이는 줄 중 가장 긴 분. */
+export interface CurveScale { x: number; wk: number; sp: number; sx: number }
+type CurveKey = "wk" | "sp" | "sx";
 const WK_STEP = 100;
-const AV_STEP = 5000;
-const AV_MIN = 20000; // 병력 가치 세로 자 기본 0~20K(2026-10-20, 요청: "5K" → "20K")
+const SP_STEP = 50;
+const SP_MIN = 100;
 
-/** 줄 값들로 자를 정한다(위 규칙 그대로 · 게임 그래프도 같은 자). */
-export function scaleOf(wkLines: number[][], avLines: number[][]): CurveScale {
-  let x = 1, wk = 0, av = 0;
-  for (const ys of wkLines) { x = Math.max(x, ys.length - 1); wk = Math.max(wk, ...ys); }
-  for (const ys of avLines) { x = Math.max(x, ys.length - 1); av = Math.max(av, ...ys); }
-  return {
-    x,
-    wk: Math.max(WK_STEP, Math.ceil(wk / WK_STEP) * WK_STEP),
-    av: Math.max(AV_MIN, Math.ceil(av / AV_STEP) * AV_STEP),
+export function curveScale(all: ByRace[]): CurveScale {
+  let x = 1;
+  const top = (key: CurveKey): number => {
+    let m = 0;
+    for (const b of all) for (const l of linesOf(b, key)) { x = Math.max(x, l.ys.length - 1); m = Math.max(m, ...l.ys); }
+    return m;
   };
+  const wk = top("wk"), sp = top("sp"), sx = top("sx");
+  const up = (v: number, step: number, min: number): number => Math.max(min, Math.ceil(v / step) * step);
+  return { x, wk: up(wk, WK_STEP, WK_STEP), sp: up(sp, SP_STEP, SP_MIN), sx: up(sx, SP_STEP, SP_MIN) };
 }
 
-const linesOf = (byRace: ByRace, key: "wk" | "av"): Line[] => RACES.flatMap((race) => {
+const linesOf = (byRace: ByRace, key: CurveKey): Line[] => RACES.flatMap((race) => {
   const c = byRace?.[race]?.curve;
   if (!c || c.n.length === 0) return [];
   const ys = trimmed(c, key);
   return ys.length >= 2 ? [{ race, ys }] : [];
 });
 
-export function curveScale(all: ByRace[]): CurveScale {
-  return scaleOf(all.flatMap((b) => linesOf(b, "wk").map((l) => l.ys)), all.flatMap((b) => linesOf(b, "av").map((l) => l.ys)));
-}
-
 /** 판 수가 첫 분의 20%(최소 1판) 밑으로 떨어지기 전까지만. */
-function trimmed(c: StatCurve, key: "wk" | "av"): number[] {
+function trimmed(c: StatCurve, key: CurveKey): number[] {
   const floor = Math.max(1, Math.ceil((c.n[0] ?? 0) * 0.2));
   const out: number[] = [];
   for (let i = 0; i < c[key].length; i += 1) {
@@ -231,8 +228,25 @@ function useStatsCross(): [number | null, (m: number | null) => void] {
   return [useSyncExternalStore(subStatsCross, () => statsCross.at), setStatsCross];
 }
 
-export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fs: FS, axisFs: AFS, padB: PB = PAD.b, padR: padROverride, at: atRaw, onAt }: {
+/** 라벨 달린 작은 토글 스위치 — 판 제목 옆(인구 그래프의 '일꾼 제외' · 2026-10-21). */
+export function TitleSwitch({ label, on, onChange }: { label: string; on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} className="scr-rc-switch" onClick={() => onChange(!on)}>
+      {label}
+      <span className={on ? "scr-notice-switch scr-notice-switch-on" : "scr-notice-switch"} aria-hidden><span className="scr-notice-switch-knob" /></span>
+    </button>
+  );
+}
+
+/* 통계의 '일꾼 제외'는 모든 펼침이 하나를 같이 쓴다(2026-10-21, 요청: "통계에서는 적용 시 모든 그래프에 동일하게"). */
+const statsNoWorker = { on: false, subs: new Set<() => void>() };
+const setStatsNoWorker = (v: boolean): void => { statsNoWorker.on = v; statsNoWorker.subs.forEach((f) => f()); };
+const subStatsNoWorker = (f: () => void): (() => void) => { statsNoWorker.subs.add(f); return () => { statsNoWorker.subs.delete(f); }; };
+
+export function Chart({ title, titleExtra, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fs: FS, axisFs: AFS, padB: PB = PAD.b, padR: padROverride, at: atRaw, onAt }: {
   title: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
+  /** 제목 줄 오른쪽에 붙는 것(토글 따위). */
+  titleExtra?: ReactNode;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
   ticksX?: number[]; ticksY?: number[];
   /** 판 폭(px) — 없으면 제 칸 폭을 재어 그대로(1:1) 그린다(통계). 게임 그래프는 잰 폭을 건넨다. */
@@ -334,7 +348,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   const dim = (key: string): string => (focus && focus !== key ? " is-dim" : "");
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">{title}{note && <i> · {note}</i>}</figcaption>
+      <figcaption className="scr-rc-title">{title}{note && <i> · {note}</i>}{titleExtra}</figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
         <svg
           ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="scr-rc-svg" role="img"
@@ -400,10 +414,12 @@ export default function RaceCurves({ byRace, scale, font }: { byRace?: Partial<R
   /* 줄 끝 칩을 누르면 그 종족 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신). 두 판이 한 상태를 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   const [at, setAt] = useStatsCross();
+  const noWorker = useSyncExternalStore(subStatsNoWorker, () => statsNoWorker.on);
+  const spKey = noWorker ? "sx" : "sp";
   const allWk = linesOf(byRace, "wk");
-  const allAv = linesOf(byRace, "av");
+  const allSp = linesOf(byRace, spKey);
   const sc = scale ?? curveScale([byRace]);
-  if (allWk.length === 0 && allAv.length === 0) {
+  if (allWk.length === 0 && allSp.length === 0) {
     return <div className="scr-rc-empty">표시할 데이터가 아직 없어요</div>;
   }
   const pickFocus = (k: string): void => setFocus((f) => (f === k ? null : k));
@@ -411,9 +427,12 @@ export default function RaceCurves({ byRace, scale, font }: { byRace?: Partial<R
   return (
     <div className="scr-rc">
       <div className="scr-rc-charts">
-        {/* 병력이 먼저 · 일꾼 수가 다음(2026-10-21, 요청: "일꾼과 병력가치 순서변경 · 통계에도 적용") · 제목 "병력 가치" → "병력"(요청).
-            짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
-        <Chart title="병력" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} at={at} onAt={setAt} />
+        {/* 인구가 먼저 · 일꾼 수가 다음(2026-10-21, 요청: "일꾼과 병력가치 순서변경" → "병력 그래프를 인구 그래프로 변경 · 인구 그래프 타이틀 옆에 일꾼 제외 라벨드 토글") —
+            셈은 sg-api series.SUPPLY(짓는 중인 몸도 센다 · 재생기 로스터 인구와 같다). */}
+        <Chart
+          title="인구" titleExtra={<TitleSwitch label="일꾼 제외" on={noWorker} onChange={setStatsNoWorker} />}
+          lines={drawn(allSp)} maxX={sc.x} maxY={sc[spKey]} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} at={at} onAt={setAt}
+        />
         <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} at={at} onAt={setAt} />
       </div>
     </div>
