@@ -153,7 +153,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, focus 
               const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - D.tier : mid + D.tier;
               /* 얹은 테크와 같은 종류(모든 사람)는 강조색 칩으로(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로 강조해줘") —
                  보이지 않던 마우스 상자를 강조색으로 칠한다 · 글자색은 그대로(요청: "폰트색은 그대로"). */
-              const hl = hover !== null && hover.tech.t === t.t;
+              const hl = hover !== null && hover.tech.t === t.t && (!focus || focus === l.key);   /* 고른 사람이 있으면 그 줄만(요청: "테크도 다른 사람 건 하이라이트 제외") */
               const show = (): void => setHover({ tech: t });
               return (
                 <g

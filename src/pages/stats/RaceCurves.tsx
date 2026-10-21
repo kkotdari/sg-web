@@ -221,7 +221,8 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
      세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점 옆(세로선 오른편 · 오른끝 가까우면 왼편) · 겹치면 위로 민다(spreadAbove). */
   const valsRight = at !== null && x(at) < W - PR - 40 * k;
   const vals = at === null ? [] : spreadAbove(
-    lines.filter((l) => at < l.ys.length).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0 })),
+    /* 고른 사람이 있으면 그 사람 값만(2026-10-21, 요청: "선택한 경우 그 사람 값만 나오게"). */
+    lines.filter((l) => at < l.ys.length && (!focus || l.key === focus)).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0 })),
     FS + 1 * k, PAD.t + FS / 2,
   );
   const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
