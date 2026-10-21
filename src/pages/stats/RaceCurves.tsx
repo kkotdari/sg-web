@@ -138,8 +138,8 @@ function smoothPath(pts: [number, number][]): string {
   return d;
 }
 
-/** 값 글자의 세로 자리 — 저마다 제 점 **위**(pref)에 두고, 겹치면 위로 밀며(아래에서부터), 판 위끝에 닿을 때만 아래로 민다
-    (2026-10-21, 요청: "값은 선 아래보다는 위가 낫겠지 · 위에 자리가 없으면 몰라도"). */
+/** 값 글자의 세로 자리 — 저마다 제 점 **옆**(pref = 점 높이)에 두고, 겹치면 위로 밀며(아래에서부터), 판 위끝에 닿을 때만 아래로 민다
+    (2026-10-21, 요청: "값은 선 아래보다는 위가 낫겠지" → "가능하면 점 옆에 · 안 되면 위로 밀리게"). */
 function spreadAbove<T extends { pref: number; ty: number }>(items: T[], gap: number, top: number): T[] {
   const s = [...items].sort((a, b) => a.pref - b.pref);
   for (let i = s.length - 1; i >= 0; i -= 1) s[i].ty = Math.min(s[i].pref, i < s.length - 1 ? s[i + 1].ty - gap : Infinity);
@@ -218,10 +218,10 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
     }
   }
   /* 세로선 자리의 값 — 사람(종족)마다 제 색 글자로 점 옆에(팝업 대신 · 2026-10-21, 요청: "팝업 제거, 세로선만 유지하고 가로축에 그 시각 표시 ·
-     세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점의 위쪽(세로선 오른편 · 오른끝 가까우면 왼편) · 겹치면 위로 민다(spreadAbove). */
+     세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점 옆(세로선 오른편 · 오른끝 가까우면 왼편) · 겹치면 위로 민다(spreadAbove). */
   const valsRight = at !== null && x(at) < W - PR - 40 * k;
   const vals = at === null ? [] : spreadAbove(
-    lines.filter((l) => at < l.ys.length).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]) - FS * 0.85, ty: 0 })),
+    lines.filter((l) => at < l.ys.length).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0 })),
     FS + 1 * k, PAD.t + FS / 2,
   );
   const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
@@ -287,7 +287,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
           {vals.map(({ l, y: py }) => <circle key={l.key} className="scr-rc-dot" cx={x(at ?? 0)} cy={py} r={4} style={{ fill: l.color }} />)}
           {vals.map(({ l, v, ty: vy }) => (
             <text
-              key={l.key} className="scr-rc-val" x={x(at ?? 0) + (valsRight ? 5 : -5) * k} y={vy}
+              key={l.key} className="scr-rc-val" x={x(at ?? 0) + (valsRight ? 8 : -8) * k} y={vy}
               textAnchor={valsRight ? "start" : "end"} dominantBaseline="central" style={{ fontSize: FS, fill: l.color }}
             >{compact(v)}</text>
           ))}
