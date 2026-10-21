@@ -3290,8 +3290,8 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 게임 목록 폭 안쪽의 90%(2026-10-21, 요청: "목록 폭 안짝으로" → "25프로 더 줄이기" → 글자 1.2 배와 함께 "모달폭 늘리고" 0.75 → 0.9) — 목록(--list-content-max − 좌우 여백) × 0.9 이하 · 창이 좁으면 양옆 60px · 높이는 화면 − 48 고정(넘치면 창 안에서 내린다). */
 .scr-modal-graph { max-width: calc((var(--list-content-max) - 2 * var(--main-pad-x, 20px)) * 0.9); width: calc(100vw - 120px); height: calc(100vh - 48px); display: flex; flex-direction: column; }
 .scr-modal-graph > .scr-modal-body { flex: 1 1 auto; padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
-/* 제목 앞 "데이터"는 작고 연하게(2026-10-21, 요청: "데이터 좀 작고 연하게 · 게임번호: 번호"). */
-.scr-gc-kicker { margin-right: 8px; font-style: normal; font-size: 0.8em; font-weight: 600; color: var(--dim); }
+/* 제목은 "데이터" · 그 뒤 "게임번호: 번호"는 작고 연하게(2026-10-21, 요청: "데이터 좀 작고 연하게 게임번호: 번호" → "데이터가 진하고 큰거야"). */
+.scr-gc-sub { margin-left: 8px; font-style: normal; font-size: 0.8em; font-weight: 600; color: var(--dim); }
 /* 창은 처음부터 다 큰 크기(높이 = 화면 − 48 · 2026-10-21, 요청: "최종 크기로 열린 후 데이터 로드") — 불러오는 중·빈 글은 그 가운데. */
 .scr-modal-graph .scr-gc-wait { height: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; }
 /* 판 사이를 띄워 가른다(요청: "그래프간 줄간격좀 띄워서 구분") — 판마다 위 가는 줄. */
