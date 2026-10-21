@@ -157,19 +157,24 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
     setAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (W - PL - PR)) * maxX))));
   };
   const tipLeft = at === null ? 0 : (x(at) / W) * 100;
-  /* 칩 자리 — 끝점 오른쪽 · 위에서부터 겹치면 아래로 민다(판 안에 가둔다). */
+  /* 칩 자리 — 끝점 오른쪽 · 위에서부터 겹치면 아래로 밀고, 판 바닥을 넘으면 아래에서부터 위로 되민다(판 안에 가둔다).
+     바닥에 몰린 칩들이 바닥 한 자리에 포개져 가려지던 것(2026-10-21, 지적: "칩끼리 겹쳐서 안보이는 문제")을 되밀기로 푼다. */
   const chips = (onToggle ? lines : []).filter((l) => l.ys.length > 0).map((l) => {
     const i = l.ys.length - 1;
     return { l, ex: x(i), ey: y(l.ys[i]), cx: x(i) + 8 * k, cy: y(l.ys[i]), w: chipWOf(l.label) * k };
   }).sort((a, b) => a.ey - b.ey);
-  const placed: typeof chips = [];
-  for (const c of chips) {
-    c.cy = Math.max(PAD.t + CHIP_H / 2, c.cy);
-    for (const p of placed) {
-      if (c.cx < p.cx + p.w && p.cx < c.cx + c.w && c.cy < p.cy + CHIP_H + 2 * k) c.cy = Math.max(c.cy, p.cy + CHIP_H + 2 * k);
-    }
-    c.cy = Math.min(c.cy, H - PAD.b - CHIP_H / 2);
-    placed.push(c);
+  const chipTop = PAD.t + CHIP_H / 2;
+  const chipBot = H - PAD.b - CHIP_H / 2;
+  const step = CHIP_H + 2 * k;
+  const crossX = (a: (typeof chips)[number], b: (typeof chips)[number]): boolean => a.cx < b.cx + b.w && b.cx < a.cx + a.w;
+  chips.forEach((c, i) => {
+    c.cy = Math.max(chipTop, c.ey);
+    for (const p of chips.slice(0, i)) if (crossX(c, p)) c.cy = Math.max(c.cy, p.cy + step);
+  });
+  for (let i = chips.length - 1; i >= 0; i -= 1) {
+    const c = chips[i];
+    c.cy = Math.min(c.cy, chipBot);
+    for (const q of chips.slice(i + 1)) if (crossX(c, q)) c.cy = Math.min(c.cy, q.cy - step);
   }
   return (
     <figure className="scr-rc-chart">
