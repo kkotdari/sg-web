@@ -85,8 +85,8 @@ export function inkOn(color: string): string {
 }
 
 /** 컴팩트 네모 단추(.scr-compact-rect-btn)의 치수 — 글자 12px/600 · 높이 22(글줄 12 + 위아래 4 + 테 1) · 좌우 7(6 + 테 1) · 모서리 6.
-    끝 칩은 이 치수를 화면 px 그대로 쓴다(2026-10-21, 요청: "컴팩트네모버튼이야 · 패딩같은거는"). */
-const BTN = { fs: 12, h: 22, px: 7, r: 6 };
+    끝 칩 · 게임 그래프 테크 줄의 닉네임 칩은 이 치수를 화면 px 그대로 쓴다(2026-10-21, 요청: "컴팩트네모버튼이야 · 패딩같은거는"). */
+export const BTN = { fs: 12, h: 22, px: 7, r: 6 };
 let measureCtx: CanvasRenderingContext2D | null = null;
 /** 글자 폭(px · 굵기 600 · 본문 글꼴) — 칩 폭을 글자에 딱 맞춰 좌우 여백이 같게. */
 export function textW(s: string, fs: number): number {
@@ -95,7 +95,7 @@ export function textW(s: string, fs: number): number {
   measureCtx.font = `600 ${fs}px ${getComputedStyle(document.body).fontFamily}`;
   return measureCtx.measureText(s).width;
 }
-const chipWOf = (s: string): number => textW(s, BTN.fs) + 2 * BTN.px;
+export const chipWOf = (s: string): number => textW(s, BTN.fs) + 2 * BTN.px;
 /** 끝 칩을 단 판의 오른쪽 여백(k = 화면 1px 의 판 자) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
 export const chipGutter = (labels: string[], k = 1): number => PAD.r + k * (8 + Math.max(0, ...labels.map(chipWOf)));
 

@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
-import { Chart, chipGutter, inkOn, textW, type ChartLine } from "../pages/stats/RaceCurves";
+import { BTN, Chart, chipGutter, chipWOf, inkOn, textW, type ChartLine } from "../pages/stats/RaceCurves";
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
@@ -16,7 +16,7 @@ import type { GameCurve, GameResult } from "../types";
    범례에 색깔과 종족 닉네임 · 통계랑 똑같이 선택 · 팀컬러 모드로 변경도" → "두 그래프를 세로로 · PC 는 모달 폭 넓게" → "게임목록 폭 거의 다 ·
    그래프를 최대한 크게 · 각 플레이어 테크 건물 건설 시간을 그래프 위에 · 범례도 위로 · 폰에서는 제공되지 않는 기능").
    차례: [개인색 · 팀색] → 테크 줄(사람마다 한 줄 · 다 지은 때 칩) → 일꾼 수 → 병력 가치. 셋 다 같은 가로 자(잰 폭 · 끝 칩 여백 chipGutter) · 같은 높이
-   · 같은 분 눈금(niceTicks). 테크 줄 앞머리엔 닉네임만 연하게(요청: "범례 중복할 필요 없고" → "칸 앞머리에 심플하게 닉네임") — 범례와 같은 차례 · 같은 색.
+   · 같은 분 눈금(niceTicks). 테크 줄 앞머리엔 그 사람 색 닉네임 칩 · 테크 음영은 무채색(요청: "칸 앞머리에 심플하게 닉네임" → "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거").
    곡선·개인색은 서버의 통계용 참값 표(GET /{id}/curves) — 판(Chart)은 통계 펼침(RaceCurves)과 같은 것 · 눈금은 판마다 그 판에 맞춘 둥근 간격(niceTicks · 가로는 그 판 길이).
    범례 대신 줄 끝 닉네임 칩(누르면 그 사람을 끄고 켠다 — 테크 줄도 같이 · 2026-10-21 요청).
    개인색을 못 읽은 판(옛 굽기 · 로스터 색이 한 가지뿐)은 원작 팔레트를 자리 차례로 쓴다(재생기 personalUsable 과 같은 거름). */
@@ -36,13 +36,11 @@ const TECH_LABEL: Record<number, string> = {
 const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
 
 type Lane = { key: string; name: string; color: string; techs: GameCurve["techs"] };
-/** 왼쪽 여백 — 테크 줄 앞머리의 닉네임 칸(연한 글 · 2026-10-21 요청). 두 판도 같은 여백이라 가로 자가 같다. */
-const PL = 96;
 const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` : s);
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
  *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 짓기 시작은 칩에 마우스를 얹으면 팝업에 나온다. */
-function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; maxX: number; ticksX: number[]; w: number; h: number; padR: number }) {
+function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes: Lane[]; maxX: number; ticksX: number[]; w: number; h: number; padL: number; padR: number }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ lane: Lane; tech: GameCurve["techs"][number]; label: string; x0: number; x1: number; cy: number } | null>(null);
   /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것 — 칩 크기도 거기에 맞춘다(2026-10-21, 요청: "테크쪽이 너무 비대 · 세 판 높이 통일"). */
@@ -97,7 +95,17 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
         {rows.map(({ l, chips, top, h }) => (
           <g key={l.key}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
-            <text className="scr-rc-axis" x={PL - 5} y={top + h / 2} textAnchor="end" dominantBaseline="central">{shortName(l.name)}</text>
+            {(() => {
+              /* 앞머리 닉네임은 그 사람 색 칩(2026-10-21, 요청: "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거") — 끝 칩과 같은 컴팩트 네모 단추 치수. */
+              const name = shortName(l.name);
+              const nw = chipWOf(name);
+              return (
+                <g className="scr-tl-name">
+                  <rect x={PL - 6 - nw} y={top + h / 2 - BTN.h / 2} width={nw} height={BTN.h} rx={BTN.r} style={{ fill: l.color }} />
+                  <text x={PL - 6 - nw / 2} y={top + h / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: BTN.fs, fill: inkOn(l.color) }}>{name}</text>
+                </g>
+              );
+            })()}
             {chips.map(({ t, x: cx, label, w, slot }) => {
               const mid = top + h / 2;
               const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - 1.5 : mid + 1.5;
@@ -107,8 +115,8 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
                   onPointerEnter={() => setHover({ lane: l, tech: t, label, x0: cx, x1: cx + w, cy: y })}
                   onPointerLeave={() => setHover(null)}
                 >
-                  <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} style={{ fill: l.color }} />
-                  <text className="scr-tl-label" x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: FS, fill: inkOn(l.color) }}>{label}</text>
+                  <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} />
+                  <text className="scr-tl-label" x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: FS }}>{label}</text>
                 </g>
               );
             })}
@@ -200,6 +208,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   const linesOf = (key: "wk" | "av"): ChartLine[] => (players ?? []).flatMap((p, i) => (p[key].length < 2
     ? [] : [{ key: p.playerName, label: shortName(nameOf(p)), color: colorOf(p, i), ys: p[key], off: off.has(p.playerName) }]));
   const padR = chipGutter((players ?? []).map((p) => shortName(nameOf(p))));
+  /* 왼쪽 여백 = 가장 긴 닉네임 칩 + 여백 — 두 판도 같은 여백이라 가로 자가 같다. */
+  const PL = 12 + Math.max(0, ...(players ?? []).map((p) => chipWOf(shortName(nameOf(p)))));
   const toggle = (k: string): void => setOff((prev) => {
     const next = new Set(prev);
     if (next.has(k)) next.delete(k); else next.add(k);
@@ -234,7 +244,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
               {box.w > 0 && (
                 <>
                   <TechLanes
-                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padR={padR}
+                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR}
                     lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
                   />
                   <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} onToggle={toggle} />

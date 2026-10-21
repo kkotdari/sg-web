@@ -3286,10 +3286,11 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .scr-gc > .scr-rc-chart { padding-top: 14px; border-top: 1px solid var(--line-faint); }
 .scr-rc-mode { display: flex; gap: 4px; }
-.scr-tl-chip { stroke: none; }
-.scr-tl-label { font-weight: 600; }
+.scr-tl-chip { fill: rgba(var(--overlay-rgb), 0.1); }
+.scr-tl-label { fill: var(--text); font-weight: 600; }
+.scr-tl-name > text { font-weight: 600; }
 .scr-tl-hit { cursor: default; }
-.scr-tl-hit:hover .scr-tl-chip { filter: brightness(1.15); }
+.scr-tl-hit:hover .scr-tl-chip { fill: rgba(var(--overlay-rgb), 0.2); }
 .scr-redo-pick { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
 body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick { z-index: 300; }
