@@ -89,10 +89,16 @@ export const AXIS_FS = 10.8;
 /** 게임 그래프(잰 크기 1:1)의 글자 배수 — 통계 PC 판이 늘어나는 비(440/320)라, 눈금·칩 글자가 통계 그래프 눈금과 같은 화면 크기가 된다
     (2026-10-21, 요청: "칩과 눈금 폰트사이즈가 통계 그래프의 눈금 폰트 크기와 같게"). */
 export const GAME_FONT_K = 440 / 320;
-/** 칩 = 눈금 글자 크기 · 판 자로 적어 판과 함께 늘고 준다. 끝 칩 · 게임 그래프 테크 줄의 닉네임 칩이 쓴다.
-    여백은 바투(2026-10-21, 요청: "그래프 칩들 패딩 팍 줄여줘 · 칩 사이즈 작아지게" — 단추 비(높이 1.83em · 좌우 0.58em)에서
-    높이 1.35em · 좌우 0.3em · 모서리 0.3em). */
-export const BTN = { fs: AXIS_FS, h: AXIS_FS * 1.35, px: AXIS_FS * 0.3, r: AXIS_FS * 0.3 };
+/** 칩 치수 = 컴팩트 네모 칩(.scr-compact-rect-chip · global.css 의 --compact-chip-h/-px/-r, 글자 배수) × 눈금 글자 크기 — 판 자로 적어 판과 함께 늘고 준다.
+    끝 칩 · 게임 그래프 테크 줄의 닉네임 칩이 쓴다. CSS 값을 처음 쓸 때 한 번 읽는다(못 읽으면 같은 기본값). */
+let chipBoxMemo: { fs: number; h: number; px: number; r: number } | null = null;
+export function chipBox(): { fs: number; h: number; px: number; r: number } {
+  if (chipBoxMemo) return chipBoxMemo;
+  const cs = getComputedStyle(document.documentElement);
+  const num = (name: string, dflt: number): number => { const v = parseFloat(cs.getPropertyValue(name)); return Number.isFinite(v) && v > 0 ? v : dflt; };
+  chipBoxMemo = { fs: AXIS_FS, h: AXIS_FS * num("--compact-chip-h", 1.35), px: AXIS_FS * num("--compact-chip-px", 0.3), r: AXIS_FS * num("--compact-chip-r", 0.3) };
+  return chipBoxMemo;
+}
 let measureCtx: CanvasRenderingContext2D | null = null;
 /** 글자 폭(px · 굵기 600 · 본문 글꼴) — 칩 폭을 글자에 딱 맞춰 좌우 여백이 같게. */
 export function textW(s: string, fs: number): number {
@@ -101,7 +107,7 @@ export function textW(s: string, fs: number): number {
   measureCtx.font = `600 ${fs}px ${getComputedStyle(document.body).fontFamily}`;
   return measureCtx.measureText(s).width;
 }
-export const chipWOf = (s: string): number => textW(s, BTN.fs) + 2 * BTN.px;
+export const chipWOf = (s: string): number => textW(s, chipBox().fs) + 2 * chipBox().px;
 /** 끝 칩을 단 판의 오른쪽 여백(k = 글자 배수) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
 export const chipGutter = (labels: string[], k = 1): number => PAD.r + k * (8 + Math.max(0, ...labels.map(chipWOf)));
 
@@ -126,7 +132,8 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const PR = onToggle ? chipGutter(lines.map((l) => l.label), k) : PAD.r;
-  const CHIP_H = BTN.h * k;
+  const CB = chipBox();
+  const CHIP_H = CB.h * k;
   const shown = lines.filter((l) => !l.off);
   /* 띄운 값 상자는 그래프 밖 어디를 누르든 닫힌다(2026-10-20, 요청: "그래프 누르면 팝업 같은 거 나오는데 다른 데 누르면 닫히게").
      폰은 손가락을 떼도 남아 있어(pointerleave 는 마우스만 닫는다) 이것이 닫는 길이다. */
@@ -202,8 +209,8 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle?.(c.l.key); } }}
             >
               {Math.abs(c.cy - c.ey) > 1 && <line className="scr-rc-chip-lead" x1={c.ex} y1={c.ey} x2={c.cx} y2={c.cy} style={{ stroke: c.l.color }} />}
-              <rect x={c.cx} y={c.cy - CHIP_H / 2} width={c.w} height={CHIP_H} rx={BTN.r * k} style={{ fill: c.l.color }} />
-              <text x={c.cx + c.w / 2} y={c.cy} textAnchor="middle" dominantBaseline="central" style={{ fontSize: BTN.fs * k, fill: inkOn(c.l.color) }}>{c.l.label}</text>
+              <rect x={c.cx} y={c.cy - CHIP_H / 2} width={c.w} height={CHIP_H} rx={CB.r * k} style={{ fill: c.l.color }} />
+              <text x={c.cx + c.w / 2} y={c.cy} textAnchor="middle" dominantBaseline="central" style={{ fontSize: CB.fs * k, fill: inkOn(c.l.color) }}>{c.l.label}</text>
             </g>
           ))}
           {at !== null && <line className="scr-rc-cross" x1={x(at)} x2={x(at)} y1={PAD.t} y2={H - PAD.b} />}

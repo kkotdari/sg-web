@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
-import { AXIS_FS, BTN, Chart, chipGutter, chipWOf, GAME_FONT_K, inkOn, textW, type ChartLine } from "../pages/stats/RaceCurves";
+import { AXIS_FS, Chart, chipBox, chipGutter, chipWOf, GAME_FONT_K, inkOn, textW, type ChartLine } from "../pages/stats/RaceCurves";
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
@@ -37,11 +37,11 @@ const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}
 
 type Lane = { key: string; name: string; color: string; techs: GameCurve["techs"] };
 /** 테크 줄 치수(2026-10-21, 요청: "칩과 눈금 폰트를 통계 그래프 눈금 크기와 같게 · 테크트리와 제목도 맞춰서 키우기") —
-    눈금·닉네임 칩 글자 = AXIS_FS × GAME_FONT_K(통계 PC 눈금과 같은 화면 크기) · 테크 글자는 그 0.8 배.
+    눈금·닉네임 칩 글자 = AXIS_FS × GAME_FONT_K(통계 PC 눈금과 같은 화면 크기) · 테크 글자는 11px(요청: "테크트리 글자 굵기 줄이고 크기 한단만 낮춰줘" — 0.8 배 11.9 → 11 · 굵기 600 → 500).
     테크는 글자만 — 글자를 바투 감싼 상자(위아래 0.15em · 좌우 0.3em)는 보이지 않는 마우스 자리로만 남아 겹침 가르기와 팝업 자리를 잰다
     (요청: "직사각형 음영" → "테크트리 음영제거"). 칸 사이·두 단 사이도 글자에 비례 — 번잡하지 않게. */
 const TL_AXIS_FS = AXIS_FS * GAME_FONT_K;
-const TL_FS = Math.round(TL_AXIS_FS * 0.8 * 10) / 10;
+const TL_FS = 11;
 const TL_CH = Math.round(TL_FS * 1.3 * 10) / 10;
 const TL_GAP = TL_FS * 0.4;
 const TL_TIER = TL_FS * 0.15;
@@ -106,14 +106,15 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
           <g key={l.key}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
             {(() => {
-              /* 앞머리 닉네임은 그 사람 색 칩(2026-10-21, 요청: "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거") — 끝 칩과 같은 컴팩트 네모 단추 치수. */
+              /* 앞머리 닉네임은 그 사람 색 칩(2026-10-21, 요청: "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거") — 끝 칩과 같은 컴팩트 네모 칩(chipBox). */
               const name = shortName(l.name);
               const k = GAME_FONT_K;
+              const CB = chipBox();
               const nw = chipWOf(name) * k;
               return (
                 <g className="scr-tl-name">
-                  <rect x={PL - 6 * k - nw} y={top + h / 2 - (BTN.h * k) / 2} width={nw} height={BTN.h * k} rx={BTN.r * k} style={{ fill: l.color }} />
-                  <text x={PL - 6 * k - nw / 2} y={top + h / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: BTN.fs * k, fill: inkOn(l.color) }}>{name}</text>
+                  <rect x={PL - 6 * k - nw} y={top + h / 2 - (CB.h * k) / 2} width={nw} height={CB.h * k} rx={CB.r * k} style={{ fill: l.color }} />
+                  <text x={PL - 6 * k - nw / 2} y={top + h / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: CB.fs * k, fill: inkOn(l.color) }}>{name}</text>
                 </g>
               );
             })()}

@@ -472,6 +472,14 @@ html.scr-light-theme .scr-checkbox-field input[type="radio"]:not(:checked), html
 .scr-pill-btn { gap: 5px; padding: 4px 10px; border-radius: 999px; --btn-border-w: 1px; font-size: 12px; font-weight: 700; }
 .scr-rect-btn { gap: 6px; padding: 6px 12px; min-height: 32px; border-radius: 6px; font-size: var(--fs-caption); font-weight: 600; }
 .scr-compact-rect-btn { gap: 5px; padding: 4px 6px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+/* 컴팩트 네모 칩(2026-10-21, 요청: "그래프 칩들 패딩 팍 줄여줘" → "이건 컴팩트 네모 칩으로 해줘 css를") — 컴팩트 네모 단추보다 여백을 바투 줄인
+   색 칩. 치수는 글자 크기의 배수(em) 세 값이고, 그래프의 줄 끝 칩 · 닉네임 칩(SVG · RaceCurves chipBox)도 이 세 값을 읽어 그린다. */
+:root { --compact-chip-h: 1.35; --compact-chip-px: 0.3; --compact-chip-r: 0.3; }
+.scr-compact-rect-chip {
+  display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; white-space: nowrap;
+  height: calc(var(--compact-chip-h) * 1em); padding: 0 calc(var(--compact-chip-px) * 1em);
+  border-radius: calc(var(--compact-chip-r) * 1em); font-weight: 600; line-height: 1;
+}
 .scr-rect-btn.is-secondary, .scr-compact-rect-btn.is-secondary {
   color: var(--btn-outline-text, inherit); background: var(--btn-outline-bg, transparent);
   border-color: var(--btn-outline-border, transparent); box-shadow: none;
@@ -3287,7 +3295,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc > .scr-rc-chart { padding-top: 14px; border-top: 1px solid var(--line-faint); }
 .scr-rc-mode { display: flex; gap: 4px; }
 .scr-tl-chip { fill: transparent; }
-.scr-tl-label { fill: var(--text); font-weight: 600; }
+.scr-tl-label { fill: var(--text); font-weight: 500; }
 .scr-tl-name > text { font-weight: 600; }
 .scr-tl-hit { cursor: default; }
 .scr-redo-pick { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
