@@ -284,6 +284,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   if (at !== null && !valsRight) {
     for (let hit = hitChips((w) => valX - w); hit.length > 0; hit = hitChips((w) => valX - w)) valX = Math.min(...hit.map((c) => c.cx)) - 4 * k;
   }
+  const valsFar = at !== null && !valsRight && valX < x(at) - 8 * k - 0.5;
   const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
   /* 칩을 누른 사람(종족)만 또렷이 — 그 선은 굵게 · 칩은 살짝 크게, 나머지는 선·점·칩·값 모두 흐리게(2026-10-21, 요청: "액티브 칩은 살짝 확대만 ·
      나머지 사람들 거 딤 처리 · 나머지 그래프 선도 딤"). */
@@ -319,6 +320,10 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
             const i = l.ys.length - 1;
             return <circle key={l.key} className={`scr-rc-end${dim(l.key)}`} cx={x(i)} cy={y(l.ys[i])} r={focus === l.key ? 5 : 4} style={{ fill: l.color }} />;
           })}
+          {/* 칩을 비켜 점에서 멀어진 값은 점과 가는 선으로 잇는다(2026-10-21, 요청: "멀어지면 가는 선으로 잇기") — 칩 밑으로 지나게 칩보다 먼저 그린다. */}
+          {valsFar && vals.map(({ l, y: py, ty: vy }) => (
+            <line key={l.key} className={`scr-rc-val-lead${dim(l.key)}`} x1={x(at ?? 0)} y1={py} x2={valX + 3 * k} y2={vy} style={{ stroke: l.color }} />
+          ))}
           {chips.map((c) => (
             <g
               key={c.l.key} className={`scr-rc-chip${focus === c.l.key ? " is-focus" : ""}${dim(c.l.key)}`} role="button" tabIndex={0}

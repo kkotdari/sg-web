@@ -8099,7 +8099,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* 끝 칩을 누른 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기"). */
 .scr-rc-line.is-focus { stroke-width: 4; }
 /* 고른 사람 외엔 흐리게(선·점·칩·값 · 테크 줄) — 고른 칩은 그리는 자리에서 살짝 키운다(요청: "액티브 칩은 살짝 확대만 · 나머지 딤 · 나머지 그래프 선도 딤"). */
-.scr-rc-line.is-dim, .scr-rc-end.is-dim, .scr-rc-dot.is-dim, .scr-rc-chip.is-dim, .scr-rc-val.is-dim, .scr-tl-row.is-dim { opacity: 0.25; }
+.scr-rc-line.is-dim, .scr-rc-end.is-dim, .scr-rc-dot.is-dim, .scr-rc-chip.is-dim, .scr-rc-val.is-dim, .scr-rc-val-lead.is-dim, .scr-tl-row.is-dim { opacity: 0.25; }
 .scr-tl-row.is-focus .scr-tl-label { font-weight: 700; }
 /* 세로선 자리의 값(제 색) · 가로축의 그 시각 — 팝업 대신(요청: "팝업 제거, 세로선만 유지하고 가로축에 그 시각 표시 · 숫자를 사용자별 자기색으로"). 바탕색 테로 선 위에서도 읽힌다. */
 .scr-rc-val { font-weight: 700; font-variant-numeric: tabular-nums; paint-order: stroke; stroke: var(--card-bg, #101011); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
@@ -8109,7 +8109,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-chip > text { font-weight: 600; }
 .scr-rc-chip:focus-visible > rect { stroke: var(--text); stroke-width: 1.5; }
 @media (hover: hover) { .scr-rc-chip:hover > rect { filter: brightness(1.15); } }
-.scr-rc-chip-lead { stroke-width: 1; opacity: 0.5; }
+.scr-rc-chip-lead, .scr-rc-val-lead { stroke-width: 1; opacity: 0.5; }
 .scr-rc-end, .scr-rc-dot { stroke: var(--card-bg, #101011); stroke-width: 2; }
 .scr-rc-cross { stroke: rgba(var(--overlay-rgb), 0.35); stroke-width: 1; stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; }
 .scr-rc-empty { padding: 4px 0; font-size: var(--fs-11); color: var(--muted); }
