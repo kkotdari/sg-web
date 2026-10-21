@@ -92,8 +92,8 @@ export default function RivalryMap({
   const shownEdges = selected === null ? edges : edges.filter(related);
 
   const chipScale = Math.max(0.7, Math.min(1, 1 - Math.max(0, nodes.length - 8) * 0.03));
-  /* 카드 크기 — PC 는 1.5 배(옛 CSS scale(1.5) 대신 글자·여백·아바타 값으로 · 2026-10-21, 요청: "CSS 배율 함수 대신 원본 값을 직접"). */
-  const cardK = chipScale * (mobile ? 1 : 1.5);
+  /* 카드 크기(px · 사람이 많으면 chipScale 로 줄인다) — PC 는 옛 CSS scale(1.5) 대신 값 그대로(2026-10-21, 요청: "배율 대신 원본 값을 직접"). */
+  const card = mobile ? { fs: 12, py: 4, px: 6, gap: 5, av: 18 } : { fs: 18, py: 6, px: 9, gap: 7.5, av: 27 };
 
   const [arrowScale, setArrowScale] = useState(1);
   useEffect(() => {
@@ -191,13 +191,13 @@ export default function RivalryMap({
               )}
               style={{
                 left: `${p.x}%`, top: `${p.y}%`,
-                fontSize: `${Math.round(12 * cardK * 10) / 10}px`,
-                padding: `${4 * cardK}px ${6 * cardK}px`,
-                gap: `${5 * cardK}px`,
+                fontSize: `${Math.round(card.fs * chipScale * 10) / 10}px`,
+                padding: `${card.py * chipScale}px ${card.px * chipScale}px`,
+                gap: `${card.gap * chipScale}px`,
               }}
               onClick={(e) => { e.stopPropagation(); setSelected((s) => (s === id ? null : id)); }}
             >
-              <Avatar member={m} size={Math.round(18 * cardK)} />
+              <Avatar member={m} size={Math.round(card.av * chipScale)} />
               <span className="scr-rivalry-card-name">{m.nickname}</span>
             </button>
           );

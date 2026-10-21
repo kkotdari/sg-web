@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { BaseRace, MemberStats, StatCurve } from "../../types";
 
 /* ★ 통계 펼침 = 분당 곡선 두 판(2026-10-20, 요청: "펼친 부분 내용 변경 · 시간별 … 연속 선 그래프로 세 종족을 색을 나눠서 같은 그래프에
@@ -96,22 +96,24 @@ function valOutline(color: string): string | undefined {
   return undefined;
 }
 
-/** 눈금 글자(판 자 · 2026-10-21, 요청: "눈금글자 20프로 확대" 9 → 10.8). 통계 판은 viewBox 320 을 칸 폭(PC 440)으로 늘려 그린다. */
-export const AXIS_FS = 10.8;
-/** 게임 그래프(잰 크기 1:1)의 글자 배수 — 통계 PC 판이 늘어나는 비(440/320)라, 눈금·칩 글자가 통계 그래프 눈금과 같은 화면 크기가 된다
-    (2026-10-21, 요청: "칩과 눈금 폰트사이즈가 통계 그래프의 눈금 폰트 크기와 같게"). */
-export const GAME_FONT_K = 440 / 320;
-/** PC 눈금 숫자(세로·가로 눈금 · 세로선 시각)만 한 단 더 작게 — 칩·값은 그대로(2026-10-21, 요청: "데이터 창 · 통계 창 눈금 숫자 1스텝 더 축소"). */
-export const PC_AXIS_K = 0.9;
-/** 칩 치수 = 컴팩트 네모 칩(.scr-compact-rect-chip · global.css 의 --compact-chip-h/-px/-r, 글자 배수) × 눈금 글자 크기 — 판 자로 적어 판과 함께 늘고 준다.
+/** 그래프 글자 크기(화면 px · 판은 잰 폭 그대로 1:1 로 그린다) — label = 끝 칩·세로선 값·닉네임 칩 · axis = 눈금 숫자·세로선 시각.
+    (2026-10-21, 요청: "눈금글자 20프로 확대" → "칩과 눈금 폰트를 통계 눈금과 같게" → "PC 눈금 숫자와 닉네임 칩, 그래프 값 20프로 축소" →
+    "눈금 숫자 1스텝 더 축소" → "배율 대신 직접 값"). 폰 통계는 옛 늘림(칸 339 / 320)의 크기 그대로. */
+export const GRAPH_FS = {
+  pc: { label: 11.9, axis: 10.7 },
+  statsMobile: { label: 11.4, axis: 11.4 },
+  gameMobile: { label: 10.8, axis: 10.8 },
+} as const;
+/** 칩 치수 = 컴팩트 네모 칩(.scr-compact-rect-chip · global.css 의 --compact-chip-h/-px/-r — 글자 크기에 대한 비) × 칩 글자 크기.
     끝 칩 · 게임 그래프 테크 줄의 닉네임 칩이 쓴다. CSS 값을 처음 쓸 때 한 번 읽는다(못 읽으면 같은 기본값). */
-let chipBoxMemo: { fs: number; h: number; px: number; r: number } | null = null;
-export function chipBox(): { fs: number; h: number; px: number; r: number } {
-  if (chipBoxMemo) return chipBoxMemo;
-  const cs = getComputedStyle(document.documentElement);
-  const num = (name: string, dflt: number): number => { const v = parseFloat(cs.getPropertyValue(name)); return Number.isFinite(v) && v > 0 ? v : dflt; };
-  chipBoxMemo = { fs: AXIS_FS, h: AXIS_FS * num("--compact-chip-h", 1.35), px: AXIS_FS * num("--compact-chip-px", 0.3), r: AXIS_FS * num("--compact-chip-r", 0.3) };
-  return chipBoxMemo;
+let chipRatio: { h: number; px: number; r: number } | null = null;
+export function chipBox(fs: number): { h: number; px: number; r: number } {
+  if (!chipRatio) {
+    const cs = getComputedStyle(document.documentElement);
+    const num = (name: string, dflt: number): number => { const v = parseFloat(cs.getPropertyValue(name)); return Number.isFinite(v) && v > 0 ? v : dflt; };
+    chipRatio = { h: num("--compact-chip-h", 1.35), px: num("--compact-chip-px", 0.3), r: num("--compact-chip-r", 0.3) };
+  }
+  return { h: fs * chipRatio.h, px: fs * chipRatio.px, r: fs * chipRatio.r };
 }
 let measureCtx: CanvasRenderingContext2D | null = null;
 /** 글자 폭(px · 굵기 600 · 본문 글꼴) — 칩 폭을 글자에 딱 맞춰 좌우 여백이 같게. */
@@ -128,9 +130,9 @@ export function fitText(s: string, fs: number, maxW: number): string {
   while (t.length > 1 && textW(`${t}…`, fs) > maxW) t = t.slice(0, -1);
   return `${t}…`;
 }
-export const chipWOf = (s: string): number => textW(s, chipBox().fs) + 2 * chipBox().px;
-/** 끝 칩을 단 판의 오른쪽 여백(k = 글자 배수) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
-export const chipGutter = (labels: string[], k = 1): number => PAD.r + k * (8 + Math.max(0, ...labels.map(chipWOf)));
+export const chipWOf = (s: string, fs: number): number => textW(s, fs) + 2 * chipBox(fs).px;
+/** 끝 칩을 단 판의 오른쪽 여백(fs = 칩 글자) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
+export const chipGutter = (labels: string[], fs: number): number => PAD.r + 8 + Math.max(0, ...labels.map((l) => chipWOf(l, fs)));
 
 /** 지나는 점을 그대로 지나는 매끈한 곡선(단조 3차 · Fritsch–Carlson — 점 사이에서 위아래로 튀지 않는다 · 2026-10-21, 요청: "그래프 곡선화"). */
 function smoothPath(pts: [number, number][]): string {
@@ -229,23 +231,22 @@ function useStatsCross(): [number | null, (m: number | null) => void] {
   return [useSyncExternalStore(subStatsCross, () => statsCross.at), setStatsCross];
 }
 
-export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fontK: k = 1, axisK = 1, padB: PB = PAD.b, padR: padROverride, at: atRaw, onAt }: {
+export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fs: FS, axisFs: AFS, padB: PB = PAD.b, padR: padROverride, at: atRaw, onAt }: {
   title: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
   ticksX?: number[]; ticksY?: number[];
-  /** 판의 가로 자(기본 320) — 넓은 자리(PC 게임 그래프)는 키워 판이 너무 높아지지 않게 한다(높이 150 그대로). */
+  /** 판 폭(px) — 없으면 제 칸 폭을 재어 그대로(1:1) 그린다(통계). 게임 그래프는 잰 폭을 건넨다. */
   width?: number;
   /** 왼쪽 여백(기본 34) — 게임 그래프는 테크 줄 앞머리의 닉네임 칸과 가로 자를 맞추려 넓힌다. */
   padL?: number;
-  /** 판의 세로 자(기본 150) — 게임 그래프는 잰 칸 크기 그대로(1:1) 그려 세 판의 높이를 맞춘다. */
+  /** 판 높이(px) — 없으면 폭의 150/320(통계). 게임 그래프는 세 판의 높이를 맞춰 건넨다. */
   height?: number;
   /** 굵게 볼 줄(key) · 끝 칩을 누르면 그 줄만 굵게(다시 누르면 풀린다 · 2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기"). */
   focus?: string | null;
   onFocus?: (key: string) => void;
-  /** 글자 배수(기본 1 — 통계) — 게임 그래프는 GAME_FONT_K. 눈금·칩 글자와 칩이 함께 커진다. */
-  fontK?: number;
-  /** 눈금 숫자만 더 곱하는 배수(기본 1 · PC 는 PC_AXIS_K). */
-  axisK?: number;
+  /** 끝 칩·값 글자(px · GRAPH_FS.label) · 눈금 숫자(px · GRAPH_FS.axis). */
+  fs: number;
+  axisFs: number;
   /** 아래 여백(기본 20) — 가로축 눈금 숫자는 판 아래끝(H − 5)에 붙어, 키우면 가로축에서 더 아래로 떨어진다(게임 그래프). */
   padB?: number;
   /** 오른쪽 여백(기본: 칩 자리만큼) — 폰 게임 그래프는 좁게 주고, 판 밖으로 나갈 칩은 끝점 왼쪽에 놓는다. */
@@ -254,15 +255,25 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   at: number | null;
   onAt: (m: number | null) => void;
 }) {
-  const W = width ?? W0;
-  const H = height ?? H0;
+  /* 폭을 안 건네면 제 칸 폭을 재어 1:1 로(글자 px 가 화면 px 그대로 · 옛 viewBox 320 늘림 대신). */
+  const plotRef = useRef<HTMLDivElement | null>(null);
+  const [selfW, setSelfW] = useState(0);
+  useLayoutEffect(() => {
+    const el = plotRef.current;
+    if (width !== undefined || !el) return undefined;
+    const measure = (): void => setSelfW(Math.floor(el.clientWidth));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [width]);
+  const W = width ?? (selfW || W0);
+  const H = height ?? Math.round((W * H0) / W0);
   const PL = padL ?? PAD.l;
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const PR = padROverride ?? (onFocus ? chipGutter(lines.map((l) => l.label), k) : PAD.r);
-  const CB = chipBox();
-  const CHIP_H = CB.h * k;
-  const FS = AXIS_FS * k;
-  const AFS = FS * axisK;
+  const PR = padROverride ?? (onFocus ? chipGutter(lines.map((l) => l.label), FS) : PAD.r);
+  const CB = chipBox(FS);
+  const CHIP_H = CB.h;
   const at = atRaw === null ? null : Math.max(0, Math.min(maxX, Math.round(atRaw)));
   const x = (i: number) => PL + (i / maxX) * (W - PL - PR);
   const y = (v: number) => PAD.t + (1 - v / maxY) * (H - PAD.t - PB);
@@ -279,11 +290,11 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   /* 칩 자리 — 끝점 오른쪽(판 오른끝을 넘으면 끝점 왼쪽) · 겹치면 밀고 바닥을 넘으면 되민다(2026-10-21, 지적: "칩끼리 겹쳐서 안보이는 문제"). */
   const chips = (onFocus ? lines : []).filter((l) => l.ys.length > 0).map((l) => {
     const i = l.ys.length - 1;
-    const w = chipWOf(l.label) * k;
-    const right = x(i) + 8 * k + w <= W;
-    return { l, ex: x(i), ey: y(l.ys[i]), cx: right ? x(i) + 8 * k : x(i) - 8 * k - w, y: y(l.ys[i]), ty: 0, w };
+    const w = chipWOf(l.label, FS);
+    const right = x(i) + 8 + w <= W;
+    return { l, ex: x(i), ey: y(l.ys[i]), cx: right ? x(i) + 8 : x(i) - 8 - w, y: y(l.ys[i]), ty: 0, w };
   });
-  const step = CHIP_H + 2 * k;
+  const step = CHIP_H + 2;
   const crossX = (a: (typeof chips)[number], b: (typeof chips)[number]): boolean => a.cx < b.cx + b.w && b.cx < a.cx + a.w;
   {
     const s = [...chips].sort((a, b) => a.y - b.y);
@@ -301,7 +312,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   const vals = at === null ? [] : spreadAbove(
     /* 고른 사람이 있으면 그 사람 값만(2026-10-21, 요청: "선택한 경우 그 사람 값만 나오게") */
     lines.filter((l) => at < l.ys.length && (!focus || l.key === focus)).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0, w: textW(compact(l.ys[at]), FS) })),
-    FS + 1 * k, PAD.t + FS / 2,
+    FS + 1, PAD.t + FS / 2,
   );
   /* 값 열은 한 줄(세로 정렬) — 세로선 오른편(왼끝 맞춤)이 기본이고, 판 오른끝을 넘거나 보이는 값이 **실제로 가리는** 끝 칩(닉네임)이 있을 때만
      왼편(오른끝 맞춤)으로, 거기서도 가리면 그 칩 왼쪽까지 열째 더 비켜 간다(점에서 멀어져도 · 2026-10-21, 요청: "닉네임을 가릴 때만 왼쪽으로 · 값끼리 수직 정렬" →
@@ -310,13 +321,13 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
      (2026-10-21, 지적: "크리스 칩까지만 피하면 되는데 너무 멀리 감" → "0 도 값이니까 보여야"). */
   const hitChips = (x0: (w: number) => number): (typeof chips) => chips.filter((c) => vals.some((v) => v.v !== 0 &&
     x0(v.w) < c.cx + c.w && c.cx < x0(v.w) + v.w && Math.abs(v.ty - c.ty) < (0.75 * FS + CHIP_H) / 2));
-  const valsRight = at !== null && vals.every((v) => x(at) + 8 * k + v.w <= W) && hitChips(() => x(at) + 8 * k).length === 0;
-  let valX = at === null ? 0 : valsRight ? x(at) + 8 * k : x(at) - 8 * k;
+  const valsRight = at !== null && vals.every((v) => x(at) + 8 + v.w <= W) && hitChips(() => x(at) + 8).length === 0;
+  let valX = at === null ? 0 : valsRight ? x(at) + 8 : x(at) - 8;
   if (at !== null && !valsRight) {
-    for (let hit = hitChips((w) => valX - w); hit.length > 0; hit = hitChips((w) => valX - w)) valX = Math.min(...hit.map((c) => c.cx)) - 4 * k;
+    for (let hit = hitChips((w) => valX - w); hit.length > 0; hit = hitChips((w) => valX - w)) valX = Math.min(...hit.map((c) => c.cx)) - 4;
   }
   /* 칩을 비켜 점에서 멀어진 열(왼편 제자리보다 더 왼쪽). */
-  const valsFar = at !== null && !valsRight && valX < x(at) - 8 * k - 0.5;
+  const valsFar = at !== null && !valsRight && valX < x(at) - 8.5;
   const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
   /* 칩을 누른 사람(종족)만 또렷이 — 그 선은 굵게 · 칩은 살짝 크게, 나머지는 선·점·칩·값 모두 흐리게(2026-10-21, 요청: "액티브 칩은 살짝 확대만 ·
      나머지 사람들 거 딤 처리 · 나머지 그래프 선도 딤"). */
@@ -324,7 +335,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">{title}{note && <i> · {note}</i>}</figcaption>
-      <div className="scr-rc-plot">
+      <div className="scr-rc-plot" ref={plotRef}>
         <svg
           ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="scr-rc-svg" role="img"
           aria-label={`${title} 분당 — ${lines.map((l) => `${l.label} ${l.ys.length - 1}분까지`).join(", ")}`}
@@ -338,7 +349,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
             </g>
           ))}
           {/* 세로선의 분은 가로축에(가까운 눈금 글자는 비켜 준다). */}
-          {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m) - x(at)) > 26 * k)).map((m) => (
+          {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m) - x(at)) > 26)).map((m) => (
             <text key={m} className="scr-rc-axis" x={x(m)} y={H - 5} textAnchor="middle" style={{ fontSize: AFS }}>{m}분</text>
           ))}
           {at !== null && <text className="scr-rc-at" x={x(at)} y={H - 5} textAnchor="middle" style={{ fontSize: AFS }}>{at}분</text>}
@@ -354,7 +365,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
           })}
           {/* 칩을 비켜 점에서 멀어진 값은 점과 가는 선으로 잇는다(2026-10-21, 요청: "멀어지면 가는 선으로 잇기") — 칩 밑으로 지나게 칩보다 먼저 그린다. */}
           {valsFar && vals.map(({ l, y: py, ty: vy }) => (
-            <line key={l.key} className={`scr-rc-val-lead${dim(l.key)}`} x1={x(at ?? 0)} y1={py} x2={valX + 3 * k} y2={vy} style={{ stroke: l.color }} />
+            <line key={l.key} className={`scr-rc-val-lead${dim(l.key)}`} x1={x(at ?? 0)} y1={py} x2={valX + 3} y2={vy} style={{ stroke: l.color }} />
           ))}
           {chips.map((c) => (
             <g
@@ -366,8 +377,8 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onFocus?.(c.l.key); } }}
             >
               {Math.abs(c.ty - c.ey) > 1 && <line className="scr-rc-chip-lead" x1={c.ex} y1={c.ey} x2={c.cx} y2={c.ty} style={{ stroke: c.l.color }} />}
-              <rect x={c.cx} y={c.ty - CHIP_H / 2} width={c.w} height={CHIP_H} rx={CB.r * k} style={{ fill: c.l.color }} />
-              <text x={c.cx + c.w / 2} y={c.ty} textAnchor="middle" dominantBaseline="central" style={{ fontSize: CB.fs * k, fill: inkOn(c.l.color) }}>{c.l.label}</text>
+              <rect x={c.cx} y={c.ty - CHIP_H / 2} width={c.w} height={CHIP_H} rx={CB.r} style={{ fill: c.l.color }} />
+              <text x={c.cx + c.w / 2} y={c.ty} textAnchor="middle" dominantBaseline="central" style={{ fontSize: FS, fill: inkOn(c.l.color) }}>{c.l.label}</text>
             </g>
           ))}
           {at !== null && <line className="scr-rc-cross" x1={x(at)} x2={x(at)} y1={PAD.t} y2={H - PB} />}
@@ -384,8 +395,8 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   );
 }
 
-/** fontK — 눈금·끝 칩·값 글자 배수(PC 통계는 0.8 · 2026-10-21, 요청: "PC 에서 그래프 눈금 숫자와 닉네임 칩, 그래프 값 20프로 축소"). */
-export default function RaceCurves({ byRace, scale, fontK, axisK }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale; fontK?: number; axisK?: number }) {
+/** font — 글자 크기(GRAPH_FS.pc · .statsMobile). */
+export default function RaceCurves({ byRace, scale, font }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale; font: { label: number; axis: number } }) {
   /* 줄 끝 칩을 누르면 그 종족 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신). 두 판이 한 상태를 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   const [at, setAt] = useStatsCross();
@@ -402,8 +413,8 @@ export default function RaceCurves({ byRace, scale, fontK, axisK }: { byRace?: P
       <div className="scr-rc-charts">
         {/* 병력이 먼저 · 일꾼 수가 다음(2026-10-21, 요청: "일꾼과 병력가치 순서변경 · 통계에도 적용") · 제목 "병력 가치" → "병력"(요청).
             짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
-        <Chart title="병력" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} fontK={fontK} axisK={axisK} at={at} onAt={setAt} />
-        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} fontK={fontK} axisK={axisK} at={at} onAt={setAt} />
+        <Chart title="병력" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} at={at} onAt={setAt} />
+        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} at={at} onAt={setAt} />
       </div>
     </div>
   );

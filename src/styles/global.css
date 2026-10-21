@@ -8087,7 +8087,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 :root { --race-chart-terran: #3f95ec; --race-chart-protoss: #ad8a08; --race-chart-zerg: #ad5fe6; }
 html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a00; --race-chart-zerg: #9a4fd6; }
 .scr-rc { min-width: 0; }
-/* PC 는 판 하나를 440 까지만 — 넓히면 viewBox 가 같이 불어 축 글자가 커진다. */
+/* PC 는 판 하나를 440 까지만(판은 잰 폭 1:1 · 높이는 폭의 150/320). */
 .scr-rc-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 440px)); gap: 10px 28px; align-items: end; }
 .scr-rc-chart { margin: 0; min-width: 0; }
 /* 제목 · 값 상자 글자는 눈금(PC 화면 약 14.9px)에 맞춰 키운다(2026-10-21, 요청: "테크트리와 기타 제목등도 맞춰서 키우기") — 폰 통계는 판이 좁아 눈금이 약 11.4px 라 그만큼. */
@@ -8098,7 +8098,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-plot { position: relative; }
 .scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; cursor: crosshair; }   /* 세로로 밀면 스크롤 · 좌우로 밀면 세로선이 따라간다(요청: "모바일 터치 좌우로 이동") */
 .scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }
-/* 눈금 글자 크기는 판 자로 그 자리에 적는다(AXIS_FS × 글자 배수 · RaceCurves). */
+/* 눈금 글자 크기는 그 자리에 px 로 적는다(GRAPH_FS · RaceCurves). */
 .scr-rc-axis { fill: var(--dim); font-variant-numeric: tabular-nums; }
 .scr-rc-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 /* 끝 칩을 누른 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기"). */
