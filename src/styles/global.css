@@ -3278,6 +3278,19 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-modal-sm { max-width: 360px; }
 
 .scr-modal-md { max-width: 560px; }
+/* 게임 그래프(GameCurvesModal · 2026-10-21) — PC 는 넓게(요청: "피시에서 모달창 폭을 넓게") · 두 판은 PC·폰 모두 세로로 · 범례 단추는 PC 오른쪽 · 폰 위. */
+.scr-modal-graph { max-width: 980px; width: 100%; }
+.scr-modal-graph > .scr-modal-body { padding-bottom: 20px; }
+.scr-rc.is-stack > .scr-rc-charts { grid-template-columns: minmax(0, 1fr); }
+.scr-rc.is-stack .scr-rc-picks { padding-top: 0; min-width: 148px; max-width: 200px; }
+.scr-rc-mode { display: flex; gap: 4px; margin-bottom: 6px; }
+.scr-rc-mode > button { flex: 1 1 0; justify-content: center; }
+.scr-rc-pick-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) {
+  .scr-rc.is-stack { flex-direction: column; align-items: stretch; }
+  .scr-rc.is-stack .scr-rc-picks { order: -1; flex-direction: row; flex-wrap: wrap; max-width: none; min-width: 0; }
+  .scr-rc.is-stack .scr-rc-mode { flex: 1 0 100%; margin-bottom: 2px; }
+}
 .scr-redo-pick { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
 body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick { z-index: 300; }
@@ -5671,11 +5684,11 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 /* ★★ PC 게임 표(GameTable.tsx ★★ · 2026-10-19, 요청: "피시는 배지들 제거하고 완전 그리드 형태(헤더로우도) · 로스터는 모바일과 같은 형태") —
    머리 줄·줄이 한 열 틀(--gtab-cols)을 쓴다. 칸 사이 세로 줄 · 로스터 칸만 늘고 나머지는 제 글 폭. 폰은 옛 줄(이 규칙은 PC 에서만 선다). */
 .scr-gtab-list {
-  --gtab-cols: 84px 56px 112px minmax(220px, 1fr) 60px 118px 48px;   /* 링크(저장 · 스크랩 · 공유 · 숨기기) 118 · 숨김 칸 걷음(2026-10-20) */   /* 2026-10-20: 게임번호 뺌 · 맵 1fr → 112 */
+  --gtab-cols: 84px 56px 112px minmax(220px, 1fr) 60px 142px 48px;   /* 링크(그래프 · 저장 · 스크랩 · 공유 · 숨기기) 142(그래프 단추 +24 · 2026-10-21) · 118 · 숨김 칸 걷음(2026-10-20) */   /* 2026-10-20: 게임번호 뺌 · 맵 1fr → 112 */
 }
 /* 리그 탭 — 둘째 칸에 리그(112) 를 끼운다(GameTable COLS). */
 .scr-gtab-list.has-league {
-  --gtab-cols: 84px 176px 56px 112px minmax(220px, 1fr) 60px 118px 48px;   /* 리그 160 → 176(+10% · 2026-10-20) */   /* 리그 112 → 160(2026-10-20, 요청: "리그 컬럼 너비 좀 더 확보") */
+  --gtab-cols: 84px 176px 56px 112px minmax(220px, 1fr) 60px 142px 48px;   /* 리그 160 → 176(+10% · 2026-10-20) */   /* 리그 112 → 160(2026-10-20, 요청: "리그 컬럼 너비 좀 더 확보") */
 }
 .scr-gtab {
   display: grid; grid-template-columns: var(--gtab-cols); align-items: stretch; width: 100%;

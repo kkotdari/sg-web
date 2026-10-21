@@ -71,6 +71,17 @@ export interface ReplayNameMappingEntry {
   hasMatches: boolean;
 }
 
+/** 게임 그래프의 한 사람(GET /api/game-results/{id}/curves · 2026-10-21) — 0분부터 1분 간격 · color 는 개인색 "#rrggbb"(못 읽었으면 null). */
+export interface GameCurve {
+  memberId: string;
+  playerName: string;
+  team: "team1" | "team2" | string;
+  race: Race | "";
+  color: string | null;
+  wk: number[];
+  av: number[];
+}
+
 export interface GameResultSlot {
   memberId: string;
   race: Race | "";

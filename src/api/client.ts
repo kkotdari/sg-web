@@ -1,4 +1,4 @@
-import type {
+import type { GameCurve,
   Member, GameResult, ActivityComment, ActivityTargetType, RankingShift, ActivityNotice, ActivityFeedItem, ActivityFeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
   ScreenKey, AppVersion, AppVersionStatus, AppVersionInfo,
   MapCanon, MapCatalog,
@@ -302,6 +302,11 @@ export const api = {
 
   async getGameResult(id: number): Promise<GameResult> {
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}`));
+  },
+
+  /** 게임 그래프 — 참가자마다 분당 일꾼 수 · 병력 가치 · 개인색(서버 통계용 참값 표 · 2026-10-21). */
+  async getGameCurves(id: number): Promise<GameCurve[]> {
+    return (await request<{ players: GameCurve[] }>(`/api/game-results/${id}/curves`)).players;
   },
 
   /** 자취 + 경기 채팅 — 채팅은 재생기 중계 자막의 gg 선언·노엘 외침 재료(2026-10-10 · 말한 사람을 아는 줄만 · 프레임 → 초는 fastest 42ms). */

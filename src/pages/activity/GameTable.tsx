@@ -1,5 +1,5 @@
 import { useState, type KeyboardEvent, type ReactNode } from "react";
-import { Bookmark, EyeOff, Play, Save, Share2 } from "lucide-react";
+import { Bookmark, ChartLine, EyeOff, Play, Save, Share2 } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { canManageGame } from "../../utils/gameAccess";
 import { shareToKakao } from "../../utils/kakaoShare";
@@ -17,6 +17,7 @@ import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
 import { isMeleeGame } from "./GameResultSides";
 import { GameRowNames } from "./GameRow";
+import GameCurvesModal from "../../modals/GameCurvesModal";
 import type { GameResult, Member } from "../../types";
 
 /* ★★ PC 게임 목록 = **표**(2026-10-19, 요청: "피시는 오히려 배지들 제거하고 완전 그리드 형태로 변경(헤더로우도 만듦) · 로스터는 모바일과 같은 형태 ·
@@ -132,6 +133,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   const user = useAppStore((st) => st.user);
   const canHide = !!onHide && !game.hidden && canManageGame(game, user);
   const [scrapping, setScrapping] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(false);
   const scrap = async () => {
     if (scrapping) return;
     setScrapping(true);
@@ -196,6 +198,8 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         </span>
         <span className="scr-gtab-cell">{secret ? "-" : gameKindText(game)}</span>
         <span className="scr-gtab-cell scr-gtab-links">
+          {/* 그래프 보기(2026-10-21 요청) — 참가자 전원의 분당 일꾼 수 · 병력 가치(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다. */}
+          {!secret && !game.ums && linkBtn("graph", "그래프 보기", () => setGraphOpen(true), <ChartLine size={13} />)}
           {!secret && game.replay && linkBtn("save", "리플레이 저장", () => { void downloadReplay(game); }, <Save size={13} />)}
           {!secret && linkBtn("scrap", "스크랩", () => { void scrap(); }, <Bookmark size={13} />, scrapping)}
           {!secret && linkBtn("share", "공유", () => { void share(); }, <Share2 size={13} />)}
@@ -204,6 +208,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         </span>
         <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : game.viewCount ?? "-"}</span>
       </div>
+      {graphOpen && <GameCurvesModal game={game} onClose={() => setGraphOpen(false)} />}
     </div>
   );
 }

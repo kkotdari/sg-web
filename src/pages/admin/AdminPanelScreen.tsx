@@ -437,7 +437,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                         {redo.total > 0 ? `${redo.done}/${redo.total}` : "목록 받는 중"}
                         {redo.failed > 0 ? ` · 실패 ${redo.failed}` : ""}
                       </>
-                    ) : purging || busy ? <Spinner /> : "대상 선택"}
+                    ) : purging || busy ? <Spinner /> : "열기"}
                   </button>
                 </div>
 
