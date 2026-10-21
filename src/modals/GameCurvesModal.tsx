@@ -158,7 +158,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, k, focus, onFoc
   });
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">테크 건물<i> · 다 지은 때</i></figcaption>
+      <figcaption className="scr-rc-title">테크 건물</figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때" {...scrub}>
         {rows.map(({ l, chips, top, h }) => {
