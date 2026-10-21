@@ -33,7 +33,8 @@ import type { GameResult, Member } from "../../types";
    스크랩 · 공유 · 숨기기(같은 날 요청: "링크에 숨기기 버튼 추가 · 스크랩버튼 공유버튼도"). 스크랩은 선택 막대의 스크랩과 같다(처음 장면 · 묻지 않음) ·
    공유는 게임 상세의 공유(카카오 · 안 되면 링크 복사) · 숨기기는 뛴 사람·운영자만(확인 창은 활동 화면이 띄운다 — onHide). */
 /* 숨김 칸은 걷었다(2026-10-20, 요청: "숨김 컬럼 제거하고 해제요청 버튼을 숨김 아래로") — 숨긴 판은 로스터 칸의 "비밀" 아래에 해제요청(폰 줄과 같은 꼴). */
-const COLS = (league: boolean) => ["시작일시", ...(league ? ["리그"] : []), "게임길이", "맵", "로스터", "유형", "링크", "조회수"];
+/* 분석 칸(2026-10-21, 요청: "로스터칸 폭 줄이고 분석그래프 컬럼 추가 · 아이콘 더 튀게") — 그래프 보기를 링크 칸에서 꺼내 제 칸에 · 강조색 단추. */
+const COLS = (league: boolean) => ["시작일시", ...(league ? ["리그"] : []), "게임길이", "맵", "로스터", "유형", "분석", "링크", "조회수"];
 
 export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
   return (
@@ -199,9 +200,19 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           {game.hidden && <UnhideRequestButton game={game} />}
         </span>
         <span className="scr-gtab-cell">{secret ? "-" : gameKindText(game)}</span>
+        {/* 그래프 보기 — 참가자 전원의 분당 일꾼 수 · 병력 가치 · 테크(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다. */}
+        <span className="scr-gtab-cell">
+          {!secret && !game.ums ? (
+            <button
+              type="button" className="scr-gtab-graph" title="분석 그래프" aria-label="분석 그래프"
+              onClick={(e) => { e.stopPropagation(); setGraphOpen(true); void api.pingGameAction("graph", game); }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <ChartLine size={16} strokeWidth={2.4} />
+            </button>
+          ) : <span className="scr-gtab-dim">-</span>}
+        </span>
         <span className="scr-gtab-cell scr-gtab-links">
-          {/* 그래프 보기(2026-10-21 요청) — 참가자 전원의 분당 일꾼 수 · 병력 가치(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다. */}
-          {!secret && !game.ums && linkBtn("graph", "그래프 보기", () => { setGraphOpen(true); void api.pingGameAction("graph", game); }, <ChartLine size={13} />)}
           {!secret && game.replay && linkBtn("save", "리플레이 저장", () => { void downloadReplay(game); void api.pingGameAction("replay", game); }, <Save size={13} />)}
           {!secret && linkBtn("scrap", "스크랩", () => { void scrap(); }, <Bookmark size={13} />, scrapping)}
           {!secret && linkBtn("share", "공유", () => { void share(); }, <Share2 size={13} />)}
