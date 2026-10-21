@@ -41,14 +41,15 @@ type Lane = { key: string; name: string; color: string; techs: GameCurve["techs"
 const PL = CHART_PAD.l;
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
- *  앞 칩과 겹치면 아랫단으로(겹치는 줄만 두 단). 짓기 시작은 칩에 손을 얹으면(title) 나온다. */
+ *  앞 칩과 겹치면 아랫단으로(겹치는 줄만 두 단 · 칩은 칸의 세로 가운데). 짓기 시작은 칩에 손을 얹으면(title) 나온다. */
 function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
   const CH = 15;
   const GAP = 8;
+  const ROW_H = CH * 2 + 2 + GAP;
   const AXIS = 18;
   const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - CHART_PAD.r);
   const chipW = (s: string): number => s.length * 9.5 + 10;
-  /* 칩 자리를 먼저 정한다 — 겹치는 칩이 있는 줄만 두 단(줄 높이가 줄마다 다르다). */
+  /* 칩 자리를 먼저 정한다 — 겹치는 칩이 있는 줄만 두 단. */
   let y0 = 4;
   const rows = lanes.map((l) => {
     const ends = [-Infinity, -Infinity];
@@ -60,8 +61,10 @@ function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
       ends[tier] = xe + w + 3;
       return { t, xe, label, w, tier };
     });
-    const h = (chips.some((c) => c.tier === 1) ? CH * 2 + 2 : CH) + GAP;
-    const row = { l, chips, top: y0, h };
+    const tiers = chips.some((c) => c.tier === 1) ? 2 : 1;
+    const h = ROW_H;
+    /* 칩(한 단이든 두 단이든)은 그 사람 칸의 세로 가운데(2026-10-21 요청) — 칸 높이는 모두 같게(두 단이 들어가는 높이). */
+    const row = { l, chips, top: y0, h, lift: (h - (tiers * CH + (tiers - 1) * 2)) / 2 };
     y0 += h;
     return row;
   });
@@ -70,11 +73,11 @@ function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">테크 건물<i> · 다 지은 때</i></figcaption>
       <svg viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때">
-        {rows.map(({ l, chips, top, h }) => (
+        {rows.map(({ l, chips, top, h, lift }) => (
           <g key={l.key}>
-            <line className="scr-rc-grid" x1={PL} x2={CW - CHART_PAD.r} y1={top + h - GAP / 2} y2={top + h - GAP / 2} />
+            <line className="scr-rc-grid" x1={PL} x2={CW - CHART_PAD.r} y1={top + h} y2={top + h} />
             {chips.map(({ t, xe, label, w, tier }) => {
-              const y = top + tier * (CH + 2);
+              const y = top + lift + tier * (CH + 2);
               return (
                 <g key={t.t}>
                   <title>{`${l.name} ${label} — 다 지음 ${clock(t.e)} (짓기 시작 ${clock(t.s)})`}</title>
