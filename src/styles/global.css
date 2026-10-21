@@ -3300,12 +3300,16 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-modal-graph .scr-gc-wait { height: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; }
 /* 폰은 화면 가득 · 불투명 바탕 · 세 판은 최소 폭 720 으로 그리고 창 몸이 가로·세로로 민다(2026-10-21, 요청: "모바일에서도 볼 수 있게" → "최소폭 필요 · 세로 가로스크롤 허용"). */
 @media (max-width: 960px) {
+  /* 화면 네 변에 붙인다(가운데 맞춤 transform·100vw/100dvh 대신 — 기기마다 폭이 화면을 넘거나 모자라던 것 · 2026-10-21, 요청: "모바일 데이터창 폭 화면폭에 맞추기"). */
   .scr-modal.scr-modal-graph {
-    width: 100vw; max-width: none; height: 100dvh; max-height: none; border-radius: 0;
-    padding: calc(var(--safe-top, 0px) + 12px) 14px 0;
+    inset: 0; transform: none; width: auto; height: auto; max-width: none; max-height: none; border-radius: 0;
+    padding: calc(var(--safe-top, 0px) + 12px) 16px 0;
   }
   .scr-modal.scr-modal-graph::before { background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .scr-modal-graph > .scr-modal-body { padding: 4px 2px calc(16px + env(safe-area-inset-bottom, 0px)); overflow: auto; }
+  /* 아래 여백 넉넉히(요청) — 폰 모달 공통 몸 규칙(.scr-modal:not(…):not(…) > .scr-modal-body · 뒤쪽)이 패딩을 0 16 으로 덮어 그보다 세게 쓴다. */
+  .scr-modal.scr-modal-graph:not(.scr-modal-confirm):not(.scr-modal-fit) > .scr-modal-body {
+    padding: 4px 16px calc(56px + env(safe-area-inset-bottom, 0px)); overflow: auto;
+  }
   .scr-modal-graph .scr-gc { min-width: 720px; }
   .scr-modal-graph .scr-rc-title, .scr-modal-graph .scr-rc-mode { position: sticky; left: 0; width: max-content; }   /* 제목·색 단추도 왼쪽 틀처럼 제자리 */
   .scr-modal-graph .scr-rc-title { font-size: 13px; }
