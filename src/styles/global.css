@@ -299,6 +299,8 @@ button, a, [role="button"], summary, label, select { touch-action: manipulation;
   border-radius: var(--radius); padding: 12px 20px; position: relative;
 }
 .scr-auth-remember { margin-left: 6px; }
+.scr-auth-back-btn { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-caption); color: var(--muted); margin-bottom: 14px; text-decoration: none; }
+@media (hover: hover) { .scr-auth-back-btn:hover { color: var(--text); } }
 
 .scr-form { display: flex; flex-direction: column; gap: 12px; }
 .scr-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }

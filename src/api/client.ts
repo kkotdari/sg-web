@@ -1,5 +1,5 @@
 import type { GameCurve,
-  Member, GameResult, ActivityComment, ActivityTargetType, RankingShift, ActivityNotice, ActivityFeedItem, ActivityFeedPage, NewGameResult, MemberCreatePayload, MemberStatus, MemberRole,
+  Member, GameResult, ActivityComment, ActivityTargetType, RankingShift, ActivityNotice, ActivityFeedItem, ActivityFeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
   ScreenKey, AppVersion, AppVersionStatus, AppVersionInfo,
   MapCanon, MapCatalog,
   GameResultSlot, GameResultPage, GameResultStatsResponse, GameOutcome, GameType, Race, TeamRankingResponse,
@@ -162,7 +162,7 @@ async function tryRefresh(): Promise<boolean> {
   return refreshingPromise;
 }
 
-const NO_REFRESH_RETRY_PATHS = ["/api/auth/login", "/api/auth/refresh"];
+const NO_REFRESH_RETRY_PATHS = ["/api/auth/login", "/api/auth/signup", "/api/auth/refresh"];
 
 async function request<T>(path: string, options: RequestInit = {}, retryOn401 = true): Promise<T> {
   const headers = new Headers(options.headers);
@@ -210,6 +210,15 @@ export const api = {
     const res = await request<RawAuthResponse>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ id, password }),
+    });
+    setTokens(res.accessToken, res.refreshToken);
+    return { user: res.user };
+  },
+
+  async signup(payload: SignupPayload): Promise<AuthResponse> {
+    const res = await request<RawAuthResponse>("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
     setTokens(res.accessToken, res.refreshToken);
     return { user: res.user };

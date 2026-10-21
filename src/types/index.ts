@@ -29,6 +29,16 @@ export interface Member {
   updatedAt: string;
 }
 
+export interface SignupPayload {
+  id: string;
+  password: string;
+  nickname: string;
+  battletag: string;
+  replayAliases: string[];
+  insta: string;
+  avatar: string | null;
+}
+
 export interface MemberCreatePayload {
   id: string;
   password: string;

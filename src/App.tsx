@@ -63,6 +63,11 @@ export default function App() {
   const user = useAppStore((s) => s.user);
   const guest = useAppStore((s) => s.guest);
   const enterGuest = useAppStore((s) => s.enterGuest);
+  /* 가입 주소(/signup)로 들어오면 손님 모드를 풀어 가입 화면(AuthScreen)이 선다. */
+  const exitGuest = useAppStore((s) => s.exitGuest);
+  useEffect(() => {
+    if (guest && window.location.pathname.replace(/\/+$/, "") === "/signup") exitGuest();
+  }, [guest, exitGuest]);
   useEffect(() => {
     if (user || guest) return undefined;
     const onPop = (): void => {
