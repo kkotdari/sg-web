@@ -39,16 +39,18 @@ const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}
 type Lane = { key: string; name: string; color: string; techs: GameCurve["techs"] };
 /** 테크 줄 치수(2026-10-21, 요청: "칩과 눈금 폰트를 통계 그래프 눈금 크기와 같게 · 테크트리와 제목도 맞춰서 키우기") —
     눈금·닉네임 칩 글자 = AXIS_FS × GAME_FONT_K(통계 PC 눈금과 같은 화면 크기) · 테크 글자는 11px(요청: "테크트리 글자 굵기 줄이고 크기 한단만 낮춰줘" — 0.8 배 11.9 → 11 · 굵기 600 → 500).
-    테크는 글자만 — 글자를 바투 감싼 상자(위아래 0.15em · 좌우 0.3em)는 보이지 않는 마우스 자리로만 남아 겹침 가르기와 팝업 자리를 잰다
-    (요청: "직사각형 음영" → "테크트리 음영제거"). 칸 사이·두 단 사이도 글자에 비례 — 번잡하지 않게. */
+    테크는 글자만 — 글자를 감싼 컴팩트 네모 칩 상자는 평소 보이지 않는 마우스 자리로 남아 겹침 가르기와 팝업 자리를 재고, 같은 종류 강조 때만 칠한다
+    (요청: "직사각형 음영" → "테크트리 음영제거" → "칩형태로 강조 · 컴팩트 네모칩"). 칸 사이·두 단 사이도 글자에 비례 — 번잡하지 않게. */
 const TL_AXIS_FS = AXIS_FS * GAME_FONT_K;
 const TL_FS = 11;
-const TL_CH = Math.round(TL_FS * 1.3 * 10) / 10;
+const TL_CH = TL_FS * 1.35;   /* 칸 최소 높이 셈에만 — 그리는 높이는 컴팩트 네모 칩 비(chipBox) */
 const TL_GAP = TL_FS * 0.4;
 const TL_TIER = TL_FS * 0.15;
 /** 판 아래 눈금 띠 · 한 칸 최소 높이(두 단 + 위아래 숨) — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
 const TL_AXIS = TL_AXIS_FS + 8;
 const TL_ROW_MIN = Math.ceil(2 * TL_CH + 2 * TL_TIER + TL_FS * 0.9);
+/** 강조 칩 색 — 테마 강조색(어두운 테마 --point 금빛 · 밝은 테마 파랑). */
+const HL_COLOR = "var(--lighting-accent)";
 const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` : s);
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
@@ -58,10 +60,14 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
   const [hover, setHover] = useState<{ tech: GameCurve["techs"][number]; x0: number; x1: number; cy: number } | null>(null);
   /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것(2026-10-21, 요청: "세 판 높이 통일"). */
   const ROW_H = (H - TL_AXIS - 4) / Math.max(1, lanes.length);
+  /* 테크 상자 = 컴팩트 네모 칩(.scr-compact-rect-chip 의 높이·좌우·모서리 비 · chipBox)을 테크 글자 크기로 — 평소엔 안 보이고, 같은 종류 강조 때 칠한다
+     (2026-10-21, 요청: "칩형태로 강조" → "컴팩트 네모칩"). */
   const FS = TL_FS;
-  const CH = TL_CH;
+  const cb = chipBox();
+  const CH = (FS * cb.h) / cb.fs;
+  const PX = (FS * cb.px) / cb.fs;
+  const RX = (FS * cb.r) / cb.fs;
   const GAP = TL_GAP;
-  const PX = FS * 0.3;
   const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - padR);
   const chipW = (s: string): number => textW(s, FS) + 2 * PX;
   let y0 = 4;
@@ -122,14 +128,20 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
             {chips.map(({ t, x: cx, label, w, slot }) => {
               const mid = top + h / 2;
               const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - TL_TIER : mid + TL_TIER;
+              /* 얹은 테크와 같은 종류(모든 사람)는 강조색 칩으로(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로 강조해줘") —
+                 보이지 않던 마우스 상자를 강조색으로 칠하고 글자는 그 위 흰/검정(재생기 칩 문턱). */
+              const hl = hover !== null && hover.tech.t === t.t;
               return (
                 <g
                   key={t.t} className="scr-tl-hit"
                   onPointerEnter={() => setHover({ tech: t, x0: cx, x1: cx + w, cy: y })}
                   onPointerLeave={() => setHover(null)}
                 >
-                  <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} />
-                  <text className={`scr-tl-label${hover && hover.tech.t === t.t ? " is-hl" : ""}`} x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: FS }}>{label}</text>
+                  <rect className={`scr-tl-chip${hl ? " is-hl" : ""}`} x={cx} y={y} width={w} height={CH} rx={RX} />
+                  <text
+                    className="scr-tl-label" x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central"
+                    style={{ fontSize: FS, fill: hl ? inkOn(HL_COLOR) : undefined }}
+                  >{label}</text>
                 </g>
               );
             })}
