@@ -80,6 +80,8 @@ export interface GameCurve {
   color: string | null;
   wk: number[];
   av: number[];
+  /** 테크 건물 종류별 첫 한 채 — t 유닛 종류 · s 짓기 시작 초 · e 다 지은 초. */
+  techs: { t: number; s: number; e: number }[];
 }
 
 export interface GameResultSlot {

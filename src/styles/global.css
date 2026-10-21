@@ -3278,19 +3278,16 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-modal-sm { max-width: 360px; }
 
 .scr-modal-md { max-width: 560px; }
-/* 게임 그래프(GameCurvesModal · 2026-10-21) — PC 는 넓게(요청: "피시에서 모달창 폭을 넓게") · 두 판은 PC·폰 모두 세로로 · 범례 단추는 PC 오른쪽 · 폰 위. */
-.scr-modal-graph { max-width: 980px; width: 100%; }
+/* 게임 그래프(GameCurvesModal · 2026-10-21 · PC 만) — 화면 폭을 거의 다(요청: "그래프를 최대한 크게") · 범례는 위 한 줄 · 테크 줄과 두 판이 세로로. */
+.scr-modal-graph { max-width: none; width: calc(100vw - 48px); }
 .scr-modal-graph > .scr-modal-body { padding-bottom: 20px; }
-.scr-rc.is-stack > .scr-rc-charts { grid-template-columns: minmax(0, 1fr); }
-.scr-rc.is-stack .scr-rc-picks { padding-top: 0; min-width: 148px; max-width: 200px; }
-.scr-rc-mode { display: flex; gap: 4px; margin-bottom: 6px; }
-.scr-rc-mode > button { flex: 1 1 0; justify-content: center; }
+.scr-gc { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.scr-gc-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.scr-rc-mode { display: flex; gap: 4px; margin-right: 10px; }
 .scr-rc-pick-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 640px) {
-  .scr-rc.is-stack { flex-direction: column; align-items: stretch; }
-  .scr-rc.is-stack .scr-rc-picks { order: -1; flex-direction: row; flex-wrap: wrap; max-width: none; min-width: 0; }
-  .scr-rc.is-stack .scr-rc-mode { flex: 1 0 100%; margin-bottom: 2px; }
-}
+.scr-tl-name { fill: var(--text); font-size: 11px; font-weight: 700; }
+.scr-tl-label { fill: var(--muted); font-size: 9px; font-weight: 600; }
+.scr-tl-bar { opacity: 0.5; }
 .scr-redo-pick { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
 body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick { z-index: 300; }

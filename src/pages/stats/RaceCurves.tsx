@@ -13,7 +13,8 @@ const TONE: Record<BaseRace, string> = {
 };
 const W0 = 320;
 const H = 150;
-const PAD = { l: 34, r: 12, t: 10, b: 20 };
+export const CHART_PAD = { l: 34, r: 12, t: 10, b: 20 };
+const PAD = CHART_PAD;
 
 type Line = { race: BaseRace; ys: number[] };
 /** 판에 그리는 한 줄 — 통계는 종족마다, 게임 그래프(GameCurvesModal)는 사람마다. */
@@ -63,12 +64,15 @@ function trimmed(c: StatCurve, key: "wk" | "av"): number[] {
 
 const compact = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K` : `${Math.round(v * 10) / 10}`);
 
-export function Chart({ title, unit, lines, note, maxX, maxY, width }: {
+export function Chart({ title, unit, lines, note, maxX, maxY, width, padL }: {
   title: string; unit: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 판의 가로 자(기본 320) — 넓은 자리(PC 게임 그래프)는 키워 판이 너무 높아지지 않게 한다(높이 150 그대로). */
   width?: number;
+  /** 왼쪽 여백(기본 34) — 게임 그래프는 테크 줄의 이름 칸과 가로 자를 맞추려 넓힌다. */
+  padL?: number;
 }) {
   const W = width ?? W0;
+  const PL = padL ?? PAD.l;
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   /* 띄운 값 상자는 그래프 밖 어디를 누르든 닫힌다(2026-10-20, 요청: "그래프 누르면 팝업 같은 거 나오는데 다른 데 누르면 닫히게").
@@ -81,7 +85,7 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width }: {
     document.addEventListener("pointerdown", close, true);
     return () => document.removeEventListener("pointerdown", close, true);
   }, [at]);
-  const x = (i: number) => PAD.l + (i / maxX) * (W - PAD.l - PAD.r);
+  const x = (i: number) => PL + (i / maxX) * (W - PL - PAD.r);
   const y = (v: number) => PAD.t + (1 - v / maxY) * (H - PAD.t - PAD.b);
   const ticksY = [0, maxY / 2, maxY];
   const stepX = maxX <= 10 ? 2 : maxX <= 20 ? 5 : 10;
@@ -91,7 +95,7 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width }: {
     if (!el) return;
     const r = el.getBoundingClientRect();
     const sx = ((clientX - r.left) / r.width) * W;
-    setAt(Math.max(0, Math.min(maxX, Math.round(((sx - PAD.l) / (W - PAD.l - PAD.r)) * maxX))));
+    setAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (W - PL - PAD.r)) * maxX))));
   };
   const tipLeft = at === null ? 0 : (x(at) / W) * 100;
   return (
@@ -106,8 +110,8 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width }: {
         >
           {ticksY.map((v) => (
             <g key={v}>
-              <line className="scr-rc-grid" x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} />
-              <text className="scr-rc-axis" x={PAD.l - 5} y={y(v)} textAnchor="end" dominantBaseline="middle">{compact(v)}</text>
+              <line className="scr-rc-grid" x1={PL} x2={W - PAD.r} y1={y(v)} y2={y(v)} />
+              <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle">{compact(v)}</text>
             </g>
           ))}
           {ticksX.map((m) => (
