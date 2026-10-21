@@ -5734,10 +5734,12 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   padding: 9px 6px; text-align: center; white-space: nowrap; overflow: hidden;
 }
 .scr-gtab-cell + .scr-gtab-cell { border-left: 1px solid var(--line-faint); }
-.scr-gtab-head { font-size: var(--fs-11); font-weight: 700; color: var(--row-dim); background: rgba(var(--overlay-rgb), 0.06); }
+.scr-gtab-head { font-size: var(--fs-11); font-weight: 700; color: var(--row-dim); }
 .scr-gtab-head > .scr-gtab-cell { padding-top: 7px; padding-bottom: 7px; gap: 3px; }
-.scr-gtab-headwrap { border-bottom: 0.5px solid var(--scr-row-line); }
+/* 머리 줄 바탕은 감싸개에 — 선택 모드의 체크 칸(좌상)까지 채운다(2026-10-21, 요청: "게임 목록 좌상 부분 헤더색 채워주고"). */
+.scr-gtab-headwrap { border-bottom: 0.5px solid var(--scr-row-line); background: rgba(var(--overlay-rgb), 0.06); }
 .scr-gtab-headwrap + .scr-activity-row-wrap { border-top: none; }
+@media (hover: hover) { .scr-gtab-headwrap.scr-activity-row-wrap-sel:not(.is-picked):hover { background: rgba(var(--overlay-rgb), 0.06); } }   /* 머리 줄은 줄 얹기 색을 안 탄다 */
 .scr-gtab-headcheck { visibility: hidden; }
 .scr-gtab-row { cursor: pointer; -webkit-tap-highlight-color: transparent; outline-offset: -2px; }
 @media (hover: hover) { .scr-gtab-row:not(.is-off):hover { background: var(--lighting-hover-bg); } }
@@ -8033,7 +8035,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   display: grid; width: 100%;
   /* 종족마다 [전적(N회) | 승률] 두 칸(2026-10-20). */
   grid-template-columns: minmax(150px, 1.3fr) 104px 84px 60px 196px repeat(3, minmax(60px, .8fr) minmax(58px, .7fr)) 36px;
-  border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden;
+  border: 1px solid var(--line); overflow: hidden;   /* 모서리 둥글림 걷음(2026-10-21, 요청: "통계 래디우스를 제거" — 게임 목록 표와 같게) */
   font-size: var(--fs-caption); color: var(--text);
 }
 .scr-sg-row { display: contents; }
