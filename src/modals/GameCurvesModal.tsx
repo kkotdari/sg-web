@@ -144,7 +144,6 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k }: {
           return (
           <g key={l.key}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
-            <NameChip name={shortName(l.name)} color={l.color} right={PL - 6 * k} cy={top + h / 2} k={k} />
             {chips.map(({ t, x: cx0, label, w, slot }) => {
               const mid = top + h / 2;
               const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - D.tier : mid + D.tier;
@@ -168,6 +167,8 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k }: {
                 </g>
               );
             })}
+            {/* 닉네임 칩은 테크 글자 위에(폰은 판 안으로 넘칠 수 있어 가리지 않게 맨 위) */}
+            <NameChip name={shortName(l.name)} color={l.color} right={Math.max(PL - 6 * k, chipWOf(shortName(l.name)) * k)} cy={top + h / 2} k={k} />
           </g>
           );
         })}
@@ -257,9 +258,11 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   }, [players]);
   const linesOf = (key: "wk" | "av"): ChartLine[] => (players ?? []).flatMap((p, i) => (p[key].length < 2
     ? [] : [{ key: p.playerName, label: shortName(nameOf(p)), color: colorOf(p, i), ys: p[key], off: off.has(p.playerName) }]));
-  const padR = chipGutter((players ?? []).map((p) => shortName(nameOf(p))), fontK);
-  /* 왼쪽 여백 = 가장 긴 닉네임 칩 + 여백 — 두 판도 같은 여백이라 가로 자가 같다. */
-  const PL = 12 * fontK + fontK * Math.max(0, ...(players ?? []).map((p) => chipWOf(shortName(nameOf(p)))));
+  /* 좌우 여백 — PC 는 닉네임 칩·끝 칩이 다 들어가게. 폰은 좁게(2026-10-21, 요청: "모바일 그래프 왼쪽 패딩 줄이고 테크트리의 닉네임칩 자리 모자라면
+     그래프 안에 좀 넣기 · 오른쪽도 패딩 줄여") — 왼쪽은 세로 눈금 글자 자리만(닉네임 칩은 왼끝에 붙여 판 안으로 넘친다), 오른쪽은 끝 칩이 판 밖으로 나가면 끝점 왼쪽에. */
+  const names = (players ?? []).map((p) => shortName(nameOf(p)));
+  const padR = mobile ? 10 : chipGutter(names, fontK);
+  const PL = mobile ? 30 : 12 * fontK + fontK * Math.max(0, ...names.map(chipWOf));
   const toggle = (k: string): void => setOff((prev) => {
     const next = new Set(prev);
     if (next.has(k)) next.delete(k); else next.add(k);
@@ -297,8 +300,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                     maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR} k={fontK}
                     lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
                   />
-                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={fontK} />
-                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={fontK} />
+                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} onToggle={toggle} fontK={fontK} />
+                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} onToggle={toggle} fontK={fontK} />
                 </>
               )}
             </div>

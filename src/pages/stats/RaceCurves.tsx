@@ -111,7 +111,7 @@ export const chipWOf = (s: string): number => textW(s, chipBox().fs) + 2 * chipB
 /** 끝 칩을 단 판의 오른쪽 여백(k = 글자 배수) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
 export const chipGutter = (labels: string[], k = 1): number => PAD.r + k * (8 + Math.max(0, ...labels.map(chipWOf)));
 
-export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height, onToggle, ticksX: tx, ticksY: ty, fontK: k = 1 }: {
+export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height, onToggle, ticksX: tx, ticksY: ty, fontK: k = 1, padR: padROverride }: {
   title: string; unit: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
   ticksX?: number[]; ticksY?: number[];
@@ -125,6 +125,8 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   onToggle?: (key: string) => void;
   /** 글자 배수(기본 1 — 통계) — 게임 그래프는 GAME_FONT_K. 눈금·칩 글자와 칩이 함께 커진다. */
   fontK?: number;
+  /** 오른쪽 여백(기본: 칩 자리만큼) — 폰 게임 그래프는 좁게 주고, 판 밖으로 나갈 칩은 끝점 왼쪽에 놓는다. */
+  padR?: number;
 }) {
   const W = width ?? W0;
   const H = height ?? H0;
@@ -134,7 +136,7 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   /* 손가락은 **탭**(click)으로만 값 상자를 띄운다(2026-10-21, 지적: "드래그를 터치로 인식해") — 밀어 스크롤하면 click 이 오지 않는다.
      마우스는 종전대로 얹으면 따라간다. click 의 pointerType 은 브라우저마다 없을 수 있어 누른 순간의 종류를 기억해 둔다. */
   const lastPtr = useRef("mouse");
-  const PR = onToggle ? chipGutter(lines.map((l) => l.label), k) : PAD.r;
+  const PR = padROverride ?? (onToggle ? chipGutter(lines.map((l) => l.label), k) : PAD.r);
   const CB = chipBox();
   const CHIP_H = CB.h * k;
   const shown = lines.filter((l) => !l.off);
@@ -164,7 +166,10 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
      바닥에 몰린 칩들이 바닥 한 자리에 포개져 가려지던 것(2026-10-21, 지적: "칩끼리 겹쳐서 안보이는 문제")을 되밀기로 푼다. */
   const chips = (onToggle ? lines : []).filter((l) => l.ys.length > 0).map((l) => {
     const i = l.ys.length - 1;
-    return { l, ex: x(i), ey: y(l.ys[i]), cx: x(i) + 8 * k, cy: y(l.ys[i]), w: chipWOf(l.label) * k };
+    const w = chipWOf(l.label) * k;
+    /* 판 오른끝을 넘으면 끝점 왼쪽에(오른쪽 여백을 좁게 준 폰 게임 그래프 · 2026-10-21, 요청: "오른쪽도 패딩 줄여"). */
+    const right = x(i) + 8 * k + w <= W;
+    return { l, ex: x(i), ey: y(l.ys[i]), cx: right ? x(i) + 8 * k : x(i) - 8 * k - w, cy: y(l.ys[i]), w };
   }).sort((a, b) => a.ey - b.ey);
   const chipTop = PAD.t + CHIP_H / 2;
   const chipBot = H - PAD.b - CHIP_H / 2;
