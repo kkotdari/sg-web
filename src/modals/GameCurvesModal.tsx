@@ -290,8 +290,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                     maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR} k={fontK}
                     lanes={players.map((p, i) => ({ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
                   />
-                  <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} />
                   <Chart title="병력 가치" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} />
+                  <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} />
                 </>
               )}
             </div>

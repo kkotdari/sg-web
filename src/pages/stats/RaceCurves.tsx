@@ -138,11 +138,12 @@ function smoothPath(pts: [number, number][]): string {
   return d;
 }
 
-/** 세로 위치들을 서로 gap 이상 떨어지게(위에서 아래로 밀고 · 바닥을 넘으면 아래에서 위로 되민다) — 칩 · 값 글자가 같이 쓴다. */
-function spreadY<T extends { y: number; ty: number }>(items: T[], gap: number, top: number, bot: number): T[] {
-  const s = [...items].sort((a, b) => a.y - b.y);
-  s.forEach((c, i) => { c.ty = Math.max(top, c.y, i > 0 ? s[i - 1].ty + gap : -Infinity); });
-  for (let i = s.length - 1; i >= 0; i -= 1) s[i].ty = Math.min(s[i].ty, bot, i < s.length - 1 ? s[i + 1].ty - gap : Infinity);
+/** 값 글자의 세로 자리 — 저마다 제 점 **위**(pref)에 두고, 겹치면 위로 밀며(아래에서부터), 판 위끝에 닿을 때만 아래로 민다
+    (2026-10-21, 요청: "값은 선 아래보다는 위가 낫겠지 · 위에 자리가 없으면 몰라도"). */
+function spreadAbove<T extends { pref: number; ty: number }>(items: T[], gap: number, top: number): T[] {
+  const s = [...items].sort((a, b) => a.pref - b.pref);
+  for (let i = s.length - 1; i >= 0; i -= 1) s[i].ty = Math.min(s[i].pref, i < s.length - 1 ? s[i + 1].ty - gap : Infinity);
+  s.forEach((c, i) => { c.ty = Math.max(c.ty, top, i > 0 ? s[i - 1].ty + gap : -Infinity); });
   return s;
 }
 
@@ -217,11 +218,11 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
     }
   }
   /* 세로선 자리의 값 — 사람(종족)마다 제 색 글자로 점 옆에(팝업 대신 · 2026-10-21, 요청: "팝업 제거, 세로선만 유지하고 가로축에 그 시각 표시 ·
-     세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 오른끝 가까우면 점 왼쪽 · 겹치면 위아래로 민다. */
+     세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점의 위쪽(세로선 오른편 · 오른끝 가까우면 왼편) · 겹치면 위로 민다(spreadAbove). */
   const valsRight = at !== null && x(at) < W - PR - 40 * k;
-  const vals = at === null ? [] : spreadY(
-    lines.filter((l) => at < l.ys.length).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), ty: 0 })),
-    FS + 2 * k, PAD.t + FS / 2, H - PAD.b - FS / 2,
+  const vals = at === null ? [] : spreadAbove(
+    lines.filter((l) => at < l.ys.length).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]) - FS * 0.85, ty: 0 })),
+    FS + 1 * k, PAD.t + FS / 2,
   );
   const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
   return (
@@ -286,7 +287,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
           {vals.map(({ l, y: py }) => <circle key={l.key} className="scr-rc-dot" cx={x(at ?? 0)} cy={py} r={4} style={{ fill: l.color }} />)}
           {vals.map(({ l, v, ty: vy }) => (
             <text
-              key={l.key} className="scr-rc-val" x={x(at ?? 0) + (valsRight ? 8 : -8) * k} y={vy}
+              key={l.key} className="scr-rc-val" x={x(at ?? 0) + (valsRight ? 5 : -5) * k} y={vy}
               textAnchor={valsRight ? "start" : "end"} dominantBaseline="central" style={{ fontSize: FS, fill: l.color }}
             >{compact(v)}</text>
           ))}
@@ -310,9 +311,10 @@ export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<
   return (
     <div className="scr-rc">
       <div className="scr-rc-charts">
-        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} />
-        {/* 짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
+        {/* 병력 가치가 먼저 · 일꾼 수가 다음(2026-10-21, 요청: "일꾼과 병력가치 순서변경 · 통계에도 적용").
+            짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
         <Chart title="병력 가치" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} />
+        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} />
       </div>
     </div>
   );
