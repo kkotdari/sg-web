@@ -224,7 +224,7 @@ type BuildLane = { key: string; group: string; name: string; color: string; blds
 
 /** ★ PC 건설 줄(2026-10-21, 요청: "PC 에서만 테크 건물 → 건설로 바꾸고 모든 건물 건설 및 유지 기간 보여줘(파괴되기 전까지 선으로) · 테크 건물만 토글") —
  *  사람마다 칸 · 그 안에 건물 종류마다 작은 칸(처음 지은 차례) · 건물 한 채가 선 하나: 짓는 동안은 점선 · 다 지은 뒤 사라질 때까지 실선(끝까지 남으면 판 끝까지).
- *  같은 종류 여러 채는 겹치지 않게 줄을 나눈다. 변태(레어 · 성큰 …)는 같은 선에서 이어진다 — 변태하는 동안 점선 · 그 뒤 실선 · 그 줄의 첫 변태 자리에 새 이름
+ *  같은 종류 여러 채는 겹치지 않게 줄을 나눈다. 변태(레어 · 성큰 …)는 같은 선에서 이어진다 — 변태하는 동안 점선 · 그 뒤 실선 · 그 줄의 첫 변태 시작 자리에 새 이름
  *  (요청: "레어 성큰같이 변태하는 건 라이프타임 선 중간에 변경되게"). 선에 마우스를 얹으면 세로선이 그 건물의 완공(못 지었으면 착공) 때로 · 가로축에 분:초. */
 function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, techOnly, onTechOnly }: {
   lanes: BuildLane[]; maxX: number; ticksX: number[]; w: number; padL: number; padR: number;
@@ -264,9 +264,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         ends[k] = b.e ?? Infinity;
         return { b, k };
       });
-      /* 그 줄의 변태 이름 — 종류마다 처음 다 된 자리에 한 번(성큰 여럿이 줄마다 이름을 달지 않게). */
+      /* 그 줄의 변태 이름 — 종류마다 처음 변태를 시작한 자리에 한 번(성큰 여럿이 줄마다 이름을 달지 않게 · 2026-10-21, 요청: "변태 건물도 변태 시작점에 이름"). */
       const morphs = new Map<number, number>();
-      for (const { b } of items) for (const [mt, ms, md] of b.m) if (!morphs.has(mt) || (md ?? ms) < (morphs.get(mt) ?? Infinity)) morphs.set(mt, md ?? ms);
+      for (const { b } of items) for (const [mt, ms] of b.m) if (!morphs.has(mt) || ms < (morphs.get(mt) ?? Infinity)) morphs.set(mt, ms);
       const g = { t, items, top: yy, morphs: [...morphs] };
       yy += BL.label + ends.length * BL.step + BL.pad;
       return g;
