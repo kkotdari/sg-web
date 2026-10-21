@@ -89,9 +89,10 @@ export const AXIS_FS = 10.8;
 /** 게임 그래프(잰 크기 1:1)의 글자 배수 — 통계 PC 판이 늘어나는 비(440/320)라, 눈금·칩 글자가 통계 그래프 눈금과 같은 화면 크기가 된다
     (2026-10-21, 요청: "칩과 눈금 폰트사이즈가 통계 그래프의 눈금 폰트 크기와 같게"). */
 export const GAME_FONT_K = 440 / 320;
-/** 칩 = 눈금 글자 크기의 컴팩트 네모 단추 꼴(.scr-compact-rect-btn 12px 의 비: 높이 22 · 좌우 7 · 모서리 6) — 판 자로 적어 판과 함께 늘고 준다.
-    끝 칩 · 게임 그래프 테크 줄의 닉네임 칩이 쓴다(요청: "컴팩트네모버튼이야 · 패딩같은거는" → 크기는 눈금 글자에 맞춤). */
-export const BTN = { fs: AXIS_FS, h: (AXIS_FS * 22) / 12, px: (AXIS_FS * 7) / 12, r: AXIS_FS / 2 };
+/** 칩 = 눈금 글자 크기 · 판 자로 적어 판과 함께 늘고 준다. 끝 칩 · 게임 그래프 테크 줄의 닉네임 칩이 쓴다.
+    여백은 바투(2026-10-21, 요청: "그래프 칩들 패딩 팍 줄여줘 · 칩 사이즈 작아지게" — 단추 비(높이 1.83em · 좌우 0.58em)에서
+    높이 1.35em · 좌우 0.3em · 모서리 0.3em). */
+export const BTN = { fs: AXIS_FS, h: AXIS_FS * 1.35, px: AXIS_FS * 0.3, r: AXIS_FS * 0.3 };
 let measureCtx: CanvasRenderingContext2D | null = null;
 /** 글자 폭(px · 굵기 600 · 본문 글꼴) — 칩 폭을 글자에 딱 맞춰 좌우 여백이 같게. */
 export function textW(s: string, fs: number): number {
