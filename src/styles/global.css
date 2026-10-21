@@ -3292,7 +3292,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-modal-graph > .scr-modal-body { flex: 1 1 auto; padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
 /* 제목은 "데이터" · 그 뒤 "게임번호: 번호"는 작고 연하게(2026-10-21, 요청: "데이터 좀 작고 연하게 게임번호: 번호" → "데이터가 진하고 큰거야"). */
 .scr-gc-sub { margin-left: 8px; font-style: normal; font-size: 0.8em; font-weight: 600; color: var(--dim); }
-.scr-tl-svg { touch-action: pan-x pan-y; cursor: default; }
+.scr-tl-svg { touch-action: pan-y; cursor: default; }
 /* 창은 처음부터 다 큰 크기(높이 = 화면 − 48 · 2026-10-21, 요청: "최종 크기로 열린 후 데이터 로드") — 불러오는 중·빈 글은 그 가운데. */
 .scr-modal-graph .scr-gc-wait { height: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; }
 /* 폰은 화면 가득 · 불투명 바탕 · 세 판은 기기 화면 폭(2026-10-21, 요청: "모바일에서도 볼 수 있게" → "아니 모바일 기기 화면폭"). */
@@ -3306,7 +3306,6 @@ body *::-webkit-scrollbar-corner { background: transparent; }
     margin: 0 -10px; padding: 4px 10px calc(56px + env(safe-area-inset-bottom, 0px));
   }
   .scr-modal-graph .scr-rc-title { font-size: 13px; }
-  .scr-modal-graph .scr-rc-tip { font-size: var(--fs-11); }
 }
 /* 판 사이를 띄워 가른다(요청: "그래프간 줄간격좀 띄워서 구분") — 판마다 위 가는 줄. */
 .scr-gc { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
@@ -8074,11 +8073,10 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 
 /* ★ 펼침 곡선(RaceCurves · 2026-10-20) — 일꾼 수 · 병력 가치 두 판, 세 종족 겹침. 선 색은 그래프 전용 짝(dataviz 검사기 통과 —
    어두운 바탕 #101011 · 밝은 바탕 #fff 각각). 앱의 종족색(--race-*)은 밝은 바탕에서 노랑이 선으로 안 읽혀 따로 둔다.
-   글자는 본문·흐린 잉크만 — 선 색은 옆의 짧은 줄(.scr-rc-key)만 입는다. */
+   세로선 자리의 값만 선 색 글자(.scr-rc-val · 바탕색 테두리)이고 나머지 글자는 본문·흐린 잉크. */
 :root { --race-chart-terran: #3f95ec; --race-chart-protoss: #ad8a08; --race-chart-zerg: #ad5fe6; }
 html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a00; --race-chart-zerg: #9a4fd6; }
 .scr-rc { min-width: 0; }
-.scr-rc-key { display: inline-block; flex: none; width: 12px; height: 2px; border-radius: 1px; }
 /* PC 는 판 하나를 440 까지만 — 넓히면 viewBox 가 같이 불어 축 글자가 커진다. */
 .scr-rc-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 440px)); gap: 10px 28px; align-items: end; }
 .scr-rc-chart { margin: 0; min-width: 0; }
@@ -8086,35 +8084,29 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-title { margin-bottom: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
 .scr-rc-title > i { font-style: normal; font-weight: 600; color: var(--dim); }
 .scr-rc-plot { position: relative; }
-.scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-x pan-y; cursor: crosshair; }   /* 판 위에서 밀어도 스크롤(폰 게임 그래프는 가로도) — 값 상자는 탭으로만 */
+.scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; cursor: crosshair; }   /* 세로로 밀면 스크롤 · 좌우로 밀면 세로선이 따라간다(요청: "모바일 터치 좌우로 이동") */
 .scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }
 /* 눈금 글자 크기는 판 자로 그 자리에 적는다(AXIS_FS × 글자 배수 · RaceCurves). */
 .scr-rc-axis { fill: var(--dim); font-variant-numeric: tabular-nums; }
 .scr-rc-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+/* 끝 칩을 누른 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기") · 그 칩엔 테두리. */
+.scr-rc-line.is-focus { stroke-width: 4; }
+.scr-rc-chip.is-focus > rect { stroke: var(--text); stroke-width: 1.5; }
+/* 세로선 자리의 값(제 색) · 가로축의 그 시각 — 팝업 대신(요청: "팝업 제거, 세로선만 유지하고 가로축에 그 시각 표시 · 숫자를 사용자별 자기색으로"). 바탕색 테로 선 위에서도 읽힌다. */
+.scr-rc-val { font-weight: 700; font-variant-numeric: tabular-nums; paint-order: stroke; stroke: var(--card-bg, #101011); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.scr-rc-at { fill: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
 /* 줄 끝 칩(통계 · 게임 그래프 · 2026-10-21) — 누르면 그 줄을 끄고 켠다 · 끈 줄은 칩만 흐리게 남는다. */
 .scr-rc-chip { cursor: pointer; outline: none; }
 .scr-rc-chip > text { font-weight: 600; }
-.scr-rc-chip.is-off { opacity: 0.35; }
 .scr-rc-chip:focus-visible > rect { stroke: var(--text); stroke-width: 1.5; }
 @media (hover: hover) { .scr-rc-chip:hover > rect { filter: brightness(1.15); } }
 .scr-rc-chip-lead { stroke-width: 1; opacity: 0.5; }
 .scr-rc-end, .scr-rc-dot { stroke: var(--card-bg, #101011); stroke-width: 2; }
 .scr-rc-cross { stroke: rgba(var(--overlay-rgb), 0.35); stroke-width: 1; stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; }
-.scr-rc-tip {
-  position: absolute; top: 0; z-index: 2; margin-left: 10px; padding: 5px 8px; min-width: 92px; pointer-events: none;
-  border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel-solid, #18181a);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); font-size: 13px; color: var(--text); white-space: nowrap;
-}
-.scr-rc-tip.is-left { transform: translateX(-100%); margin-left: -10px; }
-.scr-rc-tip-head { margin-bottom: 2px; color: var(--dim); }
-.scr-rc-tip-row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
-.scr-rc-tip-row > b { min-width: 4ch; font-weight: inherit; }   /* 값 상자 글자는 모두 보통 굵기(2026-10-21, 요청: "일꾼 병력 팝업 글자 다 얇게 통일") */
-.scr-rc-tip-row > span { color: var(--muted); }
 .scr-rc-empty { padding: 4px 0; font-size: var(--fs-11); color: var(--muted); }
 .scr-sg.is-m .scr-sg-mix { padding: 10px 10px 12px; }
 .scr-sg.is-m .scr-rc-charts { grid-template-columns: minmax(0, 1fr); }
 .scr-sg.is-m .scr-rc-title { font-size: 12px; }
-.scr-sg.is-m .scr-rc-tip { font-size: var(--fs-11); }
 
 /* 폰 — [유저(아래 한 줄: 판수 · APM · 딜 · 피해) | 전체 | 테 | 프 | 저] · 칸마다 승률 · ▾ 는 이름 옆(펼침은 PC 와 같은 곡선). */
 /* 폰 — [유저 | 전체 | 테란 | 프로토스 | 저그](2026-10-20, 요청: "원래대로 · 유저 전체 테 프 저 전적으로 · 유저 칸 세 줄 유지 · 각 전적 칸은 위 전수 아래 승률").

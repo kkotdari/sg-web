@@ -26,13 +26,14 @@ const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703
 type ColorMode = "player" | "team";
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
-/* 흔히 부르는 약어(2026-10-21, 요청: "사이버 → 코어 · 에볼 → 챔버 · 이거 말고도 범용적인 약어로") — 아둔(시타델) · 트리뷰널 · 마운드 · 캐번 · 코버트 · 피직스 · 서포트. */
+/* 흔히 부르는 약어(2026-10-21, 요청: "사이버 → 코어 · 에볼 → 챔버 · 이거 말고도 범용적인 약어로") — 아둔(시타델) · 트리뷰널 · 마운드 · 캐번 · 코버트 · 피직스 · 서포트.
+   로보는 로보틱스로(요청: "로보 → 로보틱스"). */
 const TECH_LABEL: Record<number, string> = {
   111: "배럭", 112: "아카데미", 113: "팩토리", 114: "스타포트", 116: "사이언스", 122: "엔베", 123: "아머리",
   107: "컴샛", 108: "핵사일로", 115: "컨트롤타워", 117: "코버트", 118: "피직스", 120: "머신샵",
   142: "스포닝풀", 132: "레어", 133: "하이브", 135: "히드라덴", 139: "챔버", 141: "스파이어", 137: "그레이터",
   138: "퀸즈네스트", 136: "마운드", 140: "캐번", 134: "나이더스",
-  160: "게이트", 166: "포지", 164: "코어", 163: "아둔", 165: "아카이브", 155: "로보", 171: "서포트",
+  160: "게이트", 166: "포지", 164: "코어", 163: "아둔", 165: "아카이브", 155: "로보틱스", 171: "서포트",
   159: "옵저버터리", 167: "스타게이트", 169: "플릿비컨", 170: "트리뷰널",
 };
 const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
@@ -73,7 +74,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k }: {
   k: number;
 }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
-  const [hover, setHover] = useState<{ tech: GameCurve["techs"][number]; x0: number; x1: number; cy: number } | null>(null);
+  const [hover, setHover] = useState<{ tech: GameCurve["techs"][number] } | null>(null);
   /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것(2026-10-21, 요청: "세 판 높이 통일"). */
   const D = tlDims(k);
   const ROW_H = (H - D.axis - 4) / Math.max(1, lanes.length);
@@ -150,7 +151,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k }: {
               /* 얹은 테크와 같은 종류(모든 사람)는 강조색 칩으로(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로 강조해줘") —
                  보이지 않던 마우스 상자를 강조색으로 칠한다 · 글자색은 그대로(요청: "폰트색은 그대로"). */
               const hl = hover !== null && hover.tech.t === t.t;
-              const show = (): void => setHover({ tech: t, x0: cx0, x1: cx0 + w, cy: y });
+              const show = (): void => setHover({ tech: t });
               return (
                 <g
                   key={t.t} className="scr-tl-hit"
@@ -172,21 +173,13 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k }: {
           </g>
           );
         })}
-        {ticksX.filter((m) => m !== 0).map((m) => (
+        {ticksX.filter((m) => m !== 0 && (!hover || Math.abs(x(m * 60) - x(hover.tech.e)) > 30 * k)).map((m) => (
           <text key={m} className="scr-rc-axis" x={x(m * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: D.axisFs }}>{m}분</text>
         ))}
-        {/* 고른 테크의 완공 때에 세로 점선(모든 사람 칸을 가로질러 · 요청: "세로 점선 표시(전체인원)"). */}
+        {/* 고른 테크의 완공 때에 세로 점선(모든 사람 칸을 가로질러 · 요청: "세로 점선 표시(전체인원)") · 그 시각은 팝업 대신 가로축에(요청: "팝업 제거 · 가로축에 그 시각 표시"). */}
         {hover && <line className="scr-rc-cross" x1={x(hover.tech.e)} x2={x(hover.tech.e)} y1={4} y2={H - D.axis} />}
+        {hover && <text className="scr-rc-at" x={x(hover.tech.e)} y={H - 5} textAnchor="middle" style={{ fontSize: D.axisFs }}>{clock(hover.tech.e)}</text>}
       </svg>
-      {hover && (
-        <div
-          className={`scr-rc-tip${hover.x1 / CW > 0.8 ? " is-left" : ""}`} role="status"
-          style={{ left: `${((hover.x1 / CW > 0.8 ? hover.x0 : hover.x1) / CW) * 100}%`, top: `${(hover.cy / H) * 100}%`, minWidth: 0 }}
-        >
-          {/* 팝업은 완공 시각만(2026-10-21, 요청: "완공: 15:03 …" → "완공 제거하고 시간만 표시"). */}
-          <div className="scr-rc-tip-row">{clock(hover.tech.e)}</div>
-        </div>
-      )}
       </div>
     </figure>
   );
@@ -231,7 +224,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   }, [players, fontK]);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<ColorMode>("player");
-  const [off, setOff] = useState<ReadonlySet<string>>(() => new Set());
+  /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
+  const [focus, setFocus] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -257,17 +251,13 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
     return { x, xt: niceTicks(x, 7), wk: niceTicks(Math.max(0, ...ps.flatMap((p) => p.wk))), av: niceTicks(Math.max(0, ...ps.flatMap((p) => p.av))) };
   }, [players]);
   const linesOf = (key: "wk" | "av"): ChartLine[] => (players ?? []).flatMap((p, i) => (p[key].length < 2
-    ? [] : [{ key: p.playerName, label: shortName(nameOf(p)), color: colorOf(p, i), ys: p[key], off: off.has(p.playerName) }]));
+    ? [] : [{ key: p.playerName, label: shortName(nameOf(p)), color: colorOf(p, i), ys: p[key] }]));
   /* 좌우 여백 — PC 는 닉네임 칩·끝 칩이 다 들어가게. 폰은 좁게(2026-10-21, 요청: "모바일 그래프 왼쪽 패딩 줄이고 테크트리의 닉네임칩 자리 모자라면
      그래프 안에 좀 넣기 · 오른쪽도 패딩 줄여") — 왼쪽은 세로 눈금 글자 자리만(닉네임 칩은 왼끝에 붙여 판 안으로 넘친다), 오른쪽은 끝 칩이 판 밖으로 나가면 끝점 왼쪽에. */
   const names = (players ?? []).map((p) => shortName(nameOf(p)));
   const padR = mobile ? 10 : chipGutter(names, fontK);
   const PL = mobile ? 30 : 12 * fontK + fontK * Math.max(0, ...names.map(chipWOf));
-  const toggle = (k: string): void => setOff((prev) => {
-    const next = new Set(prev);
-    if (next.has(k)) next.delete(k); else next.add(k);
-    return next;
-  });
+  const pickFocus = (k: string): void => setFocus((f) => (f === k ? null : k));
 
   return createPortal(
     <div className="scr-modal-overlay" onClick={(e) => { e.stopPropagation(); onClose(); }}>
@@ -298,10 +288,10 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                 <>
                   <TechLanes
                     maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR} k={fontK}
-                    lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
+                    lanes={players.map((p, i) => ({ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
                   />
-                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} onToggle={toggle} fontK={fontK} />
-                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} onToggle={toggle} fontK={fontK} />
+                  <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} />
+                  <Chart title="병력 가치" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} />
                 </>
               )}
             </div>

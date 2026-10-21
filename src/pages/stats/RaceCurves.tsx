@@ -18,7 +18,7 @@ const PAD = CHART_PAD;
 
 type Line = { race: BaseRace; ys: number[] };
 /** 판에 그리는 한 줄 — 통계는 종족마다, 게임 그래프(GameCurvesModal)는 사람마다. */
-export type ChartLine = { key: string; label: string; color: string; ys: number[]; off?: boolean };
+export type ChartLine = { key: string; label: string; color: string; ys: number[] };
 type ByRace = Partial<Record<BaseRace, MemberStats>> | undefined;
 
 /** 모든 줄이 함께 쓰는 자(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이" → 병력 "20K") — 세로는 일꾼 0~100 ·
@@ -111,8 +111,43 @@ export const chipWOf = (s: string): number => textW(s, chipBox().fs) + 2 * chipB
 /** 끝 칩을 단 판의 오른쪽 여백(k = 글자 배수) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
 export const chipGutter = (labels: string[], k = 1): number => PAD.r + k * (8 + Math.max(0, ...labels.map(chipWOf)));
 
-export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height, onToggle, ticksX: tx, ticksY: ty, fontK: k = 1, padR: padROverride }: {
-  title: string; unit: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
+/** 지나는 점을 그대로 지나는 매끈한 곡선(단조 3차 · Fritsch–Carlson — 점 사이에서 위아래로 튀지 않는다 · 2026-10-21, 요청: "그래프 곡선화"). */
+function smoothPath(pts: [number, number][]): string {
+  const n = pts.length;
+  if (n === 0) return "";
+  if (n < 3) return `M${pts.map((p) => p.join(",")).join("L")}`;
+  const m: number[] = [];
+  for (let i = 0; i < n - 1; i += 1) m.push((pts[i + 1][1] - pts[i][1]) / (pts[i + 1][0] - pts[i][0]));
+  const t: number[] = [m[0]];
+  for (let i = 1; i < n - 1; i += 1) t.push(m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2);
+  t.push(m[n - 2]);
+  for (let i = 0; i < n - 1; i += 1) {
+    if (m[i] === 0) { t[i] = 0; t[i + 1] = 0; continue; }
+    const a = t[i] / m[i];
+    const b = t[i + 1] / m[i];
+    const q = a * a + b * b;
+    if (q > 9) { const r = 3 / Math.sqrt(q); t[i] = r * a * m[i]; t[i + 1] = r * b * m[i]; }
+  }
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < n - 1; i += 1) {
+    const [x0, y0] = pts[i];
+    const [x1, y1] = pts[i + 1];
+    const h = (x1 - x0) / 3;
+    d += `C${x0 + h},${y0 + t[i] * h},${x1 - h},${y1 - t[i + 1] * h},${x1},${y1}`;
+  }
+  return d;
+}
+
+/** 세로 위치들을 서로 gap 이상 떨어지게(위에서 아래로 밀고 · 바닥을 넘으면 아래에서 위로 되민다) — 칩 · 값 글자가 같이 쓴다. */
+function spreadY<T extends { y: number; ty: number }>(items: T[], gap: number, top: number, bot: number): T[] {
+  const s = [...items].sort((a, b) => a.y - b.y);
+  s.forEach((c, i) => { c.ty = Math.max(top, c.y, i > 0 ? s[i - 1].ty + gap : -Infinity); });
+  for (let i = s.length - 1; i >= 0; i -= 1) s[i].ty = Math.min(s[i].ty, bot, i < s.length - 1 ? s[i + 1].ty - gap : Infinity);
+  return s;
+}
+
+export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fontK: k = 1, padR: padROverride }: {
+  title: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
   ticksX?: number[]; ticksY?: number[];
   /** 판의 가로 자(기본 320) — 넓은 자리(PC 게임 그래프)는 키워 판이 너무 높아지지 않게 한다(높이 150 그대로). */
@@ -121,8 +156,9 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   padL?: number;
   /** 판의 세로 자(기본 150) — 게임 그래프는 잰 칸 크기 그대로(1:1) 그려 세 판의 높이를 맞춘다. */
   height?: number;
-  /** 끝 칩을 누르면 그 줄을 끄고 켠다(줄의 key). */
-  onToggle?: (key: string) => void;
+  /** 굵게 볼 줄(key) · 끝 칩을 누르면 그 줄만 굵게(다시 누르면 풀린다 · 2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기"). */
+  focus?: string | null;
+  onFocus?: (key: string) => void;
   /** 글자 배수(기본 1 — 통계) — 게임 그래프는 GAME_FONT_K. 눈금·칩 글자와 칩이 함께 커진다. */
   fontK?: number;
   /** 오른쪽 여백(기본: 칩 자리만큼) — 폰 게임 그래프는 좁게 주고, 판 밖으로 나갈 칩은 끝점 왼쪽에 놓는다. */
@@ -133,15 +169,14 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   const PL = padL ?? PAD.l;
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  /* 손가락은 **탭**(click)으로만 값 상자를 띄운다(2026-10-21, 지적: "드래그를 터치로 인식해") — 밀어 스크롤하면 click 이 오지 않는다.
-     마우스는 종전대로 얹으면 따라간다. click 의 pointerType 은 브라우저마다 없을 수 있어 누른 순간의 종류를 기억해 둔다. */
-  const lastPtr = useRef("mouse");
-  const PR = padROverride ?? (onToggle ? chipGutter(lines.map((l) => l.label), k) : PAD.r);
+  /* 세로선 — 마우스는 얹으면 따라가고, 손가락은 **좌우로 밀면** 따라간다(세로로 밀면 화면 스크롤 · 판은 touch-action: pan-y) · 탭은 그 분에.
+     (2026-10-21, 요청: "모바일에서 좌우 드래그 없으니까 터치 좌우로 이동으로 변경") click 의 pointerType 은 브라우저마다 없을 수 있어 누른 순간을 기억한다. */
+  const touch = useRef<{ type: string; x: number; y: number; scrub: boolean }>({ type: "mouse", x: 0, y: 0, scrub: false });
+  const PR = padROverride ?? (onFocus ? chipGutter(lines.map((l) => l.label), k) : PAD.r);
   const CB = chipBox();
   const CHIP_H = CB.h * k;
-  const shown = lines.filter((l) => !l.off);
-  /* 띄운 값 상자는 그래프 밖 어디를 누르든 닫힌다(2026-10-20, 요청: "그래프 누르면 팝업 같은 거 나오는데 다른 데 누르면 닫히게").
-     폰은 손가락을 떼도 남아 있어(pointerleave 는 마우스만 닫는다) 이것이 닫는 길이다. */
+  const FS = AXIS_FS * k;
+  /* 세로선은 판 밖 어디를 누르든 걷힌다(폰은 손가락을 떼도 남아 있어 이것이 닫는 길이다). */
   useEffect(() => {
     if (at === null) return undefined;
     const close = (e: PointerEvent): void => {
@@ -161,29 +196,34 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
     const sx = ((clientX - r.left) / r.width) * W;
     setAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (W - PL - PR)) * maxX))));
   };
-  const tipLeft = at === null ? 0 : (x(at) / W) * 100;
-  /* 칩 자리 — 끝점 오른쪽 · 위에서부터 겹치면 아래로 밀고, 판 바닥을 넘으면 아래에서부터 위로 되민다(판 안에 가둔다).
-     바닥에 몰린 칩들이 바닥 한 자리에 포개져 가려지던 것(2026-10-21, 지적: "칩끼리 겹쳐서 안보이는 문제")을 되밀기로 푼다. */
-  const chips = (onToggle ? lines : []).filter((l) => l.ys.length > 0).map((l) => {
+  /* 칩 자리 — 끝점 오른쪽(판 오른끝을 넘으면 끝점 왼쪽) · 겹치면 밀고 바닥을 넘으면 되민다(2026-10-21, 지적: "칩끼리 겹쳐서 안보이는 문제"). */
+  const chips = (onFocus ? lines : []).filter((l) => l.ys.length > 0).map((l) => {
     const i = l.ys.length - 1;
     const w = chipWOf(l.label) * k;
-    /* 판 오른끝을 넘으면 끝점 왼쪽에(오른쪽 여백을 좁게 준 폰 게임 그래프 · 2026-10-21, 요청: "오른쪽도 패딩 줄여"). */
     const right = x(i) + 8 * k + w <= W;
-    return { l, ex: x(i), ey: y(l.ys[i]), cx: right ? x(i) + 8 * k : x(i) - 8 * k - w, cy: y(l.ys[i]), w };
-  }).sort((a, b) => a.ey - b.ey);
-  const chipTop = PAD.t + CHIP_H / 2;
-  const chipBot = H - PAD.b - CHIP_H / 2;
+    return { l, ex: x(i), ey: y(l.ys[i]), cx: right ? x(i) + 8 * k : x(i) - 8 * k - w, y: y(l.ys[i]), ty: 0, w };
+  });
   const step = CHIP_H + 2 * k;
   const crossX = (a: (typeof chips)[number], b: (typeof chips)[number]): boolean => a.cx < b.cx + b.w && b.cx < a.cx + a.w;
-  chips.forEach((c, i) => {
-    c.cy = Math.max(chipTop, c.ey);
-    for (const p of chips.slice(0, i)) if (crossX(c, p)) c.cy = Math.max(c.cy, p.cy + step);
-  });
-  for (let i = chips.length - 1; i >= 0; i -= 1) {
-    const c = chips[i];
-    c.cy = Math.min(c.cy, chipBot);
-    for (const q of chips.slice(i + 1)) if (crossX(c, q)) c.cy = Math.min(c.cy, q.cy - step);
+  {
+    const s = [...chips].sort((a, b) => a.y - b.y);
+    s.forEach((c, i) => {
+      c.ty = Math.max(PAD.t + CHIP_H / 2, c.y);
+      for (const p of s.slice(0, i)) if (crossX(c, p)) c.ty = Math.max(c.ty, p.ty + step);
+    });
+    for (let i = s.length - 1; i >= 0; i -= 1) {
+      s[i].ty = Math.min(s[i].ty, H - PAD.b - CHIP_H / 2);
+      for (const q of s.slice(i + 1)) if (crossX(s[i], q)) s[i].ty = Math.min(s[i].ty, q.ty - step);
+    }
   }
+  /* 세로선 자리의 값 — 사람(종족)마다 제 색 글자로 점 옆에(팝업 대신 · 2026-10-21, 요청: "팝업 제거, 세로선만 유지하고 가로축에 그 시각 표시 ·
+     세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 오른끝 가까우면 점 왼쪽 · 겹치면 위아래로 민다. */
+  const valsRight = at !== null && x(at) < W - PR - 40 * k;
+  const vals = at === null ? [] : spreadY(
+    lines.filter((l) => at < l.ys.length).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), ty: 0 })),
+    FS + 2 * k, PAD.t + FS / 2, H - PAD.b - FS / 2,
+  );
+  const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">{title}{note && <i> · {note}</i>}</figcaption>
@@ -191,88 +231,88 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
         <svg
           ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="scr-rc-svg" role="img"
           aria-label={`${title} 분당 — ${lines.map((l) => `${l.label} ${l.ys.length - 1}분까지`).join(", ")}`}
-          onPointerMove={(e) => { if (e.pointerType === "mouse") pick(e.clientX); }}
-          onPointerDown={(e) => { lastPtr.current = e.pointerType; if (e.pointerType === "mouse") pick(e.clientX); }}
-          onClick={(e) => { if (lastPtr.current !== "mouse") pick(e.clientX); }}
+          onPointerDown={(e) => {
+            touch.current = { type: e.pointerType, x: e.clientX, y: e.clientY, scrub: false };
+            if (e.pointerType === "mouse") pick(e.clientX);
+          }}
+          onPointerMove={(e) => {
+            if (e.pointerType === "mouse") { pick(e.clientX); return; }
+            const t = touch.current;
+            if (!t.scrub) {
+              const dx = Math.abs(e.clientX - t.x);
+              if (dx > 6 && dx > Math.abs(e.clientY - t.y)) t.scrub = true;
+            }
+            if (t.scrub) pick(e.clientX);
+          }}
+          onClick={(e) => { if (touch.current.type !== "mouse") pick(e.clientX); }}
           onPointerLeave={(e) => { if (e.pointerType === "mouse") setAt(null); }}
         >
           {ticksY.map((v) => (
             <g key={v}>
               <line className="scr-rc-grid" x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} />
               {/* 0 · 0분 글자는 안 쓴다(2026-10-21, 요청: "그래프 0 0분 표시 안하기") — 줄은 그대로. */}
-              {v !== 0 && <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: AXIS_FS * k }}>{compact(v)}</text>}
+              {v !== 0 && <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: FS }}>{compact(v)}</text>}
             </g>
           ))}
-          {ticksX.filter((m) => m !== 0).map((m) => (
-            <text key={m} className="scr-rc-axis" x={x(m)} y={H - 5} textAnchor="middle" style={{ fontSize: AXIS_FS * k }}>{m}분</text>
+          {/* 세로선의 분은 가로축에(가까운 눈금 글자는 비켜 준다). */}
+          {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m) - x(at)) > 26 * k)).map((m) => (
+            <text key={m} className="scr-rc-axis" x={x(m)} y={H - 5} textAnchor="middle" style={{ fontSize: FS }}>{m}분</text>
           ))}
-          {shown.map((l) => (
-            <polyline
-              key={l.key} className="scr-rc-line" style={{ stroke: l.color }}
-              points={l.ys.map((v, i) => `${x(i)},${y(v)}`).join(" ")}
+          {at !== null && <text className="scr-rc-at" x={x(at)} y={H - 5} textAnchor="middle" style={{ fontSize: FS }}>{at}분</text>}
+          {ordered.map((l) => (
+            <path
+              key={l.key} className={`scr-rc-line${focus === l.key ? " is-focus" : ""}`} style={{ stroke: l.color }}
+              d={smoothPath(l.ys.map((v, i) => [x(i), y(v)]))}
             />
           ))}
-          {shown.map((l) => {
+          {ordered.map((l) => {
             const i = l.ys.length - 1;
-            return <circle key={l.key} className="scr-rc-end" cx={x(i)} cy={y(l.ys[i])} r={4} style={{ fill: l.color }} />;
+            return <circle key={l.key} className="scr-rc-end" cx={x(i)} cy={y(l.ys[i])} r={focus === l.key ? 5 : 4} style={{ fill: l.color }} />;
           })}
           {chips.map((c) => (
             <g
-              key={c.l.key} className={`scr-rc-chip${c.l.off ? " is-off" : ""}`} role="button" tabIndex={0}
-              aria-pressed={!c.l.off} aria-label={`${c.l.label} ${c.l.off ? "켜기" : "끄기"}`}
+              key={c.l.key} className={`scr-rc-chip${focus === c.l.key ? " is-focus" : ""}`} role="button" tabIndex={0}
+              aria-pressed={focus === c.l.key} aria-label={`${c.l.label} 굵게 보기`}
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => onToggle?.(c.l.key)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle?.(c.l.key); } }}
+              onClick={(e) => { e.stopPropagation(); onFocus?.(c.l.key); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onFocus?.(c.l.key); } }}
             >
-              {Math.abs(c.cy - c.ey) > 1 && <line className="scr-rc-chip-lead" x1={c.ex} y1={c.ey} x2={c.cx} y2={c.cy} style={{ stroke: c.l.color }} />}
-              <rect x={c.cx} y={c.cy - CHIP_H / 2} width={c.w} height={CHIP_H} rx={CB.r * k} style={{ fill: c.l.color }} />
-              <text x={c.cx + c.w / 2} y={c.cy} textAnchor="middle" dominantBaseline="central" style={{ fontSize: CB.fs * k, fill: inkOn(c.l.color) }}>{c.l.label}</text>
+              {Math.abs(c.ty - c.ey) > 1 && <line className="scr-rc-chip-lead" x1={c.ex} y1={c.ey} x2={c.cx} y2={c.ty} style={{ stroke: c.l.color }} />}
+              <rect x={c.cx} y={c.ty - CHIP_H / 2} width={c.w} height={CHIP_H} rx={CB.r * k} style={{ fill: c.l.color }} />
+              <text x={c.cx + c.w / 2} y={c.ty} textAnchor="middle" dominantBaseline="central" style={{ fontSize: CB.fs * k, fill: inkOn(c.l.color) }}>{c.l.label}</text>
             </g>
           ))}
           {at !== null && <line className="scr-rc-cross" x1={x(at)} x2={x(at)} y1={PAD.t} y2={H - PAD.b} />}
-          {at !== null && shown.map((l) => (at < l.ys.length
-            ? <circle key={l.key} className="scr-rc-dot" cx={x(at)} cy={y(l.ys[at])} r={4} style={{ fill: l.color }} />
-            : null))}
+          {vals.map(({ l, y: py }) => <circle key={l.key} className="scr-rc-dot" cx={x(at ?? 0)} cy={py} r={4} style={{ fill: l.color }} />)}
+          {vals.map(({ l, v, ty: vy }) => (
+            <text
+              key={l.key} className="scr-rc-val" x={x(at ?? 0) + (valsRight ? 8 : -8) * k} y={vy}
+              textAnchor={valsRight ? "start" : "end"} dominantBaseline="central" style={{ fontSize: FS, fill: l.color }}
+            >{compact(v)}</text>
+          ))}
         </svg>
-        {at !== null && (
-          <div className={`scr-rc-tip${tipLeft > 60 ? " is-left" : ""}`} style={{ left: `${tipLeft}%` }} role="status">
-            <div className="scr-rc-tip-head">{at}분</div>
-            {shown.map((l) => (
-              <div key={l.key} className="scr-rc-tip-row">
-                <i className="scr-rc-key" style={{ background: l.color }} />
-                <b>{at < l.ys.length ? `${compact(l.ys[at])}${unit}` : "-"}</b>
-                <span>{l.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </figure>
   );
 }
 
 export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale }) {
-  /* 종족 켜고 끄기는 줄 끝 칩으로(2026-10-21, 요청: "범례 제거하고 그래프 끝에 칩 · 칩 누르면 껐다켰다") — 옛 종족 단추 줄은 걷었다.
-     두 판이 한 상태를 같이 쓰고, 끈 종족은 선만 빠지고 자(scale)는 그대로라 켰다 껐다 해도 눈금이 안 흔들린다. */
-  const [off, setOff] = useState<ReadonlySet<string>>(() => new Set());
+  /* 줄 끝 칩을 누르면 그 종족 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신). 두 판이 한 상태를 같이 쓴다. */
+  const [focus, setFocus] = useState<string | null>(null);
   const allWk = linesOf(byRace, "wk");
   const allAv = linesOf(byRace, "av");
   const sc = scale ?? curveScale([byRace]);
   if (allWk.length === 0 && allAv.length === 0) {
     return <div className="scr-rc-empty">표시할 데이터가 아직 없어요</div>;
   }
-  const toggle = (k: string): void => setOff((prev) => {
-    const next = new Set(prev);
-    if (next.has(k)) next.delete(k); else next.add(k);
-    return next;
-  });
-  const drawn = (ls: Line[]): ChartLine[] => ls.map((l) => ({ key: l.race, label: l.race, color: TONE[l.race], ys: l.ys, off: off.has(l.race) }));
+  const pickFocus = (k: string): void => setFocus((f) => (f === k ? null : k));
+  const drawn = (ls: Line[]): ChartLine[] => ls.map((l) => ({ key: l.race, label: l.race, color: TONE[l.race], ys: l.ys }));
   return (
     <div className="scr-rc">
       <div className="scr-rc-charts">
-        <Chart title="일꾼 수" unit="기" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} onToggle={toggle} />
+        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} />
         {/* 짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
-        <Chart title="병력 가치" unit="" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} onToggle={toggle} />
+        <Chart title="병력 가치" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} />
       </div>
     </div>
   );
