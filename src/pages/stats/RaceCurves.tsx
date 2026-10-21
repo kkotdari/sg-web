@@ -90,8 +90,9 @@ export function inkOn(color: string): string {
 function valOutline(color: string): string | undefined {
   const light = document.documentElement.classList.contains("scr-light-theme");
   const lum = lumOf(color);
-  if (light && lum > 170) return "#2a2a2a";
-  if (!light && lum < 70) return "#e8e8e8";
+  /* 검정·흰 테는 너무 튀어 회색으로(요청: "너무 튀면 회색?"). */
+  if (light && lum > 170) return "#8a8a8a";
+  if (!light && lum < 70) return "#8a8a8a";
   return undefined;
 }
 
