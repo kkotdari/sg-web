@@ -82,6 +82,11 @@ export interface GameCurve {
   /** 분마다 인구 · 일꾼 뺀 인구(2026-10-21 · 병력 가치 대신). */
   sp: number[];
   sx: number[];
+  /** 분마다 쥔 미네랄 · 가스(자원 그래프 · PC). */
+  rm: number[];
+  rg: number[];
+  /** 모든 건물의 생애(초) — t 종류 · s 짓기 시작 · d 다 지음(못 지었으면 null) · e 사라짐(끝까지 남았으면 null) · PC 건설 줄. */
+  blds: { t: number; s: number; d: number | null; e: number | null }[];
   /** 테크 건물 종류별 첫 한 채 — t 유닛 종류 · s 짓기 시작 초 · e 다 지은 초. */
   techs: { t: number; s: number; e: number }[];
 }

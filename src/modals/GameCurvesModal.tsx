@@ -24,7 +24,7 @@ import type { GameCurve, GameResult } from "../types";
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
-type CurveKey = "wk" | "sp" | "sx";
+type CurveKey = "wk" | "sp" | "sx" | "rs";
 const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
@@ -208,6 +208,116 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, mobile, f
   );
 }
 
+/** 건물 짧은 이름 — 테크(TECH_LABEL) + 본진·보급·가스·방어(서버 series.BUILDINGS 와 짝). */
+const BUILD_LABEL: Record<number, string> = {
+  ...TECH_LABEL,
+  106: "커맨드", 109: "서플", 110: "리파이너리", 124: "터렛", 125: "벙커",
+  130: "감염커맨드", 131: "해처리", 143: "크립", 144: "스포어", 146: "성큰", 149: "익스트랙터",
+  154: "넥서스", 156: "파일런", 157: "어시밀레이터", 162: "캐논", 172: "배터리",
+};
+/** PC 건설 줄 치수(px) — 종류마다 한 칸: 위에 이름(label 높이) · 아래에 그 종류 건물마다 가는 선 한 줄(step 간격) · 칸 끝 숨(pad). */
+const BL = { fs: 10.5, label: 13, step: 3.5, pad: 5 } as const;
+
+type BuildLane = { key: string; group: string; name: string; color: string; blds: GameCurve["blds"] };
+
+/** ★ PC 건설 줄(2026-10-21, 요청: "PC 에서만 테크 건물 → 건설로 바꾸고 모든 건물 건설 및 유지 기간 보여줘(파괴되기 전까지 선으로) · 테크 건물만 토글") —
+ *  사람마다 칸 · 그 안에 건물 종류마다 작은 칸(처음 지은 차례) · 건물 한 채가 선 하나: 짓는 동안은 점선 · 다 지은 뒤 사라질 때까지 실선(끝까지 남으면 판 끝까지).
+ *  같은 종류 여러 채는 겹치지 않게 줄을 나눈다. 선에 마우스를 얹으면 세로선이 그 건물의 완공(못 지었으면 착공) 때로 · 가로축에 분:초. */
+function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, techOnly, onTechOnly }: {
+  lanes: BuildLane[]; maxX: number; ticksX: number[]; w: number; padL: number; padR: number;
+  font: { label: number; axis: number };
+  focus: string | null;
+  onFocus: (key: string) => void;
+  at: number | null;
+  onAt: (m: number | null) => void;
+  techOnly: boolean;
+  onTechOnly: (v: boolean) => void;
+}) {
+  const [hover, setHover] = useState<GameCurve["blds"][number] | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const AXIS_H = font.axis + 8 + AXIS_DROP;
+  const END = maxX * 60;
+  const x = (sec: number): number => PL + Math.min(1, sec / END) * (CW - PL - padR);
+  const pick = (clientX: number): void => {
+    const el = svgRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const sx = ((clientX - r.left) / r.width) * CW;
+    setHover(null);
+    onAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (CW - PL - padR)) * maxX))));
+  };
+  const scrub = useScrub(pick, () => { setHover(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
+  let y0 = 4;
+  const rows = lanes.map((l) => {
+    const shown = l.blds.filter((b) => !techOnly || b.t in TECH_LABEL);
+    const order: number[] = [];
+    for (const b of shown) if (!order.includes(b.t)) order.push(b.t);
+    let yy = y0 + 4;
+    const groups = order.map((t) => {
+      const ends: number[] = [];
+      const items = shown.filter((b) => b.t === t).map((b) => {
+        let k = ends.findIndex((e) => e <= b.s);
+        if (k < 0) { k = ends.length; ends.push(0); }
+        ends[k] = b.e ?? Infinity;
+        return { b, k };
+      });
+      const g = { t, items, top: yy };
+      yy += BL.label + ends.length * BL.step + BL.pad;
+      return g;
+    });
+    const h = Math.max(yy - y0 + 2, 36);
+    const row = { l, groups, top: y0, h };
+    y0 += h;
+    return row;
+  });
+  const H = y0 + AXIS_H;
+  return (
+    <figure className="scr-rc-chart">
+      <figcaption className="scr-rc-title">건설<TitleSwitch label="테크 건물만" on={techOnly} onChange={onTechOnly} /></figcaption>
+      <div className="scr-rc-plot">
+      <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
+        {rows.map(({ l, groups, top, h }) => (
+          <g key={l.key} className={focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row"}>
+            <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
+            {groups.map((g) => (
+              <g key={g.t}>
+                <text className="scr-tl-label" x={x(g.items[0].b.s)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>{BUILD_LABEL[g.t] ?? `#${g.t}`}</text>
+                {g.items.map(({ b, k }) => {
+                  const ly = g.top + BL.label + k * BL.step + 1;
+                  const done = b.d ?? b.e ?? END;
+                  const show = (): void => { setHover(b); onAt((b.d ?? b.s) / 60); };
+                  return (
+                    <g
+                      key={`${b.s}:${k}`} className={hover === b ? "scr-bl-hit is-hl" : "scr-bl-hit"}
+                      onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
+                      onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
+                    >
+                      <line className="scr-bl-build" x1={x(b.s)} x2={x(done)} y1={ly} y2={ly} />
+                      {b.d !== null && <line className="scr-bl-live" x1={x(b.d)} x2={x(b.e ?? END)} y1={ly} y2={ly} />}
+                      <line className="scr-bl-pad" x1={x(b.s)} x2={x(b.e ?? END)} y1={ly} y2={ly} />
+                    </g>
+                  );
+                })}
+              </g>
+            ))}
+            <NameChip name={shortName(l.name, font.label)} color={l.color} right={Math.max(PL - 6, chipWOf(shortName(l.name, font.label), font.label))} cy={top + h / 2} fs={font.label} big={focus === l.group} onPick={() => onFocus(l.group)} />
+          </g>
+        ))}
+        {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m * 60) - x(at * 60)) > 30)).map((m) => (
+          <text key={m} className="scr-rc-axis" x={x(m * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{m}분</text>
+        ))}
+        {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
+        {at !== null && (
+          <text className="scr-rc-at" x={x(at * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>
+            {hover ? clock(hover.d ?? hover.s) : `${Math.round(at)}분`}
+          </text>
+        )}
+      </svg>
+      </div>
+    </figure>
+  );
+}
+
 const teamNo = (team: string): 1 | 2 => (team === "team2" ? 2 : 1);
 
 /** 0 부터 v 를 덮는 둥근 눈금(간격 1 · 2 · 2.5 · 5 × 10ⁿ · 칸 수 ≤ n) — 끝 눈금이 판의 세로 끝이다. */
@@ -251,6 +361,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   /* 인구 그래프의 '일꾼 제외'(2026-10-21, 요청: "인구 그래프 타이틀 옆에 일꾼 제외 라벨드 토글") — 켜면 일꾼 뺀 인구(sx). */
   const [noWorker, setNoWorker] = useState(false);
   const spKey: CurveKey = noWorker ? "sx" : "sp";
+  /* PC 건설 줄의 '테크 건물만'(2026-10-21, 요청: "테크 건물만 토글 넣고"). */
+  const [techOnly, setTechOnly] = useState(false);
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   /* 세 판이 한 세로선(분)을 같이 쓴다(요청: "세로선을 모든 테크 & 그래프 간 동기화"). */
@@ -282,20 +394,21 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   /* 눈금은 이 판에 맞춘다(2026-10-21, 요청: "게임마다 적절한 눈금") — 통계의 고정 자(일꾼 100 · 인구 100 · 0/반/끝)가 아니라
      이 판 최댓값을 덮는 둥근 간격 눈금(세로 ≤5칸 · 가로 분 ≤7칸). */
   /* 그릴 줄 — 팀 보기면 팀마다 분별 합(그 팀에서 아직 선이 있는 사람만 더한다 · 길이는 그 팀에서 가장 긴 사람). */
-  const series = useMemo((): { key: string; p: GameCurve | null; team: 1 | 2; wk: number[]; sp: number[]; sx: number[] }[] => {
-    const ps = players ?? [];
-    if (!teamOn) return ps.map((p) => ({ key: p.playerName, p, team: teamNo(p.team), wk: p.wk, sp: p.sp, sx: p.sx }));
-    const sum = (ms: GameCurve[], k: CurveKey): number[] =>
-      Array.from({ length: Math.max(0, ...ms.map((p) => p[k].length)) }, (_, m) => ms.reduce((a, p) => a + (p[k][m] ?? 0), 0));
+  /* 자원(rs) = 그 분에 쥔 미네랄 + 가스(PC 자원 그래프 · 2026-10-21, 요청: "자원 그래프 추가"). */
+  const series = useMemo((): ({ key: string; p: GameCurve | null; team: 1 | 2 } & Record<CurveKey, number[]>)[] => {
+    const ps = (players ?? []).map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rs: p.rm.map((v, i) => v + (p.rg[i] ?? 0)) }));
+    if (!teamOn) return ps.map((q) => ({ key: q.p.playerName, team: teamNo(q.p.team), ...q }));
+    const sum = (ms: typeof ps, k: CurveKey): number[] =>
+      Array.from({ length: Math.max(0, ...ms.map((q) => q[k].length)) }, (_, m) => ms.reduce((a, q) => a + (q[k][m] ?? 0), 0));
     return ([1, 2] as const).map((t) => {
-      const ms = ps.filter((p) => teamNo(p.team) === t);
-      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx") };
+      const ms = ps.filter((q) => teamNo(q.p.team) === t);
+      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rs: sum(ms, "rs") };
     });
   }, [players, teamOn]);
   const sc = useMemo(() => {
     const x = Math.max(1, ...series.map((s) => Math.max(s.wk.length, s.sp.length) - 1));
     const ticks = (k: CurveKey): number[] => niceTicks(Math.max(0, ...series.flatMap((s) => s[k])));
-    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx") };
+    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rs: ticks("rs") };
   }, [series]);
   const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s, i) => (s[key].length < 2 ? [] : [s.p
     ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p, i), ys: s[key] }
@@ -335,14 +448,23 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
               )}
               {box.w > 0 && (
                 <>
-                  <TechLanes
-                    maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
-                    lanes={players.map((p, i) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
-                  />
+                  {mobile ? (
+                    <TechLanes
+                      maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
+                      lanes={players.map((p, i) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
+                    />
+                  ) : (
+                    <BuildLanes
+                      maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
+                      techOnly={techOnly} onTechOnly={setTechOnly}
+                      lanes={players.map((p, i) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p, i), blds: p.blds }))}
+                    />
+                  )}
                   <Chart
                     title="인구" titleExtra={<TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} />}
                     lines={linesOf(spKey)} maxX={sc.x} maxY={sc[spKey][sc[spKey].length - 1]} ticksX={sc.xt} ticksY={sc[spKey]} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
                   <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
+                  {!mobile && <Chart title="자원" note="그때 쥔 미네랄+가스" lines={linesOf("rs")} maxX={sc.x} maxY={sc.rs[sc.rs.length - 1]} ticksX={sc.xt} ticksY={sc.rs} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />}
                 </>
               )}
             </div>
