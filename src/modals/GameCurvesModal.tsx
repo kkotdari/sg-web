@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
@@ -16,15 +16,13 @@ import type { GameCurve, GameResult } from "../types";
 /* ★ 게임 그래프(2026-10-21, 요청: "게임 목록에서 PC에 그래프 보기 버튼 · 참가자 전원의 일꾼 및 병력 가치 그래프(한 그래프에 합쳐서) · 색은 임자색 ·
    범례에 색깔과 종족 닉네임 · 통계랑 똑같이 선택 · 팀컬러 모드로 변경도" → "두 그래프를 세로로 · PC 는 모달 폭 넓게" → "게임목록 폭 거의 다 ·
    그래프를 최대한 크게 · 각 플레이어 테크 건물 건설 시간을 그래프 위에 · 범례도 위로 · 폰에서는 제공되지 않는 기능").
-   차례: [선 색 · 사람 단추](범례) → 테크 줄(사람마다 한 줄 · 다 지은 때 칩) → 일꾼 수 → 병력 가치. 셋 다 같은 가로 자(CW · CHART_PAD)
+   차례: [선 색 · 사람 단추](범례) → 테크 줄(사람마다 한 줄 · 다 지은 때 칩) → 일꾼 수 → 병력 가치. 셋 다 같은 가로 자(잰 폭 · CHART_PAD) · 같은 높이
    · 같은 분 눈금(minuteTicks). 테크 줄 앞머리엔 닉네임만 연하게(요청: "범례 중복할 필요 없고" → "칸 앞머리에 심플하게 닉네임") — 범례와 같은 차례 · 같은 색.
    곡선·개인색은 서버의 통계용 참값 표(GET /{id}/curves) — 판(Chart)과 자(scaleOf)는 통계 펼침(RaceCurves)과 같은 것을 쓴다.
    개인색을 못 읽은 판(옛 굽기 · 로스터 색이 한 가지뿐)은 원작 팔레트를 자리 차례로 쓴다(재생기 personalUsable 과 같은 거름). */
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ColorMode = "player" | "team";
-/** 판의 가로 자 — 테크 줄과 두 판이 같이 쓴다. */
-const CW = 1400;
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
 const TECH_LABEL: Record<number, string> = {
@@ -44,15 +42,16 @@ const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` 
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
  *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 짓기 시작은 칩에 마우스를 얹으면 팝업에 나온다. */
-function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
+function TechLanes({ lanes, maxX, w: CW, h: H }: { lanes: Lane[]; maxX: number; w: number; h: number }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ lane: Lane; tech: GameCurve["techs"][number]; label: string; x0: number; x1: number; cy: number } | null>(null);
-  const CH = 17;
-  const GAP = 8;
-  const ROW_H = CH * 2 + 2 + GAP;
+  /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것 — 칩 크기도 거기에 맞춘다(2026-10-21, 요청: "테크쪽이 너무 비대 · 세 판 높이 통일"). */
   const AXIS = 18;
+  const ROW_H = (H - AXIS - 4) / Math.max(1, lanes.length);
+  const CH = Math.max(12, Math.min(16, (ROW_H - 4) / 2));
+  const FS = Math.round(CH * 0.66 * 10) / 10;
   const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - CHART_PAD.r);
-  const chipW = (s: string): number => s.length * 11 + 11;
+  const chipW = (s: string): number => s.length * FS + FS + 2;
   let y0 = 4;
   /* 칩은 칸의 세로 가운데 · **겹치는 칩끼리만** 가운데 위아래로 가른다(2026-10-21, 요청: "겹치는것들만 위아래로 배치").
      칩의 왼끝 = 다 지은 때 · 오른끝을 넘는 칩은 거꾸로 칩의 오른끝을 그때에 맞춘다(띠도 오른쪽 · 요청: "테크 칩 화면밖으로 나감").
@@ -87,7 +86,6 @@ function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
     y0 += ROW_H;
     return row;
   });
-  const H = y0 + AXIS;
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">테크 건물<i> · 다 지은 때</i></figcaption>
@@ -108,7 +106,7 @@ function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
                 >
                   <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} rx={4} style={{ stroke: l.color }} />
                   <rect x={flip ? cx + w - 3 : cx} y={y} width={3} height={CH} rx={1.5} style={{ fill: l.color }} />
-                  <text className="scr-tl-label" x={cx + (flip ? 4 : 7)} y={y + CH / 2} dominantBaseline="central">{label}</text>
+                  <text className="scr-tl-label" x={cx + (flip ? 4 : 7)} y={y + CH / 2} dominantBaseline="central" style={{ fontSize: FS }}>{label}</text>
                 </g>
               );
             })}
@@ -143,6 +141,25 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   useLockBodyScroll();
   const memberOf = useAppStore((s) => s.memberOf);
   const [players, setPlayers] = useState<GameCurve[] | null>(null);
+  /* 세 판(테크 · 일꾼 · 병력)은 같은 높이(2026-10-21 요청) — 판 폭은 잰 그대로, 높이는 창 안에 셋이 들어가게((화면 높이 − 머리·범례·제목) ÷ 3 · 최소 180).
+     잰 크기 그대로(1:1) 그려 글자·선이 늘거나 줄지 않는다. */
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el) return undefined;
+    /* 테크 줄 한 칸은 28px 아래로 안 줄인다(칩 글이 8px 아래로 안 가게) — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
+    const lanesMin = (players ?? []).length * 28 + 22;
+    const measure = (): void => setBox({
+      w: Math.floor(el.clientWidth),
+      h: Math.max(180, lanesMin, Math.floor((window.innerHeight - 330) / 3)),
+    });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, [players]);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<ColorMode>("player");
   const [off, setOff] = useState<ReadonlySet<string>>(() => new Set());
@@ -186,7 +203,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
           ) : players.length === 0 ? (
             <div className="scr-rc-empty">{error || "표시할 데이터가 아직 없어요 — 재분석하면 생겨요"}</div>
           ) : (
-            <div className="scr-gc">
+            <div className="scr-gc" ref={boxRef}>
               <div className="scr-gc-legend" role="group" aria-label="보일 사람">
                 <div className="scr-rc-mode" role="radiogroup" aria-label="선 색">
                   {(["player", "team"] as const).map((m) => (
@@ -209,12 +226,16 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                   </button>
                 ))}
               </div>
-              <TechLanes
-                maxX={sc.x}
-                lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
-              />
-              <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk} width={CW} padL={PL} />
-              <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} width={CW} padL={PL} />
+              {box.w > 0 && (
+                <>
+                  <TechLanes
+                    maxX={sc.x} w={box.w} h={box.h}
+                    lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
+                  />
+                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk} width={box.w} height={box.h} padL={PL} />
+                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} width={box.w} height={box.h} padL={PL} />
+                </>
+              )}
             </div>
           )}
         </div>

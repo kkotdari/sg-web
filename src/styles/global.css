@@ -3282,12 +3282,14 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 페이지보다 작게(2026-10-21, 요청: "좌우 패딩 주고 크기 줄여서 팝업창 크기를 페이지 크기보다 작게") — 양옆 60px · 높이는 화면 안(넘치면 창 안에서 내린다). */
 .scr-modal-graph { max-width: 1600px; width: calc(100vw - 120px); max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
 .scr-modal-graph > .scr-modal-body { padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
-.scr-gc { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* 판 사이를 띄워 가른다(요청: "그래프간 줄간격좀 띄워서 구분") — 판마다 위 가는 줄. */
+.scr-gc { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.scr-gc > .scr-rc-chart { padding-top: 14px; border-top: 1px solid var(--line-faint); }
 .scr-gc-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .scr-rc-mode { display: flex; gap: 4px; margin-right: 10px; }
 .scr-rc-pick-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scr-tl-chip { fill: var(--card-bg, #101011); stroke-width: 1; stroke-opacity: 0.7; }
-.scr-tl-label { fill: var(--text); font-size: 11px; font-weight: 600; }
+.scr-tl-label { fill: var(--text); font-weight: 600; }
 .scr-tl-hit { cursor: default; }
 .scr-tl-hit:hover .scr-tl-chip { stroke-opacity: 1; stroke-width: 1.6; }
 .scr-redo-pick { display: flex; flex-direction: column; max-height: min(78vh, 720px); }

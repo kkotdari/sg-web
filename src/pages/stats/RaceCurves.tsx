@@ -12,7 +12,7 @@ const TONE: Record<BaseRace, string> = {
   테란: "var(--race-chart-terran)", 프로토스: "var(--race-chart-protoss)", 저그: "var(--race-chart-zerg)",
 };
 const W0 = 320;
-const H = 150;
+const H0 = 150;
 export const CHART_PAD = { l: 34, r: 12, t: 10, b: 20 };
 const PAD = CHART_PAD;
 
@@ -70,14 +70,17 @@ export function minuteTicks(maxX: number): number[] {
   return Array.from({ length: Math.floor(maxX / step) + 1 }, (_, i) => i * step);
 }
 
-export function Chart({ title, unit, lines, note, maxX, maxY, width, padL }: {
+export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height }: {
   title: string; unit: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 판의 가로 자(기본 320) — 넓은 자리(PC 게임 그래프)는 키워 판이 너무 높아지지 않게 한다(높이 150 그대로). */
   width?: number;
   /** 왼쪽 여백(기본 34) — 게임 그래프는 테크 줄 앞머리의 닉네임 칸과 가로 자를 맞추려 넓힌다. */
   padL?: number;
+  /** 판의 세로 자(기본 150) — 게임 그래프는 잰 칸 크기 그대로(1:1) 그려 세 판의 높이를 맞춘다. */
+  height?: number;
 }) {
   const W = width ?? W0;
+  const H = height ?? H0;
   const PL = padL ?? PAD.l;
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
