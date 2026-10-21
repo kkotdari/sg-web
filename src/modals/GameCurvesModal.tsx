@@ -215,6 +215,8 @@ const BUILD_LABEL: Record<number, string> = {
   130: "감염커맨드", 131: "해처리", 143: "크립", 144: "스포어", 146: "성큰", 149: "익스트랙터",
   154: "넥서스", 156: "파일런", 157: "어시밀레이터", 162: "캐논", 172: "배터리",
 };
+/** 변태 취소의 이름 — 취소하면 종류가 안 바뀌어 트랙에 무엇으로 변태하던 중이었는지가 없다. 바탕 건물로 어림한다(크립은 성큰 · 스포어 둘 다 될 수 있다). */
+const MORPH_TO: Record<number, string> = { 131: "레어", 132: "하이브", 141: "그레이터", 143: "성큰·스포어" };
 /** 첫 본진(경기 시작부터 있던 커맨드 · 해처리 · 넥서스) — '테크 건물만'에서도 보인다(2026-10-21, 요청: "첫 스타팅 기지도 표현"). */
 const MAIN_HALL = new Set([106, 131, 154]);
 /** PC 건설 줄 치수(px) — 종류마다 한 칸: 위에 이름(label 높이) · 아래에 그 종류 건물마다 가는 선 한 줄(step 간격) · 칸 끝 숨(pad). */
@@ -267,7 +269,16 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       /* 그 줄의 변태 이름 — 종류마다 처음 변태를 시작한 자리에 한 번(성큰 여럿이 줄마다 이름을 달지 않게 · 2026-10-21, 요청: "변태 건물도 변태 시작점에 이름"). */
       const morphs = new Map<number, number>();
       for (const { b } of items) for (const [mt, ms] of b.m) if (!morphs.has(mt) || ms < (morphs.get(mt) ?? Infinity)) morphs.set(mt, ms);
-      const g = { t, items, top: yy, morphs: [...morphs] };
+      /* 변태 취소 이름(같은 날 요청: "취소에도 이름은 표시") — 종류마다 처음 취소한 변태의 시작 자리에 한 번 "→ 레어 ✕". 바탕은 그때까지 다 된 변태의 마지막 종류. */
+      const cancels = new Map<string, number>();
+      for (const { b } of items) {
+        for (const [xs] of b.x ?? []) {
+          const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
+          const nm = MORPH_TO[base] ?? "변태";
+          if (!cancels.has(nm) || xs < (cancels.get(nm) ?? Infinity)) cancels.set(nm, xs);
+        }
+      }
+      const g = { t, items, top: yy, morphs: [...morphs], cancels: [...cancels] };
       yy += BL.label + ends.length * BL.step + BL.pad;
       return g;
     });
@@ -290,6 +301,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                 <text className="scr-tl-label" x={x(g.items[0].b.s)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>{BUILD_LABEL[g.t] ?? `#${g.t}`}</text>
                 {g.morphs.map(([mt, at9]) => (
                   <text key={mt} className="scr-tl-label scr-bl-morph" x={x(at9)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>→ {BUILD_LABEL[mt] ?? `#${mt}`}</text>
+                ))}
+                {g.cancels.map(([nm, at9]) => (
+                  <text key={`x${nm}`} className="scr-tl-label scr-bl-morph" x={x(at9)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>→ {nm} <tspan className="scr-bl-cut">✕</tspan></text>
                 ))}
                 {g.items.map(({ b, k }) => {
                   const ly = g.top + BL.label + k * BL.step + 1;
