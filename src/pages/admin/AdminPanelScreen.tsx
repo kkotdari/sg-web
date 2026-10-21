@@ -597,7 +597,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                         picked={picked.has(r.id)}
                         className="scr-activity-row-game scr-gm"
                         onClick={() => togglePick(r.id)}
-                        status={<GameRowStatus game={r.game} playable={gamePlayable(r.game)} />}
+                        status={<GameRowStatus game={r.game} />}
                         desc={<GameRowNames game={r.game} memberOf={memberOf} mobile playable={gamePlayable(r.game)} />}
                         side={formatAgo(r.game.gameStartedAt ?? r.game.date)}
                       />
@@ -674,7 +674,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                       className="scr-activity-row-game scr-gm"
                       onClick={() => {}}
                       above={<span className="scr-redo-fail-why">{f.matchNo || `#${f.id}`} · {f.why}</span>}
-                      status={g ? <GameRowStatus game={g} playable={gamePlayable(g)} /> : null}
+                      status={g ? <GameRowStatus game={g} /> : null}
                       desc={g ? <GameRowNames game={g} memberOf={memberOf} mobile playable={gamePlayable(g)} /> : <span>{f.matchNo || `#${f.id}`}</span>}
                       side={g ? formatAgo(g.gameStartedAt ?? g.date) : ""}
                     />

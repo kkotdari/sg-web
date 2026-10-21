@@ -286,7 +286,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                         className="scr-activity-row-game scr-gm"
                         onClick={() => sel.toggle(key)}
                         onLongPress={isMobile ? () => sel.toggle(key) : undefined}
-                        status={<GameRowStatus game={g} playable={gamePlayable(g)} />}
+                        status={<GameRowStatus game={g} />}
                         desc={<>
                           <GameRowNames game={g} memberOf={memberOf} mobile playable={gamePlayable(g)} />
                         </>}

@@ -5697,7 +5697,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-activity-row-flat { flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .scr-activity-row-play { flex: none; align-self: center; color: #4cc93b; }
 /* 맵 배지 옆 재생 배지(GameRowStatus playable · 2026-10-19) — 폰 게임 줄만 선다(아래 미디어 블록) · PC 는 이름 줄 끝 그대로. */
-.scr-activity-row-play-top { display: none; }
+.scr-activity-row-data-wrap { display: none; }
 .scr-light-theme .scr-activity-row-play { color: #379a20; }
 /* 글자는 **누르지 않는다**(2026-10, 요청: "글자 좌우 압축 제거 · 글자가 잘리면 할수없이 자르기") — 한때 width:max-content 로 펼친 뒤
    transform: scaleX(--flat) 로 줄 폭에 맞춰 눌렀다(찌그러져 보였다). 이제 그냥 줄어들다 말줄임(.scr-activity-row-em)으로 잘린다. */
@@ -5801,8 +5801,8 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-status { order: 1; }
 /* ★ 재생 배지는 맵 배지 **바로 옆**(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") — 같은 order 1 이라 DOM 차례대로 배지 뒤에 선다 ·
    옛 자리(이름 줄 끝)는 그 줄이 윗줄 배지를 가질 때만 숨긴다(배지를 안 넘기는 모달 목록은 그대로). */
-.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-play-top { display: flex; align-items: center; gap: 14px; padding: 4px 4px 0 0; order: 0; }   /* 위·옆 여백 더(요청: "플레이, 데이터 아이콘 위 옆 여백좀 키우고") */
-/* 데이터 단추 — 재생 배지 오른쪽(재생 배지는 그만큼 왼쪽으로 · 2026-10-21, 요청: "모바일에서 재생버튼 살짝 왼쪽으로 밀고 그자리에 데이터 아이콘") · 줄 높이를 안 바꾼다. */
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-data-wrap { display: flex; align-items: center; padding: 4px 4px 0 0; order: 0; }   /* 위·옆 여백 더(요청: "플레이, 데이터 아이콘 위 옆 여백좀 키우고") · 재생 배지는 걷었다(요청: "데이터랑 상관없이 재생배지 지우란 거였어") */
+/* 데이터 단추 — 윗줄 오른끝(2026-10-21, 요청: "모바일에서 … 그자리에 데이터 아이콘") · 줄 높이를 안 바꾼다. */
 .scr-activity-row-data { width: 24px; height: 24px; margin: -5px -5px -5px 0; color: var(--row-dim); }
 /* ★ 윗줄 = [재생 배지 왼끝 · 맵·시간 배지 **정가운데** · (NEW) 시각 오른끝](2026-10-19, 요청 위 ★★) — 맵 배지는 줄 몸의 가운데에 절대 자리(위 여백 7 = 줄 몸 위 패딩).
    리그 판 머리 줄(has-above)이 있는 줄은 그 아래라 자리를 모른다 — 양옆 auto 여백으로 가운데 어림. */
@@ -5818,13 +5818,12 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-row-game.scr-gm .scr-activity-row-col-names { padding: 0 4px; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-above { grid-column: 1 / -1; order: 0; }
 /* 시각 ↔ 재생 자리 바꿈(2026-10-20, 요청: "모바일 게임목록 타임스탬프와 재생배지 위치 교환") — 시각 묶음이 왼끝(1칸) · 재생이 오른끝(3칸). */
-.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-play-top { grid-column: 3; justify-self: end; order: 3; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-data-wrap { grid-column: 3; justify-self: end; order: 3; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-status { grid-column: 2; order: 2; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-badges { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 5px;
   grid-column: 1; order: 1; margin-left: 0; min-width: 0; }
 .scr-activity-row-game.scr-gm .scr-activity-row-badges > .scr-activity-row-badges-top { margin-left: 0; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc { grid-column: 1 / -1; order: 4; }
-.scr-activity-row-game.scr-gm > .scr-activity-row-main:has(> .scr-activity-row-play-top) > .scr-activity-row-desc .scr-activity-row-play { display: none; }
 /* NEW/UPDATE 는 시각 **오른쪽**(같은 날 요청: "업데이트 뉴는 타임스탬프 오른쪽에"). */
 .scr-activity-row-game.scr-gm .scr-activity-row-badges-top { order: 2; margin-left: 0; min-height: 0; }
 .scr-activity-row-game.scr-gm .scr-activity-row-time { order: 1; text-align: left; line-height: 1.25; }

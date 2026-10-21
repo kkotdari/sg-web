@@ -38,8 +38,8 @@ export function GameDataButton({ game }: { game: GameResult }) {
   );
 }
 
-/** playable — 폰 게임 줄은 재생 배지를 맵 배지 **바로 옆**(윗줄)에 단다(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") · PC 는 숨고 이름 줄 끝 그대로(global.css). */
-export function GameRowStatus({ game, playable, data }: { game: GameResult; playable?: boolean; data?: boolean }) {
+/** 맵·길이 배지 + (data) 윗줄 오른끝 데이터 단추(폰 · PC 는 숨는다 · global.css). 폰 게임 줄의 재생 배지는 걷었다(2026-10-21, 요청: "데이터랑 상관없이 재생배지 지우란 거였어"). */
+export function GameRowStatus({ game, data }: { game: GameResult; data?: boolean }) {
   if (isSecretGame(game)) {
     return (
       <span className="scr-activity-row-status scr-activity-row-status-dur scr-activity-row-status-secret" title="숨긴 경기">
@@ -52,7 +52,7 @@ export function GameRowStatus({ game, playable, data }: { game: GameResult; play
     ?? cachedReplayMap(game.mapHash)?.canonName
     ?? game.mapName);
   const map = full.length > 5 ? full.slice(0, 5) : full;
-  const tail = playable || (data && !game.ums);
+  const tail = !!data && !game.ums;
   if (sec == null && !map && !tail) return null;
   return (<>
     {(sec != null || map !== "") && (
@@ -61,14 +61,7 @@ export function GameRowStatus({ game, playable, data }: { game: GameResult; play
         {sec != null && <span>{Math.round(sec / 60)}분</span>}
       </span>
     )}
-    {tail && (
-      <span className="scr-activity-row-play-top">
-        {/* 데이터 단추가 서는 줄(활동·게임 목록)은 재생 배지를 뺀다 — 단추 옆의 단추 아닌 아이콘이 어색(2026-10-21, 요청: "모바일 재생아이콘 … 일단 제거").
-            이름 줄 끝의 재생 배지도 윗줄이 있으면 숨는다(global.css). */}
-        {playable && !(data && !game.ums) && <Play size={12} className="scr-activity-row-play" aria-hidden fill="currentColor" />}
-        {data && !game.ums && <GameDataButton game={game} />}
-      </span>
-    )}
+    {tail && <GameDataButton game={game} />}
   </>);
 }
 
@@ -122,7 +115,6 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
           ];
         })}
       </span>
-      {playBadge}
     </>);
   }
   const sideNodes = (slots: GameResultSlot[]): ReactNode[] =>

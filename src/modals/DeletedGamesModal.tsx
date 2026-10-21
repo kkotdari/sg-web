@@ -179,7 +179,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                               {g.replay ? " · 리플레이 있음" : " · 리플레이 없음"}
                             </span>
                           )}
-                          status={<GameRowStatus game={g} playable={gamePlayable(g)} />}
+                          status={<GameRowStatus game={g} />}
                           desc={<GameRowNames game={g} memberOf={memberOf} mobile playable={gamePlayable(g)} />}
                           side={formatAgo(g.gameStartedAt ?? g.date)}
                         />

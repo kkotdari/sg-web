@@ -125,7 +125,7 @@ export default function ExtShareGamePickModal({ listId, listName, have, onClose,
                       disabled={inList}
                       className={["scr-activity-row-game scr-gm", inList && "is-in"].filter(Boolean).join(" ")}
                       onClick={() => toggle(g.id)}
-                      status={<GameRowStatus game={g} playable={gamePlayable(g)} />}
+                      status={<GameRowStatus game={g} />}
                       desc={<GameRowNames game={g} memberOf={memberOf} mobile playable={gamePlayable(g)} />}
                       top={inList ? <span className="scr-extshare-add-in">담김</span> : undefined}
                       side={formatAgo(g.gameStartedAt ?? g.date)}

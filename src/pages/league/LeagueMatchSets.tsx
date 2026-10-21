@@ -293,7 +293,7 @@ export default function LeagueMatchSets({
                               className={cx("scr-activity-row-game scr-gm", taken && "is-in")}
                               disabled={taken}
                               onClick={() => pick(i, c)}
-                              status={<GameRowStatus game={oc} playable={gamePlayable(c)} />}
+                              status={<GameRowStatus game={oc} />}
                               desc={<GameRowNames game={oc} memberOf={memberById} mobile playable={gamePlayable(c)} />}
                               top={taken ? <span className="scr-extshare-add-in">다른 세트</span> : undefined}
                               side={formatAgo(c.gameStartedAt ?? c.date)}
