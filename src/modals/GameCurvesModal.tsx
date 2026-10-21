@@ -88,7 +88,7 @@ function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
         {rows.map(({ l, chips, top, h }) => (
           <g key={l.key}>
             <line className="scr-rc-grid" x1={PL} x2={CW - CHART_PAD.r} y1={top + h} y2={top + h} />
-            <text className="scr-tl-name" x={PL - 5} y={top + h / 2} textAnchor="end" dominantBaseline="central">{shortName(l.name)}</text>
+            <text className="scr-rc-axis" x={PL - 5} y={top + h / 2} textAnchor="end" dominantBaseline="central">{shortName(l.name)}</text>
             {chips.map(({ t, xe, label, w, slot }) => {
               const mid = top + h / 2;
               const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - 1 : mid + 1;
