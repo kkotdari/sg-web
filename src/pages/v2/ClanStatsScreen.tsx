@@ -310,7 +310,8 @@ export default function ClanStatsScreen() {
         <header className="scr-clan-dash-head scr-stats-count-row">
           {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다. */}
           <span className="scr-clan-dash-sub">{view.memberIds.length}명</span>
-          {!isMobile && <button
+          {/* 전부 펼치기·접기는 폰에도(2026-10-21, 요청: "통계 폰화면에도 전부 펼치기 접기 추가") — 폰 줄(MobileRow)도 openAll 을 탄다. */}
+          <button
             type="button" className="scr-text-btn scr-clan-dash-expand"
             aria-pressed={expandAll}
             onClick={() => setExpandAll((v) => !v)}
@@ -319,7 +320,7 @@ export default function ClanStatsScreen() {
               ? <ChevronsDownUp size={13} aria-hidden />
               : <ChevronsUpDown size={13} aria-hidden />}
             {expandAll ? "전부 접기" : "전부 펼치기"}
-          </button>}
+          </button>
         </header>
       )}
 
