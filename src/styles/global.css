@@ -7446,10 +7446,9 @@ html:not(.scr-light-theme) .scr-story-snap-on::after {
 .scr-v2-toolbar-title-row.scr-crumb {
   margin-bottom: 0; padding: 0 2px; border-bottom: 0; min-height: 26px; transform: none;
 }
-.scr-v2-toolbar-crumb { padding-bottom: 6px; min-height: 0; margin-top: -6px; } /* 아래 구분선은 걷었다(2026-10-20, 요청) */
+.scr-v2-toolbar-crumb { padding-bottom: 0; min-height: 0; margin-top: -6px; } /* 아래 구분선은 걷었다(2026-10-20, 요청) · 그 아래 패딩 6(폰 4)도 걷었다(2026-10-21, 요청: "구분선도 없어진 만큼 아래 갭 없애도") */
 .scr-v2-toolbar-crumb + * { margin-top: 4px; }
 @media (max-width: 960px) {
-  .scr-v2-toolbar-crumb { padding-bottom: 4px; }
   .scr-v2-toolbar-crumb + * { margin-top: 4px; }
 }
 /* 게임 페이지의 머리 줄을 제목 줄에 접어 넣었다(2026-10-09, 요청: "빨간 상자 타이틀 부분을 제거해서 화면을 더 확보" → 페이지 제목 줄) —
