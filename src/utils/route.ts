@@ -10,12 +10,16 @@ const SEG_GROUP: Record<string, ActivityGroupKey> = Object.fromEntries(
 );
 
 const SCREEN_SEG: Partial<Record<ScreenKey, string>> = {
-  ladder: "ladder", clan: "clan", members: "members", leagues: "leagues",
+  ladder: "ladder", clan: "stats", members: "members", leagues: "leagues",
   minimaps: "minimaps", control: "control", catalog: "catalog", explore: "explore",
 };
-const SEG_SCREEN: Record<string, ScreenKey> = Object.fromEntries(
-  (Object.entries(SCREEN_SEG) as [ScreenKey, string][]).map(([k, v]) => [v, k]),
-);
+/* 통계 주소는 /stats(2026-10-21, 요청: "/clan 주소가 안 맞다 · 통계인데") — 화면 열쇠 clan 은 메뉴 권한 등에 그대로 두고 주소만 바꿨다.
+   옛 주소 /clan 으로 들어오면 그 화면을 열고 주소창은 /stats 로 고친다(App · canonicalPathname). */
+const OLD_SEG: Record<string, ScreenKey> = { clan: "clan" };
+const SEG_SCREEN: Record<string, ScreenKey> = {
+  ...OLD_SEG,
+  ...Object.fromEntries((Object.entries(SCREEN_SEG) as [ScreenKey, string][]).map(([k, v]) => [v, k])),
+};
 
 export interface Route {
   screen: ScreenKey;
@@ -36,6 +40,12 @@ export function parseRoute(pathname: string = window.location.pathname): Route {
   const screen = SEG_SCREEN[segs[0]];
   if (screen) return { screen, group: null, item: segs[1] ?? null };
   return home;
+}
+
+/** 옛 주소(OLD_SEG)면 지금 주소로, 아니면 그대로. */
+export function canonicalPathname(pathname: string = window.location.pathname): string {
+  const head = pathname.split("/").filter(Boolean)[0];
+  return head !== undefined && head in OLD_SEG && SCREEN_SEG[OLD_SEG[head]] !== head ? pathOf(parseRoute(pathname)) : pathname;
 }
 
 export function pathOf(r: { screen: ScreenKey; group?: ActivityGroupKey | null; item?: string | null }): string {

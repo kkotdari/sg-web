@@ -4,7 +4,7 @@ import { isAdminRole } from "./constants/roles";
 import ScrollTopButton from "./components/common/ScrollTopButton";
 import ToastHost from "./components/common/Toast";
 import AlertHost from "./components/common/AlertDialog";
-import { navigateTo, parseRoute, pathOf, stripDeadParams } from "./utils/route";
+import { canonicalPathname, navigateTo, parseRoute, pathOf, stripDeadParams } from "./utils/route";
 import { LoadingMark } from "./components/common/Feedback";
 import { api } from "./api/client";
 import { useBottomViewportInset } from "./hooks/useBottomViewportInset";
@@ -98,10 +98,11 @@ export default function App() {
   const [screen, setScreen] = useState<ScreenKey>(screenFromUrl);
   useEffect(() => {
     const cleaned = stripDeadParams(window.location.search);
-    if (cleaned !== window.location.search.replace(/^\?/, "")) {
+    const path = canonicalPathname();
+    if (cleaned !== window.location.search.replace(/^\?/, "") || path !== window.location.pathname) {
       window.history.replaceState(
         window.history.state, "",
-        `${window.location.pathname}${cleaned ? `?${cleaned}` : ""}${window.location.hash}`,
+        `${path}${cleaned ? `?${cleaned}` : ""}${window.location.hash}`,
       );
     }
   }, []);
