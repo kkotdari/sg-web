@@ -3279,8 +3279,8 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 
 .scr-modal-md { max-width: 560px; }
 /* 게임 그래프(GameCurvesModal · 2026-10-21 · PC 만) — 화면 폭을 거의 다(요청: "그래프를 최대한 크게") · 범례는 위 한 줄 · 테크 줄과 두 판이 세로로. */
-/* 페이지보다 작게(2026-10-21, 요청: "좌우 패딩 주고 크기 줄여서 팝업창 크기를 페이지 크기보다 작게") — 양옆 60px · 높이는 화면 안(넘치면 창 안에서 내린다). */
-.scr-modal-graph { max-width: 1600px; width: calc(100vw - 120px); max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
+/* 게임 목록 폭 안쪽(2026-10-21, 요청: "폭 더 줄이기 · 목록 폭 안짝으로") — 목록(--list-content-max − 좌우 여백) 이하 · 창이 좁으면 양옆 60px · 높이는 화면 안(넘치면 창 안에서 내린다). */
+.scr-modal-graph { max-width: calc(var(--list-content-max) - 2 * var(--main-pad-x, 20px)); width: calc(100vw - 120px); max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
 .scr-modal-graph > .scr-modal-body { padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
 /* 판 사이를 띄워 가른다(요청: "그래프간 줄간격좀 띄워서 구분") — 판마다 위 가는 줄. */
 .scr-gc { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
