@@ -85,6 +85,8 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
      리그 경기 세트에 이은 판은 서버가 늘 남긴다(참값 삭제는 외부 공개 판도). */
   const [confirmPurge, setConfirmPurge] = useState<number[] | null>(null);
   const [purging, setPurging] = useState(false);
+  /* 게임 삭제 중 — 버전 바꾸기(busy)와 따로 둔다(2026-10-21, 지적: "버전 변경과 데이터 관리 버튼이 스피너가 연동되어 돈다"). */
+  const [deletingGames, setDeletingGames] = useState(false);
   const purgeTruth = async (ids: number[]) => {
     setConfirmPurge(null);
     setPurging(true);
@@ -103,7 +105,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
       `고른 게임 ${ids.length}건을 삭제합니다(리그 경기에 연결된 판은 남겨요). 첨부 리플레이까지 지워지고 되돌릴 수 없어요.\n삭제하려면 "삭제"를 입력하세요.`,
     );
     if (typed !== "삭제") return;
-    setBusy(true);
+    setDeletingGames(true);
     try {
       const { deleted } = await api.deleteGamesOf(ids);
       showToast(`${deleted}건의 게임 기록을 삭제했어요.`, { kind: "ok" });
@@ -112,7 +114,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     } catch (e) {
       showAlert(e instanceof Error ? e.message : "삭제하지 못했어요.");
     } finally {
-      setBusy(false);
+      setDeletingGames(false);
     }
   };
 
@@ -260,6 +262,10 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     }
   };
   const openPicker = async () => {
+    /* 열 때마다 조건·고른 판을 비운다(2026-10-21, 지적: "선택조건이 닫았다 열어도 유지") — 닫을 때 비우면 닫은 뒤 뜨는 확인 창이 고른 판을 잃는다. */
+    setPickFilter({ from: "", to: "", pub: false });
+    setPickQuery("");
+    setPicked(new Set());
     setPickerOpen(true);
     if (!pickRows) await loadPickRows();
   };
@@ -283,7 +289,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   };
   const pickedIds = [...picked];
   const pickedReplayIds = (pickRows ?? []).filter((r) => picked.has(r.id) && r.game.replay).map((r) => r.id);
-  const dataBusy = redo !== null || purging || busy;
+  const dataBusy = redo !== null || purging || deletingGames;
   const allShownPicked = pickFiltered.length > 0 && pickFiltered.every((r) => picked.has(r.id));
   const toggleAllShown = () => {
     setPicked((prev) => {
@@ -437,7 +443,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                         {redo.total > 0 ? `${redo.done}/${redo.total}` : "목록 받는 중"}
                         {redo.failed > 0 ? ` · 실패 ${redo.failed}` : ""}
                       </>
-                    ) : purging || busy ? <Spinner /> : "열기"}
+                    ) : purging || deletingGames ? <Spinner /> : "열기"}
                   </button>
                 </div>
 
