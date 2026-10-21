@@ -322,10 +322,11 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
             <div className="scr-gc" ref={boxRef}>
               {teamGame && (
                 <div className="scr-rc-mode">
-                  <button
-                    type="button" aria-pressed={teamOn} className={cx("scr-compact-rect-btn", !teamOn && "is-secondary")}
-                    onClick={() => { setTeamView((v) => !v); setFocus(null); }}
-                  >팀 보기</button>
+                  {/* 라벨 달린 토글 스위치(2026-10-21, 요청: "팀 보기는 토글 버튼 · 라벨 있는") — 관리자 화면 스위치와 같은 꼴. */}
+                  <button type="button" role="switch" aria-checked={teamOn} className="scr-gc-team" onClick={() => { setTeamView((v) => !v); setFocus(null); }}>
+                    팀 보기
+                    <span className={cx("scr-notice-switch", teamOn && "scr-notice-switch-on")} aria-hidden><span className="scr-notice-switch-knob" /></span>
+                  </button>
                 </div>
               )}
               {box.w > 0 && (
