@@ -8090,9 +8090,6 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-title > i { font-style: normal; font-weight: 600; color: var(--dim); }
 .scr-rc-plot { position: relative; }
 .scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-x pan-y; cursor: crosshair; }   /* 판 위에서 밀어도 스크롤(폰 게임 그래프는 가로도) — 값 상자는 탭으로만 */
-/* 선·점·눈금·격자는 손을 받지 않는다 — 선 위에서 시작한 끌기가 판 바탕과 똑같이 스크롤되게(2026-10-21, 지적: "그래프 선 위는 드래그 안되는 문제").
-   탭·마우스는 판(svg)이 받아 그 분의 값 상자를 띄운다. 칩(끄고 켜기)·테크 글자(강조)는 그대로 손을 받는다. */
-.scr-rc-line, .scr-rc-end, .scr-rc-dot, .scr-rc-cross, .scr-rc-grid, .scr-rc-axis, .scr-rc-chip-lead { pointer-events: none; }
 .scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }
 /* 눈금 글자 크기는 판 자로 그 자리에 적는다(AXIS_FS × 글자 배수 · RaceCurves). */
 .scr-rc-axis { fill: var(--dim); font-variant-numeric: tabular-nums; }
@@ -8112,9 +8109,9 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); font-size: 13px; color: var(--text); white-space: nowrap;
 }
 .scr-rc-tip.is-left { transform: translateX(-100%); margin-left: -10px; }
-.scr-rc-tip-head { margin-bottom: 2px; font-weight: 800; color: var(--dim); }
+.scr-rc-tip-head { margin-bottom: 2px; color: var(--dim); }
 .scr-rc-tip-row { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
-.scr-rc-tip-row > b { min-width: 4ch; font-weight: 700; }
+.scr-rc-tip-row > b { min-width: 4ch; font-weight: inherit; }   /* 값 상자 글자는 모두 보통 굵기(2026-10-21, 요청: "일꾼 병력 팝업 글자 다 얇게 통일") */
 .scr-rc-tip-row > span { color: var(--muted); }
 .scr-rc-empty { padding: 4px 0; font-size: var(--fs-11); color: var(--muted); }
 .scr-sg.is-m .scr-sg-mix { padding: 10px 10px 12px; }

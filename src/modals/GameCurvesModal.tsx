@@ -181,14 +181,16 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, sticky
         {ticksX.map((m) => (
           <text key={m} className="scr-rc-axis" x={x(m * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: D.axisFs }}>{m}분</text>
         ))}
+        {/* 고른 테크의 완공 때에 세로 점선(모든 사람 칸을 가로질러 · 요청: "세로 점선 표시(전체인원)"). */}
+        {hover && <line className="scr-rc-cross" x1={x(hover.tech.e)} x2={x(hover.tech.e)} y1={4} y2={H - D.axis} />}
       </svg>
       {hover && (
         <div
           className={`scr-rc-tip${hover.x1 / CW > 0.8 ? " is-left" : ""}`} role="status"
           style={{ left: `${((hover.x1 / CW > 0.8 ? hover.x0 : hover.x1) / CW) * 100}%`, top: `${(hover.cy / H) * 100}%`, minWidth: 0 }}
         >
-          {/* 팝업은 완공 시각 한 줄만(2026-10-21, 요청: "완공: 15:03 이런 식으로 간단히 표시하고 아무것도 넣지 말기"). */}
-          <div className="scr-rc-tip-row">완공: {clock(hover.tech.e)}</div>
+          {/* 팝업은 완공 시각만(2026-10-21, 요청: "완공: 15:03 …" → "완공 제거하고 시간만 표시"). */}
+          <div className="scr-rc-tip-row">{clock(hover.tech.e)}</div>
         </div>
       )}
       </div>

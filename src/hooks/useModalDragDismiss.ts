@@ -65,7 +65,7 @@ export function useModalDragDismiss(): void {
     let velY = 0;
     let startedAtTop = false;
     let sheetShift = 0;
-    let mode: "idle" | "undecided" | "drag" | "scroll" = "idle";
+    let mode: "idle" | "undecided" | "drag" | "scroll" | "hscroll" = "idle";
 
     const reset = () => { sheet = null; scroller = null; mode = "idle"; sheetShift = 0; velY = 0; };
 
@@ -130,8 +130,11 @@ export function useModalDragDismiss(): void {
           sheet.style.translate = `0 ${sheetShift}px`;
           return;
         }
-        mode = "scroll";
+        /* 가로가 앞선 끌기는 가로 스크롤 몫 — 위·아래 끝 막기(아래)를 타지 않게 이 손짓 내내 손을 뗀다(2026-10-21, 지적: "횡스크롤만 안돼" ·
+           원인: 손가락의 세로 떨림이 '끝에서 더 밀기'로 읽혀 preventDefault 가 가로 스크롤까지 죽였다 — 폰 게임 데이터 창). */
+        mode = Math.abs(dx) > Math.abs(dy) ? "hscroll" : "scroll";
       }
+      if (mode === "hscroll") return;
 
       if ((atTopNow() && frameDy > 0) || (atBottomNow() && frameDy < 0)) {
         e.preventDefault();
