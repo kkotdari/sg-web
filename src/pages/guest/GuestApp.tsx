@@ -23,7 +23,7 @@ const GUEST_ITEMS: NavMenuItem[] = [
   { key: "explore", label: "게임" },
 ];
 
-/** 손님 탭바의 로그인 — 로그인 화면으로 가지 않고 아이디·비밀번호만 받는 작은 창(2026-10-21, 요청: "아주 단순한 팝업 로그인창").
+/** 손님 로그인(탭바 · PC 머리줄 · 2026-10-21, 요청: "PC 에서도 손님 모드 로그인 창 팝업으로") — 로그인 화면으로 가지 않고 아이디·비밀번호만 받는 작은 창(2026-10-21, 요청: "아주 단순한 팝업 로그인창").
     들어가면 첫 화면 주소로 옮겨 회원 화면이 그 자리에서 선다. */
 function LoginPopup({ onClose }: { onClose: () => void }) {
   useLockBodyScroll(true, onClose);
@@ -62,11 +62,6 @@ export default function GuestApp() {
     return () => window.removeEventListener("popstate", onPop);
   }, [exitGuest]);
 
-  const toLogin = (): void => {
-    navigateTo("/", { notify: false });
-    exitGuest();
-  };
-
   const go = (): void => {
     navigateTo("/explore", { notify: false });
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -104,7 +99,7 @@ export default function GuestApp() {
               >
                 테마
               </button>
-              <button type="button" className="scr-text-btn" onClick={toLogin}>
+              <button type="button" className="scr-text-btn" onClick={() => setLoginOpen(true)}>
                 로그인
               </button>
             </div>
