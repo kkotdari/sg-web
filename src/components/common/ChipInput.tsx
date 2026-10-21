@@ -20,7 +20,7 @@ export default function ChipInput({ values, onChange, options, placeholder, onSu
   options: ChipOpt[];
   placeholder: string;
   onSubmit?: () => void;
-  /** 하나만(한 사람 조건의 선수) — 새 값이 옛 값을 갈아 끼운다. */
+  /** 하나만(한 사람 조건의 선수) — 새 값이 옛 값을 갈아 끼운다(입력 칸은 그대로 남는다). */
   single?: boolean;
 }) {
   const [text, setText] = useState("");
@@ -68,20 +68,20 @@ export default function ChipInput({ values, onChange, options, placeholder, onSu
           <button type="button" aria-label={`${v} 빼기`} onClick={(e) => { e.stopPropagation(); onChange(values.filter((x) => x !== v)); }}><X size={11} /></button>
         </span>
       ))}
-      {(!single || values.length === 0) && (
-        <input
-          className="scr-gs-input" value={text} placeholder={values.length ? "" : placeholder}
-          onChange={(e) => { setText(e.target.value); setOpen(true); }}
-          onKeyDown={onKey}
-          onFocus={() => setOpen(true)}
-          onBlur={() => {
-            /* 치다 만 글자도 칩으로 — [검색]을 눌러 칸을 떠나도 빠지지 않는다. */
-            if (text.trim()) add(text);
-            window.setTimeout(() => setOpen(false), 120);
-          }}
-          autoComplete="off"
-        />
-      )}
+      {/* 칩을 담은 뒤에도 커서는 칩 뒤에 그대로(하나만 담는 칸도 — 백스페이스로 지우게 · 2026-10-21, 요청: "칩 넣을 때 커서는 그 뒤에 계속 · 엔터든 탭이든 ·
+          한 명만 넣을 수 있어도 지우기 위해 커서는 있어야"). */}
+      <input
+        className="scr-gs-input" value={text} placeholder={values.length ? "" : placeholder}
+        onChange={(e) => { setText(e.target.value); setOpen(true); }}
+        onKeyDown={onKey}
+        onFocus={() => setOpen(true)}
+        onBlur={() => {
+          /* 치다 만 글자도 칩으로 — [검색]을 눌러 칸을 떠나도 빠지지 않는다. */
+          if (text.trim()) add(text);
+          window.setTimeout(() => setOpen(false), 120);
+        }}
+        autoComplete="off"
+      />
       {open && shown.length > 0 && (
         <div className="scr-gs-drop scr-scroll" role="listbox">
           {shown.map((o, i) => (
