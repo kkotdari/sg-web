@@ -220,7 +220,9 @@ const MORPH_TO: Record<number, string> = { 131: "레어", 132: "하이브", 141:
 /** 첫 본진(경기 시작부터 있던 커맨드 · 해처리 · 넥서스) — '테크 건물만'에서도 보인다(2026-10-21, 요청: "첫 스타팅 기지도 표현"). */
 const MAIN_HALL = new Set([106, 131, 154]);
 /** PC 건설 줄 치수(px) — 종류마다 한 칸: 위에 이름(label 높이) · 아래에 그 종류 건물마다 가는 선 한 줄(step 간격) · 칸 끝 숨(pad). */
-const BL = { fs: 10.5, label: 13, step: 3.5, pad: 5 } as const;
+const BL = { fs: 10.5, label: 13, step: 3.5, pad: 5, small: 7.5 } as const;
+/** 크립 줄의 변태 이름(성큰 · 스포어)은 작게 — 수없이 되풀이된다(2026-10-21, 요청: "성큰 변태가 엄청 반복될 거라 성큰 스포어는 글자 크기 대폭 축소"). */
+const SMALL_MORPH = new Set([146, 144]);
 
 type BuildLane = { key: string; group: string; name: string; color: string; blds: GameCurve["blds"] };
 
@@ -300,10 +302,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
               <g key={g.t}>
                 <text className="scr-tl-label" x={x(g.items[0].b.s)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>{BUILD_LABEL[g.t] ?? `#${g.t}`}</text>
                 {g.morphs.map(([mt, at9]) => (
-                  <text key={mt} className="scr-tl-label scr-bl-morph" x={x(at9)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>→ {BUILD_LABEL[mt] ?? `#${mt}`}</text>
+                  <text key={mt} className="scr-tl-label scr-bl-morph" x={x(at9)} y={g.top + BL.label - 3} style={{ fontSize: SMALL_MORPH.has(mt) ? BL.small : BL.fs }}>→ {BUILD_LABEL[mt] ?? `#${mt}`}</text>
                 ))}
                 {g.cancels.map(([nm, at9]) => (
-                  <text key={`x${nm}`} className="scr-tl-label scr-bl-morph" x={x(at9)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>→ {nm} <tspan className="scr-bl-cut">✕</tspan></text>
+                  <text key={`x${nm}`} className="scr-tl-label scr-bl-morph" x={x(at9)} y={g.top + BL.label - 3} style={{ fontSize: nm === MORPH_TO[143] ? BL.small : BL.fs }}>→ {nm} <tspan className="scr-bl-cut">✕</tspan></text>
                 ))}
                 {g.items.map(({ b, k }) => {
                   const ly = g.top + BL.label + k * BL.step + 1;
