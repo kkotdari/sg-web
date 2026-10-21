@@ -4,8 +4,7 @@ import { Spinner } from "../../components/common/Feedback";
 
 const REMEMBER_ID_KEY = "stargate:rememberedId";
 
-/** onDone — 로그인한 뒤(손님 모드 팝업은 첫 화면 주소로 옮긴다). */
-export default function LoginForm({ onDone }: { onDone?: () => void } = {}) {
+export default function LoginForm() {
   const login = useAppStore((s) => s.login);
   const [id, setId] = useState(() => localStorage.getItem(REMEMBER_ID_KEY) ?? "");
   const [pw, setPw] = useState("");
@@ -28,7 +27,6 @@ export default function LoginForm({ onDone }: { onDone?: () => void } = {}) {
       await login(id, pw);
       if (rememberId) localStorage.setItem(REMEMBER_ID_KEY, id);
       else localStorage.removeItem(REMEMBER_ID_KEY);
-      onDone?.();
     } catch (e2) {
       setErr(e2 instanceof Error ? e2.message : "로그인에 실패했어요.");
     } finally {

@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { useEffect } from "react";
 import BrandLogo from "../../components/common/BrandLogo";
 import ScrollTopButton from "../../components/common/ScrollTopButton";
 import ToastHost from "../../components/common/Toast";
@@ -9,9 +7,6 @@ import NavTab from "../../layout/NavTab";
 import MobileTabBar from "../../layout/MobileTabBar";
 import { useRail } from "../../layout/useRail";
 import ExploreScreen from "./ExploreScreen";
-import LoginForm from "../auth/LoginForm";
-import ModalHash from "../../utils/modalHash";
-import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { useAppStore } from "../../store/appStore";
 import { navigateTo, parseRoute } from "../../utils/route";
 import { useLightTheme } from "../../utils/theme";
@@ -23,30 +18,8 @@ const GUEST_ITEMS: NavMenuItem[] = [
   { key: "explore", label: "게임" },
 ];
 
-/** 손님 로그인(탭바 · PC 머리줄 · 2026-10-21, 요청: "PC 에서도 손님 모드 로그인 창 팝업으로") — 로그인 화면으로 가지 않고 아이디·비밀번호만 받는 작은 창(2026-10-21, 요청: "아주 단순한 팝업 로그인창").
-    들어가면 첫 화면 주소로 옮겨 회원 화면이 그 자리에서 선다. */
-function LoginPopup({ onClose }: { onClose: () => void }) {
-  useLockBodyScroll(true, onClose);
-  return createPortal(
-    <div className="scr-modal-overlay" onClick={onClose}>
-      <ModalHash hash="login" onClose={onClose} />
-      <div className="scr-modal scr-modal-sm scr-modal-fit scr-login-popup" onClick={(e) => e.stopPropagation()}>
-        <div className="scr-modal-head">
-          <span>로그인</span>
-          <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
-        </div>
-        <div className="scr-modal-body">
-          <LoginForm onDone={() => navigateTo("/", { replace: true })} />
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
 export default function GuestApp() {
   const exitGuest = useAppStore((s) => s.exitGuest);
-  const [loginOpen, setLoginOpen] = useState(false);
   const [lightTheme, setLightTheme] = useLightTheme();
   const { railOpen, railEnter, railEnterSoon, railLeave } = useRail();
 
@@ -61,6 +34,11 @@ export default function GuestApp() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [exitGuest]);
+
+  const toLogin = (): void => {
+    navigateTo("/", { notify: false });
+    exitGuest();
+  };
 
   const go = (): void => {
     navigateTo("/explore", { notify: false });
@@ -99,7 +77,7 @@ export default function GuestApp() {
               >
                 테마
               </button>
-              <button type="button" className="scr-text-btn" onClick={() => setLoginOpen(true)}>
+              <button type="button" className="scr-text-btn" onClick={toLogin}>
                 로그인
               </button>
             </div>
@@ -111,9 +89,8 @@ export default function GuestApp() {
       </div>
       <div id="scr-tabbar-slot" />
       <MobileTabBar screen="explore" menuOpen={false} hidden={false} mini={false} onNavigate={go} items={GUEST_ITEMS}
-        action={{ label: "로그인", onClick: () => setLoginOpen(true) }}
+        action={{ label: "로그인", onClick: toLogin }}
       />
-      {loginOpen && <LoginPopup onClose={() => setLoginOpen(false)} />}
       <ScrollTopButton />
       <ToastHost />
       <AlertHost />
