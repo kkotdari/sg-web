@@ -72,18 +72,16 @@ function minuteTicks(maxX: number): number[] {
 
 /* 끝 칩(2026-10-21, 요청: "범례 제거하고 대신 그래프마다 그래프 끝에 칩으로 표시 · 칩 누르면 껐다켰다") — 줄마다 끝점 오른쪽에 이름 칩.
    칩끼리 겹치면 아래로 밀고(끝점과 짧은 줄로 잇는다), 끈 줄은 선을 지우고 칩만 흐리게 남긴다(다시 눌러 켠다). 칩 자리만큼 오른쪽 여백을 연다. */
-/** 칠한 칩 위 글자색(2026-10-21, 요청: "모든 칩을 색으로 채우고 흰색이나 검정색 글자") — 밝은 바탕(휘도 0.3 넘게: 노랑·주황·옥색·연두빛 흰색)만 검정 #111 · 나머지(빨강·파랑·보라·갈색…)는 흰 #fff.
-    var(--…) 색은 지금 테마의 값을 읽어 잰다. */
+/** 칠한 칩 위 글자색(2026-10-21, 요청: "모든 칩을 색으로 채우고 흰색이나 검정색 글자" → "흰검 결정 기준은 재생기랑 똑같이") —
+    재생기 chipStyle 과 같은 셈: 휘도 0.299R + 0.587G + 0.114B(0~255)가 150 을 넘으면 검정 #111 · 아니면 흰 #fff.
+    var(--…) 색은 지금 테마의 값을 읽어 잰다 · #rrggbb 가 아니면 재생기처럼 밝은 것(검정)으로 친다. */
 export function inkOn(color: string): string {
   const v = color.startsWith("var(")
     ? getComputedStyle(document.documentElement).getPropertyValue(color.slice(4, -1).split(",")[0].trim()).trim()
     : color;
-  const m = /^#?([0-9a-f]{6})$/i.exec(v);
-  if (!m) return "#fff";
-  const n = parseInt(m[1], 16);
-  const lin = (c: number) => { const k = c / 255; return k <= 0.03928 ? k / 12.92 : ((k + 0.055) / 1.055) ** 2.4; };
-  const L = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
-  return L > 0.3 ? "#111" : "#fff";
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(v);
+  const lum = m ? 0.299 * parseInt(m[1], 16) + 0.587 * parseInt(m[2], 16) + 0.114 * parseInt(m[3], 16) : 255;
+  return lum > 150 ? "#111" : "#fff";
 }
 
 /** 컴팩트 네모 단추(.scr-compact-rect-btn)의 치수 — 글자 12px/600 · 높이 22(글줄 12 + 위아래 4 + 테 1) · 좌우 7(6 + 테 1) · 모서리 6.

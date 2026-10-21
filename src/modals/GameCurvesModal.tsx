@@ -48,8 +48,9 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
   /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것 — 칩 크기도 거기에 맞춘다(2026-10-21, 요청: "테크쪽이 너무 비대 · 세 판 높이 통일"). */
   const AXIS = 18;
   const ROW_H = (H - AXIS - 4) / Math.max(1, lanes.length);
-  const CH = Math.max(12, Math.min(16, (ROW_H - 4) / 2));
-  const FS = Math.round(CH * 0.66 * 10) / 10;
+  /* 칩은 칸보다 한참 작게(2026-10-21, 요청: "테크 칩 크기 축소해서 판 여백감 더 주기") — 두 단이 서도 칸 위아래·사이가 빈다. */
+  const CH = Math.max(10, Math.min(13, (ROW_H - 4) / 2 - 2));
+  const FS = Math.round(CH * 0.72 * 10) / 10;
   /* 좌우 여백·모서리는 컴팩트 네모 단추의 비(좌우 7/12 · 모서리 6/22)를 이 칩 크기에 맞춰 쓴다 — 칸이 좁아 단추 높이(22)는 못 쓴다. */
   const PX = FS * (BTN.px / BTN.fs);
   const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - padR);
@@ -99,7 +100,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
             <text className="scr-rc-axis" x={PL - 5} y={top + h / 2} textAnchor="end" dominantBaseline="central">{shortName(l.name)}</text>
             {chips.map(({ t, x: cx, label, w, slot }) => {
               const mid = top + h / 2;
-              const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - 1 : mid + 1;
+              const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - 1.5 : mid + 1.5;
               return (
                 <g
                   key={t.t} className="scr-tl-hit"
