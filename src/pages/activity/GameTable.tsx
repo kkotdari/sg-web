@@ -141,6 +141,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
       const c9 = gameResultShareContent(game, memberOf);
       const key9 = String(game.matchNo || game.id);
       await api.createSceneScrap({ title: c9.title, subtitle: c9.description ?? "", link: `${window.location.origin}/games/${key9}`, gameNo: key9 });
+      void api.pingGameAction("scrap", game);
       showToast(SCRAP_FORMS.did, { kind: "ok" });
     } catch (e) {
       showToast(e instanceof Error ? e.message : SCRAP_FORMS.couldNot, { kind: "warn" });
@@ -150,6 +151,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   };
   const share = async () => {
     const out = await shareToKakao(gameResultShareContent(game, memberOf));
+    if (out === "shared" || out === "copied") void api.pingGameAction("share", game);
     if (out === "copied") showToast("링크를 복사했어요.", { kind: "ok" });
   };
   /** 링크 칸 단추 — 줄 열기로 번지지 않게 막는다. */
@@ -199,8 +201,8 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         <span className="scr-gtab-cell">{secret ? "-" : gameKindText(game)}</span>
         <span className="scr-gtab-cell scr-gtab-links">
           {/* 그래프 보기(2026-10-21 요청) — 참가자 전원의 분당 일꾼 수 · 병력 가치(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다. */}
-          {!secret && !game.ums && linkBtn("graph", "그래프 보기", () => setGraphOpen(true), <ChartLine size={13} />)}
-          {!secret && game.replay && linkBtn("save", "리플레이 저장", () => { void downloadReplay(game); }, <Save size={13} />)}
+          {!secret && !game.ums && linkBtn("graph", "그래프 보기", () => { setGraphOpen(true); void api.pingGameAction("graph", game); }, <ChartLine size={13} />)}
+          {!secret && game.replay && linkBtn("save", "리플레이 저장", () => { void downloadReplay(game); void api.pingGameAction("replay", game); }, <Save size={13} />)}
           {!secret && linkBtn("scrap", "스크랩", () => { void scrap(); }, <Bookmark size={13} />, scrapping)}
           {!secret && linkBtn("share", "공유", () => { void share(); }, <Share2 size={13} />)}
           {canHide && linkBtn("hide", "숨기기", () => onHide?.(), <EyeOff size={13} />)}

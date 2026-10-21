@@ -763,6 +763,14 @@ export const api = {
     });
   },
 
+  /** 게임 목록의 동작 기록(2026-10-21, 요청: "공유, 리플레이 다운로드, 스크랩, 그래프보기도 access_history 에 기록(특정 가능하게)") — 화면 코드 game_<동작> ·
+   *  detail "game#게임번호". 기록이 안 돼도 동작은 그대로 간다(조용히 삼킨다). */
+  async pingGameAction(action: "share" | "replay" | "scrap" | "graph", game: { id: number; matchNo?: string | null }): Promise<void> {
+    try {
+      await this.pingAccess(`game_${action}`, `game#${game.matchNo || String(game.id)}`);
+    } catch { return; }
+  },
+
   async getAppVersion(): Promise<AppVersionStatus> {
     return request<AppVersionStatus>("/api/app-version");
   },

@@ -370,6 +370,7 @@ function ActivityRouter() {
       const c9 = gameResultShareContent(g, memberOf);
       const key9 = String(g.matchNo || g.id);
       await api.createSceneScrap({ title: c9.title, subtitle: c9.description ?? "", link: `${window.location.origin}/games/${key9}`, gameNo: key9 });
+      void api.pingGameAction("scrap", g);
     });
     scrapBusyRef.current = false;
     setScrapBusy(false);

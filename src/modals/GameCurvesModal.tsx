@@ -5,7 +5,7 @@ import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
 import RaceBadge from "../components/common/RaceBadge";
-import { CHART_PAD, Chart, scaleOf, type ChartLine } from "../pages/stats/RaceCurves";
+import { CHART_PAD, Chart, minuteTicks, scaleOf, type ChartLine } from "../pages/stats/RaceCurves";
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
@@ -16,15 +16,15 @@ import type { GameCurve, GameResult } from "../types";
 /* ★ 게임 그래프(2026-10-21, 요청: "게임 목록에서 PC에 그래프 보기 버튼 · 참가자 전원의 일꾼 및 병력 가치 그래프(한 그래프에 합쳐서) · 색은 임자색 ·
    범례에 색깔과 종족 닉네임 · 통계랑 똑같이 선택 · 팀컬러 모드로 변경도" → "두 그래프를 세로로 · PC 는 모달 폭 넓게" → "게임목록 폭 거의 다 ·
    그래프를 최대한 크게 · 각 플레이어 테크 건물 건설 시간을 그래프 위에 · 범례도 위로 · 폰에서는 제공되지 않는 기능").
-   차례: [선 색 · 사람 단추](범례) → 테크 줄(사람마다 한 줄 · 막대 = 짓는 동안 · 글 = 다 지은 때) → 일꾼 수 → 병력 가치. 셋 다 같은 가로 자(CW · PADL).
+   차례: [선 색 · 사람 단추](범례) → 테크 줄(사람마다 한 줄 · 다 지은 때 칩) → 일꾼 수 → 병력 가치. 셋 다 같은 가로 자(CW · CHART_PAD)
+   · 같은 분 눈금(minuteTicks). 테크 줄엔 이름을 따로 안 단다(요청: "굳이 범례 중복할 필요 없고") — 범례와 같은 차례 · 같은 색이다.
    곡선·개인색은 서버의 통계용 참값 표(GET /{id}/curves) — 판(Chart)과 자(scaleOf)는 통계 펼침(RaceCurves)과 같은 것을 쓴다.
    개인색을 못 읽은 판(옛 굽기 · 로스터 색이 한 가지뿐)은 원작 팔레트를 자리 차례로 쓴다(재생기 personalUsable 과 같은 거름). */
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ColorMode = "player" | "team";
-/** 판의 가로 자 · 왼쪽 여백(테크 줄의 이름 칸) — 테크 줄과 두 판이 같이 쓴다. */
+/** 판의 가로 자 — 테크 줄과 두 판이 같이 쓴다. */
 const CW = 1000;
-const PADL = 120;
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
 const TECH_LABEL: Record<number, string> = {
@@ -38,44 +38,57 @@ const TECH_LABEL: Record<number, string> = {
 const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
 
 type Lane = { key: string; name: string; color: string; techs: GameCurve["techs"] };
+const PL = CHART_PAD.l;
 
-/** 테크 줄 — 사람마다 한 줄. 글이 앞 글과 겹치면 막대 아래로 내린다(위 · 아래 번갈아). */
+/** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
+ *  앞 칩과 겹치면 아랫단으로(겹치는 줄만 두 단). 짓기 시작은 칩에 손을 얹으면(title) 나온다. */
 function TechLanes({ lanes, maxX }: { lanes: Lane[]; maxX: number }) {
-  const ROW = 26;
-  const H = lanes.length * ROW + 4;
-  const x = (sec: number): number => PADL + Math.min(1, sec / 60 / maxX) * (CW - PADL - CHART_PAD.r);
-  const textW = (s: string): number => s.length * 9 + 4;
+  const CH = 15;
+  const GAP = 8;
+  const AXIS = 18;
+  const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - CHART_PAD.r);
+  const chipW = (s: string): number => s.length * 9.5 + 10;
+  /* 칩 자리를 먼저 정한다 — 겹치는 칩이 있는 줄만 두 단(줄 높이가 줄마다 다르다). */
+  let y0 = 4;
+  const rows = lanes.map((l) => {
+    const ends = [-Infinity, -Infinity];
+    const chips = l.techs.map((t) => {
+      const xe = x(t.e);
+      const label = TECH_LABEL[t.t] ?? `#${t.t}`;
+      const w = chipW(label);
+      const tier = xe >= ends[0] ? 0 : xe >= ends[1] ? 1 : 0;
+      ends[tier] = xe + w + 3;
+      return { t, xe, label, w, tier };
+    });
+    const h = (chips.some((c) => c.tier === 1) ? CH * 2 + 2 : CH) + GAP;
+    const row = { l, chips, top: y0, h };
+    y0 += h;
+    return row;
+  });
+  const H = y0 + AXIS;
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">테크 건물<i> · 막대 = 짓는 동안 · 글 = 다 지은 때</i></figcaption>
-      <svg viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물 시각">
-        {lanes.map((l, i) => {
-          const cy = i * ROW + ROW / 2 + 4;
-          let upEnd = -Infinity;
-          let downEnd = -Infinity;
-          return (
-            <g key={l.key}>
-              <line className="scr-rc-grid" x1={PADL} x2={CW - CHART_PAD.r} y1={cy} y2={cy} />
-              <rect x={4} y={cy - 1.5} width={12} height={3} rx={1} style={{ fill: l.color }} />
-              <text className="scr-tl-name" x={22} y={cy} dominantBaseline="middle">{l.name}</text>
-              {l.techs.map((t) => {
-                const xs = x(t.s);
-                const xe = x(t.e);
-                const label = TECH_LABEL[t.t] ?? `#${t.t}`;
-                const up = xe >= upEnd || xe < downEnd;
-                if (up) upEnd = xe + textW(label); else downEnd = xe + textW(label);
-                return (
-                  <g key={t.t}>
-                    <title>{`${l.name} ${label} ${clock(t.s)} ~ ${clock(t.e)}`}</title>
-                    <rect x={xs} y={cy - 2} width={Math.max(2, xe - xs)} height={4} rx={2} style={{ fill: l.color }} className="scr-tl-bar" />
-                    <circle cx={xe} cy={cy} r={3} style={{ fill: l.color }} className="scr-rc-end" />
-                    <text className="scr-tl-label" x={xe + 2} y={up ? cy - 6 : cy + 13}>{label}</text>
-                  </g>
-                );
-              })}
-            </g>
-          );
-        })}
+      <figcaption className="scr-rc-title">테크 건물<i> · 다 지은 때</i></figcaption>
+      <svg viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때">
+        {rows.map(({ l, chips, top, h }) => (
+          <g key={l.key}>
+            <line className="scr-rc-grid" x1={PL} x2={CW - CHART_PAD.r} y1={top + h - GAP / 2} y2={top + h - GAP / 2} />
+            {chips.map(({ t, xe, label, w, tier }) => {
+              const y = top + tier * (CH + 2);
+              return (
+                <g key={t.t}>
+                  <title>{`${l.name} ${label} — 다 지음 ${clock(t.e)} (짓기 시작 ${clock(t.s)})`}</title>
+                  <rect className="scr-tl-chip" x={xe} y={y} width={w} height={CH} rx={4} style={{ stroke: l.color }} />
+                  <rect x={xe} y={y} width={3} height={CH} rx={1.5} style={{ fill: l.color }} />
+                  <text className="scr-tl-label" x={xe + 7} y={y + CH / 2} dominantBaseline="central">{label}</text>
+                </g>
+              );
+            })}
+          </g>
+        ))}
+        {minuteTicks(maxX).map((m) => (
+          <text key={m} className="scr-rc-axis" x={x(m * 60)} y={H - 5} textAnchor="middle">{m}분</text>
+        ))}
       </svg>
     </figure>
   );
@@ -157,8 +170,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                 maxX={sc.x}
                 lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
               />
-              <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk} width={CW} padL={PADL} />
-              <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} width={CW} padL={PADL} />
+              <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk} width={CW} />
+              <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} width={CW} />
             </div>
           )}
         </div>
