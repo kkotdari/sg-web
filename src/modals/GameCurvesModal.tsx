@@ -49,8 +49,9 @@ function tlDims(k: number) {
   const fs = k > 1 ? 11 : 9.5;
   const ch = fs * 1.35;   /* 칸 최소 높이 셈에만 — 그리는 높이는 컴팩트 네모 칩 비(chipBox) */
   const tier = fs * 0.15;
-  /** axis: 판 아래 눈금 띠 · rowMin: 한 칸 최소 높이(두 단 + 위아래 숨) — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
-  return { axisFs, fs, gap: fs * 0.4, tier, axis: axisFs + 8, rowMin: Math.ceil(2 * ch + 2 * tier + fs * 0.9) };
+  /** axis: 판 아래 눈금 띠 · row: 한 사람 칸 높이 — 세 단(가운데 · 위 · 아래) + 위아래 숨(2026-10-21, 요청: "개인당 세 줄씩 확보해서 붙지 않게 ·
+      총 세로 높이는 인원수에 비례 · 적은 인원 넓게 할 필요 없음"). 테크 판 높이 = 사람 수 × row + axis. */
+  return { axisFs, fs, gap: fs * 0.4, tier, axis: axisFs + 8, row: Math.ceil(3 * ch + 2 * tier + fs * 0.9) };
 }
 const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` : s);
 
@@ -79,8 +80,8 @@ function NameChip({ name, color, right, cy, k, big, onPick }: {
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
  *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 마우스를 얹으면 완공 시각 팝업 · 같은 종류 테크(모든 사람)는 강조색. */
-function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, focus, onFocus }: {
-  lanes: Lane[]; maxX: number; ticksX: number[]; w: number; h: number; padL: number; padR: number;
+function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, k, focus, onFocus }: {
+  lanes: Lane[]; maxX: number; ticksX: number[]; w: number; padL: number; padR: number;
   /** 글자 배수(PC GAME_FONT_K · 폰 1). */
   k: number;
   /** 끝 칩으로 고른 사람(줄 key) — 그 줄은 테크 글자 살짝 굵게 · 닉네임 칩 살짝 크게, 나머지 줄은 흐리게(2026-10-21, 요청: "테크트리도 마찬가지"). */
@@ -89,9 +90,10 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, focus,
 }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ tech: GameCurve["techs"][number] } | null>(null);
-  /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것(2026-10-21, 요청: "세 판 높이 통일"). */
+  /* 한 사람 칸 = 세 단 높이(tlDims.row) · 판 높이는 사람 수에 비례. */
   const D = tlDims(k);
-  const ROW_H = (H - D.axis - 4) / Math.max(1, lanes.length);
+  const ROW_H = D.row;
+  const H = lanes.length * ROW_H + D.axis + 4;
   /* 마우스는 얹으면 · 손가락은 누르면 뜨고(다시 누르거나 딴 데 누르면 닫힌다 — 터치는 떼는 순간 pointerleave 가 와서 얹기가 못 버틴다). */
   const plotRef = useRef<HTMLDivElement>(null);
   /* 손가락은 탭(click)으로만 — 밀어 스크롤하면 click 이 오지 않는다(2026-10-21, 지적: "드래그를 터치로 인식해"). click 의 pointerType 대신 누른 순간의 종류. */
@@ -116,11 +118,10 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, focus,
   const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - padR);
   const chipW = (s: string): number => textW(s, FS) + 2 * PX;
   let y0 = 4;
-  /* 칩은 칸의 세로 가운데 · **겹치는 칩끼리만** 가운데 위아래로 가른다(2026-10-21, 요청: "겹치는것들만 위아래로 배치").
-     칩의 왼끝 = 다 지은 때 · 오른끝을 넘는 칩은 거꾸로 칩의 오른끝을 그때에 맞춘다(요청: "테크 칩 화면밖으로 나감") · 칩은 그 줄 색으로 칠하고 글자는 가운데(좌우 여백 같게).
-     가로로 겹치는 칩들을 한 무리로 묶고, 한 칩뿐인 무리는 가운데 · 여럿인 무리는 윗단 · 아랫단에 — 두 단에도 안 들어가면 앞 칩 뒤로 민다
-     (정확한 때는 팝업에 있다). */
+  /* 칩은 사람마다 세 단(가운데 · 위 · 아래)에 — 왼쪽부터 가운데 단이 비면 가운데, 아니면 위 · 아래 순(2026-10-21, 요청: "개인당 세 줄씩 확보해서 붙지 않게").
+     세 단이 다 막히면 가장 먼저 비는 단에 그 끝 뒤로 민다. 칩의 왼끝 = 다 지은 때 · 오른끝을 넘는 칩은 칩의 오른끝을 그때에 맞춘다(요청: "테크 칩 화면밖으로 나감"). */
   const RIGHT = CW - padR;
+  const SLOTS = [0, -1, 1] as const;
   const rows = lanes.map((l) => {
     const items = l.techs.map((t) => {
       const label = TECH_LABEL[t.t] ?? `#${t.t}`;
@@ -129,21 +130,12 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, focus,
       const flip = xe + w > RIGHT;
       return { t, x: flip ? xe - w : xe, label, w, slot: 0 as -1 | 0 | 1 };
     }).sort((p, q) => p.x - q.x);
-    for (let a = 0; a < items.length;) {
-      let b = a + 1;
-      let end = items[a].x + items[a].w + GAP;
-      while (b < items.length && items[b].x < end) { end = Math.max(end, items[b].x + items[b].w + GAP); b += 1; }
-      if (b - a > 1) {
-        const ends = { [-1]: -Infinity, 1: -Infinity } as Record<-1 | 1, number>;
-        for (let k = a; k < b; k += 1) {
-          const it = items[k];
-          const slot: -1 | 1 = it.x >= ends[-1] ? -1 : it.x >= ends[1] ? 1 : ends[-1] <= ends[1] ? -1 : 1;
-          it.x = Math.min(Math.max(it.x, ends[slot]), RIGHT - it.w);
-          ends[slot] = it.x + it.w + GAP;
-          it.slot = slot;
-        }
-      }
-      a = b;
+    const ends: Record<-1 | 0 | 1, number> = { [-1]: -Infinity, 0: -Infinity, 1: -Infinity };
+    for (const it of items) {
+      const slot = SLOTS.find((sl) => it.x >= ends[sl]) ?? SLOTS.reduce((a, b) => (ends[b] < ends[a] ? b : a));
+      it.x = Math.min(Math.max(it.x, ends[slot]), RIGHT - it.w);
+      ends[slot] = it.x + it.w + GAP;
+      it.slot = slot;
     }
     const row = { l, chips: items, top: y0, h: ROW_H };
     y0 += ROW_H;
@@ -161,7 +153,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, focus,
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
             {chips.map(({ t, x: cx0, label, w, slot }) => {
               const mid = top + h / 2;
-              const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - D.tier : mid + D.tier;
+              const y = mid - CH / 2 + slot * (CH + D.tier);
               /* 얹은 테크와 같은 종류(모든 사람)는 강조색 칩으로(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로 강조해줘") —
                  보이지 않던 마우스 상자를 강조색으로 칠한다 · 글자색은 그대로(요청: "폰트색은 그대로"). */
               const hl = hover !== null && hover.tech.t === t.t && (!focus || focus === l.key);   /* 고른 사람이 있으면 그 줄만(요청: "테크도 다른 사람 건 하이라이트 제외") */
@@ -216,26 +208,24 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   const mobile = useIsMobile();
   const fontK = mobile ? 1 : GAME_FONT_K;
   const [players, setPlayers] = useState<GameCurve[] | null>(null);
-  /* 세 판(테크 · 일꾼 · 병력)은 같은 높이(2026-10-21 요청) — 판 폭은 잰 그대로, 높이는 창 안에 셋이 들어가게((화면 높이 − 머리·범례·제목) ÷ 3 · 최소 180).
+  /* 두 곡선 판(병력 · 일꾼)은 같은 높이 — 판 폭은 잰 그대로, 높이는 (화면 높이 − 머리·제목) ÷ 3 · 최소 216. 테크 판은 사람 수에 비례(tlDims.row).
      잰 크기 그대로(1:1) 그려 글자·선이 늘거나 줄지 않는다. */
   const boxRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
   useLayoutEffect(() => {
     const el = boxRef.current;
     if (!el) return undefined;
-    /* 테크 줄 한 칸은 rowMin 아래로 안 줄인다 — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
-    const D = tlDims(fontK);
-    const lanesMin = (players ?? []).length * D.rowMin + D.axis + 4;
+    /* 테크 판 높이는 사람 수에 비례(TechLanes · tlDims.row) — 여기 높이는 두 곡선 판의 것. */
     const measure = (): void => setBox({
       w: Math.floor(el.clientWidth),
-      h: Math.max(216, lanesMin, Math.floor((window.innerHeight - 330) / 3)),
+      h: Math.max(216, Math.floor((window.innerHeight - 330) / 3)),
     });
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     window.addEventListener("resize", measure);
     return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
-  }, [players, fontK]);
+  }, [players]);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<ColorMode>("player");
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
@@ -301,7 +291,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
               {box.w > 0 && (
                 <>
                   <TechLanes
-                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR} k={fontK} focus={focus} onFocus={pickFocus}
+                    maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} k={fontK} focus={focus} onFocus={pickFocus}
                     lanes={players.map((p, i) => ({ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
                   />
                   <Chart title="병력 가치" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} />
