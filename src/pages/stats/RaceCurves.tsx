@@ -119,6 +119,13 @@ export function textW(s: string, fs: number): number {
   measureCtx.font = `600 ${fs}px ${getComputedStyle(document.body).fontFamily}`;
   return measureCtx.measureText(s).width;
 }
+/** 글자가 maxW(px)를 넘으면 뒤를 잘라 "…"(2026-10-21, 요청: "닉네임 칩 가로폭 봐서 적절히 글자수 제한") — 글자 수가 아니라 실제 폭으로(한글·영문 폭이 다르다). */
+export function fitText(s: string, fs: number, maxW: number): string {
+  if (textW(s, fs) <= maxW) return s;
+  let t = s;
+  while (t.length > 1 && textW(`${t}…`, fs) > maxW) t = t.slice(0, -1);
+  return `${t}…`;
+}
 export const chipWOf = (s: string): number => textW(s, chipBox().fs) + 2 * chipBox().px;
 /** 끝 칩을 단 판의 오른쪽 여백(k = 글자 배수) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
 export const chipGutter = (labels: string[], k = 1): number => PAD.r + k * (8 + Math.max(0, ...labels.map(chipWOf)));
@@ -159,7 +166,47 @@ function spreadAbove<T extends { pref: number; ty: number }>(items: T[], gap: nu
   return s;
 }
 
-export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fontK: k = 1, padR: padROverride }: {
+/** 세로선 손잡이 — 마우스는 얹으면 따라가고(떠나면 걷힘), 손가락은 **좌우로 밀면** 따라가며(세로로 밀면 화면 스크롤 · 판은 touch-action: pan-y) 탭은 그 자리에
+    (2026-10-21, 요청: "모바일 터치 좌우로 이동" → "칩 없는 곳도 클릭 가능 · 터치에 따라가면서 변화"). skip 이 참인 곳(테크 칩)은 제 손잡이가 받는다.
+    click 의 pointerType 은 브라우저마다 없을 수 있어 누른 순간의 종류를 기억한다. */
+export function useScrub(pick: (clientX: number) => void, clear: () => void, skip?: (t: EventTarget) => boolean) {
+  const touch = useRef<{ type: string; x: number; y: number; scrub: boolean }>({ type: "mouse", x: 0, y: 0, scrub: false });
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      touch.current = { type: e.pointerType, x: e.clientX, y: e.clientY, scrub: false };
+      if (e.pointerType === "mouse" && !skip?.(e.target)) pick(e.clientX);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      /* 마우스는 칩 위에선 칩이 받고, 손가락은 칩에서 시작해도 좌우로 밀면 따라간다. */
+      if (e.pointerType === "mouse") { if (!skip?.(e.target)) pick(e.clientX); return; }
+      const t = touch.current;
+      if (!t.scrub) {
+        const dx = Math.abs(e.clientX - t.x);
+        if (dx > 6 && dx > Math.abs(e.clientY - t.y)) t.scrub = true;
+      }
+      if (t.scrub) pick(e.clientX);
+    },
+    onClick: (e: React.MouseEvent) => { if (touch.current.type !== "mouse" && !skip?.(e.target)) pick(e.clientX); },
+    onPointerLeave: (e: React.PointerEvent) => { if (e.pointerType === "mouse") clear(); },
+  };
+}
+
+/** 여러 판이 함께 쓰는 세로선(분) — 판(.scr-rc-svg) 밖 어디를 누르든 걷힌다(폰은 손가락을 떼도 남아 있어 이것이 닫는 길이다).
+    (2026-10-21, 요청: "세로선을 모든 테크 & 그래프 간 동기화 · 통계도") */
+export function useSharedCross(): [number | null, (m: number | null) => void] {
+  const [at, setAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (at === null) return undefined;
+    const close = (e: PointerEvent): void => {
+      if (!(e.target as Element | null)?.closest?.(".scr-rc-svg")) setAt(null);
+    };
+    document.addEventListener("pointerdown", close, true);
+    return () => document.removeEventListener("pointerdown", close, true);
+  }, [at]);
+  return [at, setAt];
+}
+
+export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fontK: k = 1, padR: padROverride, at: atRaw, onAt }: {
   title: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
   ticksX?: number[]; ticksY?: number[];
@@ -176,28 +223,19 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   fontK?: number;
   /** 오른쪽 여백(기본: 칩 자리만큼) — 폰 게임 그래프는 좁게 주고, 판 밖으로 나갈 칩은 끝점 왼쪽에 놓는다. */
   padR?: number;
+  /** 세로선(분 · 여러 판이 함께 · useSharedCross) — 이 판은 가장 가까운 분에 맞춰 그린다. */
+  at: number | null;
+  onAt: (m: number | null) => void;
 }) {
   const W = width ?? W0;
   const H = height ?? H0;
   const PL = padL ?? PAD.l;
-  const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  /* 세로선 — 마우스는 얹으면 따라가고, 손가락은 **좌우로 밀면** 따라간다(세로로 밀면 화면 스크롤 · 판은 touch-action: pan-y) · 탭은 그 분에.
-     (2026-10-21, 요청: "모바일에서 좌우 드래그 없으니까 터치 좌우로 이동으로 변경") click 의 pointerType 은 브라우저마다 없을 수 있어 누른 순간을 기억한다. */
-  const touch = useRef<{ type: string; x: number; y: number; scrub: boolean }>({ type: "mouse", x: 0, y: 0, scrub: false });
   const PR = padROverride ?? (onFocus ? chipGutter(lines.map((l) => l.label), k) : PAD.r);
   const CB = chipBox();
   const CHIP_H = CB.h * k;
   const FS = AXIS_FS * k;
-  /* 세로선은 판 밖 어디를 누르든 걷힌다(폰은 손가락을 떼도 남아 있어 이것이 닫는 길이다). */
-  useEffect(() => {
-    if (at === null) return undefined;
-    const close = (e: PointerEvent): void => {
-      if (!svgRef.current?.contains(e.target as Node)) setAt(null);
-    };
-    document.addEventListener("pointerdown", close, true);
-    return () => document.removeEventListener("pointerdown", close, true);
-  }, [at]);
+  const at = atRaw === null ? null : Math.max(0, Math.min(maxX, Math.round(atRaw)));
   const x = (i: number) => PL + (i / maxX) * (W - PL - PR);
   const y = (v: number) => PAD.t + (1 - v / maxY) * (H - PAD.t - PAD.b);
   const ticksY = ty ?? [0, maxY / 2, maxY];
@@ -207,8 +245,9 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
     if (!el) return;
     const r = el.getBoundingClientRect();
     const sx = ((clientX - r.left) / r.width) * W;
-    setAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (W - PL - PR)) * maxX))));
+    onAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (W - PL - PR)) * maxX))));
   };
+  const scrub = useScrub(pick, () => onAt(null));
   /* 칩 자리 — 끝점 오른쪽(판 오른끝을 넘으면 끝점 왼쪽) · 겹치면 밀고 바닥을 넘으면 되민다(2026-10-21, 지적: "칩끼리 겹쳐서 안보이는 문제"). */
   const chips = (onFocus ? lines : []).filter((l) => l.ys.length > 0).map((l) => {
     const i = l.ys.length - 1;
@@ -248,21 +287,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
         <svg
           ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="scr-rc-svg" role="img"
           aria-label={`${title} 분당 — ${lines.map((l) => `${l.label} ${l.ys.length - 1}분까지`).join(", ")}`}
-          onPointerDown={(e) => {
-            touch.current = { type: e.pointerType, x: e.clientX, y: e.clientY, scrub: false };
-            if (e.pointerType === "mouse") pick(e.clientX);
-          }}
-          onPointerMove={(e) => {
-            if (e.pointerType === "mouse") { pick(e.clientX); return; }
-            const t = touch.current;
-            if (!t.scrub) {
-              const dx = Math.abs(e.clientX - t.x);
-              if (dx > 6 && dx > Math.abs(e.clientY - t.y)) t.scrub = true;
-            }
-            if (t.scrub) pick(e.clientX);
-          }}
-          onClick={(e) => { if (touch.current.type !== "mouse") pick(e.clientX); }}
-          onPointerLeave={(e) => { if (e.pointerType === "mouse") setAt(null); }}
+          {...scrub}
         >
           {ticksY.map((v) => (
             <g key={v}>
@@ -317,6 +342,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
 export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale }) {
   /* 줄 끝 칩을 누르면 그 종족 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신). 두 판이 한 상태를 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
+  const [at, setAt] = useSharedCross();
   const allWk = linesOf(byRace, "wk");
   const allAv = linesOf(byRace, "av");
   const sc = scale ?? curveScale([byRace]);
@@ -328,10 +354,10 @@ export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<
   return (
     <div className="scr-rc">
       <div className="scr-rc-charts">
-        {/* 병력 가치가 먼저 · 일꾼 수가 다음(2026-10-21, 요청: "일꾼과 병력가치 순서변경 · 통계에도 적용").
+        {/* 병력이 먼저 · 일꾼 수가 다음(2026-10-21, 요청: "일꾼과 병력가치 순서변경 · 통계에도 적용") · 제목 "병력 가치" → "병력"(요청).
             짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
-        <Chart title="병력 가치" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} />
-        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} />
+        <Chart title="병력" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} />
+        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} />
       </div>
     </div>
   );

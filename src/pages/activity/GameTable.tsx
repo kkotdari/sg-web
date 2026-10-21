@@ -47,7 +47,7 @@ export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; le
           <span key={c} className="scr-gtab-cell">
             {c}
             {/* 데이터 칸 설명(2026-10-21 요청) — 머리 글 옆 ⓘ. */}
-            {c === "데이터" && <InfoTip label="데이터" text="유저별 테크트리 진행과 유닛 생산 수치(일꾼 수 · 병력 가치)를 그래프로 한눈에 확인!" />}
+            {c === "데이터" && <InfoTip label="데이터" text="유저별 테크트리 진행과 유닛 생산 수치(병력 · 일꾼 수)를 그래프로 한눈에 확인!" />}
           </span>
         ))}
       </div>
