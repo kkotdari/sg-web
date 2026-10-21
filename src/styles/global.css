@@ -3320,6 +3320,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 마우스를 얹은 테크와 같은 종류(모든 사람)는 강조색 칩(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로") — 글자색은 그대로. */
 .scr-tl-chip.is-hl { fill: var(--lighting-accent, var(--point)); fill-opacity: 0.3; }   /* 연하게 — 글자(본문색)가 또렷이(요청: "잘 안보이네 좀 연해야겠다") */
 .scr-tl-name > text { font-weight: 600; }
+.scr-tl-name { cursor: pointer; outline: none; }
 .scr-tl-hit { cursor: default; }
 .scr-redo-pick { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
 body.scr-modal-open .scr-mobile-tabbar { display: none; }

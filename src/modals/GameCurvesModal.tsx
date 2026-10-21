@@ -55,12 +55,22 @@ function tlDims(k: number) {
 const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` : s);
 
 /** 닉네임 칩(그 사람 색 · 컴팩트 네모 칩) — 오른끝을 right 에 맞춘다. */
-function NameChip({ name, color, right, cy, k, big }: { name: string; color: string; right: number; cy: number; k: number; big?: boolean }) {
+function NameChip({ name, color, right, cy, k, big, onPick }: {
+  name: string; color: string; right: number; cy: number; k: number; big?: boolean;
+  /** 누르면 그 사람 고르기(끝 칩과 같다 · 2026-10-21, 지적: "테크트리의 닉네임 칩이 작동 안 해"). */
+  onPick: () => void;
+}) {
   const cb = chipBox();
   const nw = chipWOf(name) * k;
   const mx = right - nw / 2;
   return (
-    <g className="scr-tl-name" transform={big ? `translate(${mx} ${cy}) scale(1.15) translate(${-mx} ${-cy})` : undefined}>
+    <g
+      className="scr-tl-name" role="button" tabIndex={0} aria-pressed={!!big} aria-label={`${name} 굵게 보기`}
+      transform={big ? `translate(${mx} ${cy}) scale(1.15) translate(${-mx} ${-cy})` : undefined}
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => { e.stopPropagation(); onPick(); }}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(); } }}
+    >
       <rect x={right - nw} y={cy - (cb.h * k) / 2} width={nw} height={cb.h * k} rx={cb.r * k} style={{ fill: color }} />
       <text x={right - nw / 2} y={cy} textAnchor="middle" dominantBaseline="central" style={{ fontSize: cb.fs * k, fill: inkOn(color) }}>{name}</text>
     </g>
@@ -69,12 +79,13 @@ function NameChip({ name, color, right, cy, k, big }: { name: string; color: str
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
  *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 마우스를 얹으면 완공 시각 팝업 · 같은 종류 테크(모든 사람)는 강조색. */
-function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, focus }: {
+function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, focus, onFocus }: {
   lanes: Lane[]; maxX: number; ticksX: number[]; w: number; h: number; padL: number; padR: number;
   /** 글자 배수(PC GAME_FONT_K · 폰 1). */
   k: number;
   /** 끝 칩으로 고른 사람(줄 key) — 그 줄은 테크 글자 살짝 굵게 · 닉네임 칩 살짝 크게, 나머지 줄은 흐리게(2026-10-21, 요청: "테크트리도 마찬가지"). */
   focus: string | null;
+  onFocus: (key: string) => void;
 }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ tech: GameCurve["techs"][number] } | null>(null);
@@ -172,7 +183,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, focus 
               );
             })}
             {/* 닉네임 칩은 테크 글자 위에(폰은 판 안으로 넘칠 수 있어 가리지 않게 맨 위) */}
-            <NameChip name={shortName(l.name)} color={l.color} right={Math.max(PL - 6 * k, chipWOf(shortName(l.name)) * k)} cy={top + h / 2} k={k} big={focus === l.key} />
+            <NameChip name={shortName(l.name)} color={l.color} right={Math.max(PL - 6 * k, chipWOf(shortName(l.name)) * k)} cy={top + h / 2} k={k} big={focus === l.key} onPick={() => onFocus(l.key)} />
           </g>
           );
         })}
@@ -290,7 +301,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
               {box.w > 0 && (
                 <>
                   <TechLanes
-                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR} k={fontK} focus={focus}
+                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR} k={fontK} focus={focus} onFocus={pickFocus}
                     lanes={players.map((p, i) => ({ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
                   />
                   <Chart title="병력 가치" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} />
