@@ -304,7 +304,7 @@ export const api = {
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}`));
   },
 
-  /** 게임 그래프 — 참가자마다 분당 일꾼 수 · 병력 가치 · 개인색(서버 통계용 참값 표 · 2026-10-21). */
+  /** 게임 그래프 — 참가자마다 분당 일꾼 수 · 인구 · 자원 · 건물 생애 · 개인색(서버 통계용 참값 표 · 2026-10-21). */
   async getGameCurves(id: number): Promise<GameCurve[]> {
     /* 손님 모드(외부 공개 목록)는 목록 비밀번호로 그 목록에 든 판만(2026-10-21). */
     return (extShareCtx

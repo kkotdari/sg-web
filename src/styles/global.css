@@ -5023,6 +5023,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   transition: background 0.15s ease;
 }
 .scr-league-bracket-badge-btn:hover { background: rgba(0,0,0,0.07); }
+.scr-league-bracket-no { font-size: var(--fs-micro); font-weight: 700; color: #5a616b; white-space: nowrap; }
 .scr-league-bracket-badge-add {
   font-size: var(--fs-micro); color: #5a616b; white-space: nowrap; opacity: 0.85;
 }
@@ -5721,6 +5722,9 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 /* 맵 배지 옆 재생 배지(GameRowStatus playable · 2026-10-19) — 폰 게임 줄만 선다(아래 미디어 블록) · PC 는 이름 줄 끝 그대로. */
 .scr-activity-row-data-wrap { display: none; }
 .scr-light-theme .scr-activity-row-play { color: #379a20; }
+/* 맵 배지 안 재생 표시(폰 게임 목록 · 2026-10-21) — 배지 바탕이 테마와 거꾸로(어두운 테마 흰 바탕 · 라이트 검은 바탕)라 초록도 거꾸로. */
+.scr-activity-row-status-play { align-self: center; color: #379a20; }
+.scr-light-theme .scr-activity-row-status-play { color: #4cc93b; }
 /* 글자는 **누르지 않는다**(2026-10, 요청: "글자 좌우 압축 제거 · 글자가 잘리면 할수없이 자르기") — 한때 width:max-content 로 펼친 뒤
    transform: scaleX(--flat) 로 줄 폭에 맞춰 눌렀다(찌그러져 보였다). 이제 그냥 줄어들다 말줄임(.scr-activity-row-em)으로 잘린다. */
 .scr-activity-row-flat-in {
@@ -5742,11 +5746,11 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 /* ★★ PC 게임 표(GameTable.tsx ★★ · 2026-10-19, 요청: "피시는 배지들 제거하고 완전 그리드 형태(헤더로우도) · 로스터는 모바일과 같은 형태") —
    머리 줄·줄이 한 열 틀(--gtab-cols)을 쓴다. 칸 사이 세로 줄 · 로스터 칸만 늘고 나머지는 제 글 폭. 폰은 옛 줄(이 규칙은 PC 에서만 선다). */
 .scr-gtab-list {
-  --gtab-cols: 96px 72px 140px minmax(220px, 1fr) 72px 64px 132px 60px;   /* 2026-10-21: 맵 칸은 140 고정(두 줄 접힘 · 요청: "맵 컬럼이 쓸데없이 넓어 다른 컬럼에 나눠줘") · 남는 폭은 로스터 · 나머지 칸도 숨 · 데이터 칸 64 · 링크 132 */   /* 2026-10-20: 게임번호 뺌 · 맵 1fr → 112 */
+  --gtab-cols: 96px 72px 140px minmax(220px, 1fr) 72px 64px 132px 60px;   /* 2026-10-21: 시작일시 · 유형 · 맵 · 로스터 · 게임길이 차례(요청) */   /* 2026-10-21: 맵 칸은 140 고정(두 줄 접힘 · 요청: "맵 컬럼이 쓸데없이 넓어 다른 컬럼에 나눠줘") · 남는 폭은 로스터 · 나머지 칸도 숨 · 데이터 칸 64 · 링크 132 */   /* 2026-10-20: 게임번호 뺌 · 맵 1fr → 112 */
 }
 /* 리그 탭 — 둘째 칸에 리그(112) 를 끼운다(GameTable COLS). */
 .scr-gtab-list.has-league {
-  --gtab-cols: 84px 176px 60px 120px minmax(200px, 1fr) 64px 60px 124px 52px;   /* 리그 칸이 있어 다른 칸은 조금씩 덜 연다(맵 120) */   /* 리그 160 → 176(+10% · 2026-10-20) */   /* 리그 112 → 160(2026-10-20, 요청: "리그 컬럼 너비 좀 더 확보") */
+  --gtab-cols: 84px 176px 120px minmax(200px, 1fr) 60px 60px 124px 52px;   /* 2026-10-21: 유형 칸을 경기 정보(옛 리그) 칸 끝 괄호로 합쳤다(요청) */   /* 리그 칸이 있어 다른 칸은 조금씩 덜 연다(맵 120) */   /* 리그 160 → 176(+10% · 2026-10-20) */   /* 리그 112 → 160(2026-10-20, 요청: "리그 컬럼 너비 좀 더 확보") */
 }
 .scr-gtab {
   display: grid; grid-template-columns: var(--gtab-cols); align-items: stretch; width: 100%;

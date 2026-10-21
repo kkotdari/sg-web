@@ -38,8 +38,9 @@ export function GameDataButton({ game }: { game: GameResult }) {
   );
 }
 
-/** 맵·길이 배지 + (data) 윗줄 오른끝 데이터 단추(폰 · PC 는 숨는다 · global.css). 폰 게임 줄의 재생 배지는 걷었다(2026-10-21, 요청: "데이터랑 상관없이 재생배지 지우란 거였어"). */
-export function GameRowStatus({ game, data }: { game: GameResult; data?: boolean }) {
+/** 맵·길이 배지 + (data) 윗줄 오른끝 데이터 단추(폰 · PC 는 숨는다 · global.css). 폰 게임 줄의 재생 배지는 걷었다(2026-10-21, 요청: "데이터랑 상관없이 재생배지 지우란 거였어")
+ *  → (play) 맵 배지 안 '분' 옆에 다시(같은 날 요청: "모바일 게임목록 재생 가능 배지를 맵 배지 안에 넣기 분 옆에"). */
+export function GameRowStatus({ game, data, play }: { game: GameResult; data?: boolean; play?: boolean }) {
   if (isSecretGame(game)) {
     return (
       <span className="scr-activity-row-status scr-activity-row-status-dur scr-activity-row-status-secret" title="숨긴 경기">
@@ -59,6 +60,7 @@ export function GameRowStatus({ game, data }: { game: GameResult; data?: boolean
       <span className="scr-activity-row-status scr-activity-row-status-dur" title={full || undefined}>
         {map !== "" && <span>{map}</span>}
         {sec != null && <span>{Math.round(sec / 60)}분</span>}
+        {play && <Play size={9} className="scr-activity-row-play scr-activity-row-status-play" aria-label="재생 가능" fill="currentColor" />}
       </span>
     )}
     {tail && <GameDataButton game={game} />}

@@ -200,6 +200,8 @@ export interface GameLeagueTag {
   leagueId: number;
   leagueName: string;
   roundName: string;
+  /** 라운드 안 경기 번호(1부터 · 결승은 없다 · 2026-10-21). */
+  matchInRound?: number | null;
   setNo: number;
 }
 

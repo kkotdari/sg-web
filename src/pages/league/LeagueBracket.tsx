@@ -610,8 +610,11 @@ export default function LeagueBracket({
       match.setsWonA !== null || match.scheduledAt !== null || match.note !== ""
     );
     if (!hasBadge && !canFillIn) return;
+    /* 라운드 안 경기 번호(대진 자리 차례 · 결승은 없다 · 2026-10-21, 요청: "리그에 라운드별로 경기번호 부여" → "대진표에도") —
+       게임 목록의 경기 정보 칸(서버 matchInRound)과 같은 번호. */
     const content = (
       <>
+        {match && round < totalRounds && <div className="scr-league-bracket-no">{match.slotInRound + 1}경기</div>}
         {match?.setsWonA !== null && match?.setsWonB !== null && (
           <div className="scr-league-bracket-score">{match?.setsWonA} : {match?.setsWonB}</div>
         )}

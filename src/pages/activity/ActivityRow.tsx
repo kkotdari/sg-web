@@ -46,7 +46,7 @@ function rowStatusOf(item: DisplayItem) {
       </span>
     );
   }
-  if (item.kind === "gameResult") return <GameRowStatus game={item.gameResult} data />;
+  if (item.kind === "gameResult") return <GameRowStatus game={item.gameResult} data play={gamePlayable(item.gameResult)} />;
   if (item.kind !== "challenge") return null;
   const s = challengeStatusInfo(item.challenge);
   const text = s.text === "대기중" ? "대기" : s.text;
@@ -155,7 +155,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
         when={formatAgo(item.time)}
         onHide={() => act.current.hide(item)}
         leagueCol={view.leagueCol}
-        league={lg ? { name: lg.leagueName, round: `${lg.roundName} · ${lg.setNo}세트` } : null}
+        league={lg ? { name: lg.leagueName, round: `${lg.roundName}${lg.matchInRound ? ` ${lg.matchInRound}경기` : ""} ${lg.setNo}세트` } : null}
       />
     );
   }
@@ -187,7 +187,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
       above={item.kind === "gameResult" && item.gameResult.league ? (
         /* 리그 판 배지 — 리그 이름 · 라운드 · 세트(요청: "위에 별도 배지로 리그명 라운드명 세트번호(2026 팀리그 · 결승 · 1세트)"). */
         <span className="scr-league-tag">
-          {item.gameResult.league.leagueName} · {item.gameResult.league.roundName} · {item.gameResult.league.setNo}세트
+          {item.gameResult.league.leagueName} · {item.gameResult.league.roundName}{item.gameResult.league.matchInRound ? ` ${item.gameResult.league.matchInRound}경기` : ""} · {item.gameResult.league.setNo}세트
         </span>
       ) : undefined}
       desc={<>

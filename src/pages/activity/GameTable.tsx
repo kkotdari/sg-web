@@ -35,7 +35,9 @@ import type { GameResult, Member } from "../../types";
    공유는 게임 상세의 공유(카카오 · 안 되면 링크 복사) · 숨기기는 뛴 사람·운영자만(확인 창은 활동 화면이 띄운다 — onHide). */
 /* 숨김 칸은 걷었다(2026-10-20, 요청: "숨김 컬럼 제거하고 해제요청 버튼을 숨김 아래로") — 숨긴 판은 로스터 칸의 "비밀" 아래에 해제요청(폰 줄과 같은 꼴). */
 /* 데이터 칸(2026-10-21, 요청: "로스터칸 폭 줄이고 분석그래프 컬럼 추가" → "컬럼명 데이터로 · 아이콘은 다른 것들처럼 평범한 아이콘 글자로") — 그래프 보기를 링크 칸에서 꺼내 제 칸에 · 링크 칸과 같은 아이콘 단추. */
-const COLS = (league: boolean) => ["시작일시", ...(league ? ["리그"] : []), "게임길이", "맵", "로스터", "유형", "데이터", "링크", "조회수"];
+/* 차례(2026-10-21, 요청: "유형을 맵 앞으로 · 게임길이 컬럼을 로스터 다음으로 · 리그에선 리그 + 유형 합치기 맨 마지막에 유형을 괄호로 표시") —
+   리그 탭은 유형 칸 없이 리그 칸 끝에 "(유형)" · 그 칸 이름은 "경기 정보"(같은 날 요청: "리그 컬럼명을 매치 정보로" → "매치래 경기"). */
+const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "로스터", "게임길이", "데이터", "링크", "조회수"];
 
 export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
   return (
@@ -47,7 +49,7 @@ export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; le
           <span key={c} className="scr-gtab-cell">
             {c}
             {/* 데이터 칸 설명(2026-10-21 요청) — 머리 글 옆 ⓘ. */}
-            {c === "데이터" && <InfoTip label="데이터" text="유저별 테크트리 진행과 유닛 생산 수치(병력 · 일꾼 수)를 그래프로 한눈에 확인!" />}
+            {c === "데이터" && <InfoTip label="데이터" text="유저별 테크트리 진행과 유닛 생산 수치(인구 · 일꾼 수 · 자원)를 그래프로 한눈에 확인!" />}
           </span>
         ))}
       </div>
@@ -138,6 +140,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   const secret = isSecretGame(game);
   const map = secret ? "" : cleanMapName(game.mapCanonName ?? cachedReplayMap(game.mapHash)?.canonName ?? game.mapName);
   const playable = !secret && gamePlayable(game);
+  const kind = secret ? "-" : gameKindText(game);
   const user = useAppStore((st) => st.user);
   const canHide = !!onHide && !game.hidden && canManageGame(game, user);
   const [scrapping, setScrapping] = useState(false);
@@ -188,11 +191,16 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         }}
       >
         <span className="scr-gtab-cell scr-gtab-num">{when}</span>
-        {leagueCol && (league ? (
-          <span className="scr-gtab-cell scr-gtab-league" title={`${league.name} · ${league.round}`}>
-            <span>{league.name}</span><span>{league.round}</span>
+        {leagueCol && league ? (
+          <span className="scr-gtab-cell scr-gtab-league" title={`${league.name} · ${league.round} (${kind})`}>
+            <span>{league.name}</span><span>{league.round} ({kind})</span>
           </span>
-        ) : <span className="scr-gtab-cell scr-gtab-dim">-</span>)}
+        ) : <span className="scr-gtab-cell">{kind}</span>}
+        <span className="scr-gtab-cell scr-gtab-map" title={map || undefined}><span>{map || "-"}</span></span>
+        <span className="scr-gtab-cell scr-gtab-roster">
+          <GameRowNames game={game} memberOf={memberOf} mobile playable={false} />
+          {game.hidden && <UnhideRequestButton game={game} />}
+        </span>
         {/* 재생 가능 표시는 게임길이 아래(2026-10-20, 요청: "링크 컬럼의 재생버튼은 제거 · 재생여부 표시는 게임길이 컬럼에 시간 아래줄로 · 시간은 세로 가운데 유지 ·
             버튼 유무에 따라 흔들림 X") — 시간은 칸 가운데 그대로, 표시는 그 아래에 띄워(absolute) 줄 높이를 안 바꾼다. */}
         <span className="scr-gtab-cell scr-gtab-num scr-gtab-len">
@@ -201,13 +209,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
             {playable && <Play size={11} className="scr-activity-row-play scr-gtab-len-play" aria-label="재생 가능" fill="currentColor" />}
           </span>
         </span>
-        <span className="scr-gtab-cell scr-gtab-map" title={map || undefined}><span>{map || "-"}</span></span>
-        <span className="scr-gtab-cell scr-gtab-roster">
-          <GameRowNames game={game} memberOf={memberOf} mobile playable={false} />
-          {game.hidden && <UnhideRequestButton game={game} />}
-        </span>
-        <span className="scr-gtab-cell">{secret ? "-" : gameKindText(game)}</span>
-        {/* 그래프 보기 — 참가자 전원의 분당 일꾼 수 · 병력 가치 · 테크(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다. */}
+        {/* 그래프 보기 — 참가자 전원의 분당 인구 · 일꾼 수 · 자원 · 건설(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다. */}
         <span className="scr-gtab-cell">
           {!secret && !game.ums ? linkBtn("graph", "데이터 그래프", () => { setGraphOpen(true); void api.pingGameAction("graph", game); }, <ChartLine size={13} />)
             : <span className="scr-gtab-dim">-</span>}
