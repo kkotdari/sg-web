@@ -24,7 +24,7 @@ import type { GameCurve, GameResult } from "../types";
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
-type CurveKey = "wk" | "sp" | "sx" | "rs";
+type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg";
 const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
@@ -215,6 +215,8 @@ const BUILD_LABEL: Record<number, string> = {
   130: "감염커맨드", 131: "해처리", 143: "크립", 144: "스포어", 146: "성큰", 149: "익스트랙터",
   154: "넥서스", 156: "파일런", 157: "어시밀레이터", 162: "캐논", 172: "배터리",
 };
+/** 첫 본진(경기 시작부터 있던 커맨드 · 해처리 · 넥서스) — '테크 건물만'에서도 보인다(2026-10-21, 요청: "첫 스타팅 기지도 표현"). */
+const MAIN_HALL = new Set([106, 131, 154]);
 /** PC 건설 줄 치수(px) — 종류마다 한 칸: 위에 이름(label 높이) · 아래에 그 종류 건물마다 가는 선 한 줄(step 간격) · 칸 끝 숨(pad). */
 const BL = { fs: 10.5, label: 13, step: 3.5, pad: 5 } as const;
 
@@ -222,7 +224,8 @@ type BuildLane = { key: string; group: string; name: string; color: string; blds
 
 /** ★ PC 건설 줄(2026-10-21, 요청: "PC 에서만 테크 건물 → 건설로 바꾸고 모든 건물 건설 및 유지 기간 보여줘(파괴되기 전까지 선으로) · 테크 건물만 토글") —
  *  사람마다 칸 · 그 안에 건물 종류마다 작은 칸(처음 지은 차례) · 건물 한 채가 선 하나: 짓는 동안은 점선 · 다 지은 뒤 사라질 때까지 실선(끝까지 남으면 판 끝까지).
- *  같은 종류 여러 채는 겹치지 않게 줄을 나눈다. 선에 마우스를 얹으면 세로선이 그 건물의 완공(못 지었으면 착공) 때로 · 가로축에 분:초. */
+ *  같은 종류 여러 채는 겹치지 않게 줄을 나눈다. 변태(레어 · 성큰 …)는 같은 선에서 이어진다 — 변태하는 동안 점선 · 그 뒤 실선 · 그 줄의 첫 변태 자리에 새 이름
+ *  (요청: "레어 성큰같이 변태하는 건 라이프타임 선 중간에 변경되게"). 선에 마우스를 얹으면 세로선이 그 건물의 완공(못 지었으면 착공) 때로 · 가로축에 분:초. */
 function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, techOnly, onTechOnly }: {
   lanes: BuildLane[]; maxX: number; ticksX: number[]; w: number; padL: number; padR: number;
   font: { label: number; axis: number };
@@ -249,7 +252,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const scrub = useScrub(pick, () => { setHover(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
   let y0 = 4;
   const rows = lanes.map((l) => {
-    const shown = l.blds.filter((b) => !techOnly || b.t in TECH_LABEL);
+    const shown = l.blds.filter((b) => !techOnly || b.t in TECH_LABEL || b.m.some(([t]) => t in TECH_LABEL) || (b.s === 0 && MAIN_HALL.has(b.t)));
     const order: number[] = [];
     for (const b of shown) if (!order.includes(b.t)) order.push(b.t);
     let yy = y0 + 4;
@@ -261,7 +264,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         ends[k] = b.e ?? Infinity;
         return { b, k };
       });
-      const g = { t, items, top: yy };
+      /* 그 줄의 변태 이름 — 종류마다 처음 다 된 자리에 한 번(성큰 여럿이 줄마다 이름을 달지 않게). */
+      const morphs = new Map<number, number>();
+      for (const { b } of items) for (const [mt, ms, md] of b.m) if (!morphs.has(mt) || (md ?? ms) < (morphs.get(mt) ?? Infinity)) morphs.set(mt, md ?? ms);
+      const g = { t, items, top: yy, morphs: [...morphs] };
       yy += BL.label + ends.length * BL.step + BL.pad;
       return g;
     });
@@ -282,9 +288,22 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
             {groups.map((g) => (
               <g key={g.t}>
                 <text className="scr-tl-label" x={x(g.items[0].b.s)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>{BUILD_LABEL[g.t] ?? `#${g.t}`}</text>
+                {g.morphs.map(([mt, at9]) => (
+                  <text key={mt} className="scr-tl-label scr-bl-morph" x={x(at9)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>→ {BUILD_LABEL[mt] ?? `#${mt}`}</text>
+                ))}
                 {g.items.map(({ b, k }) => {
                   const ly = g.top + BL.label + k * BL.step + 1;
-                  const done = b.d ?? b.e ?? END;
+                  const end = b.e ?? END;
+                  /* 토막 — [시작, 끝, 짓는 중(점선)?] · 짓기 → 살아 있음 → (변태 중 → 살아 있음)… */
+                  const segs: [number, number, boolean][] = [];
+                  let t9 = b.s;
+                  const building = (a: number, z: number | null): void => { if (z === null) { segs.push([a, end, true]); t9 = end; } else { if (z > a) segs.push([a, z, true]); t9 = z; } };
+                  building(t9, b.d);
+                  for (const [, ms, md] of b.m) {
+                    if (ms > t9) segs.push([t9, ms, false]);
+                    building(ms, md);
+                  }
+                  if (end > t9) segs.push([t9, end, false]);
                   const show = (): void => { setHover(b); onAt((b.d ?? b.s) / 60); };
                   return (
                     <g
@@ -292,9 +311,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                       onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
                       onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
                     >
-                      <line className="scr-bl-build" x1={x(b.s)} x2={x(done)} y1={ly} y2={ly} />
-                      {b.d !== null && <line className="scr-bl-live" x1={x(b.d)} x2={x(b.e ?? END)} y1={ly} y2={ly} />}
-                      <line className="scr-bl-pad" x1={x(b.s)} x2={x(b.e ?? END)} y1={ly} y2={ly} />
+                      {segs.map(([a, z, building], si) => (
+                        <line key={si} className={building ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
+                      ))}
+                      <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />
                     </g>
                   );
                 })}
@@ -394,21 +414,21 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   /* 눈금은 이 판에 맞춘다(2026-10-21, 요청: "게임마다 적절한 눈금") — 통계의 고정 자(일꾼 100 · 인구 100 · 0/반/끝)가 아니라
      이 판 최댓값을 덮는 둥근 간격 눈금(세로 ≤5칸 · 가로 분 ≤7칸). */
   /* 그릴 줄 — 팀 보기면 팀마다 분별 합(그 팀에서 아직 선이 있는 사람만 더한다 · 길이는 그 팀에서 가장 긴 사람). */
-  /* 자원(rs) = 그 분에 쥔 미네랄 + 가스(PC 자원 그래프 · 2026-10-21, 요청: "자원 그래프 추가"). */
+  /* 자원 = 그 분에 쥔 미네랄(rm) · 가스(rg) — 판을 나눈다(PC · 2026-10-21, 요청: "자원 그래프 추가" → "미네랄 가스 분리"). */
   const series = useMemo((): ({ key: string; p: GameCurve | null; team: 1 | 2 } & Record<CurveKey, number[]>)[] => {
-    const ps = (players ?? []).map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rs: p.rm.map((v, i) => v + (p.rg[i] ?? 0)) }));
+    const ps = (players ?? []).map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg }));
     if (!teamOn) return ps.map((q) => ({ key: q.p.playerName, team: teamNo(q.p.team), ...q }));
     const sum = (ms: typeof ps, k: CurveKey): number[] =>
       Array.from({ length: Math.max(0, ...ms.map((q) => q[k].length)) }, (_, m) => ms.reduce((a, q) => a + (q[k][m] ?? 0), 0));
     return ([1, 2] as const).map((t) => {
       const ms = ps.filter((q) => teamNo(q.p.team) === t);
-      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rs: sum(ms, "rs") };
+      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg") };
     });
   }, [players, teamOn]);
   const sc = useMemo(() => {
     const x = Math.max(1, ...series.map((s) => Math.max(s.wk.length, s.sp.length) - 1));
     const ticks = (k: CurveKey): number[] => niceTicks(Math.max(0, ...series.flatMap((s) => s[k])));
-    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rs: ticks("rs") };
+    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg") };
   }, [series]);
   const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s, i) => (s[key].length < 2 ? [] : [s.p
     ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p, i), ys: s[key] }
@@ -464,7 +484,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                     title="인구" titleExtra={<TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} />}
                     lines={linesOf(spKey)} maxX={sc.x} maxY={sc[spKey][sc[spKey].length - 1]} ticksX={sc.xt} ticksY={sc[spKey]} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
                   <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
-                  {!mobile && <Chart title="자원" note="그때 쥔 미네랄+가스" lines={linesOf("rs")} maxX={sc.x} maxY={sc.rs[sc.rs.length - 1]} ticksX={sc.xt} ticksY={sc.rs} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />}
+                  {!mobile && <Chart title="미네랄" note="그때 쥔 양" lines={linesOf("rm")} maxX={sc.x} maxY={sc.rm[sc.rm.length - 1]} ticksX={sc.xt} ticksY={sc.rm} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />}
+                  {!mobile && <Chart title="가스" note="그때 쥔 양" lines={linesOf("rg")} maxX={sc.x} maxY={sc.rg[sc.rg.length - 1]} ticksX={sc.xt} ticksY={sc.rg} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />}
                 </>
               )}
             </div>

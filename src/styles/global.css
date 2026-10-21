@@ -3286,8 +3286,8 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 
 .scr-modal-md { max-width: 560px; }
 /* 게임 그래프(GameCurvesModal · 2026-10-21 · PC 만) — 화면 폭을 거의 다(요청: "그래프를 최대한 크게") · 범례는 위 한 줄 · 테크 줄과 두 판이 세로로. */
-/* 게임 목록 폭 안쪽의 90%(2026-10-21, 요청: "목록 폭 안짝으로" → "25프로 더 줄이기" → 글자 1.2 배와 함께 "모달폭 늘리고" 0.75 → 0.9) — PC 목록 1080 − 좌우 여백 40 의 0.9 = 936 이하 · 창이 좁으면 양옆 60px · 높이는 화면 − 48 고정(넘치면 창 안에서 내린다). */
-.scr-modal-graph { max-width: 936px; width: calc(100vw - 120px); height: calc(100vh - 48px); display: flex; flex-direction: column; }
+/* 게임 목록 폭 안쪽의 90%(2026-10-21, 요청: "목록 폭 안짝으로" → "25프로 더 줄이기" → 글자 1.2 배와 함께 "모달폭 늘리고" 0.75 → 0.9) — 1400 이하(2026-10-21, 요청: "PC 에서 데이터 창 폭 넓혀야 할 듯" 936 → 1400) · 창이 좁으면 양옆 60px · 높이는 화면 − 48 고정(넘치면 창 안에서 내린다). */
+.scr-modal-graph { max-width: 1400px; width: calc(100vw - 120px); height: calc(100vh - 48px); display: flex; flex-direction: column; }
 .scr-modal-graph > .scr-modal-body { flex: 1 1 auto; padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
 /* 제목은 "데이터" · 그 뒤 "게임번호: 번호"는 작고 연하게(2026-10-21, 요청: "데이터 좀 작고 연하게 게임번호: 번호" → "데이터가 진하고 큰거야"). */
 .scr-gc-sub { margin-left: 8px; font-style: normal; font-size: 0.8em; font-weight: 600; color: var(--dim); }
@@ -3319,6 +3319,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-bl-live { stroke: rgba(var(--overlay-rgb), 0.55); stroke-width: 2; stroke-linecap: round; }
 .scr-bl-pad { stroke: transparent; stroke-width: 6; }
 .scr-bl-hit { cursor: default; }
+.scr-bl-morph { fill: var(--dim); }
 .scr-bl-hit.is-hl > .scr-bl-live { stroke: var(--text); }
 .scr-bl-hit.is-hl > .scr-bl-build { stroke: var(--text); }
 /* 마우스를 얹은 테크와 같은 종류(모든 사람)는 강조색 칩(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로") — 글자색은 그대로. */
