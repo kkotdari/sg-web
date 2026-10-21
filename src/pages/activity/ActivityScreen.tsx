@@ -210,7 +210,8 @@ function ActivityRouter() {
   const rowAct = useRef<RowAct>({ open: openItem, toggle: sel.toggle, setMany: sel.setMany, hide: hideOne });
   rowAct.current = { open: openItem, toggle: sel.toggle, setMany: sel.setMany, hide: hideOne };
 
-  /* ★ 게임 탭 기본값은 **리그**, 다만 최근 7일 안에 리그 판이 없으면 **내전**(2026-10-19, 요청: "게임 탭 기본값은 리그로하고 리그 경기 일주일 이내에 없으면 내전으로").
+  /* ★ 게임 탭 기본값은 **내전**, 전날 리그 판이 등록됐을 때만 **리그**(2026-10-21, 요청: "활동이랑 게임에서 기본탭 내전으로 하고 리그는 전날경기 등록됐을때만" ·
+     한때 2026-10-19 "기본 리그 · 일주일 안에 리그 판이 없으면 내전"). 활동 홈과 게임 목록이 이 한 값을 같이 쓴다.
      주소에 탭이 없을 때만 이 셈을 타고, 사람이 고른 탭은 주소(tab=league|clan|pub)에 남아 그대로 선다. */
   const recentLeague = useRecentLeague();
   const [gameTabRaw, setGameTabRaw] = useUrlState("tab");

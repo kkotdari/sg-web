@@ -5,9 +5,10 @@ import { useCursorPagination } from "../../hooks/useCursorPagination";
 import { primeActivityComments } from "./ActivityComments";
 import { pickComingMatches } from "./ComingMatches";
 import {
-  challengeItem, gameResultItem, leagueMatchItem, scheduleItem, sortMsOf,
+  challengeItem, gameResultItem, leagueMatchItem, scheduleItem, sessionDateOf, sortMsOf,
   type ActivityItem,
 } from "./activityItems";
+import { fmt } from "../../utils/date";
 import type { ActivityFeedItem, Challenge, GameResult, LeagueMatchActivity, Schedule } from "../../types";
 
 /* ★ 활동 피드(홈·묶음 목록이 보는 서버 목록) — 2026-10-19(요청: "활동과 일정 너나와 리그 게임 목록과 상세등 모두 컴포넌트 분리").
@@ -37,10 +38,9 @@ export interface FeedActions {
 
 const DataCtx = createContext<FeedData | null>(null);
 const ActionsCtx = createContext<FeedActions | null>(null);
-/** 최근 7일 안에 리그 판(리그 세트에 쓰인 게임)이 있나 — 게임 탭 기본값(리그 / 내전)을 정한다. 불러오는 동안은 null.
+/** 전날 리그 판(리그 세트에 쓰인 게임)이 등록됐나 — 게임 탭 기본값(리그 / 내전)을 정한다. 불러오는 동안은 null.
  *  값이 참·거짓 하나라 바뀔 때만 구독자가 다시 그린다(피드 전체를 구독하지 않는 라우터가 쓴다). */
 const RecentLeagueCtx = createContext<boolean | null>(null);
-const RECENT_LEAGUE_MS = 7 * 24 * 60 * 60 * 1000;
 export function useRecentLeague(): boolean | null {
   return useContext(RecentLeagueCtx);
 }
@@ -125,8 +125,12 @@ export function FeedProvider({ children }: { children: ReactNode }) {
 
   const recentLeague = useMemo<boolean | null>(() => {
     if (feedLoading) return null;
-    const since = Date.now() - RECENT_LEAGUE_MS;
-    return feedAll.some((it) => it.kind === "gameResult" && !!it.gameResult.league && it.time >= since);
+    /* 기본 탭은 내전, **전날 리그 판이 등록됐을 때만** 리그(2026-10-21, 요청: "활동이랑 게임에서 기본탭 내전으로 하고 리그는 전날경기 등록됐을때만")
+       — 한때 최근 7일 안에 리그 판이 있으면 리그였다. 판의 날은 sessionDateOf(새벽 8시 전 판은 그 전날 밤 판). */
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    const yesterday = fmt(y);
+    return feedAll.some((it) => it.kind === "gameResult" && !!it.gameResult.league && sessionDateOf(it) === yesterday);
   }, [feedAll, feedLoading]);
 
   const data = useMemo<FeedData>(() => ({
