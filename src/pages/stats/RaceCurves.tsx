@@ -158,11 +158,20 @@ function smoothPath(pts: [number, number][]): string {
 }
 
 /** 값 글자의 세로 자리 — 저마다 제 점 **옆**(pref = 점 높이)에 두고, 겹치면 위로 밀며(아래에서부터), 판 위끝에 닿을 때만 아래로 민다
-    (2026-10-21, 요청: "값은 선 아래보다는 위가 낫겠지" → "가능하면 점 옆에 · 안 되면 위로 밀리게"). */
-function spreadAbove<T extends { pref: number; ty: number }>(items: T[], gap: number, top: number): T[] {
+    (2026-10-21, 요청: "값은 선 아래보다는 위가 낫겠지" → "가능하면 점 옆에 · 안 되면 위로 밀리게").
+    bands(막힌 높이 띠 · 끝 칩 자리)엔 안 앉는다 — 위로 밀 땐 띠 위로, 아래로 밀 땐 띠 아래로 넘긴다
+    (2026-10-21, 요청: "닉네임을 가리면 점이랑 멀어져도 안 가리는 위치에"). */
+function spreadAbove<T extends { pref: number; ty: number }>(items: T[], gap: number, top: number, bands: [number, number][] = []): T[] {
+  const free = (t: number, up: boolean): number => {
+    for (let moved = true; moved;) {
+      moved = false;
+      for (const [a, b] of bands) if (t > a && t < b) { t = up ? a : b; moved = true; }
+    }
+    return t;
+  };
   const s = [...items].sort((a, b) => a.pref - b.pref);
-  for (let i = s.length - 1; i >= 0; i -= 1) s[i].ty = Math.min(s[i].pref, i < s.length - 1 ? s[i + 1].ty - gap : Infinity);
-  s.forEach((c, i) => { c.ty = Math.max(c.ty, top, i > 0 ? s[i - 1].ty + gap : -Infinity); });
+  for (let i = s.length - 1; i >= 0; i -= 1) s[i].ty = free(Math.min(s[i].pref, i < s.length - 1 ? s[i + 1].ty - gap : Infinity), true);
+  s.forEach((c, i) => { c.ty = free(Math.max(c.ty, top, i > 0 ? s[i - 1].ty + gap : -Infinity), false); });
   return s;
 }
 
@@ -269,19 +278,17 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
     }
   }
   /* 세로선 자리의 값 — 사람(종족)마다 제 색 글자로 점 옆에(팝업 대신 · 2026-10-21, 요청: "팝업 제거, 세로선만 유지하고 가로축에 그 시각 표시 ·
-     세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점 옆(세로선 오른편 · 아래 valsRight) · 겹치면 위로 민다(spreadAbove). */
+     세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점 옆(세로선 오른편 · 판 오른끝을 넘으면 왼편) · 겹치면 위로 민다(spreadAbove).
+     끝 칩(닉네임)은 가리지 않는다 — 값 줄(왼끝 맞춤 한 열)과 가로로 겹치는 칩의 높이 띠를 비켜 앉는다(점에서 멀어져도). */
+  const shown = at === null ? [] : lines.filter((l) => at < l.ys.length && (!focus || l.key === focus)); /* 고른 사람이 있으면 그 사람 값만(2026-10-21, 요청: "선택한 경우 그 사람 값만 나오게"). */
+  const colW = Math.max(0, ...shown.map((l) => textW(compact(l.ys[at ?? 0]), FS)));
+  const valsRight = at !== null && x(at) + 8 * k + colW <= W;
+  const colX0 = at === null ? 0 : valsRight ? x(at) + 8 * k : x(at) - 8 * k - colW;
   const vals = at === null ? [] : spreadAbove(
-    /* 고른 사람이 있으면 그 사람 값만(2026-10-21, 요청: "선택한 경우 그 사람 값만 나오게"). */
-    lines.filter((l) => at < l.ys.length && (!focus || l.key === focus)).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0 })),
+    shown.map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0 })),
     FS + 1 * k, PAD.t + FS / 2,
+    chips.filter((c) => colX0 < c.cx + c.w && c.cx < colX0 + colW).map((c): [number, number] => [c.ty - (CHIP_H + FS) / 2 - 1 * k, c.ty + (CHIP_H + FS) / 2 + 1 * k]),
   );
-  /* 값은 세로선 오른편(왼끝 맞춤)이 기본 — 판 오른끝을 넘거나 끝 칩(닉네임)을 가릴 때만 왼편에 오른끝을 맞춰 한 줄로
-     (2026-10-21, 요청: "값들이 닉네임을 가리지 않게 왼쪽으로 · 값끼리 수직 정렬" → "닉네임을 가릴 때만"). */
-  const valsRight = at !== null && vals.every(({ v, ty }) => {
-    const x0 = x(at) + 8 * k;
-    const x1 = x0 + textW(compact(v), FS);
-    return x1 <= W && !chips.some((c) => x0 < c.cx + c.w && c.cx < x1 && Math.abs(ty - c.ty) < (FS + CHIP_H) / 2);
-  });
   const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
   /* 칩을 누른 사람(종족)만 또렷이 — 그 선은 굵게 · 칩은 살짝 크게, 나머지는 선·점·칩·값 모두 흐리게(2026-10-21, 요청: "액티브 칩은 살짝 확대만 ·
      나머지 사람들 거 딤 처리 · 나머지 그래프 선도 딤"). */
