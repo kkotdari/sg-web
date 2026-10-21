@@ -3279,8 +3279,8 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 
 .scr-modal-md { max-width: 560px; }
 /* 게임 그래프(GameCurvesModal · 2026-10-21 · PC 만) — 화면 폭을 거의 다(요청: "그래프를 최대한 크게") · 범례는 위 한 줄 · 테크 줄과 두 판이 세로로. */
-/* 게임 목록 폭 안쪽의 75%(2026-10-21, 요청: "목록 폭 안짝으로" → "25프로 더 줄이기") — 목록(--list-content-max − 좌우 여백) × 0.75 이하 · 창이 좁으면 양옆 60px · 높이는 화면 안(넘치면 창 안에서 내린다). */
-.scr-modal-graph { max-width: calc((var(--list-content-max) - 2 * var(--main-pad-x, 20px)) * 0.75); width: calc(100vw - 120px); max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
+/* 게임 목록 폭 안쪽의 90%(2026-10-21, 요청: "목록 폭 안짝으로" → "25프로 더 줄이기" → 글자 1.2 배와 함께 "모달폭 늘리고" 0.75 → 0.9) — 목록(--list-content-max − 좌우 여백) × 0.9 이하 · 창이 좁으면 양옆 60px · 높이는 화면 안(넘치면 창 안에서 내린다). */
+.scr-modal-graph { max-width: calc((var(--list-content-max) - 2 * var(--main-pad-x, 20px)) * 0.9); width: calc(100vw - 120px); max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
 .scr-modal-graph > .scr-modal-body { padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
 /* 판 사이를 띄워 가른다(요청: "그래프간 줄간격좀 띄워서 구분") — 판마다 위 가는 줄. */
 .scr-gc { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
@@ -8060,7 +8060,8 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-plot { position: relative; }
 .scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; cursor: crosshair; }
 .scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }
-.scr-rc-axis { fill: var(--dim); font-size: 9px; font-variant-numeric: tabular-nums; }
+/* 눈금 글자 9 → 10.8(2026-10-21, 요청: "그래프 눈금글자 20프로 확대") */
+.scr-rc-axis { fill: var(--dim); font-size: 10.8px; font-variant-numeric: tabular-nums; }
 .scr-rc-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 /* 줄 끝 칩(통계 · 게임 그래프 · 2026-10-21) — 누르면 그 줄을 끄고 켠다 · 끈 줄은 칩만 흐리게 남는다. */
 .scr-rc-chip { cursor: pointer; outline: none; }

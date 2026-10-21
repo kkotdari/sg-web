@@ -36,6 +36,8 @@ const TECH_LABEL: Record<number, string> = {
 const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
 
 type Lane = { key: string; name: string; color: string; techs: GameCurve["techs"] };
+/** 글자 배수(2026-10-21, 요청: "칩 · 테크트리 글자 · 눈금 글자 20프로 확대 · 요소간 갭 늘리려면 모달폭과 세로 늘리고") — 테크 글자·칸·사이 · 판 최소 높이. */
+const UI = 1.2;
 const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` : s);
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
@@ -44,11 +46,13 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ lane: Lane; tech: GameCurve["techs"][number]; label: string; x0: number; x1: number; cy: number } | null>(null);
   /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것 — 칩 크기도 거기에 맞춘다(2026-10-21, 요청: "테크쪽이 너무 비대 · 세 판 높이 통일"). */
-  const AXIS = 18;
+  const AXIS = 18 * UI;
+  const GAP = 3 * UI;
   const ROW_H = (H - AXIS - 4) / Math.max(1, lanes.length);
   /* 테크는 글자만(2026-10-21, 요청: "직사각형 음영" → "테크트리 음영제거") — 글자를 바투 감싼 상자(위아래 0.15em · 좌우 0.3em)는
      보이지 않는 마우스 자리로만 남아 겹침 가르기와 팝업 자리를 잰다. */
-  const FS = Math.round(Math.max(10, Math.min(13, (ROW_H - 4) / 2 - 2)) * 0.72 * 10) / 10;
+  /* 글자·사이는 1.2 배(UI · 2026-10-21, 요청: "테크트리 글자 20프로 확대 · 번잡스러워지지 않게 요소간 갭 늘리기") — 칸도 1.2 배 커졌으니 옛 칸 자(ROW_H/UI)로 뽑고 곱한다. */
+  const FS = Math.round(Math.max(10, Math.min(13, (ROW_H / UI - 4) / 2 - 2)) * 0.72 * UI * 10) / 10;
   const CH = Math.round(FS * 1.3 * 10) / 10;
   const PX = FS * 0.3;
   const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - padR);
@@ -69,15 +73,15 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
     }).sort((p, q) => p.x - q.x);
     for (let a = 0; a < items.length;) {
       let b = a + 1;
-      let end = items[a].x + items[a].w + 3;
-      while (b < items.length && items[b].x < end) { end = Math.max(end, items[b].x + items[b].w + 3); b += 1; }
+      let end = items[a].x + items[a].w + GAP;
+      while (b < items.length && items[b].x < end) { end = Math.max(end, items[b].x + items[b].w + GAP); b += 1; }
       if (b - a > 1) {
         const ends = { [-1]: -Infinity, 1: -Infinity } as Record<-1 | 1, number>;
         for (let k = a; k < b; k += 1) {
           const it = items[k];
           const slot: -1 | 1 = it.x >= ends[-1] ? -1 : it.x >= ends[1] ? 1 : ends[-1] <= ends[1] ? -1 : 1;
           it.x = Math.min(Math.max(it.x, ends[slot]), RIGHT - it.w);
-          ends[slot] = it.x + it.w + 3;
+          ends[slot] = it.x + it.w + GAP;
           it.slot = slot;
         }
       }
@@ -108,7 +112,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
             })()}
             {chips.map(({ t, x: cx, label, w, slot }) => {
               const mid = top + h / 2;
-              const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - 1.5 : mid + 1.5;
+              const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - 1.5 * UI : mid + 1.5 * UI;
               return (
                 <g
                   key={t.t} className="scr-tl-hit"
@@ -166,11 +170,11 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   useLayoutEffect(() => {
     const el = boxRef.current;
     if (!el) return undefined;
-    /* 테크 줄 한 칸은 28px 아래로 안 줄인다(칩 글이 8px 아래로 안 가게) — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
-    const lanesMin = (players ?? []).length * 28 + 22;
+    /* 테크 줄 한 칸은 28px(→ 글자 1.2 배와 함께 ×UI) 아래로 안 줄인다 — 사람이 많아 모자라면 세 판이 같이 커지고 창 안에서 내린다. */
+    const lanesMin = Math.round((players ?? []).length * 28 * UI + 22 * UI);
     const measure = (): void => setBox({
       w: Math.floor(el.clientWidth),
-      h: Math.max(180, lanesMin, Math.floor((window.innerHeight - 330) / 3)),
+      h: Math.max(Math.round(180 * UI), lanesMin, Math.floor((window.innerHeight - 330) / 3)),
     });
     measure();
     const ro = new ResizeObserver(measure);
