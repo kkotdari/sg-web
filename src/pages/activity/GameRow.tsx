@@ -63,7 +63,9 @@ export function GameRowStatus({ game, playable, data }: { game: GameResult; play
     )}
     {tail && (
       <span className="scr-activity-row-play-top">
-        {playable && <Play size={12} className="scr-activity-row-play" aria-hidden fill="currentColor" />}
+        {/* 데이터 단추가 서는 줄(활동·게임 목록)은 재생 배지를 뺀다 — 단추 옆의 단추 아닌 아이콘이 어색(2026-10-21, 요청: "모바일 재생아이콘 … 일단 제거").
+            이름 줄 끝의 재생 배지도 윗줄이 있으면 숨는다(global.css). */}
+        {playable && !(data && !game.ums) && <Play size={12} className="scr-activity-row-play" aria-hidden fill="currentColor" />}
         {data && !game.ums && <GameDataButton game={game} />}
       </span>
     )}
