@@ -16,14 +16,13 @@ import type { GameCurve, GameResult } from "../types";
 /* ★ 게임 그래프(2026-10-21, 요청: "게임 목록에서 PC에 그래프 보기 버튼 · 참가자 전원의 일꾼 및 병력 가치 그래프(한 그래프에 합쳐서) · 색은 임자색 ·
    범례에 색깔과 종족 닉네임 · 통계랑 똑같이 선택 · 팀컬러 모드로 변경도" → "두 그래프를 세로로 · PC 는 모달 폭 넓게" → "게임목록 폭 거의 다 ·
    그래프를 최대한 크게 · 각 플레이어 테크 건물 건설 시간을 그래프 위에 · 범례도 위로 · 폰에서는 제공되지 않는 기능").
-   차례: [개인색 · 팀색] → 테크 줄(사람마다 세 단 · 다 지은 때) → 병력 → 일꾼 수. 셋 다 같은 가로 자(잰 폭 · 끝 칩 여백 chipGutter) · 같은 높이
+   차례: [팀 보기(팀전만)] → 테크 줄(사람마다 세 단 · 다 지은 때) → 병력 → 일꾼 수. 셋 다 같은 가로 자(잰 폭 · 끝 칩 여백 chipGutter) · 같은 높이
    · 같은 분 눈금(niceTicks). 테크 줄 앞머리엔 그 사람 색 닉네임 칩 · 테크 음영은 무채색(요청: "칸 앞머리에 심플하게 닉네임" → "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거").
    곡선·개인색은 서버의 통계용 참값 표(GET /{id}/curves) — 판(Chart)은 통계 펼침(RaceCurves)과 같은 것 · 눈금은 판마다 그 판에 맞춘 둥근 간격(niceTicks · 가로는 그 판 길이).
    범례 대신 줄 끝 닉네임 칩(누르면 그 사람을 끄고 켠다 — 테크 줄도 같이 · 2026-10-21 요청).
    개인색을 못 읽은 판(옛 굽기 · 로스터 색이 한 가지뿐)은 원작 팔레트를 자리 차례로 쓴다(재생기 personalUsable 과 같은 거름). */
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
-type ColorMode = "player" | "team";
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
 /* 흔히 부르는 약어(2026-10-21, 요청: "사이버 → 코어 · 에볼 → 챔버 · 이거 말고도 범용적인 약어로") — 아둔(시타델) · 트리뷰널 · 마운드 · 캐번 · 코버트 · 피직스 · 베이(서포트 베이).
@@ -38,7 +37,8 @@ const TECH_LABEL: Record<number, string> = {
 };
 const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
 
-type Lane = { key: string; name: string; color: string; techs: GameCurve["techs"] };
+/** group — 고르기(focus) 단위: 평소 그 사람(key) · 팀 보기면 그 팀(두 곡선 판의 팀 줄 key). */
+type Lane = { key: string; group: string; name: string; color: string; techs: GameCurve["techs"] };
 /** 테크 줄 치수(2026-10-21, 요청: "칩과 눈금 폰트를 통계 그래프 눈금 크기와 같게 · 테크트리와 제목도 맞춰서 키우기") —
     눈금·닉네임 칩 글자 = AXIS_FS × GAME_FONT_K(통계 PC 눈금과 같은 화면 크기) · 테크 글자는 11px(요청: "테크트리 글자 굵기 줄이고 크기 한단만 낮춰줘" — 0.8 배 11.9 → 11 · 굵기 600 → 500).
     테크는 글자만 — 글자를 감싼 컴팩트 네모 칩 상자는 평소 보이지 않는 마우스 자리로 남아 겹침 가르기와 팝업 자리를 재고, 같은 종류 강조 때만 칠한다
@@ -164,14 +164,14 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, k, focus, onFoc
         {rows.map(({ l, chips, top, h }) => {
           /* 앞머리 닉네임은 그 사람 색 칩(2026-10-21, 요청: "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거") — 끝 칩과 같은 컴팩트 네모 칩(chipBox). */
           return (
-          <g key={l.key} className={focus === l.key ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row"}>
+          <g key={l.key} className={focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row"}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
             {chips.map(({ t, x: cx0, label, w, slot }) => {
               const mid = top + h / 2;
               const y = mid - CH / 2 + slot * (CH + D.tier);
               /* 얹은 테크와 같은 종류(모든 사람)는 강조색 칩으로(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로 강조해줘") —
                  보이지 않던 마우스 상자를 강조색으로 칠한다 · 글자색은 그대로(요청: "폰트색은 그대로"). */
-              const hl = hover !== null && hover.tech.t === t.t && (!focus || focus === l.key);   /* 고른 사람이 있으면 그 줄만(요청: "테크도 다른 사람 건 하이라이트 제외") */
+              const hl = hover !== null && hover.tech.t === t.t && (!focus || focus === l.group);   /* 고른 사람이 있으면 그 줄만(요청: "테크도 다른 사람 건 하이라이트 제외") */
               const show = (): void => { setHover({ tech: t }); onAt(t.e / 60); };
               return (
                 <g
@@ -190,7 +190,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, k, focus, onFoc
               );
             })}
             {/* 닉네임 칩은 테크 글자 위에(폰은 판 안으로 넘칠 수 있어 가리지 않게 맨 위) */}
-            <NameChip name={shortName(l.name)} color={l.color} right={Math.max(PL - 6 * k, chipWOf(shortName(l.name)) * k)} cy={top + h / 2} k={k} big={focus === l.key} onPick={() => onFocus(l.key)} />
+            <NameChip name={shortName(l.name)} color={l.color} right={Math.max(PL - 6 * k, chipWOf(shortName(l.name)) * k)} cy={top + h / 2} k={k} big={focus === l.group} onPick={() => onFocus(l.group)} />
           </g>
           );
         })}
@@ -225,7 +225,9 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   const memberOf = useAppStore((s) => s.memberOf);
   /* 폰(2026-10-21, 요청: "모바일에서도 볼 수 있게" → … → "모바일 기기 화면폭") — 화면 가득 · 세 판은 화면 폭에 맞춰 그린다 · 글자는 통계 폰 눈금 크기(배수 1). */
   const mobile = useIsMobile();
-  const fontK = mobile ? 1 : GAME_FONT_K;
+  /* PC 는 눈금·닉네임 칩·값 글자를 통계 PC 눈금보다 20% 작게(2026-10-21, 요청: "PC 에서 그래프 눈금 숫자와 닉네임 칩, 그래프 값 20프로 축소") —
+     테크 글자(tlDims.fs)는 그대로. */
+  const fontK = mobile ? 1 : GAME_FONT_K * 0.8;
   const [players, setPlayers] = useState<GameCurve[] | null>(null);
   /* 두 곡선 판(병력 · 일꾼)은 같은 높이 — 판 폭은 잰 그대로, 높이는 (화면 높이 − 머리·제목) ÷ 3 · 최소 216. 테크 판은 사람 수에 비례(tlDims.row).
      잰 크기 그대로(1:1) 그려 글자·선이 늘거나 줄지 않는다. */
@@ -246,7 +248,9 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
     return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
   }, [players]);
   const [error, setError] = useState("");
-  const [mode, setMode] = useState<ColorMode>("player");
+  /* 팀 보기(팀전만 · 2026-10-21, 요청: "개인색 팀색 기능 제거하고 그 자리에 팀전의 경우 팀 보기 토글 — 켜면 색은 팀색, 두 그래프는 팀 합산") —
+     테크 줄은 사람마다 그대로(색만 팀색) · 칩을 누르면 그 사람의 팀을 고른다. */
+  const [teamView, setTeamView] = useState(false);
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   /* 세 판이 한 세로선(분)을 같이 쓴다(요청: "세로선을 모든 테크 & 그래프 간 동기화"). */
@@ -264,19 +268,36 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
     const cs = (players ?? []).map((p) => p.color).filter((c): c is string => !!c);
     return cs.length === (players ?? []).length && new Set(cs).size > 1;
   }, [players]);
-  const colorOf = (p: GameCurve, i: number): string => (mode === "team"
+  const teamGame = useMemo(() => {
+    const ps = players ?? [];
+    const n1 = ps.filter((p) => teamNo(p.team) === 1).length;
+    return n1 > 0 && n1 < ps.length && Math.max(n1, ps.length - n1) > 1;
+  }, [players]);
+  const teamOn = teamView && teamGame;
+  const colorOf = (p: GameCurve, i: number): string => (teamOn
     ? TEAM_COLOR[teamNo(p.team)]
     : personalOk && p.color ? p.color : BW_PALETTE[i % BW_PALETTE.length]);
   const nameOf = (p: GameCurve): string => memberOf(p.memberId)?.nickname ?? p.playerName;
   /* 눈금은 이 판에 맞춘다(2026-10-21, 요청: "게임마다 적절한 눈금") — 통계의 고정 자(일꾼 100 · 병력 20K · 0/반/끝)가 아니라
      이 판 최댓값을 덮는 둥근 간격 눈금(세로 ≤5칸 · 가로 분 ≤7칸). */
-  const sc = useMemo(() => {
+  /* 그릴 줄 — 팀 보기면 팀마다 분별 합(그 팀에서 아직 선이 있는 사람만 더한다 · 길이는 그 팀에서 가장 긴 사람). */
+  const series = useMemo((): { key: string; p: GameCurve | null; team: 1 | 2; wk: number[]; av: number[] }[] => {
     const ps = players ?? [];
-    const x = Math.max(1, ...ps.map((p) => Math.max(p.wk.length, p.av.length) - 1));
-    return { x, xt: niceTicks(x, 7), wk: niceTicks(Math.max(0, ...ps.flatMap((p) => p.wk))), av: niceTicks(Math.max(0, ...ps.flatMap((p) => p.av))) };
-  }, [players]);
-  const linesOf = (key: "wk" | "av"): ChartLine[] => (players ?? []).flatMap((p, i) => (p[key].length < 2
-    ? [] : [{ key: p.playerName, label: shortName(nameOf(p)), color: colorOf(p, i), ys: p[key] }]));
+    if (!teamOn) return ps.map((p) => ({ key: p.playerName, p, team: teamNo(p.team), wk: p.wk, av: p.av }));
+    const sum = (ms: GameCurve[], k: "wk" | "av"): number[] =>
+      Array.from({ length: Math.max(0, ...ms.map((p) => p[k].length)) }, (_, m) => ms.reduce((a, p) => a + (p[k][m] ?? 0), 0));
+    return ([1, 2] as const).map((t) => {
+      const ms = ps.filter((p) => teamNo(p.team) === t);
+      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), av: sum(ms, "av") };
+    });
+  }, [players, teamOn]);
+  const sc = useMemo(() => {
+    const x = Math.max(1, ...series.map((s) => Math.max(s.wk.length, s.av.length) - 1));
+    return { x, xt: niceTicks(x, 7), wk: niceTicks(Math.max(0, ...series.flatMap((s) => s.wk))), av: niceTicks(Math.max(0, ...series.flatMap((s) => s.av))) };
+  }, [series]);
+  const linesOf = (key: "wk" | "av"): ChartLine[] => series.flatMap((s, i) => (s[key].length < 2 ? [] : [s.p
+    ? { key: s.key, label: shortName(nameOf(s.p)), color: colorOf(s.p, i), ys: s[key] }
+    : { key: s.key, label: `${s.team}팀`, color: TEAM_COLOR[s.team], ys: s[key] }]));
   /* 좌우 여백 — PC 는 닉네임 칩·끝 칩이 다 들어가게. 폰은 좁게(2026-10-21, 요청: "모바일 그래프 왼쪽 패딩 줄이고 테크트리의 닉네임칩 자리 모자라면
      그래프 안에 좀 넣기 · 오른쪽도 패딩 줄여") — 왼쪽은 세로 눈금 글자 자리만(닉네임 칩은 왼끝에 붙여 판 안으로 넘친다), 오른쪽은 끝 칩이 판 밖으로 나가면 끝점 왼쪽에. */
   const names = (players ?? []).map((p) => shortName(nameOf(p)));
@@ -299,21 +320,19 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
             <div className="scr-rc-empty scr-gc-wait">{error || "표시할 데이터가 아직 없어요 — 재분석하면 생겨요"}</div>
           ) : (
             <div className="scr-gc" ref={boxRef}>
-              <div className="scr-rc-mode" role="radiogroup" aria-label="선 색">
-                {(["player", "team"] as const).map((m) => (
+              {teamGame && (
+                <div className="scr-rc-mode">
                   <button
-                    key={m} type="button" role="radio" aria-checked={mode === m}
-                    className={cx("scr-compact-rect-btn", mode !== m && "is-secondary")} onClick={() => setMode(m)}
-                  >
-                    {m === "player" ? "개인색" : "팀색"}
-                  </button>
-                ))}
-              </div>
+                    type="button" aria-pressed={teamOn} className={cx("scr-compact-rect-btn", !teamOn && "is-secondary")}
+                    onClick={() => { setTeamView((v) => !v); setFocus(null); }}
+                  >팀 보기</button>
+                </div>
+              )}
               {box.w > 0 && (
                 <>
                   <TechLanes
                     maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} k={fontK} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
-                    lanes={players.map((p, i) => ({ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
+                    lanes={players.map((p, i) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
                   />
                   <Chart title="병력" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} at={at} onAt={setAt} />
                   <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} at={at} onAt={setAt} />

@@ -123,7 +123,7 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
           </button>
         </span>
       </div>
-      {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} /></div>}
+      {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} fontK={0.8} /></div>}
     </>
   );
 }

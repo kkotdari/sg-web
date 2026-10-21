@@ -271,15 +271,16 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   /* 세로선 자리의 값 — 사람(종족)마다 제 색 글자로 점 옆에(팝업 대신 · 2026-10-21, 요청: "팝업 제거, 세로선만 유지하고 가로축에 그 시각 표시 ·
      세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점 옆 · 겹치면 위로 민다(spreadAbove). */
   const vals = at === null ? [] : spreadAbove(
-    /* 고른 사람이 있으면 그 사람 값만(2026-10-21, 요청: "선택한 경우 그 사람 값만 나오게"). 0 은 안 띄운다 — 바닥에 깔린 선(병력 0)의 값이
-       바닥 칩을 비키느라 열 전체를 멀리 끌고 가던 것(2026-10-21, 지적: "크리스 칩까지만 피하면 되는데 너무 멀리 감"). */
-    lines.filter((l) => at < l.ys.length && l.ys[at] > 0 && (!focus || l.key === focus)).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0, w: textW(compact(l.ys[at]), FS) })),
+    /* 고른 사람이 있으면 그 사람 값만(2026-10-21, 요청: "선택한 경우 그 사람 값만 나오게") */
+    lines.filter((l) => at < l.ys.length && (!focus || l.key === focus)).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0, w: textW(compact(l.ys[at]), FS) })),
     FS + 1 * k, PAD.t + FS / 2,
   );
   /* 값 열은 한 줄(세로 정렬) — 세로선 오른편(왼끝 맞춤)이 기본이고, 판 오른끝을 넘거나 보이는 값이 **실제로 가리는** 끝 칩(닉네임)이 있을 때만
      왼편(오른끝 맞춤)으로, 거기서도 가리면 그 칩 왼쪽까지 열째 더 비켜 간다(점에서 멀어져도 · 2026-10-21, 요청: "닉네임을 가릴 때만 왼쪽으로 · 값끼리 수직 정렬" →
      "위아래가 아니라 왼쪽으로 피하라" → "실제로 값에 가려지는 칩까지만 · 세로로는 줄 맞추고"). 겹침은 숫자 잉크 높이(≈0.75 FS)로 잰다. */
-  const hitChips = (x0: (w: number) => number): (typeof chips) => chips.filter((c) => vals.some((v) =>
+  /* 0 값은 띄우되 칩 비키기엔 안 든다 — 바닥에 깔린 선들의 0 이 바닥 칩을 비키느라 열 전체를 멀리 끌고 가던 것
+     (2026-10-21, 지적: "크리스 칩까지만 피하면 되는데 너무 멀리 감" → "0 도 값이니까 보여야"). */
+  const hitChips = (x0: (w: number) => number): (typeof chips) => chips.filter((c) => vals.some((v) => v.v !== 0 &&
     x0(v.w) < c.cx + c.w && c.cx < x0(v.w) + v.w && Math.abs(v.ty - c.ty) < (0.75 * FS + CHIP_H) / 2));
   const valsRight = at !== null && vals.every((v) => x(at) + 8 * k + v.w <= W) && hitChips(() => x(at) + 8 * k).length === 0;
   let valX = at === null ? 0 : valsRight ? x(at) + 8 * k : x(at) - 8 * k;
@@ -355,7 +356,8 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   );
 }
 
-export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale }) {
+/** fontK — 눈금·끝 칩·값 글자 배수(PC 통계는 0.8 · 2026-10-21, 요청: "PC 에서 그래프 눈금 숫자와 닉네임 칩, 그래프 값 20프로 축소"). */
+export default function RaceCurves({ byRace, scale, fontK }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale; fontK?: number }) {
   /* 줄 끝 칩을 누르면 그 종족 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신). 두 판이 한 상태를 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   const [at, setAt] = useSharedCross();
@@ -372,8 +374,8 @@ export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<
       <div className="scr-rc-charts">
         {/* 병력이 먼저 · 일꾼 수가 다음(2026-10-21, 요청: "일꾼과 병력가치 순서변경 · 통계에도 적용") · 제목 "병력 가치" → "병력"(요청).
             짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
-        <Chart title="병력" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} />
-        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} />
+        <Chart title="병력" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} fontK={fontK} at={at} onAt={setAt} />
+        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} fontK={fontK} at={at} onAt={setAt} />
       </div>
     </div>
   );
