@@ -275,16 +275,19 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
     lines.filter((l) => at < l.ys.length && (!focus || l.key === focus)).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0, w: textW(compact(l.ys[at]), FS) })),
     FS + 1 * k, PAD.t + FS / 2,
   );
-  /* 값 열은 세로선 오른편(왼끝 맞춤)이 기본 — 판 오른끝을 넘거나 끝 칩(닉네임)을 가리면 왼편(오른끝 맞춤)으로, 거기서도 칩을 가리면
-     그 칩 왼쪽까지 더 비켜 간다(점에서 멀어져도 · 2026-10-21, 요청: "닉네임을 가릴 때만 왼쪽으로 · 값끼리 수직 정렬" → "위아래가 아니라 왼쪽으로 피하라"). */
-  const hitChips = (x0: (w: number) => number): (typeof chips) => chips.filter((c) => vals.some((v) =>
-    x0(v.w) < c.cx + c.w && c.cx < x0(v.w) + v.w && Math.abs(v.ty - c.ty) < (FS + CHIP_H) / 2));
-  const valsRight = at !== null && vals.every((v) => x(at) + 8 * k + v.w <= W) && hitChips(() => x(at) + 8 * k).length === 0;
-  let valX = at === null ? 0 : valsRight ? x(at) + 8 * k : x(at) - 8 * k;
-  if (at !== null && !valsRight) {
-    for (let hit = hitChips((w) => valX - w); hit.length > 0; hit = hitChips((w) => valX - w)) valX = Math.min(...hit.map((c) => c.cx)) - 4 * k;
-  }
-  const valsFar = at !== null && !valsRight && valX < x(at) - 8 * k - 0.5;
+  /* 값 자리는 저마다 — 세로선 오른편(왼끝 맞춤)이 기본이고, 판 오른끝을 넘거나 **그 값이 실제로 가리는** 끝 칩(닉네임)이 있을 때만 왼편(오른끝 맞춤)으로,
+     거기서도 가리면 그 칩 왼쪽까지 더 비켜 간다(점에서 멀어져도 · 2026-10-21, 요청: "닉네임을 가릴 때만 왼쪽으로 · 값끼리 수직 정렬" →
+     "위아래가 아니라 왼쪽으로 피하라" → "실제로 값에 가려지는 칩까지만 피하면 돼"). 같은 쪽 제자리 값끼리는 한 열로 맞는다. */
+  const valPos = new Map(vals.map((v) => {
+    const hits = (x0: number) => chips.filter((c) => x0 < c.cx + c.w && c.cx < x0 + v.w && Math.abs(v.ty - c.ty) < (0.75 * FS + CHIP_H) / 2); /* 숫자 잉크 높이 ≈ 0.75 FS */
+    const rx = x(at ?? 0) + 8 * k;
+    if (rx + v.w <= W && hits(rx).length === 0) return [v.l.key, { vx: rx, right: true }];
+    let vx = x(at ?? 0) - 8 * k;
+    for (let hit = hits(vx - v.w); hit.length > 0; hit = hits(vx - v.w)) vx = Math.min(...hit.map((c) => c.cx)) - 4 * k;
+    return [v.l.key, { vx, right: false }];
+  }));
+  /* 칩을 비켜 점에서 멀어진 값(왼편 제자리보다 더 왼쪽). */
+  const far = (key: string): boolean => (valPos.get(key)?.vx ?? 0) < x(at ?? 0) - 8 * k - 0.5;
   const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
   /* 칩을 누른 사람(종족)만 또렷이 — 그 선은 굵게 · 칩은 살짝 크게, 나머지는 선·점·칩·값 모두 흐리게(2026-10-21, 요청: "액티브 칩은 살짝 확대만 ·
      나머지 사람들 거 딤 처리 · 나머지 그래프 선도 딤"). */
@@ -321,8 +324,8 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
             return <circle key={l.key} className={`scr-rc-end${dim(l.key)}`} cx={x(i)} cy={y(l.ys[i])} r={focus === l.key ? 5 : 4} style={{ fill: l.color }} />;
           })}
           {/* 칩을 비켜 점에서 멀어진 값은 점과 가는 선으로 잇는다(2026-10-21, 요청: "멀어지면 가는 선으로 잇기") — 칩 밑으로 지나게 칩보다 먼저 그린다. */}
-          {valsFar && vals.map(({ l, y: py, ty: vy }) => (
-            <line key={l.key} className={`scr-rc-val-lead${dim(l.key)}`} x1={x(at ?? 0)} y1={py} x2={valX + 3 * k} y2={vy} style={{ stroke: l.color }} />
+          {vals.filter(({ l }) => far(l.key)).map(({ l, y: py, ty: vy }) => (
+            <line key={l.key} className={`scr-rc-val-lead${dim(l.key)}`} x1={x(at ?? 0)} y1={py} x2={(valPos.get(l.key)?.vx ?? 0) + 3 * k} y2={vy} style={{ stroke: l.color }} />
           ))}
           {chips.map((c) => (
             <g
@@ -342,8 +345,8 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
           {vals.map(({ l, y: py }) => <circle key={l.key} className={`scr-rc-dot${dim(l.key)}`} cx={x(at ?? 0)} cy={py} r={4} style={{ fill: l.color }} />)}
           {vals.map(({ l, v, ty: vy }) => (
             <text
-              key={l.key} className={`scr-rc-val${dim(l.key)}`} x={valX} y={vy}
-              textAnchor={valsRight ? "start" : "end"} dominantBaseline="central" style={{ fontSize: FS, fill: l.color, stroke: valOutline(l.color) }}
+              key={l.key} className={`scr-rc-val${dim(l.key)}`} x={valPos.get(l.key)?.vx} y={vy}
+              textAnchor={valPos.get(l.key)?.right ? "start" : "end"} dominantBaseline="central" style={{ fontSize: FS, fill: l.color, stroke: valOutline(l.color) }}
             >{compact(v)}</text>
           ))}
         </svg>
