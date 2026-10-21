@@ -3355,6 +3355,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; }
 .scr-redo-pick-filters > .scr-redo-pick-from { flex-wrap: wrap; }
 .scr-redo-pick-pub { font-size: var(--fs-caption); }
+.scr-redo-pick-go { margin-left: auto; padding: 6px 14px; }
 .scr-redo-pick-foot { flex-wrap: wrap; }
 .scr-redo-pick-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
 
@@ -5028,6 +5029,7 @@ span.scr-league-set-game { cursor: default; }
   display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto;
   padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel);
 }
+.scr-league-set-pick-range { display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: var(--fs-micro); color: var(--muted); }
 .scr-league-set-pick-empty { display: flex; align-items: center; gap: 6px; padding: 8px; font-size: var(--fs-micro); color: var(--muted); }
 .scr-league-set-cand {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: none; border-radius: 5px;

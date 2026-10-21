@@ -231,12 +231,17 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   useLockBodyScroll(pickerOpen, () => setPickerOpen(false));
 
   /** 대상 목록 — 리플레이 없는 판도 든다(참값·경기 삭제의 대상 · 재분석은 리플레이 있는 판만 건다). 지우고 나면 다시 받는다. */
-  const loadPickRows = async () => {
+  /* 조회 단추로만 받는다(2026-10-21, 요청: "데이터관리에서 모든 게임 조회 X · 조회버튼 추가") — 기간 · 공방 게임만은 서버 조건이고 검색 글은 받은 줄을 거른다. */
+  const [pickLoading, setPickLoading] = useState(false);
+  const loadPickRows = async (f: PickFilter = pickFilter) => {
+    setPickLoading(true);
     try {
       const rows: PickRow[] = [];
       let cursor: string | undefined;
       do {
-        const page = await api.getGameResultsPage({ cursor, limit: 100 });
+        const page = await api.getGameResultsPage({
+          cursor, limit: 100, dateFrom: f.from || undefined, dateTo: f.to || undefined, pubOnly: f.pub || undefined,
+        });
         for (const m of page.items) {
           const names = [...m.team1, ...m.team2]
             .map((sl) => sl.rawName || "")
@@ -259,34 +264,27 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     } catch (e) {
       showAlert(e instanceof Error ? e.message : "게임 목록을 받지 못했어요.");
       setPickRows((prev) => prev ?? []);
+    } finally {
+      setPickLoading(false);
     }
   };
-  const openPicker = async () => {
+  const openPicker = () => {
     /* 열 때마다 조건·고른 판을 비운다(2026-10-21, 지적: "선택조건이 닫았다 열어도 유지") — 닫을 때 비우면 닫은 뒤 뜨는 확인 창이 고른 판을 잃는다. */
     setPickFilter({ from: "", to: "", pub: false });
     setPickQuery("");
     setPicked(new Set());
+    setPickRows(null);
     setPickerOpen(true);
-    if (!pickRows) await loadPickRows();
   };
 
-  /** 공방 = 회원이 아닌 참가자가 있는 판(서버가 실어 준 clan · 게임 목록 공방 탭과 같은 셈). */
-  const pickMatches = (r: PickRow, f: PickFilter): boolean => {
-    if (f.from && r.day < f.from) return false;
-    if (f.to && r.day > f.to) return false;
-    if (f.pub && r.game.clan !== false) return false;
+  const pickMatches = (r: PickRow): boolean => {
     const q = pickQuery.trim().toLowerCase();
     if (!q) return true;
     return `${r.matchNo} ${r.date} ${r.map} ${r.who}`.toLowerCase().includes(q);
   };
-  const pickFiltered = (pickRows ?? []).filter((r) => pickMatches(r, pickFilter));
-  /** 기간·공방을 바꾸면 그 조건에 맞는 판을 모두 고른다(옛 '이 날짜부터'와 같은 손버릇) — 조건을 다 풀면 고른 것은 그대로. */
-  const changePickFilter = (patch: Partial<PickFilter>) => {
-    const next = { ...pickFilter, ...patch };
-    setPickFilter(next);
-    if (!next.from && !next.to && !next.pub) return;
-    setPicked(new Set((pickRows ?? []).filter((r) => pickMatches(r, next)).map((r) => r.id)));
-  };
+  const pickFiltered = (pickRows ?? []).filter(pickMatches);
+  const changePickFilter = (patch: Partial<PickFilter>) => setPickFilter((f) => ({ ...f, ...patch }));
+  const searchPicks = () => { setPicked(new Set()); void loadPickRows(pickFilter); };
   const pickedIds = [...picked];
   const pickedReplayIds = (pickRows ?? []).filter((r) => picked.has(r.id) && r.game.replay).map((r) => r.id);
   const dataBusy = redo !== null || purging || deletingGames;
@@ -435,7 +433,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   </div>
                   <button
                     type="button" className="scr-rect-btn scr-adm-row-btn"
-                    onClick={() => { void openPicker(); }} disabled={dataBusy}
+                    onClick={openPicker} disabled={dataBusy}
                   >
                     {redo ? (
                       <>
@@ -549,32 +547,35 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
               <button className="scr-icon-btn" onClick={() => setPickerOpen(false)} aria-label="닫기"><X size={14} /></button>
             </div>
             <div className="scr-modal-body scr-redo-pick-body">
+              <div className="scr-redo-pick-filters">
+                <label className="scr-redo-pick-from">
+                  <span className="scr-redo-pick-from-label">기간</span>
+                  <input
+                    type="date" className="scr-input scr-date-compact" aria-label="시작 날짜"
+                    value={pickFilter.from} max={pickFilter.to || todayStr()}
+                    onChange={(e) => changePickFilter({ from: e.target.value })}
+                  />
+                  <span className="scr-redo-pick-from-label" aria-hidden>~</span>
+                  <input
+                    type="date" className="scr-input scr-date-compact" aria-label="끝 날짜"
+                    value={pickFilter.to} min={pickFilter.from || undefined} max={todayStr()}
+                    onChange={(e) => changePickFilter({ to: e.target.value })}
+                  />
+                </label>
+                <label className="scr-checkbox-field scr-redo-pick-pub">
+                  <input type="checkbox" checked={pickFilter.pub} onChange={(e) => changePickFilter({ pub: e.target.checked })} />
+                  공방 게임만
+                </label>
+                <button type="button" className="scr-rect-btn scr-redo-pick-go" onClick={searchPicks} disabled={pickLoading || dataBusy}>
+                  {pickLoading ? <Spinner /> : "조회"}
+                </button>
+              </div>
               {pickRows === null ? (
-                <div className="scr-redo-pick-empty"><Spinner /> 게임 목록을 받는 중…</div>
+                <div className="scr-redo-pick-empty">{pickLoading ? <><Spinner /> 게임 목록을 받는 중…</> : "기간을 고르고 조회를 눌러 주세요"}</div>
               ) : pickRows.length === 0 ? (
                 <div className="scr-redo-pick-empty">게임이 없어요</div>
               ) : (
                 <>
-                  <div className="scr-redo-pick-filters">
-                    <label className="scr-redo-pick-from">
-                      <span className="scr-redo-pick-from-label">기간</span>
-                      <input
-                        type="date" className="scr-input scr-date-compact" aria-label="시작 날짜"
-                        value={pickFilter.from} max={pickFilter.to || todayStr()}
-                        onChange={(e) => changePickFilter({ from: e.target.value })}
-                      />
-                      <span className="scr-redo-pick-from-label" aria-hidden>~</span>
-                      <input
-                        type="date" className="scr-input scr-date-compact" aria-label="끝 날짜"
-                        value={pickFilter.to} min={pickFilter.from || undefined} max={todayStr()}
-                        onChange={(e) => changePickFilter({ to: e.target.value })}
-                      />
-                    </label>
-                    <label className="scr-checkbox-field scr-redo-pick-pub">
-                      <input type="checkbox" checked={pickFilter.pub} onChange={(e) => changePickFilter({ pub: e.target.checked })} />
-                      공방 게임만
-                    </label>
-                  </div>
                   <input
                     type="search"
                     className="scr-input scr-redo-pick-search"

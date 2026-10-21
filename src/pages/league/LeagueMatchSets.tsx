@@ -8,7 +8,7 @@ import { cleanMapName } from "../../utils/mapName";
 import { gamePlayable } from "../../utils/gamePlayable";
 import { navigateTo, pathOf } from "../../utils/route";
 import { GameRowNames, GameRowStatus, ListRow } from "../activity/GameRow";
-import { formatAgo } from "../../utils/date";
+import { fmt, formatAgo, todayStr } from "../../utils/date";
 import type { GameResult, GameResultSlot, League, LeagueMatch, LeagueMatchSet, LeagueMatchSide } from "../../types";
 
 /* 경기 결과 입력창의 세트 목록(요청: "리그 결과 입력창에서 세트 추가하고 게임 결과 중 해당 매치 게임을 선택 가능하게").
@@ -68,15 +68,27 @@ export default function LeagueMatchSets({
   const [loadErr, setLoadErr] = useState("");
   const [open, setOpen] = useState<number | null>(null);
 
-  useEffect(() => {
+  /* 후보는 기간(기본 최근 1주일)을 정해 조회한다(2026-10-21, 요청: "게임결과 연결창에서 모든 게임 조회 X · 날짜(기본 1주일) 및 조회버튼") —
+     창을 처음 펼칠 때 기본 기간으로 한 번 받고, 기간을 바꾸면 [조회]로 다시 받는다. */
+  const [range, setRange] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return { from: fmt(d), to: todayStr() };
+  });
+  const [candLoading, setCandLoading] = useState(false);
+  const loadGames = (r: { from: string; to: string }): void => {
     if (sideA.nicks.length === 0 || sideB.nicks.length === 0) { setGames([]); return; }
-    let alive = true;
     const any = [sideA.nicks.join("|"), sideB.nicks.join("|")].join("\t");
-    api.getGameResultsPage({ any, limit: PICK_LIMIT, sort: "latest" })
-      .then((page) => { if (alive) setGames(page.items.filter((g) => aSeat(g) !== null)); })
-      .catch((e) => { if (alive) { setGames([]); setLoadErr(e instanceof Error ? e.message : "게임 결과를 불러오지 못했어요."); } });
-    return () => { alive = false; };
-  }, [sideA, sideB]);
+    setCandLoading(true);
+    setLoadErr("");
+    api.getGameResultsPage({ any, limit: PICK_LIMIT, sort: "latest", dateFrom: r.from || undefined, dateTo: r.to || undefined })
+      .then((page) => setGames(page.items.filter((g) => aSeat(g) !== null)))
+      .catch((e) => { setGames([]); setLoadErr(e instanceof Error ? e.message : "게임 결과를 불러오지 못했어요."); })
+      .finally(() => setCandLoading(false));
+  };
+  useEffect(() => {
+    if (open !== null && games === null && !candLoading) loadGames(range);
+  }, [open]);
 
   /* 이은 게임은 후보 목록을 기다리지 않고 **바로** 따로 받는다(2026-10-20 — 후보를 다 받은 뒤에 받던 때는 창이 "게임 #2399" + 승무패 단추로 떴다가 바뀌었다).
      tried 는 받아 본 id(실패 포함) — 받는 동안은 "불러오는 중", 실패한 것만 옛 꼴(번호 + 손 승무패)로 둔다. */
@@ -249,10 +261,26 @@ export default function LeagueMatchSets({
                 </div>}
                 {open === i && !linked && (
                   <div className="scr-league-set-pick">
-                    {games === null ? (
+                    <div className="scr-league-set-pick-range">
+                      <input
+                        type="date" className="scr-input scr-date-compact" aria-label="시작 날짜"
+                        value={range.from} max={range.to || todayStr()}
+                        onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))}
+                      />
+                      <span aria-hidden>~</span>
+                      <input
+                        type="date" className="scr-input scr-date-compact" aria-label="끝 날짜"
+                        value={range.to} min={range.from || undefined} max={todayStr()}
+                        onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
+                      />
+                      <button type="button" className="scr-compact-rect-btn" onClick={() => loadGames(range)} disabled={candLoading}>
+                        {candLoading ? <Spinner size={12} /> : "조회"}
+                      </button>
+                    </div>
+                    {games === null || candLoading ? (
                       <div className="scr-league-set-pick-empty"><Spinner size={14} /> 불러오는 중</div>
                     ) : games.length === 0 ? (
-                      <div className="scr-league-set-pick-empty">{loadErr || "두 팀이 맞선 게임 결과가 없어요."}</div>
+                      <div className="scr-league-set-pick-empty">{loadErr || "이 기간에 두 팀이 맞선 게임 결과가 없어요."}</div>
                     ) : (
                       /* 후보 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "리그의 경기결과 입력창의 게임연결창 … 모바일 화면의 게임목록처럼") — A 팀이 왼쪽. */
                       <div className="scr-activity-rows">
