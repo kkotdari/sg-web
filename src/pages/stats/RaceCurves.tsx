@@ -75,13 +75,24 @@ function minuteTicks(maxX: number): number[] {
 /** 칠한 칩 위 글자색(2026-10-21, 요청: "모든 칩을 색으로 채우고 흰색이나 검정색 글자" → "흰검 결정 기준은 재생기랑 똑같이") —
     재생기 chipStyle 과 같은 셈: 휘도 0.299R + 0.587G + 0.114B(0~255)가 150 을 넘으면 검정 #111 · 아니면 흰 #fff.
     var(--…) 색은 지금 테마의 값을 읽어 잰다 · #rrggbb 가 아니면 재생기처럼 밝은 것(검정)으로 친다. */
-export function inkOn(color: string): string {
+function lumOf(color: string): number {
   const v = color.startsWith("var(")
     ? getComputedStyle(document.documentElement).getPropertyValue(color.slice(4, -1).split(",")[0].trim()).trim()
     : color;
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(v);
-  const lum = m ? 0.299 * parseInt(m[1], 16) + 0.587 * parseInt(m[2], 16) + 0.114 * parseInt(m[3], 16) : 255;
-  return lum > 150 ? "#111" : "#fff";
+  return m ? 0.299 * parseInt(m[1], 16) + 0.587 * parseInt(m[2], 16) + 0.114 * parseInt(m[3], 16) : 255;
+}
+export function inkOn(color: string): string {
+  return lumOf(color) > 150 ? "#111" : "#fff";
+}
+/** 값 글자 테두리 — 바탕과 비슷한 색(밝은 테마의 노랑·연두빛 흰색 · 어두운 테마의 갈색·남색)만 반대 밝기 테로 감싼다
+    (2026-10-21, 지적: "다크 라이트 테마에서 각각 어두운 값 밝은 값에 반대 보더라인"). 나머지는 바탕색 테(CSS). */
+function valOutline(color: string): string | undefined {
+  const light = document.documentElement.classList.contains("scr-light-theme");
+  const lum = lumOf(color);
+  if (light && lum > 170) return "#2a2a2a";
+  if (!light && lum < 70) return "#e8e8e8";
+  return undefined;
 }
 
 /** 눈금 글자(판 자 · 2026-10-21, 요청: "눈금글자 20프로 확대" 9 → 10.8). 통계 판은 viewBox 320 을 칸 폭(PC 440)으로 늘려 그린다. */
@@ -293,7 +304,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
           {vals.map(({ l, v, ty: vy }) => (
             <text
               key={l.key} className={`scr-rc-val${dim(l.key)}`} x={x(at ?? 0) + (valsRight ? 8 : -8) * k} y={vy}
-              textAnchor={valsRight ? "start" : "end"} dominantBaseline="central" style={{ fontSize: FS, fill: l.color }}
+              textAnchor={valsRight ? "start" : "end"} dominantBaseline="central" style={{ fontSize: FS, fill: l.color, stroke: valOutline(l.color) }}
             >{compact(v)}</text>
           ))}
         </svg>
