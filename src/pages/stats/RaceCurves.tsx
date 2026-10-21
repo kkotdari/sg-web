@@ -101,6 +101,8 @@ export const AXIS_FS = 10.8;
 /** 게임 그래프(잰 크기 1:1)의 글자 배수 — 통계 PC 판이 늘어나는 비(440/320)라, 눈금·칩 글자가 통계 그래프 눈금과 같은 화면 크기가 된다
     (2026-10-21, 요청: "칩과 눈금 폰트사이즈가 통계 그래프의 눈금 폰트 크기와 같게"). */
 export const GAME_FONT_K = 440 / 320;
+/** PC 눈금 숫자(세로·가로 눈금 · 세로선 시각)만 한 단 더 작게 — 칩·값은 그대로(2026-10-21, 요청: "데이터 창 · 통계 창 눈금 숫자 1스텝 더 축소"). */
+export const PC_AXIS_K = 0.9;
 /** 칩 치수 = 컴팩트 네모 칩(.scr-compact-rect-chip · global.css 의 --compact-chip-h/-px/-r, 글자 배수) × 눈금 글자 크기 — 판 자로 적어 판과 함께 늘고 준다.
     끝 칩 · 게임 그래프 테크 줄의 닉네임 칩이 쓴다. CSS 값을 처음 쓸 때 한 번 읽는다(못 읽으면 같은 기본값). */
 let chipBoxMemo: { fs: number; h: number; px: number; r: number } | null = null;
@@ -206,7 +208,7 @@ export function useSharedCross(): [number | null, (m: number | null) => void] {
   return [at, setAt];
 }
 
-export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fontK: k = 1, padR: padROverride, at: atRaw, onAt }: {
+export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fontK: k = 1, axisK = 1, padR: padROverride, at: atRaw, onAt }: {
   title: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
   ticksX?: number[]; ticksY?: number[];
@@ -221,6 +223,8 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   onFocus?: (key: string) => void;
   /** 글자 배수(기본 1 — 통계) — 게임 그래프는 GAME_FONT_K. 눈금·칩 글자와 칩이 함께 커진다. */
   fontK?: number;
+  /** 눈금 숫자만 더 곱하는 배수(기본 1 · PC 는 PC_AXIS_K). */
+  axisK?: number;
   /** 오른쪽 여백(기본: 칩 자리만큼) — 폰 게임 그래프는 좁게 주고, 판 밖으로 나갈 칩은 끝점 왼쪽에 놓는다. */
   padR?: number;
   /** 세로선(분 · 여러 판이 함께 · useSharedCross) — 이 판은 가장 가까운 분에 맞춰 그린다. */
@@ -235,6 +239,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   const CB = chipBox();
   const CHIP_H = CB.h * k;
   const FS = AXIS_FS * k;
+  const AFS = FS * axisK;
   const at = atRaw === null ? null : Math.max(0, Math.min(maxX, Math.round(atRaw)));
   const x = (i: number) => PL + (i / maxX) * (W - PL - PR);
   const y = (v: number) => PAD.t + (1 - v / maxY) * (H - PAD.t - PAD.b);
@@ -306,14 +311,14 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
             <g key={v}>
               <line className="scr-rc-grid" x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} />
               {/* 0 · 0분 글자는 안 쓴다(2026-10-21, 요청: "그래프 0 0분 표시 안하기") — 줄은 그대로. */}
-              {v !== 0 && <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: FS }}>{compact(v)}</text>}
+              {v !== 0 && <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: AFS }}>{compact(v)}</text>}
             </g>
           ))}
           {/* 세로선의 분은 가로축에(가까운 눈금 글자는 비켜 준다). */}
           {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m) - x(at)) > 26 * k)).map((m) => (
-            <text key={m} className="scr-rc-axis" x={x(m)} y={H - 5} textAnchor="middle" style={{ fontSize: FS }}>{m}분</text>
+            <text key={m} className="scr-rc-axis" x={x(m)} y={H - 5} textAnchor="middle" style={{ fontSize: AFS }}>{m}분</text>
           ))}
-          {at !== null && <text className="scr-rc-at" x={x(at)} y={H - 5} textAnchor="middle" style={{ fontSize: FS }}>{at}분</text>}
+          {at !== null && <text className="scr-rc-at" x={x(at)} y={H - 5} textAnchor="middle" style={{ fontSize: AFS }}>{at}분</text>}
           {ordered.map((l) => (
             <path
               key={l.key} className={`scr-rc-line${focus === l.key ? " is-focus" : ""}${dim(l.key)}`} style={{ stroke: l.color }}
@@ -357,7 +362,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
 }
 
 /** fontK — 눈금·끝 칩·값 글자 배수(PC 통계는 0.8 · 2026-10-21, 요청: "PC 에서 그래프 눈금 숫자와 닉네임 칩, 그래프 값 20프로 축소"). */
-export default function RaceCurves({ byRace, scale, fontK }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale; fontK?: number }) {
+export default function RaceCurves({ byRace, scale, fontK, axisK }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale; fontK?: number; axisK?: number }) {
   /* 줄 끝 칩을 누르면 그 종족 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신). 두 판이 한 상태를 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   const [at, setAt] = useSharedCross();
@@ -374,8 +379,8 @@ export default function RaceCurves({ byRace, scale, fontK }: { byRace?: Partial<
       <div className="scr-rc-charts">
         {/* 병력이 먼저 · 일꾼 수가 다음(2026-10-21, 요청: "일꾼과 병력가치 순서변경 · 통계에도 적용") · 제목 "병력 가치" → "병력"(요청).
             짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
-        <Chart title="병력" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} fontK={fontK} at={at} onAt={setAt} />
-        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} fontK={fontK} at={at} onAt={setAt} />
+        <Chart title="병력" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} focus={focus} onFocus={pickFocus} fontK={fontK} axisK={axisK} at={at} onAt={setAt} />
+        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} fontK={fontK} axisK={axisK} at={at} onAt={setAt} />
       </div>
     </div>
   );

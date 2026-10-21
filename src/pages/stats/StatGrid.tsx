@@ -4,7 +4,7 @@ import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
-import RaceCurves, { curveScale, type CurveScale } from "./RaceCurves";
+import RaceCurves, { curveScale, PC_AXIS_K, type CurveScale } from "./RaceCurves";
 import type { BaseRace, Member, MemberStats } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
@@ -123,7 +123,7 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
           </button>
         </span>
       </div>
-      {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} fontK={0.8} /></div>}
+      {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} fontK={0.8} axisK={PC_AXIS_K} /></div>}
     </>
   );
 }

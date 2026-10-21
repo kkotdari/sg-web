@@ -3315,6 +3315,8 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .scr-gc > .scr-rc-chart { padding-top: 14px; border-top: 1px solid var(--line-faint); }
 .scr-rc-mode { display: flex; gap: 4px; }
+/* PC 데이터 창 제목 옆 설명은 작게(2026-10-21, 요청: "살아 있는 전투 유닛의 미네랄+가스 합 글자 크기 축소" 15 → 12). */
+@media (min-width: 961px) { .scr-modal-graph .scr-rc-title > i { font-size: 12px; } }
 .scr-gc-team { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none; cursor: pointer; font-size: var(--fs-body); font-weight: 700; color: var(--text); }
 .scr-gc-team > .scr-notice-switch { display: block; }
 .scr-tl-chip { fill: transparent; }
