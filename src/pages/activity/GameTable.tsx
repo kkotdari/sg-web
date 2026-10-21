@@ -18,6 +18,7 @@ import { isSecretGame } from "../../utils/gameAccess";
 import { isMeleeGame } from "./GameResultSides";
 import { GameRowNames } from "./GameRow";
 import GameCurvesModal from "../../modals/GameCurvesModal";
+import InfoTip from "../../components/common/InfoTip";
 import type { GameResult, Member } from "../../types";
 
 /* ★★ PC 게임 목록 = **표**(2026-10-19, 요청: "피시는 오히려 배지들 제거하고 완전 그리드 형태로 변경(헤더로우도 만듦) · 로스터는 모바일과 같은 형태 ·
@@ -38,11 +39,17 @@ const COLS = (league: boolean) => ["시작일시", ...(league ? ["리그"] : [])
 
 export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
   return (
-    <div className={cx("scr-activity-row-wrap scr-gtab-headwrap", selecting && "scr-activity-row-wrap-sel")} aria-hidden>
+    <div className={cx("scr-activity-row-wrap scr-gtab-headwrap", selecting && "scr-activity-row-wrap-sel")}>
       {/* 체크 칸만큼 비운다(줄의 RowCheck 와 같은 폭). */}
-      {selecting && <span className="scr-checkbox-field scr-selcell scr-gtab-headcheck"><input type="checkbox" tabIndex={-1} /></span>}
+      {selecting && <span className="scr-checkbox-field scr-selcell scr-gtab-headcheck" aria-hidden><input type="checkbox" tabIndex={-1} /></span>}
       <div className="scr-gtab scr-gtab-head">
-        {COLS(leagueCol).map((c) => <span key={c} className="scr-gtab-cell">{c}</span>)}
+        {COLS(leagueCol).map((c) => (
+          <span key={c} className="scr-gtab-cell">
+            {c}
+            {/* 분석 칸 설명(2026-10-21 요청) — 머리 글 옆 ⓘ. */}
+            {c === "분석" && <InfoTip label="분석" text="유저별 테크트리 진행과 유닛 생산 수치(일꾼 수 · 병력 가치)를 그래프로 한눈에 확인해요." />}
+          </span>
+        ))}
       </div>
     </div>
   );
