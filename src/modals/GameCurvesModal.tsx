@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
-import { BTN, Chart, chipGutter, inkOn, textW, type ChartLine } from "../pages/stats/RaceCurves";
+import { Chart, chipGutter, inkOn, textW, type ChartLine } from "../pages/stats/RaceCurves";
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
@@ -48,11 +48,11 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
   /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것 — 칩 크기도 거기에 맞춘다(2026-10-21, 요청: "테크쪽이 너무 비대 · 세 판 높이 통일"). */
   const AXIS = 18;
   const ROW_H = (H - AXIS - 4) / Math.max(1, lanes.length);
-  /* 칩은 칸보다 한참 작게(2026-10-21, 요청: "테크 칩 크기 축소해서 판 여백감 더 주기") — 두 단이 서도 칸 위아래·사이가 빈다. */
-  const CH = Math.max(10, Math.min(13, (ROW_H - 4) / 2 - 2));
-  const FS = Math.round(CH * 0.72 * 10) / 10;
-  /* 좌우 여백·모서리는 컴팩트 네모 단추의 비(좌우 7/12 · 모서리 6/22)를 이 칩 크기에 맞춰 쓴다 — 칸이 좁아 단추 높이(22)는 못 쓴다. */
-  const PX = FS * (BTN.px / BTN.fs);
+  /* 칩이 아니라 글자를 바투 감싼 직사각형 음영(2026-10-21, 요청: "칩이 아닌 직사각형 음영 · 감싸는 크기가 칩보다 작음") —
+     글자 크기는 앞 판(칸에서 뽑은 7~9px) 그대로 · 모서리 없음 · 위아래 0.15em · 좌우 0.3em. 칸 위아래·사이는 그만큼 더 빈다. */
+  const FS = Math.round(Math.max(10, Math.min(13, (ROW_H - 4) / 2 - 2)) * 0.72 * 10) / 10;
+  const CH = Math.round(FS * 1.3 * 10) / 10;
+  const PX = FS * 0.3;
   const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - padR);
   const chipW = (s: string): number => textW(s, FS) + 2 * PX;
   let y0 = 4;
@@ -107,7 +107,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
                   onPointerEnter={() => setHover({ lane: l, tech: t, label, x0: cx, x1: cx + w, cy: y })}
                   onPointerLeave={() => setHover(null)}
                 >
-                  <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} rx={CH * (BTN.r / BTN.h)} style={{ fill: l.color }} />
+                  <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} style={{ fill: l.color }} />
                   <text className="scr-tl-label" x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: FS, fill: inkOn(l.color) }}>{label}</text>
                 </g>
               );
