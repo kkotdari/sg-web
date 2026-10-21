@@ -3519,6 +3519,9 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 }
 .scr-notice-switch-on { background: var(--point); border-color: var(--point); }
 .scr-notice-switch-on .scr-notice-switch-knob { transform: translateX(20px); }
+/* 밝은 테마는 --line·--line-soft 가 검정이라 꺼짐도 검정 판이 되어 켜짐(검정 --point)과 안 갈렸다(2026-10-21, 지적: "라이트테마에서 토글 켰는지 잘 구분안됨")
+   — 꺼짐은 옅은 회색 판으로. */
+html.scr-light-theme .scr-notice-switch:not(.scr-notice-switch-on) { background: rgba(0, 0, 0, 0.12); border-color: rgba(0, 0, 0, 0.18); }
 .scr-notice-settings-divider { height: 1px; background: var(--line-soft); }
 .scr-notice-edit-label { font-size: var(--fs-body); font-weight: 700; color: var(--text); }
 .scr-notice-edit-textarea { resize: vertical; min-height: 110px; line-height: 1.5; font-size: var(--fs-body); }
