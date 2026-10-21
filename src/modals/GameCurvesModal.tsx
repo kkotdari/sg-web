@@ -233,7 +233,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
       <ModalHash hash="game-curves" onClose={onClose} />
       <div className="scr-modal scr-modal-graph" onClick={(e) => e.stopPropagation()}>
         <div className="scr-modal-head">
-          <span>데이터 · {game.matchNo}</span>
+          <span><i className="scr-gc-kicker">데이터</i>게임번호: {game.matchNo}</span>
           <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
         </div>
         <div className="scr-modal-body">
