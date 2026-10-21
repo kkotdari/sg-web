@@ -211,11 +211,11 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         <span className="scr-gtab-cell">
           {!secret && !game.ums ? (
             <button
-              type="button" className="scr-gtab-graph" title="분석 그래프" aria-label="분석 그래프"
+              type="button" className="scr-compact-rect-btn scr-gtab-graph" title="분석 그래프" aria-label="분석 그래프"
               onClick={(e) => { e.stopPropagation(); setGraphOpen(true); void api.pingGameAction("graph", game); }}
               onKeyDown={(e) => e.stopPropagation()}
             >
-              <ChartLine size={16} strokeWidth={2.4} />
+              <ChartLine size={15} />
             </button>
           ) : <span className="scr-gtab-dim">-</span>}
         </span>

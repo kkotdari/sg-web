@@ -5722,13 +5722,8 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-gtab-len-t { position: relative; display: inline-block; }
 .scr-gtab-len-play { position: absolute; left: 50%; top: 100%; margin-top: 3px; transform: translateX(-50%); }
 .scr-gtab-link { width: 26px; height: 26px; color: var(--row-dim); }
-/* 분석 그래프 단추 — 꽉 찬 강조색 · 흰 아이콘(요청: "아이콘 더 튀게"). */
-.scr-gtab-graph {
-  display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; padding: 0;
-  border: none; border-radius: 8px; cursor: pointer; color: #fff; background: var(--lighting-accent, #5c9df5);
-  box-shadow: 0 1px 4px color-mix(in srgb, var(--lighting-accent, #5c9df5) 45%, transparent);
-}
-@media (hover: hover) { .scr-gtab-graph:hover { filter: brightness(1.12); } }
+/* 분석 그래프 단추 — 라이팅 테마의 컴팩트 네모 단추(글로우 · 2026-10-21, 요청: "글로우있는 라이팅테마 버튼으로") · 아이콘만. */
+.scr-gtab-graph { width: 30px; height: 30px; padding: 0; justify-content: center; border-radius: 8px; }   /* 정사각 둥근 네모(요청) */
 .scr-gtab-roster { flex-direction: column; gap: 3px; white-space: normal; }
 .scr-gtab-roster > .scr-gtab-unhide { margin-top: 3px; }
 .scr-gtab-roster > .scr-activity-row-cols { width: 100%; font-size: var(--fs-body); }
