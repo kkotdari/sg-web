@@ -52,10 +52,10 @@ const TL_ROW_MIN = Math.ceil(2 * TL_CH + 2 * TL_TIER + TL_FS * 0.9);
 const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` : s);
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
- *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 짓기 시작은 칩에 마우스를 얹으면 팝업에 나온다. */
+ *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 마우스를 얹으면 완공 시각 팝업 · 같은 종류 테크(모든 사람)는 강조색. */
 function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes: Lane[]; maxX: number; ticksX: number[]; w: number; h: number; padL: number; padR: number }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
-  const [hover, setHover] = useState<{ lane: Lane; tech: GameCurve["techs"][number]; label: string; x0: number; x1: number; cy: number } | null>(null);
+  const [hover, setHover] = useState<{ tech: GameCurve["techs"][number]; x0: number; x1: number; cy: number } | null>(null);
   /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것(2026-10-21, 요청: "세 판 높이 통일"). */
   const ROW_H = (H - TL_AXIS - 4) / Math.max(1, lanes.length);
   const FS = TL_FS;
@@ -125,11 +125,11 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
               return (
                 <g
                   key={t.t} className="scr-tl-hit"
-                  onPointerEnter={() => setHover({ lane: l, tech: t, label, x0: cx, x1: cx + w, cy: y })}
+                  onPointerEnter={() => setHover({ tech: t, x0: cx, x1: cx + w, cy: y })}
                   onPointerLeave={() => setHover(null)}
                 >
                   <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} />
-                  <text className="scr-tl-label" x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: FS }}>{label}</text>
+                  <text className={`scr-tl-label${hover && hover.tech.t === t.t ? " is-hl" : ""}`} x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: FS }}>{label}</text>
                 </g>
               );
             })}
@@ -142,15 +142,10 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR }: { lanes
       {hover && (
         <div
           className={`scr-rc-tip${hover.x1 / CW > 0.8 ? " is-left" : ""}`} role="status"
-          style={{ left: `${((hover.x1 / CW > 0.8 ? hover.x0 : hover.x1) / CW) * 100}%`, top: `${(hover.cy / H) * 100}%` }}
+          style={{ left: `${((hover.x1 / CW > 0.8 ? hover.x0 : hover.x1) / CW) * 100}%`, top: `${(hover.cy / H) * 100}%`, minWidth: 0 }}
         >
-          <div className="scr-rc-tip-head">{clock(hover.tech.e)} 다 지음</div>
-          <div className="scr-rc-tip-row">
-            <i className="scr-rc-key" style={{ background: hover.lane.color }} />
-            <b>{hover.label}</b>
-            <span>{hover.lane.name}</span>
-          </div>
-          <div className="scr-rc-tip-row"><span>짓기 시작 {clock(hover.tech.s)}</span></div>
+          {/* 팝업은 완공 시각 한 줄만(2026-10-21, 요청: "완공: 15:03 이런 식으로 간단히 표시하고 아무것도 넣지 말기"). */}
+          <div className="scr-rc-tip-row">완공: {clock(hover.tech.e)}</div>
         </div>
       )}
       </div>
