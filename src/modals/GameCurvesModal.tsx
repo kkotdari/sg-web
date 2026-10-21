@@ -407,16 +407,29 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   }, [players]);
   const mode: ViewMode = teamGame ? view : "player";
   const teamOn = mode === "teamSum";
-  const colorOf = (p: GameCurve, i: number): string => (mode !== "player"
+  /* 원작 팔레트는 전체 참가자 자리 차례로(볼 사람을 골라도 색이 안 바뀌게). */
+  const colorOf = (p: GameCurve): string => (mode !== "player"
     ? TEAM_COLOR[teamNo(p.team)]
-    : personalOk && p.color ? p.color : BW_PALETTE[i % BW_PALETTE.length]);
+    : personalOk && p.color ? p.color : BW_PALETTE[Math.max(0, (players ?? []).indexOf(p)) % BW_PALETTE.length]);
+  /* 볼 사람(2026-10-21, 요청: "맨 위에 유저 선택 체크박스 추가해서 볼 유저만 선택 가능하게 하고 팀 구분해서 표시") — 뺀 사람은 모든 판에서 빠진다(팀 합산도).
+     한 사람은 늘 남긴다. */
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
+  const shown = useMemo(() => (players ?? []).filter((p) => !hidden.has(p.playerName)), [players, hidden]);
+  const toggleShown = (key: string): void => {
+    if (!hidden.has(key) && shown.length <= 1) return;
+    setHidden((h) => { const n = new Set(h); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+    setFocus((f) => (f === key ? null : f));
+  };
+  const userGroups = teamGame
+    ? ([1, 2] as const).map((t) => ({ t, ps: (players ?? []).filter((p) => teamNo(p.team) === t) }))
+    : [{ t: 0, ps: players ?? [] }];
   const nameOf = (p: GameCurve): string => memberOf(p.memberId)?.nickname ?? p.playerName;
   /* 눈금은 이 판에 맞춘다(2026-10-21, 요청: "게임마다 적절한 눈금") — 통계의 고정 자(일꾼 100 · 인구 100 · 0/반/끝)가 아니라
      이 판 최댓값을 덮는 둥근 간격 눈금(세로 ≤5칸 · 가로 분 ≤7칸). */
   /* 그릴 줄 — 팀 보기면 팀마다 분별 합(그 팀에서 아직 선이 있는 사람만 더한다 · 길이는 그 팀에서 가장 긴 사람). */
   /* 자원 = 그 분에 쥔 미네랄(rm) · 가스(rg) — 판을 나눈다(PC · 2026-10-21, 요청: "자원 그래프 추가" → "미네랄 가스 분리"). */
   const series = useMemo((): ({ key: string; p: GameCurve | null; team: 1 | 2 } & Record<CurveKey, number[]>)[] => {
-    const ps = (players ?? []).map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg }));
+    const ps = shown.map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg }));
     if (!teamOn) return ps.map((q) => ({ key: q.p.playerName, team: teamNo(q.p.team), ...q }));
     const sum = (ms: typeof ps, k: CurveKey): number[] =>
       Array.from({ length: Math.max(0, ...ms.map((q) => q[k].length)) }, (_, m) => ms.reduce((a, q) => a + (q[k][m] ?? 0), 0));
@@ -424,14 +437,14 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
       const ms = ps.filter((q) => teamNo(q.p.team) === t);
       return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg") };
     });
-  }, [players, teamOn]);
+  }, [shown, teamOn]);
   const sc = useMemo(() => {
     const x = Math.max(1, ...series.map((s) => Math.max(s.wk.length, s.sp.length) - 1));
     const ticks = (k: CurveKey): number[] => niceTicks(Math.max(0, ...series.flatMap((s) => s[k])));
     return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg") };
   }, [series]);
-  const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s, i) => (s[key].length < 2 ? [] : [s.p
-    ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p, i), ys: s[key] }
+  const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s) => (s[key].length < 2 ? [] : [s.p
+    ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p), ys: s[key] }
     : { key: s.key, label: `${s.team}팀`, color: TEAM_COLOR[s.team], ys: s[key] }]));
   /* 좌우 여백 — PC 는 닉네임 칩·끝 칩이 다 들어가게. 폰은 좁게(2026-10-21, 요청: "모바일 그래프 왼쪽 패딩 줄이고 테크트리의 닉네임칩 자리 모자라면
      그래프 안에 좀 넣기 · 오른쪽도 패딩 줄여") — 왼쪽은 세로 눈금 글자 자리만(닉네임 칩은 왼끝에 붙여 판 안으로 넘친다), 오른쪽은 끝 칩이 판 밖으로 나가면 끝점 왼쪽에. */
@@ -455,6 +468,20 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
             <div className="scr-rc-empty scr-gc-wait">{error || "표시할 데이터가 아직 없어요 — 재분석하면 생겨요"}</div>
           ) : (
             <div className="scr-gc" ref={boxRef}>
+              <div className="scr-gc-users" aria-label="볼 사람">
+                {userGroups.map((g) => (
+                  <div key={g.t} className="scr-gc-ugroup">
+                    {g.t > 0 && <span className="scr-gc-ulabel" style={{ color: TEAM_COLOR[g.t] }}>{g.t}팀</span>}
+                    {g.ps.map((p) => (
+                      <label key={p.playerName} className="scr-checkbox-field scr-gc-user">
+                        <input type="checkbox" checked={!hidden.has(p.playerName)} onChange={() => toggleShown(p.playerName)} />
+                        <i className="scr-gc-udot" style={{ background: colorOf(p) }} aria-hidden />
+                        {nameOf(p)}
+                      </label>
+                    ))}
+                  </div>
+                ))}
+              </div>
               {teamGame && (
                 <div className="scr-rc-mode" role="radiogroup" aria-label="보기">
                   {VIEW_MODES.map(([m, label]) => (
@@ -471,13 +498,13 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                   {mobile ? (
                     <TechLanes
                       maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
-                      lanes={players.map((p, i) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
+                      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), techs: p.techs }))}
                     />
                   ) : (
                     <BuildLanes
                       maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
                       techOnly={techOnly} onTechOnly={setTechOnly}
-                      lanes={players.map((p, i) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p, i), blds: p.blds }))}
+                      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds }))}
                     />
                   )}
                   <Chart

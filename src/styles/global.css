@@ -3310,6 +3310,12 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .scr-gc > .scr-rc-chart { padding-top: 14px; border-top: 1px solid var(--line-faint); }
 .scr-rc-mode { display: flex; gap: 4px; }
+/* 볼 사람 고르기(2026-10-21) — 팀마다 한 줄 · 앞에 팀 이름(팀색) · 이름 앞 작은 색 점(그 선 색). */
+.scr-gc-users { display: flex; flex-direction: column; gap: 6px; }
+.scr-gc-ugroup { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.scr-gc-ulabel { flex: none; min-width: 28px; font-size: var(--fs-caption); font-weight: 800; }
+.scr-gc-user { font-size: var(--fs-caption); color: var(--text); }
+.scr-gc-udot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 /* PC 데이터 창 제목 옆 설명은 작게(2026-10-21, 요청: "살아 있는 전투 유닛의 미네랄+가스 합 글자 크기 축소" 15 → 12). */
 @media (min-width: 961px) { .scr-modal-graph .scr-rc-title > i { font-size: 12px; } }
 .scr-tl-chip { fill: transparent; }
