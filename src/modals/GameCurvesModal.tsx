@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
-import { AXIS_FS, Chart, chipBox, chipGutter, chipWOf, fitText, GAME_FONT_K, inkOn, PC_AXIS_K, textW, useScrub, useSharedCross, type ChartLine } from "../pages/stats/RaceCurves";
+import { AXIS_FS, CHART_PAD, Chart, chipBox, chipGutter, chipWOf, fitText, GAME_FONT_K, inkOn, PC_AXIS_K, textW, useScrub, useSharedCross, type ChartLine } from "../pages/stats/RaceCurves";
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
@@ -43,6 +43,8 @@ type Lane = { key: string; group: string; name: string; color: string; techs: Ga
     눈금·닉네임 칩 글자 = AXIS_FS × GAME_FONT_K(통계 PC 눈금과 같은 화면 크기) · 테크 글자는 11px(요청: "테크트리 글자 굵기 줄이고 크기 한단만 낮춰줘" — 0.8 배 11.9 → 11 · 굵기 600 → 500).
     테크는 글자만 — 글자를 감싼 컴팩트 네모 칩 상자는 평소 보이지 않는 마우스 자리로 남아 겹침 가르기와 팝업 자리를 재고, 같은 종류 강조 때만 칠한다
     (요청: "직사각형 음영" → "테크트리 음영제거" → "칩형태로 강조 · 컴팩트 네모칩"). 칸 사이·두 단 사이도 글자에 비례 — 번잡하지 않게. */
+/** 가로축 눈금 숫자를 가로축에서 더 띄우는 몫(2026-10-21, 요청: "가로축 눈금 숫자를 가로축에서 좀 더 아래로 · 데이터 창만") — 세 판 모두. */
+const AXIS_DROP = 6;
 function tlDims(k: number, axisK: number) {
   const axisFs = AXIS_FS * k * axisK;
   /* 테크 글자 — PC 11px · 폰(k 1) 9.5px(2026-10-21, 요청: "모바일에서도 볼 수 있게"). */
@@ -51,7 +53,7 @@ function tlDims(k: number, axisK: number) {
   const tier = fs * 0.15;
   /** axis: 판 아래 눈금 띠 · row: 한 사람 칸 높이 — 세 단(가운데 · 위 · 아래) + 위아래 숨(2026-10-21, 요청: "개인당 세 줄씩 확보해서 붙지 않게 ·
       총 세로 높이는 인원수에 비례 · 적은 인원 넓게 할 필요 없음"). 테크 판 높이 = 사람 수 × row + axis. */
-  return { axisFs, fs, gap: fs * 0.4, tier, axis: axisFs + 8, row: Math.ceil(3 * ch + 2 * tier + fs * 1.4) };   /* 위아래 숨 0.9 → 1.4 fs(2026-10-21, 요청: "테크 행의 위아래 여백 살짝 증가") */
+  return { axisFs, fs, gap: fs * 0.4, tier, axis: axisFs + 8 + AXIS_DROP, row: Math.ceil(3 * ch + 2 * tier + fs * 1.4) };   /* 위아래 숨 0.9 → 1.4 fs(2026-10-21, 요청: "테크 행의 위아래 여백 살짝 증가") */
 }
 /** 닉네임 칩 글 — 폭으로 자른다(칩 글자 6.5 자 폭 · 2026-10-21, 요청: "닉네임 칩 가로폭 봐서 적절히 글자수 제한"). 끝 칩 · 테크 줄 앞머리가 같이 쓴다. */
 const shortName = (s: string): string => fitText(s, chipBox().fs, chipBox().fs * 6.5);
@@ -338,8 +340,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                     maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} k={fontK} axisK={axisK} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
                     lanes={players.map((p, i) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }))}
                   />
-                  <Chart title="병력" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} axisK={axisK} at={at} onAt={setAt} />
-                  <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} axisK={axisK} at={at} onAt={setAt} />
+                  <Chart title="병력" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} axisK={axisK} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
+                  <Chart title="일꾼 수" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fontK={fontK} axisK={axisK} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
                 </>
               )}
             </div>

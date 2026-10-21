@@ -208,7 +208,7 @@ export function useSharedCross(): [number | null, (m: number | null) => void] {
   return [at, setAt];
 }
 
-export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fontK: k = 1, axisK = 1, padR: padROverride, at: atRaw, onAt }: {
+export function Chart({ title, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fontK: k = 1, axisK = 1, padB: PB = PAD.b, padR: padROverride, at: atRaw, onAt }: {
   title: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
   ticksX?: number[]; ticksY?: number[];
@@ -225,6 +225,8 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   fontK?: number;
   /** 눈금 숫자만 더 곱하는 배수(기본 1 · PC 는 PC_AXIS_K). */
   axisK?: number;
+  /** 아래 여백(기본 20) — 가로축 눈금 숫자는 판 아래끝(H − 5)에 붙어, 키우면 가로축에서 더 아래로 떨어진다(게임 그래프). */
+  padB?: number;
   /** 오른쪽 여백(기본: 칩 자리만큼) — 폰 게임 그래프는 좁게 주고, 판 밖으로 나갈 칩은 끝점 왼쪽에 놓는다. */
   padR?: number;
   /** 세로선(분 · 여러 판이 함께 · useSharedCross) — 이 판은 가장 가까운 분에 맞춰 그린다. */
@@ -242,7 +244,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
   const AFS = FS * axisK;
   const at = atRaw === null ? null : Math.max(0, Math.min(maxX, Math.round(atRaw)));
   const x = (i: number) => PL + (i / maxX) * (W - PL - PR);
-  const y = (v: number) => PAD.t + (1 - v / maxY) * (H - PAD.t - PAD.b);
+  const y = (v: number) => PAD.t + (1 - v / maxY) * (H - PAD.t - PB);
   const ticksY = ty ?? [0, maxY / 2, maxY];
   const ticksX = tx ?? minuteTicks(maxX);
   const pick = (clientX: number): void => {
@@ -269,7 +271,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
       for (const p of s.slice(0, i)) if (crossX(c, p)) c.ty = Math.max(c.ty, p.ty + step);
     });
     for (let i = s.length - 1; i >= 0; i -= 1) {
-      s[i].ty = Math.min(s[i].ty, H - PAD.b - CHIP_H / 2);
+      s[i].ty = Math.min(s[i].ty, H - PB - CHIP_H / 2);
       for (const q of s.slice(i + 1)) if (crossX(s[i], q)) s[i].ty = Math.min(s[i].ty, q.ty - step);
     }
   }
@@ -347,7 +349,7 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
               <text x={c.cx + c.w / 2} y={c.ty} textAnchor="middle" dominantBaseline="central" style={{ fontSize: CB.fs * k, fill: inkOn(c.l.color) }}>{c.l.label}</text>
             </g>
           ))}
-          {at !== null && <line className="scr-rc-cross" x1={x(at)} x2={x(at)} y1={PAD.t} y2={H - PAD.b} />}
+          {at !== null && <line className="scr-rc-cross" x1={x(at)} x2={x(at)} y1={PAD.t} y2={H - PB} />}
           {vals.map(({ l, y: py }) => <circle key={l.key} className={`scr-rc-dot${dim(l.key)}`} cx={x(at ?? 0)} cy={py} r={4} style={{ fill: l.color }} />)}
           {vals.map(({ l, v, ty: vy }) => (
             <text
