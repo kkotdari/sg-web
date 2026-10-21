@@ -298,12 +298,17 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                   const segs: [number, number, boolean][] = [];
                   let t9 = b.s;
                   const building = (a: number, z: number | null): void => { if (z === null) { segs.push([a, end, true]); t9 = end; } else { if (z > a) segs.push([a, z, true]); t9 = z; } };
+                  /* ✕ — 짓다가 사라짐 · 변태하다 취소(2026-10-21, 요청: "변태하다 취소하는 경우 · 건설 · 변태 취소는 옆에 X 표시"). */
+                  const cuts: number[] = [];
                   building(t9, b.d);
-                  for (const [, ms, md] of b.m) {
-                    if (ms > t9) segs.push([t9, ms, false]);
-                    building(ms, md);
+                  const evs = [...b.m.map(([, ms, md]) => ({ ms, z: md, cancel: false })), ...(b.x ?? []).map(([xs, xc]) => ({ ms: xs, z: xc as number | null, cancel: true }))]
+                    .sort((p, q) => p.ms - q.ms);
+                  for (const ev of evs) {
+                    if (ev.ms > t9) segs.push([t9, ev.ms, false]);
+                    if (ev.cancel) { segs.push([ev.ms, ev.z ?? end, true]); t9 = ev.z ?? end; cuts.push(t9); } else building(ev.ms, ev.z);
                   }
                   if (end > t9) segs.push([t9, end, false]);
+                  if (b.d === null && b.e !== null) cuts.push(b.e);
                   const show = (): void => { setHover(b); onAt((b.d ?? b.s) / 60); };
                   return (
                     <g
@@ -314,6 +319,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                       {segs.map(([a, z, building], si) => (
                         <line key={si} className={building ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
                       ))}
+                      {cuts.map((c) => <text key={`x${c}`} className="scr-bl-cut" x={x(c)} y={ly} textAnchor="middle" dominantBaseline="central">✕</text>)}
                       <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />
                     </g>
                   );
