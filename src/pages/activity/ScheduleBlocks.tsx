@@ -648,7 +648,6 @@ const OrderCell = memo(function OrderCell({ p, i, on, sortable, act }: {
       ) : (
         <img src={imgSrc(p.thumbUrl ?? p.url)} alt="" loading="lazy" decoding="async" draggable={false} />
       )}
-      <span className="scr-sb-order-n" aria-hidden>{i + 1}</span>
     </button>
   );
 });
@@ -686,12 +685,6 @@ function PhotoOrder({
   useEffect(() => {
     const el = wrap.current;
     if (!sortable || !el) return;
-    const renumber = (): void => {
-      Array.from(el.querySelectorAll<HTMLElement>(".scr-sb-order-cell")).forEach((c, i) => {
-        const t = c.querySelector(".scr-sb-order-n")?.firstChild;
-        if (t && t.nodeType === Node.TEXT_NODE && t.nodeValue !== String(i + 1)) t.nodeValue = String(i + 1);
-      });
-    };
     // supportPointer 는 SortableJS 옵션인데 @types/sortablejs 에 빠져 있어 단언으로 넘긴다.
     // supportPointer 는 SortableJS 옵션인데 @types/sortablejs 에 빠져 있어 단언으로 넘긴다.
     /* ★ 끄는 동안 그리드를 제 크기로 못 박고 contain: strict 로 가둔다(지적: "적은 양이 바뀔 땐 괜찮다 · 7~10개 바뀌기 시작하면 느려짐") —
@@ -719,13 +712,12 @@ function PhotoOrder({
       onChoose: () => { navigator.vibrate?.(12); },
       onStart: () => { sorting += 1; },
       onMove: (e) => !e.related.classList.contains("scr-sb-order-addcell"),
-      onChange: renumber,
       onEnd: (e) => {
         sorting = Math.max(0, sorting - 1);
         lastDrop.current = Date.now();
         const from = e.oldDraggableIndex ?? -1;
         const to = e.newDraggableIndex ?? -1;
-        if (from < 0 || to < 0 || from === to) { renumber(); return; }
+        if (from < 0 || to < 0 || from === to) return;
         const next = [...live.current.photos];
         const [moved] = next.splice(from, 1);
         next.splice(to, 0, moved);
@@ -740,7 +732,6 @@ function PhotoOrder({
             box.insertBefore(item, box.children[oldIndex] ?? null);
           }
           flushSync(() => live.current.onReorder(next));
-          renumber();
         }, 30);
       },
     } as Sortable.Options);

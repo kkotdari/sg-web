@@ -923,7 +923,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
     min-height: 100%;
   }
   .scr-brand { justify-content: flex-start; transform: none; margin-bottom: 4px; }
-  .scr-brand-logo-img { height: calc(22px * 0.75); }
+  .scr-brand-logo-img { height: 16.5px; }
   .scr-user { display: contents; }
   .scr-user .scr-text-btn {
     order: 1; text-align: left; padding: 7px 10px; border-radius: 6px; margin-left: 2px;
@@ -2350,9 +2350,9 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
   .scr-coming { padding: 10px 10px 8px; }
   .scr-coming-body { gap: 6px; }
   .scr-coming-vs { font-size: var(--fs-subhead); }
-  .scr-coming-card { width: min(calc(var(--coming-card-w, 92px) * 0.85), 100%); }
+  .scr-coming-card { width: min(78px, 100%); }
   .scr-coming-side > .scr-coming-card:last-child:nth-child(odd):not(:first-child) {
-    width: min(calc(var(--coming-card-w, 92px) * 0.85), calc((100% - 6px) / 2));
+    width: min(78px, calc((100% - 6px) / 2));
   }
 }
 /* 밑줄 탭 — 활동의 내전·공방이 쓰던 모양을 통계의 종족구성별 전적(4:4/3:3/2:2)도 함께 쓴다(2026-10, 요청: "내전/공방 탭디자인 적용").
@@ -3291,8 +3291,8 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 
 .scr-modal-md { max-width: 560px; }
 /* 게임 그래프(GameCurvesModal · 2026-10-21 · PC 만) — 화면 폭을 거의 다(요청: "그래프를 최대한 크게") · 범례는 위 한 줄 · 테크 줄과 두 판이 세로로. */
-/* 게임 목록 폭 안쪽의 90%(2026-10-21, 요청: "목록 폭 안짝으로" → "25프로 더 줄이기" → 글자 1.2 배와 함께 "모달폭 늘리고" 0.75 → 0.9) — 목록(--list-content-max − 좌우 여백) × 0.9 이하 · 창이 좁으면 양옆 60px · 높이는 화면 − 48 고정(넘치면 창 안에서 내린다). */
-.scr-modal-graph { max-width: calc((var(--list-content-max) - 2 * var(--main-pad-x, 20px)) * 0.9); width: calc(100vw - 120px); height: calc(100vh - 48px); display: flex; flex-direction: column; }
+/* 게임 목록 폭 안쪽의 90%(2026-10-21, 요청: "목록 폭 안짝으로" → "25프로 더 줄이기" → 글자 1.2 배와 함께 "모달폭 늘리고" 0.75 → 0.9) — PC 목록 1080 − 좌우 여백 40 의 0.9 = 936 이하 · 창이 좁으면 양옆 60px · 높이는 화면 − 48 고정(넘치면 창 안에서 내린다). */
+.scr-modal-graph { max-width: 936px; width: calc(100vw - 120px); height: calc(100vh - 48px); display: flex; flex-direction: column; }
 .scr-modal-graph > .scr-modal-body { flex: 1 1 auto; padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
 /* 제목은 "데이터" · 그 뒤 "게임번호: 번호"는 작고 연하게(2026-10-21, 요청: "데이터 좀 작고 연하게 게임번호: 번호" → "데이터가 진하고 큰거야"). */
 .scr-gc-sub { margin-left: 8px; font-style: normal; font-size: 0.8em; font-weight: 600; color: var(--dim); }
@@ -3767,7 +3767,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-chip-race .scr-cselect-trigger { background: rgba(0,0,0,0.35); border-color: transparent; padding: 6px 6px; font-size: var(--fs-caption); min-height: 0; }
 @media (hover: hover) { .scr-chip-race .scr-cselect-trigger:hover { border-color: transparent; } }
 .scr-chip-race .scr-cselect-open { border-color: transparent; }
-.scr-chip-race .scr-cselect-caret { transform: scale(0.7); opacity: 0.4; }
+.scr-chip-race .scr-cselect-caret { width: 10px; height: 10px; opacity: 0.4; }
 .scr-chip-race .scr-cselect-open .scr-cselect-caret { opacity: 0.6; }
 .scr-cselect-drop.scr-chip-race .scr-cselect-opt-selected { color: var(--text); font-weight: 700; }
 .scr-cselect-drop.scr-chip-race .scr-cselect-opt-selected svg { display: none; }
@@ -5407,7 +5407,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   paint-order: stroke; stroke: var(--panel-solid); stroke-width: 0.9px;
 }
 .scr-rivalry-card {
-  position: absolute; transform: translate(-50%, -50%) scale(var(--rivalry-chip-mult, 1)); z-index: 1;
+  position: absolute; transform: translate(-50%, -50%); z-index: 1;
   transition: transform .15s ease;
   -webkit-tap-highlight-color: transparent;
   display: inline-flex; align-items: center; gap: 5px; padding: 4px 6px; max-width: 30%;
@@ -5425,9 +5425,9 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-rivalry-card .scr-avatar { flex-shrink: 0; }
 .scr-rivalry-card-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scr-rivalry-card:focus, .scr-rivalry-card:focus-visible { outline: none; }
-.scr-rivalry-card-selected { transform: translate(-50%, -50%) scale(calc(var(--rivalry-chip-mult, 1) * 1.18)); z-index: 2; }
+.scr-rivalry-card-selected { transform: translate(-50%, -50%) scale(1.18); z-index: 2; }
 .scr-rivalry-card-dim { opacity: 0.25; }
-@media (min-width: 961px) { .scr-rivalry-wrap { --rivalry-chip-mult: 1.5; } }
+@media (min-width: 961px) { .scr-rivalry-card { max-width: 45%; } }   /* 옛 scale(1.5) 의 눈에 보이던 폭(30% × 1.5) */
 .scr-rivalry-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; font-size: var(--fs-micro); color: var(--muted); }
 .scr-rivalry-legend-item { display: inline-flex; align-items: center; }
 .scr-rivalry-legend-arrow { display: inline-block; width: 16px; height: 2px; color: rgba(96,190,120,1); background: currentColor; position: relative; margin-right: 5px; }
@@ -5625,7 +5625,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-activity-row-flag-update { color: var(--update-badge); }
 .scr-activity-row-badges-top {
   display: flex; align-items: baseline; gap: 5px;
-  min-height: calc(var(--fs-9) * 1.05);
+  min-height: 9.5px;
 }
 .scr-activity-row-notes {
   flex: 0 0 auto; margin-left: -2px;
@@ -6560,7 +6560,10 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
   .scr-activity-detail-full .scr-activity-card-head { display: none; }
 }
 @media (min-width: 961px) {
-  .scr-story-mid .scr-challenge-arrow-row { transform: scale(1.15); margin-bottom: 2px; }
+  .scr-story-mid .scr-challenge-arrow-row { gap: 8px; margin-bottom: 2px; }
+  .scr-story-mid .scr-challenge-arrow { width: 23px; height: 23px; }
+  .scr-story-mid .scr-challenge-arrow-vs { font-size: 16px; }
+  .scr-story-mid .scr-challenge-inline-win { width: 23px; height: 23px; font-size: 16px; }
 }
 .scr-minimap-frame { width: 100%; }
 .scr-minimap {
@@ -6672,12 +6675,11 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 }
 .scr-minimap-mark-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
 .scr-minimap-mark-race { flex-shrink: 0; }
-.scr-minimap-mark-base { --scr-mm-av: 1.5; }
 .scr-minimap-mark-base:not(.scr-minimap-mark-on) .scr-avatar {
-  transform: translate(-50%, -50%) scale(var(--scr-mm-av, 1.5));
+  transform: translate(-50%, -50%) scale(1.5);
 }
 .scr-minimap-mark-on .scr-avatar {
-  transform: translate(-50%, -50%) scale(calc(var(--scr-mm-av, 1.5) * 0.79));
+  transform: translate(-50%, -50%) scale(1.185);
 }
 .scr-minimap-mark-line { display: inline-flex; align-items: center; gap: 2px; }
 .scr-minimap-mark-best .scr-avatar {
@@ -6699,7 +6701,8 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 
 .scr-minimap-mark-label-out { font-size: 11px; }
 @media (min-width: 961px) {
-  .scr-minimap-mark-base { --scr-mm-av: 2; }
+  .scr-minimap-mark-base:not(.scr-minimap-mark-on) .scr-avatar { transform: translate(-50%, -50%) scale(2); }
+  .scr-minimap-mark-base.scr-minimap-mark-on .scr-avatar { transform: translate(-50%, -50%) scale(1.58); }
   .scr-minimap-mark-label-out { font-size: 16px; }
   .scr-minimap-mark-skull { font-size: 22px; }
   .scr-minimap-mark-face { font-size: 22px; }
@@ -7716,7 +7719,7 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-textarea:focus, .scr-sb-textarea:focus-visible { outline: none; }
 .scr-sb-empty { color: var(--muted); }
 /* 제목 요소 — 글·목록·사진 위에 따로 서는 굵은 한 줄(노션의 제목 블록). */
-.scr-sb-text.scr-sb-heading { font-size: calc(var(--fs-caption) * 1.08); font-weight: 800; line-height: 1.4; }
+.scr-sb-text.scr-sb-heading { font-size: 15px; font-weight: 800; line-height: 1.4; }
 .scr-sb-photos-gap { flex: 1 1 auto; }
 /* 접기 칸은 단추 줄(.scr-sb-tools)과 같은 꼴로 선다 — 블록이면 안의 단추가 글자 기준선에 앉아 줄보다 아래로 처졌다(지적: "버튼 줄도 안 맞음"). */
 .scr-sb-row > .scr-sb-fold-corner { margin: 0; display: flex; align-items: flex-start; }
@@ -7873,7 +7876,7 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 html.scr-light-theme .scr-sb-slide-count, html.scr-light-theme .scr-sb-slide-play {
   background: rgba(255, 255, 255, 0.82); color: #000; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
-html.scr-light-theme .scr-sb-order-n, html.scr-light-theme .scr-sb-order-play { background: rgba(255, 255, 255, 0.85); color: #000; }
+html.scr-light-theme .scr-sb-order-play { background: rgba(255, 255, 255, 0.85); color: #000; }
 html.scr-light-theme .scr-photo-counter { background: rgba(255, 255, 255, 0.85); color: #000; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }
 /* 사진첩 단추는 라이팅 테마 기본(채움) 단추 색이다(요청: "사진첩에 저장 버튼이랑 사진 목록에서 쓰이는 버튼들 왜 채우기가 없어?") —
    전체 저장은 컴팩트 네모(.scr-compact-rect-btn) 그대로, 사진 위에 뜨는 둥근 단추(저장·지우기·앞뒤·추가·크게 보기의 저장·앞뒤)는
@@ -7929,10 +7932,6 @@ html.color-lighting .scr-sb-slide-save.is-armed, html.color-lighting .scr-photo-
 /* SortableJS 클래스 — 빈자리(ghost)는 옅게, 잡은 칸(chosen)은 파란 테. 끄는 몸(drag)은 아래 .scr-sb-order-drag 그림자. */
 .scr-sb-order-ghost { opacity: 0.35; }
 .scr-sb-order-chosen { box-shadow: 0 0 0 2px var(--timeline-blue); }
-.scr-sb-order-n {
-  position: absolute; left: 3px; top: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
-  background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10.5px; font-weight: 700; line-height: 16px; text-align: center;
-}
 .scr-sb-order-play {
   position: absolute; right: 3px; bottom: 3px; display: inline-flex; align-items: center; justify-content: center;
   width: 18px; height: 18px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff;

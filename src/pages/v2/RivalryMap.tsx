@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Avatar from "../../components/common/Avatar";
 import { cx } from "../../utils/format";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import type { Member, RivalryPair } from "../../types";
 
 const MIN_GAMES = 1;
@@ -71,6 +72,7 @@ export default function RivalryMap({
   }, [pairs, memberOf]);
 
   const [selected, setSelected] = useState<string | null>(null);
+  const mobile = useIsMobile();
 
   if (nodes.length < 2) {
     return (
@@ -90,6 +92,8 @@ export default function RivalryMap({
   const shownEdges = selected === null ? edges : edges.filter(related);
 
   const chipScale = Math.max(0.7, Math.min(1, 1 - Math.max(0, nodes.length - 8) * 0.03));
+  /* 카드 크기 — PC 는 1.5 배(옛 CSS scale(1.5) 대신 글자·여백·아바타 값으로 · 2026-10-21, 요청: "CSS 배율 함수 대신 원본 값을 직접"). */
+  const cardK = chipScale * (mobile ? 1 : 1.5);
 
   const [arrowScale, setArrowScale] = useState(1);
   useEffect(() => {
@@ -187,13 +191,13 @@ export default function RivalryMap({
               )}
               style={{
                 left: `${p.x}%`, top: `${p.y}%`,
-                fontSize: `${Math.round(12 * chipScale * 10) / 10}px`,
-                padding: `${4 * chipScale}px ${6 * chipScale}px`,
-                gap: `${5 * chipScale}px`,
+                fontSize: `${Math.round(12 * cardK * 10) / 10}px`,
+                padding: `${4 * cardK}px ${6 * cardK}px`,
+                gap: `${5 * cardK}px`,
               }}
               onClick={(e) => { e.stopPropagation(); setSelected((s) => (s === id ? null : id)); }}
             >
-              <Avatar member={m} size={Math.round(18 * chipScale)} />
+              <Avatar member={m} size={Math.round(18 * cardK)} />
               <span className="scr-rivalry-card-name">{m.nickname}</span>
             </button>
           );
