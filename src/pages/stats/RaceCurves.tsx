@@ -269,15 +269,19 @@ export function Chart({ title, lines, note, maxX, maxY, width, padL, height, foc
     }
   }
   /* 세로선 자리의 값 — 사람(종족)마다 제 색 글자로 점 옆에(팝업 대신 · 2026-10-21, 요청: "팝업 제거, 세로선만 유지하고 가로축에 그 시각 표시 ·
-     세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점 옆(세로선 왼편 · 아래 valsRight) · 겹치면 위로 민다(spreadAbove). */
-  /* 값은 세로선 **왼편**에 오른끝을 맞춰 한 줄로(끝 칩·닉네임을 안 가리게 · 2026-10-21, 요청: "값들이 닉네임을 가리지 않게 왼쪽으로 · 값끼리 수직 정렬") —
-     세로선이 판 왼끝 가까워 자리가 없을 때만 오른편(왼끝 맞춤). */
-  const valsRight = at !== null && x(at) - PL < 44 * k;
+     세로선의 해당점의 숫자를 사용자별 그래프마다 자기색으로"). 점 옆(세로선 오른편 · 아래 valsRight) · 겹치면 위로 민다(spreadAbove). */
   const vals = at === null ? [] : spreadAbove(
     /* 고른 사람이 있으면 그 사람 값만(2026-10-21, 요청: "선택한 경우 그 사람 값만 나오게"). */
     lines.filter((l) => at < l.ys.length && (!focus || l.key === focus)).map((l) => ({ l, v: l.ys[at], y: y(l.ys[at]), pref: y(l.ys[at]), ty: 0 })),
     FS + 1 * k, PAD.t + FS / 2,
   );
+  /* 값은 세로선 오른편(왼끝 맞춤)이 기본 — 판 오른끝을 넘거나 끝 칩(닉네임)을 가릴 때만 왼편에 오른끝을 맞춰 한 줄로
+     (2026-10-21, 요청: "값들이 닉네임을 가리지 않게 왼쪽으로 · 값끼리 수직 정렬" → "닉네임을 가릴 때만"). */
+  const valsRight = at !== null && vals.every(({ v, ty }) => {
+    const x0 = x(at) + 8 * k;
+    const x1 = x0 + textW(compact(v), FS);
+    return x1 <= W && !chips.some((c) => x0 < c.cx + c.w && c.cx < x1 && Math.abs(ty - c.ty) < (FS + CHIP_H) / 2);
+  });
   const ordered = focus ? [...lines.filter((l) => l.key !== focus), ...lines.filter((l) => l.key === focus)] : lines;
   /* 칩을 누른 사람(종족)만 또렷이 — 그 선은 굵게 · 칩은 살짝 크게, 나머지는 선·점·칩·값 모두 흐리게(2026-10-21, 요청: "액티브 칩은 살짝 확대만 ·
      나머지 사람들 거 딤 처리 · 나머지 그래프 선도 딤"). */
