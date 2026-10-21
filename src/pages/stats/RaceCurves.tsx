@@ -144,6 +144,9 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   const PL = padL ?? PAD.l;
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  /* 손가락은 **탭**(click)으로만 값 상자를 띄운다(2026-10-21, 지적: "드래그를 터치로 인식해") — 밀어 스크롤하면 click 이 오지 않는다.
+     마우스는 종전대로 얹으면 따라간다. click 의 pointerType 은 브라우저마다 없을 수 있어 누른 순간의 종류를 기억해 둔다. */
+  const lastPtr = useRef("mouse");
   const PR = onToggle ? chipGutter(lines.map((l) => l.label), k) : PAD.r;
   const CB = chipBox();
   const CHIP_H = CB.h * k;
@@ -203,7 +206,9 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
         <svg
           ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="scr-rc-svg" role="img"
           aria-label={`${title} 분당 — ${lines.map((l) => `${l.label} ${l.ys.length - 1}분까지`).join(", ")}`}
-          onPointerMove={(e) => pick(e.clientX)} onPointerDown={(e) => pick(e.clientX)}
+          onPointerMove={(e) => { if (e.pointerType === "mouse") pick(e.clientX); }}
+          onPointerDown={(e) => { lastPtr.current = e.pointerType; if (e.pointerType === "mouse") pick(e.clientX); }}
+          onClick={(e) => { if (lastPtr.current !== "mouse") pick(e.clientX); }}
           onPointerLeave={(e) => { if (e.pointerType === "mouse") setAt(null); }}
         >
           {ticksY.map((v) => (

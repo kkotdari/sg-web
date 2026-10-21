@@ -8090,7 +8090,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-title { margin-bottom: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
 .scr-rc-title > i { font-style: normal; font-weight: 600; color: var(--dim); }
 .scr-rc-plot { position: relative; }
-.scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; cursor: crosshair; }
+.scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-x pan-y; cursor: crosshair; }   /* 판 위에서 밀어도 스크롤(폰 게임 그래프는 가로도) — 값 상자는 탭으로만 */
 .scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }
 /* 눈금 글자 크기는 판 자로 그 자리에 적는다(AXIS_FS × 글자 배수 · RaceCurves). */
 .scr-rc-axis { fill: var(--dim); font-variant-numeric: tabular-nums; }

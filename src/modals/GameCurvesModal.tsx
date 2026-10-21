@@ -81,6 +81,8 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, sticky
   const ROW_H = (H - D.axis - 4) / Math.max(1, lanes.length);
   /* 마우스는 얹으면 · 손가락은 누르면 뜨고(다시 누르거나 딴 데 누르면 닫힌다 — 터치는 떼는 순간 pointerleave 가 와서 얹기가 못 버틴다). */
   const plotRef = useRef<HTMLDivElement>(null);
+  /* 손가락은 탭(click)으로만 — 밀어 스크롤하면 click 이 오지 않는다(2026-10-21, 지적: "드래그를 터치로 인식해"). click 의 pointerType 대신 누른 순간의 종류. */
+  const lastPtr = useRef("mouse");
   useEffect(() => {
     if (hover === null) return undefined;
     const close = (e: PointerEvent): void => {
@@ -162,7 +164,8 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, sticky
                   key={t.t} className="scr-tl-hit"
                   onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
                   onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
-                  onClick={(e) => { if ((e.nativeEvent as PointerEvent).pointerType !== "mouse") { if (hover?.tech === t) setHover(null); else show(); } }}
+                  onPointerDown={(e) => { lastPtr.current = e.pointerType; }}
+                  onClick={() => { if (lastPtr.current !== "mouse") { if (hover?.tech === t) setHover(null); else show(); } }}
                 >
                   <rect className={`scr-tl-chip${hl ? " is-hl" : ""}`} x={cx0} y={y} width={w} height={CH} rx={RX} />
                   <text
