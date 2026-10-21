@@ -16,13 +16,15 @@ import type { GameCurve, GameResult } from "../types";
 /* ★ 게임 그래프(2026-10-21, 요청: "게임 목록에서 PC에 그래프 보기 버튼 · 참가자 전원의 일꾼 및 병력 가치 그래프(한 그래프에 합쳐서) · 색은 임자색 ·
    범례에 색깔과 종족 닉네임 · 통계랑 똑같이 선택 · 팀컬러 모드로 변경도" → "두 그래프를 세로로 · PC 는 모달 폭 넓게" → "게임목록 폭 거의 다 ·
    그래프를 최대한 크게 · 각 플레이어 테크 건물 건설 시간을 그래프 위에 · 범례도 위로 · 폰에서는 제공되지 않는 기능").
-   차례: [팀 보기(팀전만)] → 테크 줄(사람마다 세 단 · 다 지은 때) → 병력 → 일꾼 수. 셋 다 같은 가로 자(잰 폭 · 끝 칩 여백 chipGutter) · 같은 높이
+   차례: [보기 셋(팀전만)] → 테크 줄(사람마다 세 단 · 다 지은 때) → 병력 → 일꾼 수. 셋 다 같은 가로 자(잰 폭 · 끝 칩 여백 chipGutter) · 같은 높이
    · 같은 분 눈금(niceTicks). 테크 줄 앞머리엔 그 사람 색 닉네임 칩 · 테크 음영은 무채색(요청: "칸 앞머리에 심플하게 닉네임" → "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거").
    곡선·개인색은 서버의 통계용 참값 표(GET /{id}/curves) — 판(Chart)은 통계 펼침(RaceCurves)과 같은 것 · 눈금은 판마다 그 판에 맞춘 둥근 간격(niceTicks · 가로는 그 판 길이).
    범례 대신 줄 끝 닉네임 칩(누르면 그 사람을 끄고 켠다 — 테크 줄도 같이 · 2026-10-21 요청).
    개인색을 못 읽은 판(옛 굽기 · 로스터 색이 한 가지뿐)은 원작 팔레트를 자리 차례로 쓴다(재생기 personalUsable 과 같은 거름). */
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
+type ViewMode = "player" | "teamColor" | "teamSum";
+const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
 /* 흔히 부르는 약어(2026-10-21, 요청: "사이버 → 코어 · 에볼 → 챔버 · 이거 말고도 범용적인 약어로") — 아둔(시타델) · 트리뷰널 · 마운드 · 캐번 · 코버트 · 피직스 · 베이(서포트 베이).
@@ -242,9 +244,9 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
     return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
   }, [players]);
   const [error, setError] = useState("");
-  /* 팀 보기(팀전만 · 2026-10-21, 요청: "개인색 팀색 기능 제거하고 그 자리에 팀전의 경우 팀 보기 토글 — 켜면 색은 팀색, 두 그래프는 팀 합산") —
-     테크 줄은 사람마다 그대로(색만 팀색) · 칩을 누르면 그 사람의 팀을 고른다. */
-  const [teamView, setTeamView] = useState(false);
+  /* 보기(팀전만 · 2026-10-21, 요청: "팀 보기 토글 — 켜면 팀색 · 두 그래프는 팀 합산" → "유저별(개인색) / 유저별(팀색) / 팀별 합산 세 개로") —
+     팀별 합산이면 두 곡선 판은 팀마다 한 줄이고, 테크 줄은 사람마다 그대로(색만 팀색) · 칩을 누르면 그 사람의 팀을 고른다. */
+  const [view, setView] = useState<ViewMode>("player");
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   /* 세 판이 한 세로선(분)을 같이 쓴다(요청: "세로선을 모든 테크 & 그래프 간 동기화"). */
@@ -267,8 +269,9 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
     const n1 = ps.filter((p) => teamNo(p.team) === 1).length;
     return n1 > 0 && n1 < ps.length && Math.max(n1, ps.length - n1) > 1;
   }, [players]);
-  const teamOn = teamView && teamGame;
-  const colorOf = (p: GameCurve, i: number): string => (teamOn
+  const mode: ViewMode = teamGame ? view : "player";
+  const teamOn = mode === "teamSum";
+  const colorOf = (p: GameCurve, i: number): string => (mode !== "player"
     ? TEAM_COLOR[teamNo(p.team)]
     : personalOk && p.color ? p.color : BW_PALETTE[i % BW_PALETTE.length]);
   const nameOf = (p: GameCurve): string => memberOf(p.memberId)?.nickname ?? p.playerName;
@@ -315,12 +318,14 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
           ) : (
             <div className="scr-gc" ref={boxRef}>
               {teamGame && (
-                <div className="scr-rc-mode">
-                  {/* 라벨 달린 토글 스위치(2026-10-21, 요청: "팀 보기는 토글 버튼 · 라벨 있는" → 라벨 "팀으로 보기") — 관리자 화면 스위치와 같은 꼴. */}
-                  <button type="button" role="switch" aria-checked={teamOn} className="scr-gc-team" onClick={() => { setTeamView((v) => !v); setFocus(null); }}>
-                    팀으로 보기
-                    <span className={cx("scr-notice-switch", teamOn && "scr-notice-switch-on")} aria-hidden><span className="scr-notice-switch-knob" /></span>
-                  </button>
+                <div className="scr-rc-mode" role="radiogroup" aria-label="보기">
+                  {VIEW_MODES.map(([m, label]) => (
+                    <button
+                      key={m} type="button" role="radio" aria-checked={mode === m}
+                      className={cx("scr-compact-rect-btn", mode !== m && "is-secondary")}
+                      onClick={() => { setView(m); setFocus(null); }}
+                    >{label}</button>
+                  ))}
                 </div>
               )}
               {box.w > 0 && (
