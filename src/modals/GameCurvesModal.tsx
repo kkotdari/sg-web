@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
-import { Chart, chipGutter, type ChartLine } from "../pages/stats/RaceCurves";
+import { BTN, Chart, chipGutter, inkOn, textW, type ChartLine } from "../pages/stats/RaceCurves";
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
@@ -50,11 +50,13 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
   const ROW_H = (H - AXIS - 4) / Math.max(1, lanes.length);
   const CH = Math.max(12, Math.min(16, (ROW_H - 4) / 2));
   const FS = Math.round(CH * 0.66 * 10) / 10;
+  /* 좌우 여백·모서리는 컴팩트 네모 단추의 비(좌우 7/12 · 모서리 6/22)를 이 칩 크기에 맞춰 쓴다 — 칸이 좁아 단추 높이(22)는 못 쓴다. */
+  const PX = FS * (BTN.px / BTN.fs);
   const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - padR);
-  const chipW = (s: string): number => s.length * FS + FS + 2;
+  const chipW = (s: string): number => textW(s, FS) + 2 * PX;
   let y0 = 4;
   /* 칩은 칸의 세로 가운데 · **겹치는 칩끼리만** 가운데 위아래로 가른다(2026-10-21, 요청: "겹치는것들만 위아래로 배치").
-     칩의 왼끝 = 다 지은 때 · 오른끝을 넘는 칩은 거꾸로 칩의 오른끝을 그때에 맞춘다(띠도 오른쪽 · 요청: "테크 칩 화면밖으로 나감").
+     칩의 왼끝 = 다 지은 때 · 오른끝을 넘는 칩은 거꾸로 칩의 오른끝을 그때에 맞춘다(요청: "테크 칩 화면밖으로 나감") · 칩은 그 줄 색으로 칠하고 글자는 가운데(좌우 여백 같게).
      가로로 겹치는 칩들을 한 무리로 묶고, 한 칩뿐인 무리는 가운데 · 여럿인 무리는 윗단 · 아랫단에 — 두 단에도 안 들어가면 앞 칩 뒤로 민다
      (정확한 때는 팝업에 있다). */
   const RIGHT = CW - padR;
@@ -64,7 +66,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
       const xe = x(t.e);
       const w = chipW(label);
       const flip = xe + w > RIGHT;
-      return { t, x: flip ? xe - w : xe, label, w, flip, slot: 0 as -1 | 0 | 1 };
+      return { t, x: flip ? xe - w : xe, label, w, slot: 0 as -1 | 0 | 1 };
     }).sort((p, q) => p.x - q.x);
     for (let a = 0; a < items.length;) {
       let b = a + 1;
@@ -95,7 +97,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
           <g key={l.key}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
             <text className="scr-rc-axis" x={PL - 5} y={top + h / 2} textAnchor="end" dominantBaseline="central">{shortName(l.name)}</text>
-            {chips.map(({ t, x: cx, label, w, slot, flip }) => {
+            {chips.map(({ t, x: cx, label, w, slot }) => {
               const mid = top + h / 2;
               const y = slot === 0 ? mid - CH / 2 : slot < 0 ? mid - CH - 1 : mid + 1;
               return (
@@ -104,9 +106,8 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; 
                   onPointerEnter={() => setHover({ lane: l, tech: t, label, x0: cx, x1: cx + w, cy: y })}
                   onPointerLeave={() => setHover(null)}
                 >
-                  <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} rx={4} style={{ stroke: l.color }} />
-                  <rect x={flip ? cx + w - 3 : cx} y={y} width={3} height={CH} rx={1.5} style={{ fill: l.color }} />
-                  <text className="scr-tl-label" x={cx + (flip ? 4 : 7)} y={y + CH / 2} dominantBaseline="central" style={{ fontSize: FS }}>{label}</text>
+                  <rect className="scr-tl-chip" x={cx} y={y} width={w} height={CH} rx={CH * (BTN.r / BTN.h)} style={{ fill: l.color }} />
+                  <text className="scr-tl-label" x={cx + w / 2} y={y + CH / 2} textAnchor="middle" dominantBaseline="central" style={{ fontSize: FS, fill: inkOn(l.color) }}>{label}</text>
                 </g>
               );
             })}

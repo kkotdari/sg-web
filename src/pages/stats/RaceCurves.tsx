@@ -72,11 +72,34 @@ function minuteTicks(maxX: number): number[] {
 
 /* 끝 칩(2026-10-21, 요청: "범례 제거하고 대신 그래프마다 그래프 끝에 칩으로 표시 · 칩 누르면 껐다켰다") — 줄마다 끝점 오른쪽에 이름 칩.
    칩끼리 겹치면 아래로 밀고(끝점과 짧은 줄로 잇는다), 끈 줄은 선을 지우고 칩만 흐리게 남긴다(다시 눌러 켠다). 칩 자리만큼 오른쪽 여백을 연다. */
-const CHIP_H = 14;
-const CHIP_FS = 9.5;
-const chipWOf = (s: string): number => s.length * CHIP_FS + 12;
-/** 끝 칩을 단 판의 오른쪽 여백 — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
-export const chipGutter = (labels: string[]): number => PAD.r + 8 + Math.max(0, ...labels.map(chipWOf));
+/** 칠한 칩 위 글자색(2026-10-21, 요청: "모든 칩을 색으로 채우고 흰색이나 검정색 글자") — 밝은 바탕(휘도 0.3 넘게: 노랑·주황·옥색·연두빛 흰색)만 검정 #111 · 나머지(빨강·파랑·보라·갈색…)는 흰 #fff.
+    var(--…) 색은 지금 테마의 값을 읽어 잰다. */
+export function inkOn(color: string): string {
+  const v = color.startsWith("var(")
+    ? getComputedStyle(document.documentElement).getPropertyValue(color.slice(4, -1).split(",")[0].trim()).trim()
+    : color;
+  const m = /^#?([0-9a-f]{6})$/i.exec(v);
+  if (!m) return "#fff";
+  const n = parseInt(m[1], 16);
+  const lin = (c: number) => { const k = c / 255; return k <= 0.03928 ? k / 12.92 : ((k + 0.055) / 1.055) ** 2.4; };
+  const L = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  return L > 0.3 ? "#111" : "#fff";
+}
+
+/** 컴팩트 네모 단추(.scr-compact-rect-btn)의 치수 — 글자 12px/600 · 높이 22(글줄 12 + 위아래 4 + 테 1) · 좌우 7(6 + 테 1) · 모서리 6.
+    칩은 이 치수를 화면 px 그대로(끝 칩) 또는 글자 크기에 비례해(테크 칩) 쓴다(2026-10-21, 요청: "컴팩트네모버튼이야 · 패딩같은거는"). */
+export const BTN = { fs: 12, h: 22, px: 7, r: 6 };
+let measureCtx: CanvasRenderingContext2D | null = null;
+/** 글자 폭(px · 굵기 600 · 본문 글꼴) — 칩 폭을 글자에 딱 맞춰 좌우 여백이 같게. */
+export function textW(s: string, fs: number): number {
+  if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+  if (!measureCtx) return s.length * fs;
+  measureCtx.font = `600 ${fs}px ${getComputedStyle(document.body).fontFamily}`;
+  return measureCtx.measureText(s).width;
+}
+const chipWOf = (s: string): number => textW(s, BTN.fs) + 2 * BTN.px;
+/** 끝 칩을 단 판의 오른쪽 여백(k = 화면 1px 의 판 자) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
+export const chipGutter = (labels: string[], k = 1): number => PAD.r + k * (8 + Math.max(0, ...labels.map(chipWOf)));
 
 export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height, onToggle, ticksX: tx, ticksY: ty }: {
   title: string; unit: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
@@ -94,10 +117,20 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   const W = width ?? W0;
   const H = height ?? H0;
   const PL = padL ?? PAD.l;
-  const PR = onToggle ? chipGutter(lines.map((l) => l.label)) : PAD.r;
-  const shown = lines.filter((l) => !l.off);
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  /* 판은 viewBox 로 늘고 준다 — 칩은 단추와 같은 화면 px 이어야 해서 화면 1px 이 판 자로 몇인지(k) 잰다. */
+  const [k, setK] = useState(1);
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el || !onToggle) return undefined;
+    const ro = new ResizeObserver(() => { if (el.clientWidth > 0) setK(W / el.clientWidth); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [W, onToggle]);
+  const PR = onToggle ? chipGutter(lines.map((l) => l.label), k) : PAD.r;
+  const CHIP_H = BTN.h * k;
+  const shown = lines.filter((l) => !l.off);
   /* 띄운 값 상자는 그래프 밖 어디를 누르든 닫힌다(2026-10-20, 요청: "그래프 누르면 팝업 같은 거 나오는데 다른 데 누르면 닫히게").
      폰은 손가락을 떼도 남아 있어(pointerleave 는 마우스만 닫는다) 이것이 닫는 길이다. */
   useEffect(() => {
@@ -123,13 +156,13 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   /* 칩 자리 — 끝점 오른쪽 · 위에서부터 겹치면 아래로 민다(판 안에 가둔다). */
   const chips = (onToggle ? lines : []).filter((l) => l.ys.length > 0).map((l) => {
     const i = l.ys.length - 1;
-    return { l, ex: x(i), ey: y(l.ys[i]), cx: x(i) + 8, cy: y(l.ys[i]), w: chipWOf(l.label) };
+    return { l, ex: x(i), ey: y(l.ys[i]), cx: x(i) + 8 * k, cy: y(l.ys[i]), w: chipWOf(l.label) * k };
   }).sort((a, b) => a.ey - b.ey);
   const placed: typeof chips = [];
   for (const c of chips) {
     c.cy = Math.max(PAD.t + CHIP_H / 2, c.cy);
     for (const p of placed) {
-      if (c.cx < p.cx + p.w && p.cx < c.cx + c.w && c.cy < p.cy + CHIP_H + 2) c.cy = Math.max(c.cy, p.cy + CHIP_H + 2);
+      if (c.cx < p.cx + p.w && p.cx < c.cx + c.w && c.cy < p.cy + CHIP_H + 2 * k) c.cy = Math.max(c.cy, p.cy + CHIP_H + 2 * k);
     }
     c.cy = Math.min(c.cy, H - PAD.b - CHIP_H / 2);
     placed.push(c);
@@ -172,8 +205,8 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle?.(c.l.key); } }}
             >
               {Math.abs(c.cy - c.ey) > 1 && <line className="scr-rc-chip-lead" x1={c.ex} y1={c.ey} x2={c.cx} y2={c.cy} style={{ stroke: c.l.color }} />}
-              <rect x={c.cx} y={c.cy - CHIP_H / 2} width={c.w} height={CHIP_H} rx={4} style={{ stroke: c.l.color }} />
-              <text x={c.cx + 6} y={c.cy} dominantBaseline="central" style={{ fontSize: CHIP_FS }}>{c.l.label}</text>
+              <rect x={c.cx} y={c.cy - CHIP_H / 2} width={c.w} height={CHIP_H} rx={BTN.r * k} style={{ fill: c.l.color }} />
+              <text x={c.cx + c.w / 2} y={c.cy} textAnchor="middle" dominantBaseline="central" style={{ fontSize: BTN.fs * k, fill: inkOn(c.l.color) }}>{c.l.label}</text>
             </g>
           ))}
           {at !== null && <line className="scr-rc-cross" x1={x(at)} x2={x(at)} y1={PAD.t} y2={H - PAD.b} />}

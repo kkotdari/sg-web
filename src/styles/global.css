@@ -3286,10 +3286,10 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .scr-gc > .scr-rc-chart { padding-top: 14px; border-top: 1px solid var(--line-faint); }
 .scr-rc-mode { display: flex; gap: 4px; }
-.scr-tl-chip { fill: var(--card-bg, #101011); stroke-width: 1; stroke-opacity: 0.7; }
-.scr-tl-label { fill: var(--text); font-weight: 600; }
+.scr-tl-chip { stroke: none; }
+.scr-tl-label { font-weight: 600; }
 .scr-tl-hit { cursor: default; }
-.scr-tl-hit:hover .scr-tl-chip { stroke-opacity: 1; stroke-width: 1.6; }
+.scr-tl-hit:hover .scr-tl-chip { filter: brightness(1.15); }
 .scr-redo-pick { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
 body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick { z-index: 300; }
@@ -8060,11 +8060,10 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-rc-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 /* 줄 끝 칩(통계 · 게임 그래프 · 2026-10-21) — 누르면 그 줄을 끄고 켠다 · 끈 줄은 칩만 흐리게 남는다. */
 .scr-rc-chip { cursor: pointer; outline: none; }
-.scr-rc-chip > rect { fill: var(--card-bg, #101011); stroke-width: 1.2; }
-.scr-rc-chip > text { fill: var(--text); font-weight: 700; }
+.scr-rc-chip > text { font-weight: 600; }
 .scr-rc-chip.is-off { opacity: 0.35; }
-.scr-rc-chip:focus-visible > rect { stroke-width: 2.4; }
-@media (hover: hover) { .scr-rc-chip:hover > rect { stroke-width: 2.2; } }
+.scr-rc-chip:focus-visible > rect { stroke: var(--text); stroke-width: 1.5; }
+@media (hover: hover) { .scr-rc-chip:hover > rect { filter: brightness(1.15); } }
 .scr-rc-chip-lead { stroke-width: 1; opacity: 0.5; }
 .scr-rc-end, .scr-rc-dot { stroke: var(--card-bg, #101011); stroke-width: 2; }
 .scr-rc-cross { stroke: rgba(var(--overlay-rgb), 0.35); stroke-width: 1; stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; }
