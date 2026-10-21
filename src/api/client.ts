@@ -15,6 +15,7 @@ import type {
   GameUnhideRequest,
 } from "../types";
 import type { ReplayMapGrid } from "../utils/replayParser";
+import type { GameIndexRow9 } from "scplay";
 
 function buildQuery(params: Record<string, string | number | boolean | undefined>): string {
   const usp = new URLSearchParams();
@@ -630,10 +631,10 @@ export const api = {
     return res.blob();
   },
 
-  /** 판의 전술 낱말(운영자 재분석 · sg-api GameResultTactics) — 판을 열 때는 안 부른다. */
-  async putGameTactics(gameResultId: number, words: string[]): Promise<void> {
-    await request<void>(`/api/game-results/${gameResultId}/tactics`, {
-      method: "PUT", body: JSON.stringify({ words }),
+  /** 판의 게임 색인(사건마다 한 줄 · 운영자 재분석 · sg-api game_result_index) — 통째로 갈아 끼운다 · 판을 열 때는 안 부른다. */
+  async putGameIndex(gameResultId: number, rows: GameIndexRow9[]): Promise<void> {
+    await request<{ rows: number }>(`/api/game-results/${gameResultId}/index`, {
+      method: "PUT", body: JSON.stringify({ rows }),
     });
   },
 

@@ -147,8 +147,6 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
     return terms.filter((t) => (t.tag === "유닛" || t.tag === "건물" || t.tag === "스킬" || t.tag === "전술") && !seen.has(t.value) && (seen.add(t.value), true))
       .map((t) => ({ value: t.value, tag: t.tag }));
   }, [terms]);
-  /** 한 사람 줄 — 전술은 판 하나의 낱말이라(누가 했는지는 안 적는다) 뺀다. */
-  const linkItemOpts = useMemo<Opt[]>(() => itemOpts.filter((o) => o.tag !== "전술"), [itemOpts]);
   const mapOpts = useMemo<Opt[]>(() => maps.map((m) => ({ value: m, tag: "맵" })), [maps]);
 
   const setLink = (i: number, p: Partial<GameSearchLink>): void =>
@@ -165,7 +163,7 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
   if (value.nos.length) summary.push({ key: "n", label: `#${value.nos.join(" / ")}`, drop: () => apply({ ...value, nos: [] }) });
   value.links.forEach((l, i) => {
     if (!l.name.trim()) return;
-    summary.push({ key: `l${i}`, label: `${l.name}: ${[l.race, ...l.items].filter(Boolean).join(" · ") || "직접"}`, drop: () => apply({ ...value, links: value.links.filter((_, k) => k !== i) }) });
+    summary.push({ key: `l${i}`, label: `${l.name}: ${l.items.filter(Boolean).join(" · ") || "직접"}`, drop: () => apply({ ...value, links: value.links.filter((_, k) => k !== i) }) });
   });
   const empty = gameSearchEmpty(value);
 
@@ -224,20 +222,16 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
             <ChipInput values={draft.nos} onChange={(v) => set("nos", v)} options={[]} placeholder="261019213105 · 앞자리만(261019)도 됨" onSubmit={() => apply()} />
           </Field>
           <div className="scr-gs-field scr-gs-links">
-            <span className="scr-gs-label">한 사람이 직접<i>그 선수가 그 종족으로 · 그 유닛을</i></span>
+            <span className="scr-gs-label">한 사람이 직접<i>그 선수가 그 유닛·전술을</i></span>
             <div className="scr-gs-ctl scr-gs-link-list">
               {draft.links.map((l, i) => (
                 <div key={i} className="scr-gs-link">
                   <ChipInput single values={l.name ? [l.name] : []} onChange={(v) => setLink(i, { name: v[0] ?? "" })} options={memberOpts} placeholder="선수" onSubmit={() => apply()} />
-                  <select className="scr-gs-select" value={l.race} onChange={(e) => setLink(i, { race: e.target.value })} aria-label="종족">
-                    <option value="">종족 무관</option>
-                    {RACES.map((r) => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                  <ChipInput values={l.items} onChange={(v) => setLink(i, { items: v })} options={linkItemOpts} placeholder="유닛·건물·스킬" onSubmit={() => apply()} />
+                  <ChipInput values={l.items} onChange={(v) => setLink(i, { items: v })} options={itemOpts} placeholder="유닛·건물·스킬·전술" onSubmit={() => apply()} />
                   <button type="button" className="scr-icon-btn scr-gs-link-x" aria-label="이 조건 빼기" onClick={() => set("links", draft.links.filter((_, k) => k !== i))}><X size={13} /></button>
                 </div>
               ))}
-              <button type="button" className="scr-compact-rect-btn is-secondary scr-gs-link-add" onClick={() => set("links", [...draft.links, { name: "", race: "", items: [] }])}>
+              <button type="button" className="scr-compact-rect-btn is-secondary scr-gs-link-add" onClick={() => set("links", [...draft.links, { name: "", items: [] }])}>
                 <Plus size={13} aria-hidden /> 조건 추가
               </button>
             </div>

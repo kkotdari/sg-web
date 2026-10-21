@@ -1,4 +1,4 @@
-import { TACTIC_TERMS9 } from "scplay";
+import { SEARCH_ROLES9, TACTIC_TERMS9 } from "scplay";
 import { normalizeSearchText } from "./memberSearch";
 import { BUILDING_KO, TECH_KO, UNIT_KO } from "./replayNames";
 
@@ -45,9 +45,9 @@ export function gameSuggestions(mapNames: Iterable<string>): GameSuggestion[] {
   for (const [en, ko] of Object.entries(UNIT_KO)) { add(ko, "유닛"); add(en, "유닛"); }
   for (const [en, ko] of Object.entries(BUILDING_KO)) { add(ko, "건물"); add(en, "건물"); }
   for (const [en, ko] of Object.entries(TECH_KO)) { add(ko, "스킬"); add(en, "스킬"); }
-  /* 전술 낱말(2026-10-20, 요청: "유닛건물스킬에 전술도 · 몰래 배럭 오버로드 사냥 …") — 운영자 재분석이 판마다 적어 둔 것(utils/gameTactics)을 서버가 찾는다.
-     판 하나의 일이라 '한 사람이 직접' 줄에는 안 낸다(GameSearchForm itemOpts). */
-  for (const w of TACTIC_TERMS9) add(w, "전술");
+  /* 전술 낱말(2026-10-20, 요청: "유닛건물스킬에 전술도 · 몰래 배럭 오버로드 사냥 …") · 공격함/공격당함/견제함/견제당함 — 서버가 게임 색인(운영자 재분석이
+     굽는 사건 줄 · utils/gameIndex)에서 찾는다. "…함"은 그 사건의 주인 · "…당함"은 타겟이다. */
+  for (const w of [...TACTIC_TERMS9, ...SEARCH_ROLES9]) add(w, "전술");
   for (const name of mapNames) add(name, "맵");
   return out;
 }
@@ -149,8 +149,9 @@ export function toServerMerged(q: string, lex: Lexicon = EMPTY_LEXICON): ServerQ
    · 선수 · 종족 · 유닛/건물/스킬 — 칸 안의 값마다 조건 하나(**모두** 맞아야 · 그 판에 있었나)
    · 맵 · 게임번호 — 칸 안의 값끼리는 **그중 하나**(한 판엔 맵이 하나라서)
    · 유형 — 하나만(a:b · 차례 없음)
-   · 한 사람 조건 — 줄마다 [선수 · 종족 · 유닛…] 을 **그 사람이 직접**(옛 붙여 쓰기) */
-export interface GameSearchLink { name: string; race: string; items: string[] }
+   · 한 사람 조건 — 줄마다 [선수 · 유닛·건물·스킬·전술…] 을 **그 사람이 직접**(옛 붙여 쓰기 · 종족은 걷었다 — 2026-10-20, 요청: "사람 종족 타겟에서 종족만 제거해서 단순하게")
+     — 서버는 그 사람이 주인인(…당함이면 타겟인) 게임 색인 사건으로 찾는다. */
+export interface GameSearchLink { name: string; items: string[] }
 export interface GameSearchForm {
   players: string[];
   races: string[];
@@ -181,7 +182,7 @@ export function formToServer(f: GameSearchForm): ServerQuery {
   const linked: string[] = [];
   for (const l of f.links) {
     const name = l.name.trim();
-    const rest = [l.race, ...l.items].filter(Boolean);
+    const rest = l.items.filter(Boolean);
     if (!name) continue;
     if (rest.length === 0) { any.push(norm(name)); continue; }
     linked.push([normalizeSearchText(name), ...rest.map(norm)].join(US));
@@ -215,8 +216,9 @@ export function legacyToForm(q: string, lex: Lexicon, options: GameSuggestion[])
     const names = parts.filter((p) => p.kind === "name").map((p) => p.text);
     const rest = parts.filter((p) => p.kind !== "name").map((p) => p.text);
     if (names.length > 0 && rest.length > 0) {
-      const race = rest.find((t) => tagOf.get(squashTerm(t)) === "종족") ?? "";
-      f.links.push({ name: names[0], race, items: rest.filter((t) => t !== race) });
+      /* 옛 한 줄의 "사람 종족"은 종족 칸으로 옮긴다(한 사람 줄에 종족이 없다 · 2026-10-20). */
+      for (const t of rest) if (tagOf.get(squashTerm(t)) === "종족") f.races.push(t);
+      f.links.push({ name: names[0], items: rest.filter((t) => tagOf.get(squashTerm(t)) !== "종족") });
       f.players.push(...names.slice(1));
       continue;
     }
@@ -225,6 +227,7 @@ export function legacyToForm(q: string, lex: Lexicon, options: GameSuggestion[])
   return f;
 }
 
+const OLD_LINK_RACES = new Set(["테란", "프로토스", "저그", "랜덤"]);
 /** 주소(f=) 안의 폼 — 짧은 열쇠의 JSON. 망가진 값은 빈 폼. */
 export function encodeGameSearch(f: GameSearchForm): string {
   if (gameSearchEmpty(f)) return "";
@@ -236,7 +239,7 @@ export function encodeGameSearch(f: GameSearchForm): string {
   if (f.size) o.s = f.size;
   if (f.nos.length) o.n = f.nos;
   const links = f.links.filter((l) => l.name.trim());
-  if (links.length) o.l = links.map((l) => [l.name, l.race, ...l.items]);
+  if (links.length) o.l = links.map((l) => [l.name, ...l.items]);
   return JSON.stringify(o);
 }
 export function decodeGameSearch(raw: string): GameSearchForm {
@@ -247,7 +250,8 @@ export function decodeGameSearch(raw: string): GameSearchForm {
     return {
       players: arr(o.p), races: arr(o.r), items: arr(o.i), maps: arr(o.m),
       size: typeof o.s === "string" ? o.s : "", nos: arr(o.n),
-      links: Array.isArray(o.l) ? o.l.map((x) => { const a = arr(x); return { name: a[0] ?? "", race: a[1] ?? "", items: a.slice(2) }; }) : [],
+      /* 옛 주소는 [이름, 종족, …유닛]이었다 — 종족 자리(빈 값 · 종족 이름)는 버린다(2026-10-20). */
+      links: Array.isArray(o.l) ? o.l.map((x) => { const a = arr(x); return { name: a[0] ?? "", items: a.slice(1).filter((t) => t && !OLD_LINK_RACES.has(t)) }; }) : [],
     };
   } catch {
     return EMPTY_GAME_SEARCH;

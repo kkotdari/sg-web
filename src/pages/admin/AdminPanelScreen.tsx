@@ -24,7 +24,7 @@ import { versionNumber } from "../../utils/appVersion";
 import { playCreak } from "../../utils/sfx";
 import { formatAgo, todayStr } from "../../utils/date";
 import type { GameResult } from "../../types";
-import { indexGameTactics } from "../../utils/gameTactics";
+import { indexGame } from "../../utils/gameIndex";
 
 /** 제어판의 삭제 관리(삭제된 경기 — 복원·완전 삭제) 줄을 보이나 — 숨김(2026-10-16, 나중에 되살릴 예정 · true 면 되살아난다). */
 const SHOW_DELETED_GAMES = true;   // 되살림(2026-10-20, 요청: "삭제게임 목록 기능 다시 보이게")
@@ -147,7 +147,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
         return na.localeCompare(nb, undefined, { numeric: true }) || a - b;
       });
       setRedo({ done: 0, total: ids.length, failed: 0 });
-      const tacticLater: number[] = [];
+      const indexLater: number[] = [];
       const at = new Map(ids.map((id, i) => [id, i] as const));
       const release: (() => void)[] = [];
       const turn: Promise<void>[] = ids.map((_, i) => new Promise<void>((r) => { release[i] = r; }));
@@ -193,15 +193,15 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
           release[i]();
         }
         if (ok) {
-          /* 전술 낱말(utils/gameTactics ★) — 지금 있는 참값 자취로 굽는다. 자취가 없거나(굽는 중 · 지운 판) 못 구우면 끝에 한 번 더 본다. */
-          try { if (await indexGameTactics(id) === "none") tacticLater.push(id); } catch { tacticLater.push(id); }
+            /* 게임 색인(utils/gameIndex ★) — 지금 있는 참값 자취로 굽는다. 자취가 없거나(굽는 중 · 지운 판) 못 구우면 끝에 한 번 더 본다. */
+          try { if (await indexGame(id) === "none") indexLater.push(id); } catch { indexLater.push(id); }
         }
         done += 1;
         setRedo({ done, total: ids.length, failed: fails.length });
       };
       await runLanes(ids, (pool?.size ?? 2) * 2, one);
       /* 끝에 한 번 더 — 그사이 서버가 자취를 구웠을 수 있다. 그래도 없으면 그 판의 옛 낱말을 그대로 둔다. */
-      await runLanes([...tacticLater], 2, async (id) => { try { await indexGameTactics(id); } catch { /* 다음 재분석에 */ } });
+      await runLanes([...indexLater], 2, async (id) => { try { await indexGame(id); } catch { /* 다음 재분석에 */ } });
 
       await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
       if (fails.length > 0) {
