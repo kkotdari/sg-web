@@ -1,5 +1,5 @@
 import type { GameCurve,
-  Member, GameResult, ActivityComment, ActivityTargetType, RankingShift, ActivityNotice, ActivityFeedItem, ActivityFeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
+  Member, GameResult, ActivityComment, ActivityTargetType, RankingShift, ActivityNotice, ActivityFeedItem, ActivityFeedPage, NewGameResult, MemberCreatePayload, MemberStatus, MemberRole,
   ScreenKey, AppVersion, AppVersionStatus, AppVersionInfo,
   MapCanon, MapCatalog,
   GameResultSlot, GameResultPage, GameResultStatsResponse, GameOutcome, GameType, Race, TeamRankingResponse,
@@ -162,7 +162,7 @@ async function tryRefresh(): Promise<boolean> {
   return refreshingPromise;
 }
 
-const NO_REFRESH_RETRY_PATHS = ["/api/auth/login", "/api/auth/signup", "/api/auth/refresh"];
+const NO_REFRESH_RETRY_PATHS = ["/api/auth/login", "/api/auth/refresh"];
 
 async function request<T>(path: string, options: RequestInit = {}, retryOn401 = true): Promise<T> {
   const headers = new Headers(options.headers);
@@ -210,15 +210,6 @@ export const api = {
     const res = await request<RawAuthResponse>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ id, password }),
-    });
-    setTokens(res.accessToken, res.refreshToken);
-    return { user: res.user };
-  },
-
-  async signup(payload: SignupPayload): Promise<AuthResponse> {
-    const res = await request<RawAuthResponse>("/api/auth/signup", {
-      method: "POST",
-      body: JSON.stringify(payload),
     });
     setTokens(res.accessToken, res.refreshToken);
     return { user: res.user };
@@ -306,7 +297,13 @@ export const api = {
 
   /** 게임 그래프 — 참가자마다 분당 일꾼 수 · 병력 가치 · 개인색(서버 통계용 참값 표 · 2026-10-21). */
   async getGameCurves(id: number): Promise<GameCurve[]> {
-    return (await request<{ players: GameCurve[] }>(`/api/game-results/${id}/curves`)).players;
+    /* 손님 모드(외부 공개 목록)는 목록 비밀번호로 그 목록에 든 판만(2026-10-21). */
+    return (extShareCtx
+      ? await request<{ players: GameCurve[] }>(
+        `/api/restricted/share/lists/${extShareCtx.listId}/games/${id}/curves`,
+        { headers: { "X-Ext-Pass": extShareCtx.pass } },
+      )
+      : await request<{ players: GameCurve[] }>(`/api/game-results/${id}/curves`)).players;
   },
 
   /** 자취 + 경기 채팅 — 채팅은 재생기 중계 자막의 gg 선언·노엘 외침 재료(2026-10-10 · 말한 사람을 아는 줄만 · 프레임 → 초는 fastest 42ms). */

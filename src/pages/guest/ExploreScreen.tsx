@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Lock, Play } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { SCENE_LINK_KEYS9 } from "scplay";
 import GuestGameStory from "./GuestGameStory";
 import { LoadingMark, Spinner } from "../../components/common/Feedback";
@@ -302,11 +302,8 @@ export default function ExploreScreen() {
               key={g.id}
               className="scr-activity-row-game scr-gm"
               onClick={() => openGame(g.id)}
-              status={<GameRowStatus game={g} />}
-              desc={<>
-                <span className="scr-activity-row-names"><span className="scr-activity-row-em">{gameTitleOf(g)}</span></span>
-                {g.hasTruth && <Play size={12} className="scr-activity-row-play" aria-label="재생 가능" fill="currentColor" />}
-              </>}
+              status={<GameRowStatus game={g} data />}
+              desc={<span className="scr-activity-row-names scr-extshare-title"><span className="scr-activity-row-em">{gameTitleOf(g)}</span></span>}
               side={formatAgo(gameTime(g))}
             />
           ))}

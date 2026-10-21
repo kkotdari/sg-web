@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { X } from "lucide-react";
 import BrandLogo from "../../components/common/BrandLogo";
 import ScrollTopButton from "../../components/common/ScrollTopButton";
 import ToastHost from "../../components/common/Toast";
@@ -7,42 +9,54 @@ import NavTab from "../../layout/NavTab";
 import MobileTabBar from "../../layout/MobileTabBar";
 import { useRail } from "../../layout/useRail";
 import ExploreScreen from "./ExploreScreen";
-import CatalogScreen from "../catalog/CatalogScreen";
+import LoginForm from "../auth/LoginForm";
+import ModalHash from "../../utils/modalHash";
+import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { useAppStore } from "../../store/appStore";
 import { navigateTo, parseRoute } from "../../utils/route";
 import { useLightTheme } from "../../utils/theme";
 import { cx } from "../../utils/format";
 import type { NavMenuItem } from "../../constants/menuVersions";
-import type { ScreenKey } from "../../types";
 
+/* 손님 메뉴는 게임 하나(도록은 걷었다 · 2026-10-21, 요청: "손님 모드 도록 버튼 제거"). */
 const GUEST_ITEMS: NavMenuItem[] = [
   { key: "explore", label: "게임" },
-  { key: "catalog", label: "도록" },
 ];
 
-function guestScreenOf(): ScreenKey {
-  return parseRoute().screen === "catalog" ? "catalog" : "explore";
+/** 손님 탭바의 로그인 — 로그인 화면으로 가지 않고 아이디·비밀번호만 받는 작은 창(2026-10-21, 요청: "아주 단순한 팝업 로그인창").
+    들어가면 첫 화면 주소로 옮겨 회원 화면이 그 자리에서 선다. */
+function LoginPopup({ onClose }: { onClose: () => void }) {
+  useLockBodyScroll(true, onClose);
+  return createPortal(
+    <div className="scr-modal-overlay" onClick={onClose}>
+      <ModalHash hash="login" onClose={onClose} />
+      <div className="scr-modal scr-modal-sm scr-modal-fit scr-login-popup" onClick={(e) => e.stopPropagation()}>
+        <div className="scr-modal-head">
+          <span>로그인</span>
+          <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
+        </div>
+        <div className="scr-modal-body">
+          <LoginForm onDone={() => navigateTo("/", { replace: true })} />
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
 }
 
 export default function GuestApp() {
   const exitGuest = useAppStore((s) => s.exitGuest);
-  const [screen, setScreen] = useState<ScreenKey>(guestScreenOf);
+  const [loginOpen, setLoginOpen] = useState(false);
   const [lightTheme, setLightTheme] = useLightTheme();
   const { railOpen, railEnter, railEnterSoon, railLeave } = useRail();
 
   useEffect(() => {
-    const s = parseRoute().screen;
-    if (s !== "explore" && s !== "catalog") navigateTo("/explore", { replace: true, notify: false });
+    if (parseRoute().screen !== "explore") navigateTo("/explore", { replace: true, notify: false });
   }, []);
 
   useEffect(() => {
     const onPop = (): void => {
-      const s = parseRoute().screen;
-      if (s !== "explore" && s !== "catalog") {
-        exitGuest();
-        return;
-      }
-      setScreen(s);
+      if (parseRoute().screen !== "explore") exitGuest();
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -53,9 +67,8 @@ export default function GuestApp() {
     exitGuest();
   };
 
-  const go = (next: ScreenKey): void => {
-    navigateTo(next === "catalog" ? "/catalog" : "/explore", { notify: false });
-    setScreen(next);
+  const go = (): void => {
+    navigateTo("/explore", { notify: false });
     window.scrollTo({ top: 0, behavior: "instant" });
   };
 
@@ -74,13 +87,13 @@ export default function GuestApp() {
           onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) railLeave(); }}
         >
           <div className="scr-header-inner">
-            <button type="button" className="scr-brand" onClick={() => go("explore")} aria-label="처음으로">
+            <button type="button" className="scr-brand" onClick={go} aria-label="처음으로">
               <BrandLogo light={lightTheme} />
               <span className="scr-brand-text"></span>
             </button>
             <nav className="scr-nav scr-nav-desktop">
               {GUEST_ITEMS.map((item) => (
-                <NavTab key={item.key} label={item.label} active={screen === item.key} onClick={() => go(item.key)} />
+                <NavTab key={item.key} label={item.label} active onClick={go} />
               ))}
             </nav>
             <div className="scr-user">
@@ -98,13 +111,14 @@ export default function GuestApp() {
           </div>
         </header>
         <main className="scr-main">
-          {screen === "catalog" ? <CatalogScreen /> : <ExploreScreen />}
+          <ExploreScreen />
         </main>
       </div>
       <div id="scr-tabbar-slot" />
-      <MobileTabBar screen={screen} menuOpen={false} hidden={false} mini={false} onNavigate={go} items={GUEST_ITEMS}
-        action={{ label: "로그인", onClick: toLogin }}
+      <MobileTabBar screen="explore" menuOpen={false} hidden={false} mini={false} onNavigate={go} items={GUEST_ITEMS}
+        action={{ label: "로그인", onClick: () => setLoginOpen(true) }}
       />
+      {loginOpen && <LoginPopup onClose={() => setLoginOpen(false)} />}
       <ScrollTopButton />
       <ToastHost />
       <AlertHost />

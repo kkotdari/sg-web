@@ -67,7 +67,7 @@ export default function App() {
     if (user || guest) return undefined;
     const onPop = (): void => {
       const s = parseRoute().screen;
-      if (s === "explore" || s === "catalog") enterGuest();
+      if (s === "explore") enterGuest();
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
