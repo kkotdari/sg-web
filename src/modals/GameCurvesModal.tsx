@@ -4,8 +4,7 @@ import { X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
-import RaceBadge from "../components/common/RaceBadge";
-import { CHART_PAD, Chart, minuteTicks, scaleOf, type ChartLine } from "../pages/stats/RaceCurves";
+import { Chart, chipGutter, type ChartLine } from "../pages/stats/RaceCurves";
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
@@ -16,9 +15,10 @@ import type { GameCurve, GameResult } from "../types";
 /* ★ 게임 그래프(2026-10-21, 요청: "게임 목록에서 PC에 그래프 보기 버튼 · 참가자 전원의 일꾼 및 병력 가치 그래프(한 그래프에 합쳐서) · 색은 임자색 ·
    범례에 색깔과 종족 닉네임 · 통계랑 똑같이 선택 · 팀컬러 모드로 변경도" → "두 그래프를 세로로 · PC 는 모달 폭 넓게" → "게임목록 폭 거의 다 ·
    그래프를 최대한 크게 · 각 플레이어 테크 건물 건설 시간을 그래프 위에 · 범례도 위로 · 폰에서는 제공되지 않는 기능").
-   차례: [선 색 · 사람 단추](범례) → 테크 줄(사람마다 한 줄 · 다 지은 때 칩) → 일꾼 수 → 병력 가치. 셋 다 같은 가로 자(잰 폭 · CHART_PAD) · 같은 높이
-   · 같은 분 눈금(minuteTicks). 테크 줄 앞머리엔 닉네임만 연하게(요청: "범례 중복할 필요 없고" → "칸 앞머리에 심플하게 닉네임") — 범례와 같은 차례 · 같은 색.
-   곡선·개인색은 서버의 통계용 참값 표(GET /{id}/curves) — 판(Chart)과 자(scaleOf)는 통계 펼침(RaceCurves)과 같은 것을 쓴다.
+   차례: [개인색 · 팀색] → 테크 줄(사람마다 한 줄 · 다 지은 때 칩) → 일꾼 수 → 병력 가치. 셋 다 같은 가로 자(잰 폭 · 끝 칩 여백 chipGutter) · 같은 높이
+   · 같은 분 눈금(niceTicks). 테크 줄 앞머리엔 닉네임만 연하게(요청: "범례 중복할 필요 없고" → "칸 앞머리에 심플하게 닉네임") — 범례와 같은 차례 · 같은 색.
+   곡선·개인색은 서버의 통계용 참값 표(GET /{id}/curves) — 판(Chart)은 통계 펼침(RaceCurves)과 같은 것 · 눈금은 판마다 그 판에 맞춘 둥근 간격(niceTicks · 가로는 그 판 길이).
+   범례 대신 줄 끝 닉네임 칩(누르면 그 사람을 끄고 켠다 — 테크 줄도 같이 · 2026-10-21 요청).
    개인색을 못 읽은 판(옛 굽기 · 로스터 색이 한 가지뿐)은 원작 팔레트를 자리 차례로 쓴다(재생기 personalUsable 과 같은 거름). */
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
@@ -42,7 +42,7 @@ const shortName = (s: string): string => (s.length > 10 ? `${s.slice(0, 9)}…` 
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
  *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 짓기 시작은 칩에 마우스를 얹으면 팝업에 나온다. */
-function TechLanes({ lanes, maxX, w: CW, h: H }: { lanes: Lane[]; maxX: number; w: number; h: number }) {
+function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padR }: { lanes: Lane[]; maxX: number; ticksX: number[]; w: number; h: number; padR: number }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ lane: Lane; tech: GameCurve["techs"][number]; label: string; x0: number; x1: number; cy: number } | null>(null);
   /* 칸 높이는 판 높이(h · 두 판과 같다)를 사람 수로 나눈 것 — 칩 크기도 거기에 맞춘다(2026-10-21, 요청: "테크쪽이 너무 비대 · 세 판 높이 통일"). */
@@ -50,14 +50,14 @@ function TechLanes({ lanes, maxX, w: CW, h: H }: { lanes: Lane[]; maxX: number; 
   const ROW_H = (H - AXIS - 4) / Math.max(1, lanes.length);
   const CH = Math.max(12, Math.min(16, (ROW_H - 4) / 2));
   const FS = Math.round(CH * 0.66 * 10) / 10;
-  const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - CHART_PAD.r);
+  const x = (sec: number): number => PL + Math.min(1, sec / 60 / maxX) * (CW - PL - padR);
   const chipW = (s: string): number => s.length * FS + FS + 2;
   let y0 = 4;
   /* 칩은 칸의 세로 가운데 · **겹치는 칩끼리만** 가운데 위아래로 가른다(2026-10-21, 요청: "겹치는것들만 위아래로 배치").
      칩의 왼끝 = 다 지은 때 · 오른끝을 넘는 칩은 거꾸로 칩의 오른끝을 그때에 맞춘다(띠도 오른쪽 · 요청: "테크 칩 화면밖으로 나감").
      가로로 겹치는 칩들을 한 무리로 묶고, 한 칩뿐인 무리는 가운데 · 여럿인 무리는 윗단 · 아랫단에 — 두 단에도 안 들어가면 앞 칩 뒤로 민다
      (정확한 때는 팝업에 있다). */
-  const RIGHT = CW - CHART_PAD.r;
+  const RIGHT = CW - padR;
   const rows = lanes.map((l) => {
     const items = l.techs.map((t) => {
       const label = TECH_LABEL[t.t] ?? `#${t.t}`;
@@ -93,7 +93,7 @@ function TechLanes({ lanes, maxX, w: CW, h: H }: { lanes: Lane[]; maxX: number; 
       <svg viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때">
         {rows.map(({ l, chips, top, h }) => (
           <g key={l.key}>
-            <line className="scr-rc-grid" x1={PL} x2={CW - CHART_PAD.r} y1={top + h} y2={top + h} />
+            <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
             <text className="scr-rc-axis" x={PL - 5} y={top + h / 2} textAnchor="end" dominantBaseline="central">{shortName(l.name)}</text>
             {chips.map(({ t, x: cx, label, w, slot, flip }) => {
               const mid = top + h / 2;
@@ -112,7 +112,7 @@ function TechLanes({ lanes, maxX, w: CW, h: H }: { lanes: Lane[]; maxX: number; 
             })}
           </g>
         ))}
-        {minuteTicks(maxX).map((m) => (
+        {ticksX.map((m) => (
           <text key={m} className="scr-rc-axis" x={x(m * 60)} y={H - 5} textAnchor="middle">{m}분</text>
         ))}
       </svg>
@@ -136,6 +136,14 @@ function TechLanes({ lanes, maxX, w: CW, h: H }: { lanes: Lane[]; maxX: number; 
 }
 
 const teamNo = (team: string): 1 | 2 => (team === "team2" ? 2 : 1);
+
+/** 0 부터 v 를 덮는 둥근 눈금(간격 1 · 2 · 2.5 · 5 × 10ⁿ · 칸 수 ≤ n) — 끝 눈금이 판의 세로 끝이다. */
+function niceTicks(v: number, n = 5): number[] {
+  const top = Math.max(1, v);
+  const p = 10 ** Math.floor(Math.log10(top / n));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * p).find((st) => st >= 1 && Math.ceil(top / st) <= n) ?? 10 * p;
+  return Array.from({ length: Math.ceil(top / step) + 1 }, (_, i) => i * step);
+}
 
 export default function GameCurvesModal({ game, onClose }: { game: GameResult; onClose: () => void }) {
   useLockBodyScroll();
@@ -180,9 +188,16 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
     ? TEAM_COLOR[teamNo(p.team)]
     : personalOk && p.color ? p.color : BW_PALETTE[i % BW_PALETTE.length]);
   const nameOf = (p: GameCurve): string => memberOf(p.memberId)?.nickname ?? p.playerName;
-  const sc = useMemo(() => scaleOf((players ?? []).map((p) => p.wk), (players ?? []).map((p) => p.av)), [players]);
-  const linesOf = (key: "wk" | "av"): ChartLine[] => (players ?? []).flatMap((p, i) => (off.has(p.playerName) || p[key].length < 2
-    ? [] : [{ key: p.playerName, label: nameOf(p), color: colorOf(p, i), ys: p[key] }]));
+  /* 눈금은 이 판에 맞춘다(2026-10-21, 요청: "게임마다 적절한 눈금") — 통계의 고정 자(일꾼 100 · 병력 20K · 0/반/끝)가 아니라
+     이 판 최댓값을 덮는 둥근 간격 눈금(세로 ≤5칸 · 가로 분 ≤7칸). */
+  const sc = useMemo(() => {
+    const ps = players ?? [];
+    const x = Math.max(1, ...ps.map((p) => Math.max(p.wk.length, p.av.length) - 1));
+    return { x, xt: niceTicks(x, 7), wk: niceTicks(Math.max(0, ...ps.flatMap((p) => p.wk))), av: niceTicks(Math.max(0, ...ps.flatMap((p) => p.av))) };
+  }, [players]);
+  const linesOf = (key: "wk" | "av"): ChartLine[] => (players ?? []).flatMap((p, i) => (p[key].length < 2
+    ? [] : [{ key: p.playerName, label: shortName(nameOf(p)), color: colorOf(p, i), ys: p[key], off: off.has(p.playerName) }]));
+  const padR = chipGutter((players ?? []).map((p) => shortName(nameOf(p))));
   const toggle = (k: string): void => setOff((prev) => {
     const next = new Set(prev);
     if (next.has(k)) next.delete(k); else next.add(k);
@@ -204,36 +219,24 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
             <div className="scr-rc-empty">{error || "표시할 데이터가 아직 없어요 — 재분석하면 생겨요"}</div>
           ) : (
             <div className="scr-gc" ref={boxRef}>
-              <div className="scr-gc-legend" role="group" aria-label="보일 사람">
-                <div className="scr-rc-mode" role="radiogroup" aria-label="선 색">
-                  {(["player", "team"] as const).map((m) => (
-                    <button
-                      key={m} type="button" role="radio" aria-checked={mode === m}
-                      className={cx("scr-compact-rect-btn", mode !== m && "is-secondary")} onClick={() => setMode(m)}
-                    >
-                      {m === "player" ? "개인색" : "팀색"}
-                    </button>
-                  ))}
-                </div>
-                {players.map((p, i) => (
+              <div className="scr-rc-mode" role="radiogroup" aria-label="선 색">
+                {(["player", "team"] as const).map((m) => (
                   <button
-                    key={p.playerName} type="button" className="scr-compact-rect-btn is-secondary scr-rc-pick"
-                    aria-pressed={!off.has(p.playerName)} onClick={() => toggle(p.playerName)}
+                    key={m} type="button" role="radio" aria-checked={mode === m}
+                    className={cx("scr-compact-rect-btn", mode !== m && "is-secondary")} onClick={() => setMode(m)}
                   >
-                    <i className="scr-rc-key" style={{ background: colorOf(p, i) }} />
-                    <RaceBadge race={p.race} size={14} />
-                    <span className="scr-rc-pick-name">{nameOf(p)}</span>
+                    {m === "player" ? "개인색" : "팀색"}
                   </button>
                 ))}
               </div>
               {box.w > 0 && (
                 <>
                   <TechLanes
-                    maxX={sc.x} w={box.w} h={box.h}
+                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padR={padR}
                     lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
                   />
-                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk} width={box.w} height={box.h} padL={PL} />
-                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} width={box.w} height={box.h} padL={PL} />
+                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} onToggle={toggle} />
+                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} onToggle={toggle} />
                 </>
               )}
             </div>

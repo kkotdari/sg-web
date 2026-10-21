@@ -18,7 +18,7 @@ const PAD = CHART_PAD;
 
 type Line = { race: BaseRace; ys: number[] };
 /** 판에 그리는 한 줄 — 통계는 종족마다, 게임 그래프(GameCurvesModal)는 사람마다. */
-export type ChartLine = { key: string; label: string; color: string; ys: number[] };
+export type ChartLine = { key: string; label: string; color: string; ys: number[]; off?: boolean };
 type ByRace = Partial<Record<BaseRace, MemberStats>> | undefined;
 
 /** 모든 줄이 함께 쓰는 자(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이" → 병력 "20K") — 세로는 일꾼 0~100 ·
@@ -65,23 +65,37 @@ function trimmed(c: StatCurve, key: "wk" | "av"): number[] {
 const compact = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K` : `${Math.round(v * 10) / 10}`);
 
 /** 가로 눈금(분) — 판과 게임 그래프의 테크 줄이 같이 쓴다. */
-export function minuteTicks(maxX: number): number[] {
+function minuteTicks(maxX: number): number[] {
   const step = maxX <= 10 ? 2 : maxX <= 20 ? 5 : 10;
   return Array.from({ length: Math.floor(maxX / step) + 1 }, (_, i) => i * step);
 }
 
-export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height }: {
+/* 끝 칩(2026-10-21, 요청: "범례 제거하고 대신 그래프마다 그래프 끝에 칩으로 표시 · 칩 누르면 껐다켰다") — 줄마다 끝점 오른쪽에 이름 칩.
+   칩끼리 겹치면 아래로 밀고(끝점과 짧은 줄로 잇는다), 끈 줄은 선을 지우고 칩만 흐리게 남긴다(다시 눌러 켠다). 칩 자리만큼 오른쪽 여백을 연다. */
+const CHIP_H = 14;
+const CHIP_FS = 9.5;
+const chipWOf = (s: string): number => s.length * CHIP_FS + 12;
+/** 끝 칩을 단 판의 오른쪽 여백 — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
+export const chipGutter = (labels: string[]): number => PAD.r + 8 + Math.max(0, ...labels.map(chipWOf));
+
+export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height, onToggle, ticksX: tx, ticksY: ty }: {
   title: string; unit: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
+  /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
+  ticksX?: number[]; ticksY?: number[];
   /** 판의 가로 자(기본 320) — 넓은 자리(PC 게임 그래프)는 키워 판이 너무 높아지지 않게 한다(높이 150 그대로). */
   width?: number;
   /** 왼쪽 여백(기본 34) — 게임 그래프는 테크 줄 앞머리의 닉네임 칸과 가로 자를 맞추려 넓힌다. */
   padL?: number;
   /** 판의 세로 자(기본 150) — 게임 그래프는 잰 칸 크기 그대로(1:1) 그려 세 판의 높이를 맞춘다. */
   height?: number;
+  /** 끝 칩을 누르면 그 줄을 끄고 켠다(줄의 key). */
+  onToggle?: (key: string) => void;
 }) {
   const W = width ?? W0;
   const H = height ?? H0;
   const PL = padL ?? PAD.l;
+  const PR = onToggle ? chipGutter(lines.map((l) => l.label)) : PAD.r;
+  const shown = lines.filter((l) => !l.off);
   const [at, setAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   /* 띄운 값 상자는 그래프 밖 어디를 누르든 닫힌다(2026-10-20, 요청: "그래프 누르면 팝업 같은 거 나오는데 다른 데 누르면 닫히게").
@@ -94,18 +108,32 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
     document.addEventListener("pointerdown", close, true);
     return () => document.removeEventListener("pointerdown", close, true);
   }, [at]);
-  const x = (i: number) => PL + (i / maxX) * (W - PL - PAD.r);
+  const x = (i: number) => PL + (i / maxX) * (W - PL - PR);
   const y = (v: number) => PAD.t + (1 - v / maxY) * (H - PAD.t - PAD.b);
-  const ticksY = [0, maxY / 2, maxY];
-  const ticksX = minuteTicks(maxX);
+  const ticksY = ty ?? [0, maxY / 2, maxY];
+  const ticksX = tx ?? minuteTicks(maxX);
   const pick = (clientX: number): void => {
     const el = svgRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
     const sx = ((clientX - r.left) / r.width) * W;
-    setAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (W - PL - PAD.r)) * maxX))));
+    setAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (W - PL - PR)) * maxX))));
   };
   const tipLeft = at === null ? 0 : (x(at) / W) * 100;
+  /* 칩 자리 — 끝점 오른쪽 · 위에서부터 겹치면 아래로 민다(판 안에 가둔다). */
+  const chips = (onToggle ? lines : []).filter((l) => l.ys.length > 0).map((l) => {
+    const i = l.ys.length - 1;
+    return { l, ex: x(i), ey: y(l.ys[i]), cx: x(i) + 8, cy: y(l.ys[i]), w: chipWOf(l.label) };
+  }).sort((a, b) => a.ey - b.ey);
+  const placed: typeof chips = [];
+  for (const c of chips) {
+    c.cy = Math.max(PAD.t + CHIP_H / 2, c.cy);
+    for (const p of placed) {
+      if (c.cx < p.cx + p.w && p.cx < c.cx + c.w && c.cy < p.cy + CHIP_H + 2) c.cy = Math.max(c.cy, p.cy + CHIP_H + 2);
+    }
+    c.cy = Math.min(c.cy, H - PAD.b - CHIP_H / 2);
+    placed.push(c);
+  }
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">{title}{note && <i> · {note}</i>}</figcaption>
@@ -118,32 +146,45 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
         >
           {ticksY.map((v) => (
             <g key={v}>
-              <line className="scr-rc-grid" x1={PL} x2={W - PAD.r} y1={y(v)} y2={y(v)} />
+              <line className="scr-rc-grid" x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} />
               <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle">{compact(v)}</text>
             </g>
           ))}
           {ticksX.map((m) => (
             <text key={m} className="scr-rc-axis" x={x(m)} y={H - 5} textAnchor="middle">{m}분</text>
           ))}
-          {lines.map((l) => (
+          {shown.map((l) => (
             <polyline
               key={l.key} className="scr-rc-line" style={{ stroke: l.color }}
               points={l.ys.map((v, i) => `${x(i)},${y(v)}`).join(" ")}
             />
           ))}
-          {lines.map((l) => {
+          {shown.map((l) => {
             const i = l.ys.length - 1;
             return <circle key={l.key} className="scr-rc-end" cx={x(i)} cy={y(l.ys[i])} r={4} style={{ fill: l.color }} />;
           })}
+          {chips.map((c) => (
+            <g
+              key={c.l.key} className={`scr-rc-chip${c.l.off ? " is-off" : ""}`} role="button" tabIndex={0}
+              aria-pressed={!c.l.off} aria-label={`${c.l.label} ${c.l.off ? "켜기" : "끄기"}`}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onToggle?.(c.l.key)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle?.(c.l.key); } }}
+            >
+              {Math.abs(c.cy - c.ey) > 1 && <line className="scr-rc-chip-lead" x1={c.ex} y1={c.ey} x2={c.cx} y2={c.cy} style={{ stroke: c.l.color }} />}
+              <rect x={c.cx} y={c.cy - CHIP_H / 2} width={c.w} height={CHIP_H} rx={4} style={{ stroke: c.l.color }} />
+              <text x={c.cx + 6} y={c.cy} dominantBaseline="central" style={{ fontSize: CHIP_FS }}>{c.l.label}</text>
+            </g>
+          ))}
           {at !== null && <line className="scr-rc-cross" x1={x(at)} x2={x(at)} y1={PAD.t} y2={H - PAD.b} />}
-          {at !== null && lines.map((l) => (at < l.ys.length
+          {at !== null && shown.map((l) => (at < l.ys.length
             ? <circle key={l.key} className="scr-rc-dot" cx={x(at)} cy={y(l.ys[at])} r={4} style={{ fill: l.color }} />
             : null))}
         </svg>
         {at !== null && (
           <div className={`scr-rc-tip${tipLeft > 60 ? " is-left" : ""}`} style={{ left: `${tipLeft}%` }} role="status">
             <div className="scr-rc-tip-head">{at}분</div>
-            {lines.map((l) => (
+            {shown.map((l) => (
               <div key={l.key} className="scr-rc-tip-row">
                 <i className="scr-rc-key" style={{ background: l.color }} />
                 <b>{at < l.ys.length ? `${compact(l.ys[at])}${unit}` : "-"}</b>
@@ -158,41 +199,27 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
 }
 
 export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale }) {
-  /* 종족 고르기(2026-10-21, 요청: "그래프 오른쪽에 저테프 선택 버튼 만들어서 켠 그래프만 보이게" · "모바일은 위에") — 옛 범례 자리를 단추가 맡는다.
-     PC 는 두 판 오른쪽 세로 줄 · 폰은 두 판 위 한 줄(CSS) · 단추는 컴팩트 네모(요청: "최대한 가볍게" — 판수는 title 로). 끈 종족은 선만 빠지고 자(scale)는 그대로라 켰다 껐다 해도 눈금이 안 흔들린다. */
-  const [off, setOff] = useState<ReadonlySet<BaseRace>>(() => new Set());
+  /* 종족 켜고 끄기는 줄 끝 칩으로(2026-10-21, 요청: "범례 제거하고 그래프 끝에 칩 · 칩 누르면 껐다켰다") — 옛 종족 단추 줄은 걷었다.
+     두 판이 한 상태를 같이 쓰고, 끈 종족은 선만 빠지고 자(scale)는 그대로라 켰다 껐다 해도 눈금이 안 흔들린다. */
+  const [off, setOff] = useState<ReadonlySet<string>>(() => new Set());
   const allWk = linesOf(byRace, "wk");
   const allAv = linesOf(byRace, "av");
   const sc = scale ?? curveScale([byRace]);
   if (allWk.length === 0 && allAv.length === 0) {
     return <div className="scr-rc-empty">표시할 데이터가 아직 없어요</div>;
   }
-  const has = (r: BaseRace): boolean => allWk.some((l) => l.race === r) || allAv.some((l) => l.race === r);
-  const toggle = (r: BaseRace): void => setOff((prev) => {
+  const toggle = (k: string): void => setOff((prev) => {
     const next = new Set(prev);
-    if (next.has(r)) next.delete(r); else next.add(r);
+    if (next.has(k)) next.delete(k); else next.add(k);
     return next;
   });
-  const drawn = (ls: Line[]): ChartLine[] => ls.filter((l) => !off.has(l.race))
-    .map((l) => ({ key: l.race, label: l.race, color: TONE[l.race], ys: l.ys }));
-  const wk = drawn(allWk);
-  const av = drawn(allAv);
+  const drawn = (ls: Line[]): ChartLine[] => ls.map((l) => ({ key: l.race, label: l.race, color: TONE[l.race], ys: l.ys, off: off.has(l.race) }));
   return (
     <div className="scr-rc">
       <div className="scr-rc-charts">
-        <Chart title="일꾼 수" unit="기" lines={wk} maxX={sc.x} maxY={sc.wk} />
+        <Chart title="일꾼 수" unit="기" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} onToggle={toggle} />
         {/* 짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
-        <Chart title="병력 가치" unit="" lines={av} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} />
-      </div>
-      <div className="scr-rc-picks" role="group" aria-label="보일 종족">
-        {RACES.map((r) => (
-          <button
-            key={r} type="button" className="scr-compact-rect-btn is-secondary scr-rc-pick" aria-pressed={has(r) && !off.has(r)}
-            disabled={!has(r)} onClick={() => toggle(r)} title={`${r} ${byRace?.[r]?.curve?.n[0] ?? 0}판`}
-          >
-            <i className="scr-rc-key" style={{ background: TONE[r] }} />{r}
-          </button>
-        ))}
+        <Chart title="병력 가치" unit="" lines={drawn(allAv)} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} onToggle={toggle} />
       </div>
     </div>
   );
