@@ -138,25 +138,39 @@ function Chart({ title, unit, lines, note, maxX, maxY }: {
 }
 
 export default function RaceCurves({ byRace, scale }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale }) {
-  const wk = linesOf(byRace, "wk");
-  const av = linesOf(byRace, "av");
+  /* 종족 고르기(2026-10-21, 요청: "그래프 오른쪽에 저테프 선택 버튼 만들어서 켠 그래프만 보이게" · "모바일은 위에") — 옛 범례 자리를 단추가 맡는다.
+     PC 는 두 판 오른쪽 세로 줄 · 폰은 두 판 위 한 줄(CSS) · 단추는 컴팩트 네모(요청: "최대한 가볍게" — 판수는 title 로). 끈 종족은 선만 빠지고 자(scale)는 그대로라 켰다 껐다 해도 눈금이 안 흔들린다. */
+  const [off, setOff] = useState<ReadonlySet<BaseRace>>(() => new Set());
+  const allWk = linesOf(byRace, "wk");
+  const allAv = linesOf(byRace, "av");
   const sc = scale ?? curveScale([byRace]);
-  if (wk.length === 0 && av.length === 0) {
+  if (allWk.length === 0 && allAv.length === 0) {
     return <div className="scr-rc-empty">표시할 데이터가 아직 없어요</div>;
   }
-  const shown = RACES.filter((r) => wk.some((l) => l.race === r) || av.some((l) => l.race === r));
+  const has = (r: BaseRace): boolean => allWk.some((l) => l.race === r) || allAv.some((l) => l.race === r);
+  const toggle = (r: BaseRace): void => setOff((prev) => {
+    const next = new Set(prev);
+    if (next.has(r)) next.delete(r); else next.add(r);
+    return next;
+  });
+  const wk = allWk.filter((l) => !off.has(l.race));
+  const av = allAv.filter((l) => !off.has(l.race));
   return (
     <div className="scr-rc">
-      <div className="scr-rc-legend" aria-hidden>
-        {shown.map((r) => (
-          <span key={r}><i className="scr-rc-key" style={{ background: TONE[r] }} />{r}
-            <em>{byRace?.[r]?.curve?.n[0] ?? 0}판</em></span>
-        ))}
-      </div>
       <div className="scr-rc-charts">
         <Chart title="일꾼 수" unit="기" lines={wk} maxX={sc.x} maxY={sc.wk} />
         {/* 짧은 설명(2026-10-20, 요청: "병력 가치가 뭐야?" → "짧은 설명 붙이고" → "분마다 평균 · 일꾼·오버로드·건물 제외 걷고 설명은 제목 옆으로") — 셈은 sg-api series.ARMY_COST. */}
         <Chart title="병력 가치" unit="" lines={av} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av} />
+      </div>
+      <div className="scr-rc-picks" role="group" aria-label="보일 종족">
+        {RACES.map((r) => (
+          <button
+            key={r} type="button" className="scr-compact-rect-btn is-secondary scr-rc-pick" aria-pressed={has(r) && !off.has(r)}
+            disabled={!has(r)} onClick={() => toggle(r)} title={`${r} ${byRace?.[r]?.curve?.n[0] ?? 0}판`}
+          >
+            <i className="scr-rc-key" style={{ background: TONE[r] }} />{r}
+          </button>
+        ))}
       </div>
     </div>
   );
