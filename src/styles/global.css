@@ -3293,12 +3293,9 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 제목은 "데이터" · 그 뒤 "게임번호: 번호"는 작고 연하게(2026-10-21, 요청: "데이터 좀 작고 연하게 게임번호: 번호" → "데이터가 진하고 큰거야"). */
 .scr-gc-sub { margin-left: 8px; font-style: normal; font-size: 0.8em; font-weight: 600; color: var(--dim); }
 .scr-tl-svg { touch-action: pan-x pan-y; cursor: default; }
-/* 왼쪽 틀(폰 게임 그래프 · 요청: "좌측 틀 고정") — 판 위에 겹쳐 가로로 밀어도 제자리. 폰 그래프 창 바탕이 불투명(panel-solid)이라 같은 색으로 덮는다. */
-.scr-rc-gutter { position: sticky; left: 0; z-index: 3; display: block; overflow: visible; pointer-events: none; }
-.scr-rc-gutter-bg { fill: var(--panel-solid); }
 /* 창은 처음부터 다 큰 크기(높이 = 화면 − 48 · 2026-10-21, 요청: "최종 크기로 열린 후 데이터 로드") — 불러오는 중·빈 글은 그 가운데. */
 .scr-modal-graph .scr-gc-wait { height: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; }
-/* 폰은 화면 가득 · 불투명 바탕 · 세 판은 최소 폭 720 으로 그리고 창 몸이 가로·세로로 민다(2026-10-21, 요청: "모바일에서도 볼 수 있게" → "최소폭 필요 · 세로 가로스크롤 허용"). */
+/* 폰은 화면 가득 · 불투명 바탕 · 세 판은 기기 화면 폭(2026-10-21, 요청: "모바일에서도 볼 수 있게" → "아니 모바일 기기 화면폭"). */
 @media (max-width: 960px) {
   /* 화면 네 변에 붙인다(가운데 맞춤 transform·100vw/100dvh 대신 — 기기마다 폭이 화면을 넘거나 모자라던 것 · 2026-10-21, 요청: "모바일 데이터창 폭 화면폭에 맞추기"). */
   .scr-modal.scr-modal-graph {
@@ -3308,10 +3305,8 @@ body *::-webkit-scrollbar-corner { background: transparent; }
   .scr-modal.scr-modal-graph::before { background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
   /* 아래 여백 넉넉히(요청) — 폰 모달 공통 몸 규칙(.scr-modal:not(…):not(…) > .scr-modal-body · 뒤쪽)이 패딩을 0 16 으로 덮어 그보다 세게 쓴다. */
   .scr-modal.scr-modal-graph:not(.scr-modal-confirm):not(.scr-modal-fit) > .scr-modal-body {
-    padding: 4px 16px calc(56px + env(safe-area-inset-bottom, 0px)); overflow: auto;
+    padding: 4px 16px calc(56px + env(safe-area-inset-bottom, 0px));
   }
-  .scr-modal-graph .scr-gc { min-width: 720px; }
-  .scr-modal-graph .scr-rc-title, .scr-modal-graph .scr-rc-mode { position: sticky; left: 0; width: max-content; }   /* 제목·색 단추도 왼쪽 틀처럼 제자리 */
   .scr-modal-graph .scr-rc-title { font-size: 13px; }
   .scr-modal-graph .scr-rc-tip { font-size: var(--fs-11); }
 }

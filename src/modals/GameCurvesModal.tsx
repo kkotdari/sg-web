@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
 import ModalHash from "../utils/modalHash";
 import { Spinner } from "../components/common/Feedback";
-import { AXIS_FS, Chart, StickyGutter, chipBox, chipGutter, chipWOf, GAME_FONT_K, inkOn, textW, type ChartLine } from "../pages/stats/RaceCurves";
+import { AXIS_FS, Chart, chipBox, chipGutter, chipWOf, GAME_FONT_K, inkOn, textW, type ChartLine } from "../pages/stats/RaceCurves";
 import { api } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
@@ -67,12 +67,10 @@ function NameChip({ name, color, right, cy, k }: { name: string; color: string; 
 
 /** 테크 줄 — 사람마다 한 줄 · 다 지은 때만 칩으로(2026-10-21, 요청: "다지은때만 칩형태로 표시"). 칩의 왼끝 = 다 지은 때 ·
  *  칩은 칸의 세로 가운데 · 겹치는 칩끼리만 위아래로. 마우스를 얹으면 완공 시각 팝업 · 같은 종류 테크(모든 사람)는 강조색. */
-function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, stickyGutter }: {
+function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k }: {
   lanes: Lane[]; maxX: number; ticksX: number[]; w: number; h: number; padL: number; padR: number;
   /** 글자 배수(PC GAME_FONT_K · 폰 1). */
   k: number;
-  /** 닉네임 칸을 가로로 밀어도 제자리에(폰 · 요청: "좌측 틀 고정"). */
-  stickyGutter: boolean;
 }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ tech: GameCurve["techs"][number]; x0: number; x1: number; cy: number } | null>(null);
@@ -140,11 +138,6 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, sticky
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">테크 건물<i> · 다 지은 때</i></figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
-      {stickyGutter && (
-        <StickyGutter w={PL} h={H} bodyH={H - D.axis}>
-          {rows.map(({ l, top, h }) => <NameChip key={l.key} name={shortName(l.name)} color={l.color} right={PL - 6 * k} cy={top + h / 2} k={k} />)}
-        </StickyGutter>
-      )}
       <svg viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때">
         {rows.map(({ l, chips, top, h }) => {
           /* 앞머리 닉네임은 그 사람 색 칩(2026-10-21, 요청: "왼쪽 닉네임을 칩으로 · 테크트리에서는 색 제거") — 끝 칩과 같은 컴팩트 네모 칩(chipBox). */
@@ -178,7 +171,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, h: H, padL: PL, padR, k, sticky
           </g>
           );
         })}
-        {ticksX.map((m) => (
+        {ticksX.filter((m) => m !== 0).map((m) => (
           <text key={m} className="scr-rc-axis" x={x(m * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: D.axisFs }}>{m}분</text>
         ))}
         {/* 고른 테크의 완공 때에 세로 점선(모든 사람 칸을 가로질러 · 요청: "세로 점선 표시(전체인원)"). */}
@@ -211,8 +204,7 @@ function niceTicks(v: number, n = 5): number[] {
 export default function GameCurvesModal({ game, onClose }: { game: GameResult; onClose: () => void }) {
   useLockBodyScroll();
   const memberOf = useAppStore((s) => s.memberOf);
-  /* 폰(2026-10-21, 요청: "모바일에서도 볼 수 있게" → "최소폭 필요 · 세로 가로 스크롤 허용 · 세 그래프 폭 모두 충분히") — 화면 가득 · 글자는 통계 폰 눈금 크기(배수 1) ·
-     세 판은 최소 폭(.scr-gc min-width · global.css)으로 그리고 창 몸이 가로·세로로 민다. */
+  /* 폰(2026-10-21, 요청: "모바일에서도 볼 수 있게" → … → "모바일 기기 화면폭") — 화면 가득 · 세 판은 화면 폭에 맞춰 그린다 · 글자는 통계 폰 눈금 크기(배수 1). */
   const mobile = useIsMobile();
   const fontK = mobile ? 1 : GAME_FONT_K;
   const [players, setPlayers] = useState<GameCurve[] | null>(null);
@@ -302,11 +294,11 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
               {box.w > 0 && (
                 <>
                   <TechLanes
-                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR} k={fontK} stickyGutter={mobile}
+                    maxX={sc.x} ticksX={sc.xt} w={box.w} h={box.h} padL={PL} padR={padR} k={fontK}
                     lanes={players.flatMap((p, i) => (off.has(p.playerName) ? [] : [{ key: p.playerName, name: nameOf(p), color: colorOf(p, i), techs: p.techs }]))}
                   />
-                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={fontK} stickyGutter={mobile} />
-                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={fontK} stickyGutter={mobile} />
+                  <Chart title="일꾼 수" unit="기" lines={linesOf("wk")} maxX={sc.x} maxY={sc.wk[sc.wk.length - 1]} ticksX={sc.xt} ticksY={sc.wk} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={fontK} />
+                  <Chart title="병력 가치" unit="" lines={linesOf("av")} note="살아 있는 전투 유닛의 미네랄+가스 합" maxX={sc.x} maxY={sc.av[sc.av.length - 1]} ticksX={sc.xt} ticksY={sc.av} width={box.w} height={box.h} padL={PL} onToggle={toggle} fontK={fontK} />
                 </>
               )}
             </div>

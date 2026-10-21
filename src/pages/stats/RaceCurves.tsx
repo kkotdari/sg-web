@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BaseRace, MemberStats, StatCurve } from "../../types";
 
 /* ★ 통계 펼침 = 분당 곡선 두 판(2026-10-20, 요청: "펼친 부분 내용 변경 · 시간별 … 연속 선 그래프로 세 종족을 색을 나눠서 같은 그래프에
@@ -111,18 +111,7 @@ export const chipWOf = (s: string): number => textW(s, chipBox().fs) + 2 * chipB
 /** 끝 칩을 단 판의 오른쪽 여백(k = 글자 배수) — 게임 그래프의 테크 줄도 같은 여백을 써서 가로 자를 맞춘다. */
 export const chipGutter = (labels: string[], k = 1): number => PAD.r + k * (8 + Math.max(0, ...labels.map(chipWOf)));
 
-/** 왼쪽 틀 — 판 위에 겹쳐 얹고(뒤 판 높이만큼 아래 여백을 당긴다) 가로 스크롤에도 제자리(sticky). 바탕은 판 몸 높이까지만 깔아
-    아래 분 눈금은 그대로 보인다 · 왼쪽으로 40 더 깔아 창 몸 안쪽 여백(sticky 가 멈추는 자리 왼쪽)으로 밀린 판이 비치지 않게. 게임 그래프(폰)의 세 판이 같이 쓴다. */
-export function StickyGutter({ w, h, bodyH, children }: { w: number; h: number; bodyH: number; children: ReactNode }) {
-  return (
-    <svg className="scr-rc-gutter" width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ marginBottom: -h }} aria-hidden>
-      <rect className="scr-rc-gutter-bg" x={-40} y={0} width={w + 40} height={bodyH} />
-      {children}
-    </svg>
-  );
-}
-
-export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height, onToggle, ticksX: tx, ticksY: ty, fontK: k = 1, stickyGutter = false }: {
+export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, height, onToggle, ticksX: tx, ticksY: ty, fontK: k = 1 }: {
   title: string; unit: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
   ticksX?: number[]; ticksY?: number[];
@@ -136,8 +125,6 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
   onToggle?: (key: string) => void;
   /** 글자 배수(기본 1 — 통계) — 게임 그래프는 GAME_FONT_K. 눈금·칩 글자와 칩이 함께 커진다. */
   fontK?: number;
-  /** 왼쪽 틀(세로 눈금 칸)을 가로로 밀어도 제자리에(폰 게임 그래프 · 2026-10-21, 요청: "좌측 틀 고정"). */
-  stickyGutter?: boolean;
 }) {
   const W = width ?? W0;
   const H = height ?? H0;
@@ -196,13 +183,6 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">{title}{note && <i> · {note}</i>}</figcaption>
       <div className="scr-rc-plot">
-        {stickyGutter && (
-          <StickyGutter w={PL} h={H} bodyH={H - PAD.b}>
-            {ticksY.map((v) => (
-              <text key={v} className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: AXIS_FS * k }}>{compact(v)}</text>
-            ))}
-          </StickyGutter>
-        )}
         <svg
           ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="scr-rc-svg" role="img"
           aria-label={`${title} 분당 — ${lines.map((l) => `${l.label} ${l.ys.length - 1}분까지`).join(", ")}`}
@@ -214,10 +194,11 @@ export function Chart({ title, unit, lines, note, maxX, maxY, width, padL, heigh
           {ticksY.map((v) => (
             <g key={v}>
               <line className="scr-rc-grid" x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} />
-              <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: AXIS_FS * k }}>{compact(v)}</text>
+              {/* 0 · 0분 글자는 안 쓴다(2026-10-21, 요청: "그래프 0 0분 표시 안하기") — 줄은 그대로. */}
+              {v !== 0 && <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: AXIS_FS * k }}>{compact(v)}</text>}
             </g>
           ))}
-          {ticksX.map((m) => (
+          {ticksX.filter((m) => m !== 0).map((m) => (
             <text key={m} className="scr-rc-axis" x={x(m)} y={H - 5} textAnchor="middle" style={{ fontSize: AXIS_FS * k }}>{m}분</text>
           ))}
           {shown.map((l) => (
