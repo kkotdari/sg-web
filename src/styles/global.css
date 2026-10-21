@@ -3292,24 +3292,22 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-modal-graph > .scr-modal-body { flex: 1 1 auto; padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
 /* 제목은 "데이터" · 그 뒤 "게임번호: 번호"는 작고 연하게(2026-10-21, 요청: "데이터 좀 작고 연하게 게임번호: 번호" → "데이터가 진하고 큰거야"). */
 .scr-gc-sub { margin-left: 8px; font-style: normal; font-size: 0.8em; font-weight: 600; color: var(--dim); }
-/* 테크 판 — 닉네임 칩은 판 위에 따로 얹고(왼쪽 고정), 판은 넓으면 가로로 민다(폰 · 2026-10-21, 요청: "모바일에서도 볼 수 있게"). */
-.scr-tl-plot { position: relative; }
-.scr-tl-scroll { overflow: hidden; }
-.scr-tl-scroll.is-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
-.scr-tl-canvas { position: relative; }
-.scr-tl-canvas > .scr-tl-svg { width: auto; touch-action: pan-x pan-y; cursor: default; }
-.scr-tl-names { position: absolute; left: 0; top: 0; z-index: 3; overflow: visible; pointer-events: none; }
-.scr-tl-names-bg { fill: var(--panel-solid); }
+.scr-tl-svg { touch-action: pan-x pan-y; cursor: default; }
+/* 왼쪽 틀(폰 게임 그래프 · 요청: "좌측 틀 고정") — 판 위에 겹쳐 가로로 밀어도 제자리. 폰 그래프 창 바탕이 불투명(panel-solid)이라 같은 색으로 덮는다. */
+.scr-rc-gutter { position: sticky; left: 0; z-index: 3; display: block; overflow: visible; pointer-events: none; }
+.scr-rc-gutter-bg { fill: var(--panel-solid); }
 /* 창은 처음부터 다 큰 크기(높이 = 화면 − 48 · 2026-10-21, 요청: "최종 크기로 열린 후 데이터 로드") — 불러오는 중·빈 글은 그 가운데. */
 .scr-modal-graph .scr-gc-wait { height: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; }
-/* 폰은 화면 가득 · 불투명 바탕(테크 판을 밀 때 닉네임 칸 바탕과 같은 색) — 2026-10-21, 요청: "모바일에서도 볼 수 있게". */
+/* 폰은 화면 가득 · 불투명 바탕 · 세 판은 최소 폭 720 으로 그리고 창 몸이 가로·세로로 민다(2026-10-21, 요청: "모바일에서도 볼 수 있게" → "최소폭 필요 · 세로 가로스크롤 허용"). */
 @media (max-width: 960px) {
   .scr-modal.scr-modal-graph {
     width: 100vw; max-width: none; height: 100dvh; max-height: none; border-radius: 0;
     padding: calc(var(--safe-top, 0px) + 12px) 14px 0;
   }
   .scr-modal.scr-modal-graph::before { background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .scr-modal-graph > .scr-modal-body { padding: 4px 2px calc(16px + env(safe-area-inset-bottom, 0px)); }
+  .scr-modal-graph > .scr-modal-body { padding: 4px 2px calc(16px + env(safe-area-inset-bottom, 0px)); overflow: auto; }
+  .scr-modal-graph .scr-gc { min-width: 720px; }
+  .scr-modal-graph .scr-rc-title, .scr-modal-graph .scr-rc-mode { position: sticky; left: 0; width: max-content; }   /* 제목·색 단추도 왼쪽 틀처럼 제자리 */
   .scr-modal-graph .scr-rc-title { font-size: 13px; }
   .scr-modal-graph .scr-rc-tip { font-size: var(--fs-11); }
 }
@@ -5803,7 +5801,7 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-status { order: 1; }
 /* ★ 재생 배지는 맵 배지 **바로 옆**(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") — 같은 order 1 이라 DOM 차례대로 배지 뒤에 선다 ·
    옛 자리(이름 줄 끝)는 그 줄이 윗줄 배지를 가질 때만 숨긴다(배지를 안 넘기는 모달 목록은 그대로). */
-.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-play-top { display: flex; align-items: center; gap: 8px; order: 0; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-play-top { display: flex; align-items: center; gap: 14px; padding: 4px 4px 0 0; order: 0; }   /* 위·옆 여백 더(요청: "플레이, 데이터 아이콘 위 옆 여백좀 키우고") */
 /* 데이터 단추 — 재생 배지 오른쪽(재생 배지는 그만큼 왼쪽으로 · 2026-10-21, 요청: "모바일에서 재생버튼 살짝 왼쪽으로 밀고 그자리에 데이터 아이콘") · 줄 높이를 안 바꾼다. */
 .scr-activity-row-data { width: 24px; height: 24px; margin: -5px -5px -5px 0; color: var(--row-dim); }
 /* ★ 윗줄 = [재생 배지 왼끝 · 맵·시간 배지 **정가운데** · (NEW) 시각 오른끝](2026-10-19, 요청 위 ★★) — 맵 배지는 줄 몸의 가운데에 절대 자리(위 여백 7 = 줄 몸 위 패딩).
