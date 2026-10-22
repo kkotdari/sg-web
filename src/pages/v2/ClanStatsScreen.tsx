@@ -13,7 +13,7 @@ import { api } from "../../api/client";
 import { memberMatchesTerm, normalizeSearchText } from "../../utils/memberSearch";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { cx } from "../../utils/format";
-import type { ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
+import type { BaseRace, ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 const CLAN_TYPE: GameType = "0102";
 const SOLO_TYPE: GameType = "0101";
@@ -51,9 +51,14 @@ const dayOfPeriod = (p: string): string | null => {
   return fmt(d);
 };
 
-/** 정렬 자 이름 — 정렬 줄("정렬: 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid onSort · 2026-10-22, 요청: "정렬은 머리 터치로 변경") —
- *  옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
-const SORT_LABEL: Record<StatSortKey, string> = { rate: "승률", dmg: "데미지", apm: "APM", plays: "게임수" };
+/** 정렬 자 이름 — 정렬 줄("정렬: 전체 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid · 2026-10-22, 요청: "정렬은 머리 터치로 변경" →
+ *  "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개") — 옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
+const sortLabel = (k: StatSortKey): string => {
+  if (k === "apm") return "APM";
+  if (k === "dmg") return "데미지";
+  const [who, what] = k.includes(":") ? k.split(":") : ["전체", k];
+  return `${who} ${what === "rate" ? "승률" : "게임수"}`;
+};
 
 const EMPTY_STATS: MemberStats = {
   plays: 0, wins: 0, losses: 0, draws: 0, winRate: 0, bests: 0,
@@ -92,12 +97,10 @@ export default function ClanStatsScreen() {
   /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
   const [expandAll, setExpandAll] = useState(false);
   /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 머리를 누르면 끝에 붙고, 고른 머리를 누르면 빠진다(하나는 남는다).
-     머리를 눌러 고르고(요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") 고른 차례는 정렬 줄 "정렬: 승률 › APM" 에 하나씩 붙고 빠진다(요청: "누르면 '정렬:' 옆에 하나씩 나오고 없어짐").
+     머리를 눌러 고르고(요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") 고른 차례는 정렬 줄 "정렬: 전체 승률 › APM" 에 하나씩 붙고 빠진다(요청: "누르면 '정렬:' 옆에 하나씩 나오고 없어짐").
+     다 빼면 기본 차례만(줄에 "기본"). 머리를 누르는 셈(켜고 끄기 · 폰 전적 머리의 승률 → 게임수 → 끔)은 StatGrid 가 한다.
      한때(같은 날): 정렬 탭 · 탭 옆 "승률순 × > 참여순 × 적용중" 줄 · 탭 앞/위 차례 숫자. 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
   const [sortKeys, setSortKeys] = useState<StatSortKey[]>(["rate"]);
-  const toggleSort = (k: StatSortKey): void => setSortKeys((prev) => (prev.includes(k)
-    ? (prev.length > 1 ? prev.filter((x) => x !== k) : prev)
-    : [...prev, k]));
   const matchedMembers = useMemo(() => {
     const terms = users.map((u) => normalizeSearchText(u).trim()).filter(Boolean);
     return activeMembers.filter((m) => terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t)));
@@ -210,41 +213,28 @@ export default function ClanStatsScreen() {
     });
 
     const sorted = [...list];
-    const nicknameTiebreak = (a: (typeof list)[number], b: (typeof list)[number]) =>
-      a.member.nickname.localeCompare(b.member.nickname);
-    const noPlaysLast = (a: (typeof list)[number], b: (typeof list)[number]) => {
-      if (a.stats.plays === 0 && b.stats.plays === 0) return nicknameTiebreak(a, b);
-      if (a.stats.plays === 0) return 1;
-      if (b.stats.plays === 0) return -1;
-      return 0;
-    };
-    const noAvgLast = (a: (typeof list)[number], b: (typeof list)[number], key: "avgApm" | "avgCmd") => {
-      const aMissing = a.stats[key] === null;
-      const bMissing = b.stats[key] === null;
-      if (aMissing && bMissing) return nicknameTiebreak(a, b);
-      if (aMissing) return 1;
-      if (bMissing) return -1;
-      return 0;
-    };
+    type Card = (typeof list)[number];
+    const nicknameTiebreak = (a: Card, b: Card) => a.member.nickname.localeCompare(b.member.nickname);
+    /** 값이 없는 사람(그 판이 없음 · 옛 경기라 딜이 없음)은 뒤로 — 둘 다 없으면 다음 자로 넘긴다. */
+    const missingLast = (am: boolean, bm: boolean) => (am === bm ? 0 : am ? 1 : -1);
     const dirSign = -1;
-    type DataKey = "plays" | "rate" | "dmg" | "apm" | "cmd";
-    /** 딜량 — 그 경기 참가자 평균의 몇 배인가(dmgDealtRel · 100 = 1.0배). 옛 경기엔 없어 그런 사람은 뒤로 보낸다. */
-    const noDmgLast = (a: (typeof list)[number], b: (typeof list)[number]) => {
-      const am = typeof a.stats.dmgDealtRel !== "number";
-      const bm = typeof b.stats.dmgDealtRel !== "number";
-      if (am && bm) return nicknameTiebreak(a, b);
-      if (am) return 1;
-      if (bm) return -1;
-      return 0;
-    };
-    const compareData = (key: DataKey, a: (typeof list)[number], b: (typeof list)[number]) => {
-      switch (key) {
-        case "plays": return noPlaysLast(a, b) || dirSign * (a.stats.plays - b.stats.plays);
-        case "rate": return noPlaysLast(a, b) || dirSign * (a.stats.winRate - b.stats.winRate);
-        case "dmg": return noDmgLast(a, b) || dirSign * ((a.stats.dmgDealtRel ?? 0) - (b.stats.dmgDealtRel ?? 0));
-        case "apm": return noAvgLast(a, b, "avgApm") || dirSign * ((a.stats.avgApm ?? 0) - (b.stats.avgApm ?? 0));
-        case "cmd": return noAvgLast(a, b, "avgCmd") || dirSign * ((a.stats.avgCmd ?? 0) - (b.stats.avgCmd ?? 0));
+    type DataKey = StatSortKey | "cmd";
+    const compareData = (key: DataKey, a: Card, b: Card): number => {
+      if (key === "dmg") {
+        const ad = a.stats.dmgDealtRel; const bd = b.stats.dmgDealtRel;
+        return missingLast(typeof ad !== "number", typeof bd !== "number") || dirSign * ((ad ?? 0) - (bd ?? 0));
       }
+      if (key === "apm" || key === "cmd") {
+        const f = key === "apm" ? "avgApm" : "avgCmd";
+        return missingLast(a.stats[f] === null, b.stats[f] === null) || dirSign * ((a.stats[f] ?? 0) - (b.stats[f] ?? 0));
+      }
+      /* 전적 — 전체(plays · rate) 또는 종족별("테란:plays" …)의 판 수 · 승률. 판이 없으면 뒤로. */
+      const [race, what] = key.includes(":") ? (key.split(":") as [BaseRace, "rate" | "plays"]) : [null, key as "rate" | "plays"];
+      const as = race ? a.entry?.byRace?.[race] : a.stats;
+      const bs = race ? b.entry?.byRace?.[race] : b.stats;
+      const ap = as?.plays ?? 0; const bp = bs?.plays ?? 0;
+      return missingLast(ap === 0, bp === 0)
+        || dirSign * (what === "plays" ? ap - bp : (as?.winRate ?? 0) - (bs?.winRate ?? 0));
     };
     /** 고른 자들(누른 차례)을 맨 앞에 두고, 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드)로 가린다. */
     const BASE_ORDER: DataKey[] = ["plays", "rate", "apm", "cmd"];
@@ -340,7 +330,7 @@ export default function ClanStatsScreen() {
 
       <div className="scr-stats-sort">
         <span className="scr-stats-sort-label">정렬:</span>
-        <span className="scr-stats-sort-chain">{sortKeys.map((k) => SORT_LABEL[k]).join(" › ")}</span>
+        <span className="scr-stats-sort-chain">{sortKeys.length > 0 ? sortKeys.map(sortLabel).join(" › ") : "기본"}</span>
         {/* 표 도움말 단추 — 정렬 줄 오른끝(옛 폰 "행을 눌러서 그래프 보기" 글 자리 · 2026-10-22, 요청: "도움말과 헤더 설명 다 제거하고 그 자리에 도움말 아이콘 단추" → "PC 에도 알아서"). */}
         <StatHelp mobile={isMobile} />
       </div>
@@ -364,7 +354,7 @@ export default function ClanStatsScreen() {
             openAll={expandAll}
             mobile={isMobile}
             sortKeys={sortKeys}
-            onSort={toggleSort}
+            onSortKeys={setSortKeys}
           />
         )}
       </div>

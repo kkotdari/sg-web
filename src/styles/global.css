@@ -8089,6 +8089,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 머리 정렬 단추(StatGrid SortHead · 2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") — 머리 글자 그대로 · 고른 자는 본문색으로 진하게. */
 .scr-sg-sort { padding: 2px 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .scr-sg-sort.is-on { color: var(--text); font-weight: 800; }
+/* 폰 전적 머리 아래 켜진 쪽 이름("승률" · "게임수") — 승률 → 게임수 → 끔. */
+.scr-sg-sort { display: inline-flex; flex-direction: column; align-items: center; }
+.scr-sg-sort-note { font-style: normal; font-size: 9px; font-weight: 600; color: var(--text); line-height: 1.1; }
 @media (hover: hover) { .scr-sg-sort:hover { color: var(--text); } }
 /* 몸은 바탕 그대로(흰색 · 2026-10-22, 요청: "통계 그리드 색 흰색으로" — 옛 클랜원 전체 줄 0.035 · 펼침 0.025 덧칠 걷음) · 머리만 게임 목록 머리와 같은 0.06(바깥 테두리를 걷어 표의 시작을 말한다). */
 .scr-sg-head > .scr-sg-c { border-top: none; padding: 7px 8px; background: rgba(var(--overlay-rgb), 0.06); font-size: var(--fs-11); font-weight: 700; color: var(--dim); }
@@ -8102,7 +8105,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-avatar .scr-avatar { width: 28px !important; height: 28px !important; border-radius: 50% !important; }
 .scr-sg-name {
   min-width: 0; padding: 0; border: none; background: none; cursor: pointer; font: inherit;
-  font-size: var(--fs-body); font-weight: 700; color: var(--text); overflow: hidden; text-overflow: clip; white-space: nowrap;   /* 말줄임 없이 잘린다(2026-10-22, 요청: "말줄임표 x") */
+  font-size: var(--fs-body); font-weight: 400; color: var(--text); overflow: hidden; text-overflow: clip; white-space: nowrap;   /* 말줄임 없이 잘린다(2026-10-22, 요청: "말줄임표 x") · 굵지 않게(같은 날 "닉네임도 두껍지 않게" · 옛 700) */
 }
 .scr-sg-name-plain { cursor: default; }
 .scr-sg-v { display: inline-flex; align-items: baseline; gap: 2px; font-variant-numeric: tabular-nums; }
@@ -8182,7 +8185,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-who { justify-content: flex-start; gap: 4px; padding-left: 6px; padding-right: 2px; }
 .scr-sg.is-m .scr-sg-tap > .scr-sg-c.scr-sg-who { padding: 12px 4px 12px 6px; }
 /* 유저 칸 글자(2026-10-20, 요청: "유저 칸 글자 키우고" → "크기 적절히" → "아바타·닉네임 너무 큼") 19 → 17 → 15 → 14 → 13px · 아바타 24 → 20(2026-10-22 · 유저 칸이 좁아져서). */
-.scr-sg.is-m .scr-sg-name { font-size: 13px; min-width: 5em; flex: 1 1 0; contain: inline-size; }   /* 5em = 굵은 한글 다섯(실측 65px) · 긴 이름이 칸을 넓히지 않게 제 폭은 0(contain) — 칸 최소 폭은 이 5em 이 정한다 */
+.scr-sg.is-m .scr-sg-name { font-size: 13px; min-width: 5em; flex: 1 1 0; contain: inline-size; }   /* 5em = 한글 다섯(실측 65px) · 긴 이름이 칸을 넓히지 않게 제 폭은 0(contain) — 칸 최소 폭은 이 5em 이 정한다 */
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 20px !important; height: 20px !important; }
 /* APM · 데미지 칸 — 숫자만(12px · tabular) · 데미지는 초록 딜 위 · 빨강 피해 아래. */
 .scr-sg.is-m .scr-sg-mnum { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; }
