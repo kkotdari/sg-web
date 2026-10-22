@@ -109,13 +109,13 @@ function WhoPlain({ member }: { member: Member }) {
   );
 }
 
-/** 종족 두 칸 — [전적 "30회" | 승률] (2026-10-20, 요청: "각 종족 컬럼을 두 컬럼으로 나눠 전적/승률" → "전적 몇 회로 단순화").
+/** 종족 두 칸 — [게임수 "30"(단위 걷음 · 2026-10-22) | 승률] (2026-10-20, 요청: "각 종족 컬럼을 두 컬럼으로 나눠 전적/승률" → "전적 몇 회로 단순화").
  *  클랜원 전체 줄도 종족 승률은 쓴다(요청: "클랜원 전체 종족별 승률 넣기" — 그 종족으로 뛴 클랜원 판의 승률). 전체 승률만 안 쓴다(내전이라 늘 반반). */
 function RaceCells({ s }: { s?: MemberStats }) {
   if (!s || s.plays === 0) return <><span className="scr-sg-c"><Dash /></span><span className="scr-sg-c"><Dash /></span></>;
   return (
     <>
-      <span className="scr-sg-c scr-sg-race"><Num v={s.plays.toLocaleString()} unit="전" /></span>
+      <span className="scr-sg-c scr-sg-race"><Num v={s.plays.toLocaleString()} /></span>
       <span className="scr-sg-c"><Rate s={s} /></span>
     </>
   );
@@ -133,9 +133,9 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
         </span>
         <span className="scr-sg-c">
           {clan
-            /* 클랜원 전체 = "1,180전 (212경기)" — 사람 몫을 다 더한 전적 + 경기 수(2026-10-20, 요청: "PC 전체 전적을 n전(n경기)로"). */
-            ? <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b><i>전</i><i className="scr-sg-paren">({(games ?? 0).toLocaleString()}경기)</i></span>
-            : <Num v={s.plays > 0 ? s.plays.toLocaleString() : null} unit="전" />}
+            /* 클랜원 전체 = "1,180 (212경기)" — 사람 몫을 다 더한 전적 + 경기 수(2026-10-20, 요청: "PC 전체 전적을 n전(n경기)로" · 게임수 단위 "전"은 걷었다 · 2026-10-22, 요청: "게임수 단위는 제거"). */
+            ? <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b><i className="scr-sg-paren">({(games ?? 0).toLocaleString()}경기)</i></span>
+            : <Num v={s.plays > 0 ? s.plays.toLocaleString() : null} />}
         </span>
         <span className="scr-sg-c">{clan ? <Dash /> : <Rate s={s} />}</span>
         <span className="scr-sg-c"><Num v={s.avgApm} /></span>
