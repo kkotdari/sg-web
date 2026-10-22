@@ -9,7 +9,7 @@ import type { BaseRace, Member, MemberStats } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
    C 의 승률 막대를 얹어(요청: "A에 C의 그래프를 시각적으로 도입")).
-   PC: [유저 | 경기 | 승률 | APM | 데미지 | 테란·프로토스·저그 (전적 | 승률) | ▾] · 폰: [유저(아래 한 줄: 판수 · APM · 딜 · 피해) | 전체·종족 승률] · 폰은 줄을 눌러 편다(▾ 없음).
+   PC: [유저 | 경기 | 승률 | APM | 데미지 | 테란·프로토스·저그 (전적 | 승률) | ▾] · 폰: [유저(아래 한 줄: APM · 딜 · 피해) | 전적: 전체·종족 판수(승률)] · 폰은 줄을 눌러 편다(▾ 없음).
    PC 의 ▾ · 폰의 줄 누름은 모두 그 줄 아래에 **분당 곡선 두 판**(인구 · 일꾼 수, 세 종족 겹침 — RaceCurves)을 편다(2026-10-20, 요청: "펼친 부분 내용 변경 ·
    폰 피시 공통"). 옛 펼침(종족마다 유닛·스킬·공방업 글 · MixLines)과 폰의 '펼치기 없음'은 걷었다. 승률 막대(시안 C)도 걷었다. */
 
@@ -128,23 +128,16 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
   );
 }
 
-/** 폰 전적 칸 — 위 "N전" · 아래 승률(2026-10-20, 요청: "원래대로 · 유저 | 전체 | 테 | 프 | 저 전적으로 · 각 전적 칸은 위 전수 아래 승률").
- *  그 종족 판이 없으면 "-". 클랜원 전체의 전체 칸은 "N전" 위 · "(N경기)" 아래(내전이라 승률은 늘 반반). */
+/** 폰 전적 칸 — 위 판수 "N" · 아래 작은 "(N%)"(2026-10-22, 요청: "모바일 통계 단위 제거하고 전적은 N / (N%) 승률이 좀 작게" — 머리에 "전적 게임수(승률)" 설명이 선다).
+ *  그 종족 판이 없으면 "-". 클랜원 전체의 전체 칸은 아래가 경기 수 "(N)"(내전이라 승률은 늘 반반). 옛: "N전" · 이름표 "승률" · "N%". */
 function MCell({ s, games, noRate }: { s?: MemberStats; games?: number; noRate?: boolean }) {
   if (!s || s.plays === 0) return <span className="scr-sg-c scr-sg-mrec"><Dash /></span>;
   return (
     <span className="scr-sg-c scr-sg-mrec">
-      <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b><i>전</i></span>
-      {/* 클랜원 전체의 전체 칸은 승률 대신 경기 수 "(212경기)" — PC 와 같은 꼴(2026-10-20, 요청: "전체 판이 아니라 전, 괄호하고 (n게임) PC 랑 똑같이"). */}
+      <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b></span>
       {games !== undefined
-        ? <span className="scr-sg-v scr-sg-mgames"><i>({games.toLocaleString()}경기)</i></span>
-        : noRate ? <Dash /> : (
-          /* 승률 위 작은 "승률" 이름표 · 전수와 사이를 띄운다(2026-10-20, 요청). */
-          <span className="scr-sg-mrate-box">
-            <i className="scr-sg-mrate-lab">승률</i>
-            <span className="scr-sg-v scr-sg-mrate"><b>{s.winRate}</b><i>%</i></span>
-          </span>
-        )}
+        ? <span className="scr-sg-mrate">({games.toLocaleString()})</span>
+        : noRate ? <Dash /> : <span className="scr-sg-mrate">({s.winRate}%)</span>}
     </span>
   );
 }
@@ -176,9 +169,10 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
           {/* APM · 딜 · 피해는 줄마다 세로로 맞춘다(2026-10-20, 요청: "모바일 apm 딜 피해 로우 간 세로 줄 맞추기") — 값 칸 폭을 고정하고(CSS),
               APM 이 없는 사람도 "APM -" 로 자리를 지킨다(빠지면 딜·피해가 왼쪽으로 붙었다). */}
           <span className="scr-sg-v scr-sg-lab"><i>APM</i><b>{s.avgApm ?? "-"}</b></span>
+          {/* 딜 · 피해는 APM 과 한 줄 · "데미지" 이름표 없음(2026-10-22, 요청: "APM 데미지 한 줄에 표시 · %, APM, 딜, 피해만 남김" — 뜻은 머리 설명이 말한다).
+              옛: APM 아래 제 줄 "데미지 딜 … 피해 …". 클랜원 전체는 없다. */}
+          {!clan && <Dmg s={s} compact />}
         </span>
-        {/* 데미지는 APM 아래 제 줄 · 앞에 "데미지" 이름표(2026-10-20, 요청: "APM 과 데미지 줄 나누고 데미지 라벨 달아주기"). 클랜원 전체는 없다. */}
-        {!clan && <span className="scr-sg-who-sub scr-sg-who-dmg"><i className="scr-sg-dmg-lab">데미지</i><Dmg s={s} compact /></span>}
       </span>
       <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} />
       {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} />)}
@@ -202,9 +196,11 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   if (mobile) {
     return (
       <div className="scr-sg is-m" role="table" aria-label="통계">
+        {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 아래에 "딜·피해" 뜻 · 전적은 전체·종족 넷을 덮는 머리에 "게임수(승률)"(2026-10-22, 요청: "단위 대신 헤더에 간단 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
-          <span className="scr-sg-c scr-sg-who">유저</span>
-          {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-race-head">{r}</span>)}
+          <span className="scr-sg-c scr-sg-who scr-sg-h2">유저<i className="scr-sg-hnote">딜·피해: 평균 데미지 대비 비율</i></span>
+          <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적<i className="scr-sg-hnote">게임수(승률)</i></span>
+          {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head">{r}</span>)}
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} openAll={openAll} scale={scale} />}
         {rows.map((r) => <MobileRow key={r.member.id} row={r} openAll={openAll} scale={scale} />)}

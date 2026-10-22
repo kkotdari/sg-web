@@ -1254,12 +1254,21 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* 정렬 순서 — 검색창 바로 밑의 **작은** 밑줄 탭(2026-10, 요청: "크기 좀 작게"). 내전·공방 탭과 같은 모양을 한 치 줄여 쓴다. */
 /* 앞의 "정렬" 글은 걷었다(2026-10-20, 요청) — 탭 이름이 "승률순 · 딜순 · APM순 · 참여순"이라 뜻이 선다. */
 .scr-stats-sort { display: flex; align-items: flex-end; gap: 8px; margin: -2px 0 2px; flex-wrap: wrap; }
-.scr-stats-sort-tabs > .scr-line-tab-btn { font-size: var(--fs-11); padding: 2px 6px 6px; }   /* 옆 9 → 6(2026-10-22, 요청: "탭 사이 간격 살짝 줄이고") */
-.scr-stats-sort-tabs > .scr-line-tab-btn::after { left: 3px; right: 3px; }
+/* 정렬 탭(2026-10-22) — 옆 9 → 6(요청: "탭 사이 간격 살짝 줄이고") · 고르면 **글자만 굵게**(요청: "선택 시 글자만 두껍게 하고 다른 효과 x" — 밑줄·색 바뀜 없음)
+   · 차례 숫자는 글자 **위** 제 칸(모든 탭이 비워 둠). 굵어져도 폭이 안 변하게 ::after 에 굵은 글자를 숨겨 폭을 미리 잡는다(밑줄 자리였던 ::after 를 쓴다). */
+.scr-stats-sort-tabs > .scr-line-tab-btn {
+  display: inline-flex; flex-direction: column; align-items: center;
+  font-size: var(--fs-11); font-weight: 500; color: var(--text); padding: 0 6px 6px;
+}
+.scr-stats-sort-tabs > .scr-line-tab-btn.is-on { font-weight: 800; }
+.scr-stats-sort-tabs > .scr-line-tab-btn::after,
+.scr-stats-sort-tabs > .scr-line-tab-btn.is-on::after {
+  content: attr(data-label); position: static; height: 0; overflow: hidden; visibility: hidden;
+  font-weight: 800; background: none; box-shadow: none;
+}
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child { padding-left: 2px; }
-.scr-stats-sort-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
-/* 정렬 탭의 차례 숫자(2026-10-22 · PC·폰) — 작고 옅은 글자(배지 아님). */
-.scr-stats-sort-no { font-size: 9px; font-weight: 600; color: var(--muted); margin-right: 2px; vertical-align: 1px; }
+/* 정렬 탭의 차례 숫자(2026-10-22 · PC·폰) — 작고 옅은 글자(배지 아님) · 글자 위 제 칸(비어도 높이를 지킨다). */
+.scr-stats-sort-no { display: block; height: 10px; line-height: 10px; margin-bottom: 1px; font-size: 9px; font-weight: 600; color: var(--muted); }
 /* 정렬 탭 앞 이름표(2026-10-22, 요청: "정렬(복수선택) 라벨 추가"). */
 .scr-stats-sort-label { font-size: var(--fs-9); font-weight: 600; color: var(--muted); padding-bottom: 7px; white-space: nowrap; }
 
@@ -8199,18 +8208,15 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-who-sub { font-size: var(--fs-10); gap: 5px; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 3px; }
 /* 아래 줄(APM · 딜 · 피해) 한 줄 — 글자는 크게(12px) · 칸이 좁으면 폭에 비례해 줄인다(7.5cqw · 9.5px 밑으로 안 간다). */
-.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(9.5px, min(13px, 9.2cqw)); }
+.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(8.5px, min(12px, 7.4cqw)); }   /* APM · 딜 · 피해 한 줄(2026-10-22) — 9.2cqw(9.5~13px) → 7.4cqw(8.5~12px) */
 /* 유저 칸 글자 크게(2026-10-20, 요청: "유저 칸 글자 키우고") — 이름 19px · 아바타 32. */
 .scr-sg.is-m .scr-sg-name { font-size: 15px; } /* 19 → 17 → 15(요청: "크기 적절히" → "아바타·닉네임 너무 큼") */
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 24px !important; height: 24px !important; }
 /* 아바타·닉네임 줄과 아래 데이터 줄 사이를 넓게(2026-10-20, 요청: 5 → 10 → 14 · 데이터 글자 최대 13 → 14px). */
 /* 유저 칸 세 줄(이름 · APM · 데미지) — 가운데로 모으고 줄 사이 8 · 이름 줄은 아바타 없는 클랜원 전체 줄도 32 높이. */
-.scr-sg.is-m .scr-sg-tap > .scr-sg-c.scr-sg-who { padding: 12px 6px 12px 14px; gap: 6px; justify-content: center; }
+.scr-sg.is-m .scr-sg-tap > .scr-sg-c.scr-sg-who { padding: 12px 4px 12px 10px; gap: 6px; justify-content: center; }
 .scr-sg.is-m .scr-sg-who-top { min-height: 24px; }
 .scr-sg.is-m .scr-sg-who > .scr-sg-who-sub { line-height: 1.2; }
-.scr-sg-dmg-lab { font-style: normal; color: var(--dim); font-weight: 600; }
-/* APM · 데미지 값의 왼끝을 맞춘다(2026-10-20, 요청) — 두 이름표를 같은 폭("데미지" 3자 + 틈)으로. */
-.scr-sg.is-m .scr-sg-who-sub .scr-sg-lab > i, .scr-sg.is-m .scr-sg-who-sub > .scr-sg-dmg-lab { display: inline-block; width: 3.1em; flex: none; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-lab { gap: 0.45em; } /* 왼 여백 12 → 18 · 오른 6 → 10(요청: "왼쪽 여백 더 · 꽉 맞을 필요 없어") */ /* → "줄간격도 훨 넓혀" 14 → 20 */
 /* 표 머리는 PC·폰 모두 칸 가운데(2026-10-20, 요청: "통계 그리드 헤더 가운데 정렬"). */
 .scr-sg .scr-sg-row.scr-sg-head > .scr-sg-c { justify-content: center; text-align: center; padding-left: 8px; padding-right: 8px; }
@@ -8220,10 +8226,12 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-mrec { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .scr-sg-mrec > .scr-sg-v > b { font-weight: 600; }
 .scr-sg-mrec > .scr-sg-v:first-child > b { font-weight: 600; color: var(--text); } /* 전수도 본문색(승률과 같게 · 요청) */
-.scr-sg-mrate > b { font-size: inherit; font-weight: 600; color: var(--text); } /* 전수와 같은 크기·굵기(12px · 600 · 요청) */
-.scr-sg-mgames > i { font-size: 11px; }
-.scr-sg-mrate-box { display: flex; flex-direction: column; align-items: center; gap: 1px; margin-top: 6px; }
-.scr-sg-mrate-lab { font-style: normal; font-size: 9.5px; font-weight: 600; color: var(--dim); line-height: 1; }
+/* 폰 전적 칸 아래 "(N%)" · 클랜 "(N)" — 판수보다 작게(2026-10-22, 요청: "승률이 좀 작게"). */
+.scr-sg-mrate { font-size: 10px; font-weight: 600; color: var(--muted); line-height: 1; }
+/* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름 · 머리마다 작은 뜻 풀이(scr-sg-hnote). */
+.scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; flex-direction: column; gap: 2px; }
+.scr-sg.is-m .scr-sg-head > .scr-sg-who.scr-sg-h2 { gap: 2px; }
+.scr-sg-hnote { font-style: normal; font-size: 9px; font-weight: 500; color: var(--muted); letter-spacing: -0.02em; line-height: 1.2; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-v > i, .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > i { font-size: inherit; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-cnt { min-width: 2.8em; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 2px; }
