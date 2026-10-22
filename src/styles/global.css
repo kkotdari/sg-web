@@ -1137,12 +1137,6 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stat-row-me { background-color: var(--stat-me-tint); }
 
 
-.scr-light-theme .scr-guide-tbtn{
-  background: var(--lighting-pill-bg); border-color: transparent; color: var(--text);
-}
-.scr-light-theme .scr-guide-tbtn svg{ color: var(--text); }
-.scr-guide-kbd-wide{ min-width: 66px; }
-
 
 .scr-v2-toolbar-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .scr-v2-toolbar-month { flex: none; }
