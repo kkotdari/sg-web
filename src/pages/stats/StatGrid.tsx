@@ -10,7 +10,7 @@ import type { BaseRace, Member, MemberStats } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
    C 의 승률 막대를 얹어(요청: "A에 C의 그래프를 시각적으로 도입")).
-   PC: [유저 | 게임수 | 승률 | APM | 데미지 | 테란·프로토스·저그 (게임수 | 승률) | ▾] · 폰: [유저 | APM | 데미지 | 전적: 전체·종족 판수(승률)] · 폰은 줄을 눌러 편다(▾ 없음).
+   PC: [유저 | 게임수 | 승률 | 데미지 | APM | 테란·프로토스·저그 (게임수 | 승률) | ▾] · 폰: [유저 | 데미지 | APM | 전적: 전체·종족 판수(승률)] · 폰은 줄을 눌러 편다(▾ 없음).
    PC 의 ▾ · 폰의 줄 누름은 모두 그 줄 아래에 **분당 곡선 두 판**(인구 · 일꾼 수, 세 종족 겹침 — RaceCurves)을 편다(2026-10-20, 요청: "펼친 부분 내용 변경 ·
    폰 피시 공통"). 옛 펼침(종족마다 유닛·스킬·공방업 글 · MixLines)과 폰의 '펼치기 없음'은 걷었다. 승률 막대(시안 C)도 걷었다. */
 
@@ -139,8 +139,9 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
             : <Num v={s.plays > 0 ? s.plays.toLocaleString() : null} />}
         </span>
         <span className="scr-sg-c">{clan ? <Dash /> : <Rate s={s} />}</span>
-        <span className="scr-sg-c"><Num v={s.avgApm} /></span>
+        {/* 데미지 · APM 차례(2026-10-22, 요청: "APM 데미지 위치 교환" — 옛: APM · 데미지) */}
         <span className="scr-sg-c">{clan ? <Dash /> : <Dmg s={s} />}</span>
+        <span className="scr-sg-c"><Num v={s.avgApm} /></span>
         {RACES.map((r) => <RaceCells key={r} s={row.byRace?.[r]} />)}
         <span className="scr-sg-c">
           <button type="button" className="scr-text-btn scr-sg-toggle" aria-expanded={open} aria-label={open ? "접기" : "펼치기"} onClick={() => setOpen((v) => !v)}>
@@ -189,8 +190,8 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
       </span>
       {/* APM · 데미지(초록 딜 위 · 빨강 피해 아래)는 제 칸(2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 닉네임 아래 한 줄 "APM 230 1.4 0.8".
           클랜원 전체는 데미지가 없다. */}
-      <span className="scr-sg-c scr-sg-mnum">{s.avgApm ?? <Dash />}</span>
       <span className="scr-sg-c scr-sg-mnum">{clan ? <Dash /> : <Dmg s={s} compact />}</span>
+      <span className="scr-sg-c scr-sg-mnum">{s.avgApm ?? <Dash />}</span>
       <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} />
       {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} />)}
     </div>
@@ -208,26 +209,26 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
       text={mobile ? (
         <>
           <span className="scr-sg-help-mock" aria-hidden>
-            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">APM</span><span className="scr-sg-help-h">데미지</span><span className="scr-sg-help-h">전체</span>
+            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">데미지</span><span className="scr-sg-help-h">APM</span><span className="scr-sg-help-h">전체</span>
             <span className="scr-sg-help-who"><b>닉네임</b></span>
-            <span className="scr-sg-help-rec"><b>230</b></span>
             <span className="scr-sg-help-rec"><b className="is-dealt">1.4</b><b className="is-taken">0.8</b></span>
+            <span className="scr-sg-help-rec"><b>230</b></span>
             <span className="scr-sg-help-rec"><b>68</b><i>54</i></span>
           </span>
           <span className="scr-sg-help-list">
-            <span>APM — 분당 행동 수 평균</span>
             <span>데미지 — <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
+            <span>APM — 분당 행동 수 평균</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
-            <span>머리를 누르면 정렬 — APM · 데미지는 누를 때마다 켜고 끄고, 전체 · 종족 머리는 승률 → 게임수 → 끔. 여럿이면 누른 차례대로</span>
+            <span>머리를 누르면 정렬 — 데미지 · APM 은 누를 때마다 켜고 끄고, 전체 · 종족 머리는 승률 → 게임수 → 끔. 여럿이면 누른 차례대로</span>
             <span>행을 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
           </span>
         </>
       ) : (
         <span className="scr-sg-help-list">
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
-          <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>APM — 분당 행동 수 평균</span>
-          <span>머리(게임수 · 승률 · APM · 데미지 · 종족별 게임수 · 승률)를 누르면 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
+          <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
+          <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
           <span>줄 끝 ▾ 를 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
         </span>
       )}
@@ -257,8 +258,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortK
         {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 · 전적은 전체·종족 넷을 덮는다. 뜻 풀이는 정렬 줄의 도움말 단추(StatHelp)로 옮겼다(2026-10-22, 요청: "헤더 설명 다 제거 · 도움말 아이콘 툴팁에 표 모양과 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
-          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...toggle("apm")}>APM</SortHead></span>
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...toggle("dmg")}>데미지</SortHead></span>
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...toggle("apm")}>APM</SortHead></span>
           <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
           <span className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle("rate", "plays")}>전체</SortHead></span>
           {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle(`${r}:rate`, `${r}:plays`)}>{r}</SortHead></span>)}
@@ -273,7 +274,7 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortK
       {/* 머리는 두 줄 — 종족 이름이 [게임수 | 승률] 두 칸을 덮고(PC 머리 "경기"·"전적" → "게임수" · 2026-10-22), 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
-        {([["게임수", "plays"], ["승률", "rate"], ["APM", "apm"], ["데미지", "dmg"]] as const).map(([h, k]) => (
+        {([["게임수", "plays"], ["승률", "rate"], ["데미지", "dmg"], ["APM", "apm"]] as const).map(([h, k]) => (
           <span key={h} className="scr-sg-c scr-sg-h2"><SortHead {...toggle(k)}>{h}</SortHead></span>
         ))}
         {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hgroup">{r}</span>)}
