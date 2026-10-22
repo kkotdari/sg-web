@@ -8287,7 +8287,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-gs-tog.is-on {
   color: var(--text);
   background: color-mix(in srgb, var(--lighting-accent, #5c9df5) 14%, var(--panel-solid));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--lighting-accent, #5c9df5) 60%, transparent), 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);   /* 켠 칩은 림도 없이 바탕 칠만(2026-10-22, 요청: "선택 칩 테두리 아예 제거") */
 }
 .scr-gs-link-list { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .scr-gs-link-add { margin-top: 4px; }   /* 조건 추가 단추 위 틈(2026-10-20 요청) */
