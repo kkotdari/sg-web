@@ -65,7 +65,10 @@ export function useEditableFocused(): boolean {
     if (!focused) return undefined;
     const el = document.activeElement;
     const check = (): void => {
-      if (el instanceof Node && el.isConnected) return;
+      /* 잡아 둔 el 이 편집 칸일 때만 '아직 붙어 있음'으로 친다(2026-10-22, 지적: "모바일 로그인 시 처음엔 탭바가 안 나옴 · 새로고침하면 나옴") —
+         비밀번호 칸에서 Enter 로 로그인하면 Header 가 그 칸에 포커스가 있는 채로 서고(첫 상태 true), 이 효과가 돌 땐 칸이 이미 빠져
+         activeElement 가 body 다. 빠진 칸은 focusout 을 안 쏘고 body 는 늘 붙어 있어 true 가 풀리지 않았다. */
+      if (el instanceof Node && el.isConnected && isEditable(el as Element)) return;
       if (isEditable(document.activeElement)) return;
       setFocused(false);
     };
