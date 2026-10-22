@@ -1,63 +1,15 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import type { BaseRace, MemberStats, StatCurve } from "../../types";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-/* ★ 통계 펼침 = 분당 곡선 두 판(2026-10-20, 요청: "펼친 부분 내용 변경 · 시간별 … 연속 선 그래프로 세 종족을 색을 나눠서 같은 그래프에
-   겹쳐서" → "일꾼 수랑 병력 가치로" → "병력 그래프를 인구 그래프로"). 서버의 통계용 참값(curve {wk, sp, sx, n})을 종족마다 한 줄로 겹친다.
-   두 값은 자가 달라 한 축에 안 싣고 판을 둘로 나눈다. 판 수가 처음의 20% 밑으로 줄어든 꼬리 분은 자른다(한두 판이
-   곡선을 흔들지 않게). 선 색은 그래프 전용(--race-chart-*) — 앱의 종족색은 밝은 바탕에서 노랑이 1.47:1 이라 선으로 못 읽혀 검사기
-   (dataviz validate_palette)를 통과한 한 단 진한 짝을 쓴다. 손가락·마우스가 닿은 분에 세로 선과 세 종족 값을 띄운다. */
+/* 분당 선 그래프 판(Chart)과 그 부품 — 게임 데이터 창(GameCurvesModal)이 쓴다. 손가락·마우스가 닿은 분에 세로 선과 줄마다 값을 띄운다.
+   ★ 통계 펼침(종족마다 분당 곡선 두 판 · RaceCurves · 2026-10-20)은 걷었다(2026-10-22, 요청: "통계 그래프 제거 — 화면과 API 응답에서만"). */
 
-const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
-const TONE: Record<BaseRace, string> = {
-  테란: "var(--race-chart-terran)", 프로토스: "var(--race-chart-protoss)", 저그: "var(--race-chart-zerg)",
-};
 const W0 = 320;
 const H0 = 150;
 export const CHART_PAD = { l: 34, r: 12, t: 10, b: 20 };
 const PAD = CHART_PAD;
 
-type Line = { race: BaseRace; ys: number[] };
-/** 판에 그리는 한 줄 — 통계는 종족마다, 게임 그래프(GameCurvesModal)는 사람마다. */
+/** 판에 그리는 한 줄 — 게임 그래프(GameCurvesModal)는 사람마다. */
 export type ChartLine = { key: string; label: string; color: string; ys: number[] };
-type ByRace = Partial<Record<BaseRace, MemberStats>> | undefined;
-
-/** 모든 줄이 함께 쓰는 자(2026-10-20, 요청: "일꾼 수 100 · … 세로 눈금 똑같이 · 가로도 똑같이") — 세로는 일꾼 0~100 · 인구 0~100 이 기본이고
- *  넘는 줄이 있으면 그 단(일꾼 100 · 인구 50)으로 올려 **모두** 같이 늘린다. 인구(sp)와 일꾼 뺀 인구(sx)는 제 자를 따로 잰다. 가로는 보이는 줄 중 가장 긴 분. */
-export interface CurveScale { x: number; wk: number; sp: number; sx: number }
-type CurveKey = "wk" | "sp" | "sx";
-const WK_STEP = 100;
-const SP_STEP = 50;
-const SP_MIN = 100;
-
-export function curveScale(all: ByRace[]): CurveScale {
-  let x = 1;
-  const top = (key: CurveKey): number => {
-    let m = 0;
-    for (const b of all) for (const l of linesOf(b, key)) { x = Math.max(x, l.ys.length - 1); m = Math.max(m, ...l.ys); }
-    return m;
-  };
-  const wk = top("wk"), sp = top("sp"), sx = top("sx");
-  const up = (v: number, step: number, min: number): number => Math.max(min, Math.ceil(v / step) * step);
-  return { x, wk: up(wk, WK_STEP, WK_STEP), sp: up(sp, SP_STEP, SP_MIN), sx: up(sx, SP_STEP, SP_MIN) };
-}
-
-const linesOf = (byRace: ByRace, key: CurveKey): Line[] => RACES.flatMap((race) => {
-  const c = byRace?.[race]?.curve;
-  if (!c || c.n.length === 0) return [];
-  const ys = trimmed(c, key);
-  return ys.length >= 2 ? [{ race, ys }] : [];
-});
-
-/** 판 수가 첫 분의 20%(최소 1판) 밑으로 떨어지기 전까지만. */
-function trimmed(c: StatCurve, key: CurveKey): number[] {
-  const floor = Math.max(1, Math.ceil((c.n[0] ?? 0) * 0.2));
-  const out: number[] = [];
-  for (let i = 0; i < c[key].length; i += 1) {
-    if ((c.n[i] ?? 0) < floor) break;
-    out.push(c[key][i]);
-  }
-  return out;
-}
 
 const compact = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K` : `${Math.round(v * 10) / 10}`);
 
@@ -95,10 +47,9 @@ function valOutline(color: string): string | undefined {
 
 /** 그래프 글자 크기(화면 px · 판은 잰 폭 그대로 1:1 로 그린다) — label = 끝 칩·세로선 값·닉네임 칩 · axis = 눈금 숫자·세로선 시각.
     (2026-10-21, 요청: "눈금글자 20프로 확대" → "칩과 눈금 폰트를 통계 눈금과 같게" → "PC 눈금 숫자와 닉네임 칩, 그래프 값 20프로 축소" →
-    "눈금 숫자 1스텝 더 축소" → "배율 대신 직접 값"). 폰 통계는 옛 늘림(칸 339 / 320)의 크기 그대로. */
+    "눈금 숫자 1스텝 더 축소" → "배율 대신 직접 값"). */
 export const GRAPH_FS = {
   pc: { label: 11.9, axis: 10.7 },
-  statsMobile: { label: 11.4, axis: 11.4 },
   gameMobile: { label: 10.8, axis: 10.8 },
 } as const;
 /** 칩 치수 = 컴팩트 네모 칩(.scr-compact-rect-chip · global.css 의 --compact-chip-h/-px/-r — 글자 크기에 대한 비) × 칩 글자 크기.
@@ -207,27 +158,6 @@ export function useSharedCross(): [number | null, (m: number | null) => void] {
   return [at, setAt];
 }
 
-/* 통계 화면의 세로선(분)은 모든 펼침(클랜원 전체 · 사람마다)이 하나를 같이 쓴다 — 칩 고르기는 펼침마다 따로
-   (2026-10-21, 요청: "통계에서 칩 선택은 말고 점선 위치는 모든 그래프가 동기화 · 다른 사람 것, 전체 것도"). 판 밖을 누르면 걷히고, 펼침이 다 닫히면 비운다. */
-const statsCross = { at: null as number | null, subs: new Set<() => void>() };
-const closeStatsCross = (e: PointerEvent): void => {
-  if (!(e.target as Element | null)?.closest?.(".scr-rc-svg")) setStatsCross(null);
-};
-function setStatsCross(m: number | null): void {
-  if (statsCross.at === m) return;
-  if (statsCross.at === null) document.addEventListener("pointerdown", closeStatsCross, true);
-  else if (m === null) document.removeEventListener("pointerdown", closeStatsCross, true);
-  statsCross.at = m;
-  statsCross.subs.forEach((f) => f());
-}
-const subStatsCross = (f: () => void): (() => void) => {
-  statsCross.subs.add(f);
-  return () => { statsCross.subs.delete(f); if (statsCross.subs.size === 0) setStatsCross(null); };
-};
-function useStatsCross(): [number | null, (m: number | null) => void] {
-  return [useSyncExternalStore(subStatsCross, () => statsCross.at), setStatsCross];
-}
-
 /** 라벨 달린 작은 토글 스위치 — 판 제목 옆(인구 그래프의 '일꾼 제외' · 2026-10-21). */
 export function TitleSwitch({ label, on, onChange }: { label: string; on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -237,11 +167,6 @@ export function TitleSwitch({ label, on, onChange }: { label: string; on: boolea
     </button>
   );
 }
-
-/* 통계의 '일꾼 제외'는 모든 펼침이 하나를 같이 쓴다(2026-10-21, 요청: "통계에서는 적용 시 모든 그래프에 동일하게"). */
-const statsNoWorker = { on: false, subs: new Set<() => void>() };
-const setStatsNoWorker = (v: boolean): void => { statsNoWorker.on = v; statsNoWorker.subs.forEach((f) => f()); };
-const subStatsNoWorker = (f: () => void): (() => void) => { statsNoWorker.subs.add(f); return () => { statsNoWorker.subs.delete(f); }; };
 
 export function Chart({ title, titleExtra, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fs: FS, axisFs: AFS, padB: PB = PAD.b, padR: padROverride, at: atRaw, onAt }: {
   title: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
@@ -406,35 +331,5 @@ export function Chart({ title, titleExtra, lines, note, maxX, maxY, width, padL,
         </svg>
       </div>
     </figure>
-  );
-}
-
-/** font — 글자 크기(GRAPH_FS.pc · .statsMobile). */
-export default function RaceCurves({ byRace, scale, font }: { byRace?: Partial<Record<BaseRace, MemberStats>>; scale?: CurveScale; font: { label: number; axis: number } }) {
-  /* 줄 끝 칩을 누르면 그 종족 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신). 두 판이 한 상태를 같이 쓴다. */
-  const [focus, setFocus] = useState<string | null>(null);
-  const [at, setAt] = useStatsCross();
-  const noWorker = useSyncExternalStore(subStatsNoWorker, () => statsNoWorker.on);
-  const spKey = noWorker ? "sx" : "sp";
-  const allWk = linesOf(byRace, "wk");
-  const allSp = linesOf(byRace, spKey);
-  const sc = scale ?? curveScale([byRace]);
-  if (allWk.length === 0 && allSp.length === 0) {
-    return <div className="scr-rc-empty">표시할 데이터가 아직 없어요</div>;
-  }
-  const pickFocus = (k: string): void => setFocus((f) => (f === k ? null : k));
-  const drawn = (ls: Line[]): ChartLine[] => ls.map((l) => ({ key: l.race, label: l.race, color: TONE[l.race], ys: l.ys }));
-  return (
-    <div className="scr-rc">
-      <div className="scr-rc-charts">
-        {/* 인구가 먼저 · 일꾼 수가 다음(2026-10-21, 요청: "일꾼과 병력가치 순서변경" → "병력 그래프를 인구 그래프로 변경 · 인구 그래프 타이틀 옆에 일꾼 제외 라벨드 토글") —
-            셈은 sg-api series.SUPPLY(짓는 중인 몸도 센다 · 재생기 로스터 인구와 같다). */}
-        <Chart
-          title="인구" titleExtra={<TitleSwitch label="일꾼 제외" on={noWorker} onChange={setStatsNoWorker} />}
-          lines={drawn(allSp)} maxX={sc.x} maxY={sc[spKey]} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} at={at} onAt={setAt}
-        />
-        <Chart title="일꾼 수" lines={drawn(allWk)} maxX={sc.x} maxY={sc.wk} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} at={at} onAt={setAt} />
-      </div>
-    </div>
   );
 }

@@ -282,12 +282,7 @@ export interface MemberStats {
   dmgDealtRel?: number | null;
   dmgTakenRel?: number | null;
   dmgRelPlays?: number | null;
-  /** 통계용 참값의 분당 평균 곡선(서버 game_result_participant_curves · 2026-10-20) — 0분부터 1분 간격.
-   *  wk 일꾼 수 · sp 인구 · sx 일꾼 뺀 인구 · n 그 분까지 간 판 수. 곡선 있는 판이 없으면 null. */
-  curve?: StatCurve | null;
 }
-
-export interface StatCurve { wk: number[]; sp: number[]; sx: number[]; n: number[] }
 
 export interface MemberStatsEntry {
   memberId: string;

@@ -1,18 +1,15 @@
-import { Fragment, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Fragment, useState } from "react";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
-import RaceCurves, { curveScale, GRAPH_FS, type CurveScale } from "./RaceCurves";
 import type { BaseRace, Member, MemberStats } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
    C 의 승률 막대를 얹어(요청: "A에 C의 그래프를 시각적으로 도입")).
-   PC: [유저 | 게임수 | 승률 | 데미지 | APM | 테란·프로토스·저그 (게임수 | 승률) | ▾] · 폰: [유저 | 데미지 | APM | 전적: 전체·종족 판수(승률)] · 폰은 줄을 눌러 편다(▾ 없음).
-   PC 의 ▾ · 폰의 줄 누름은 모두 그 줄 아래에 **분당 곡선 두 판**(인구 · 일꾼 수, 세 종족 겹침 — RaceCurves)을 편다(2026-10-20, 요청: "펼친 부분 내용 변경 ·
-   폰 피시 공통"). 옛 펼침(종족마다 유닛·스킬·공방업 글 · MixLines)과 폰의 '펼치기 없음'은 걷었다. 승률 막대(시안 C)도 걷었다. */
+   PC: [유저 | 게임수 | 승률 | 데미지 | APM | 테란·프로토스·저그 (게임수 | 승률)] · 폰: [유저 | 데미지 | APM | 전적: 전체·종족 판수(승률)].
+   ★ 펼침(PC ▾ · 폰 줄 누름 → 분당 곡선 두 판 · 2026-10-20)은 걷었다(2026-10-22, 요청: "통계 그래프 제거 — 화면과 API 응답에서만"). 승률 막대(시안 C)도 걷었다. */
 
 const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
 /** 맨 윗줄 이름 — "평균"(2026-10-22, 요청: "클랜원 전체 → 클랜평균으로 바꾸자" → "클랜평균은 평균으로 변경"). */
@@ -100,7 +97,7 @@ function Who({ member }: { member: Member }) {
   );
 }
 
-/** 폰 줄의 아바타·이름 — 단추가 아니다(2026-10-20, 요청: "폰 아바타·닉네임도 접기·펴기로 동작") · 누르면 줄이 펴지고 접힌다(사진·프로필은 안 연다). */
+/** 폰 줄의 아바타·이름 — 단추가 아니다(사진·프로필은 안 연다 · 옛 줄 펼치기 시절 그대로). */
 function WhoPlain({ member }: { member: Member }) {
   return (
     <>
@@ -122,13 +119,10 @@ function RaceCells({ s }: { s?: MemberStats }) {
   );
 }
 
-function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: boolean; games?: number; openAll: boolean; scale: CurveScale }) {
-  const [open, setOpen] = useState(openAll);
-  useEffect(() => { setOpen(openAll); }, [openAll]);
+function PcRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
   const s = row.stats;
   return (
-    <>
-      <div className={cx("scr-sg-row", clan && "is-clan", open && "is-open")}>
+      <div className={cx("scr-sg-row", clan && "is-clan")}>
         <span className="scr-sg-c scr-sg-who">
           {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <Who member={row.member} />}
         </span>
@@ -143,14 +137,7 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
         <span className="scr-sg-c">{clan ? <Dash /> : <Dmg s={s} />}</span>
         <span className="scr-sg-c"><Num v={s.avgApm} /></span>
         {RACES.map((r) => <RaceCells key={r} s={row.byRace?.[r]} />)}
-        <span className="scr-sg-c">
-          <button type="button" className="scr-text-btn scr-sg-toggle" aria-expanded={open} aria-label={open ? "접기" : "펼치기"} onClick={() => setOpen((v) => !v)}>
-            {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
-          </button>
-        </span>
       </div>
-      {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} font={GRAPH_FS.pc} /></div>}
-    </>
   );
 }
 
@@ -168,23 +155,10 @@ function MCell({ s, games, noRate }: { s?: MemberStats; games?: number; noRate?:
   );
 }
 
-function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: boolean; games?: number; openAll: boolean; scale: CurveScale }) {
+function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
   const s = row.stats;
-  const [open, setOpen] = useState(openAll);
-  useEffect(() => { setOpen(openAll); }, [openAll]);
-  /* 줄 어디를 눌러도 펼치기·접기(2026-10-20, 요청: "모바일 열 전체가 펼치기 접기로 작동" → "화살표 제거": ▾ 단추는 걷었다
-     → "아바타·닉네임도 접기·펴기로": 폰은 WhoPlain — 줄 안에 단추가 없다).
-     React 이벤트는 포털(사진 창)에서도 이 줄로 올라오므로 DOM 으로 줄 안에서 누른 것만 받는다. */
-  const onRow = (e: React.MouseEvent<HTMLDivElement>): void => {
-    const t = e.target as Element;
-    if (!e.currentTarget.contains(t)) return;
-    const btn = t.closest("button, a");
-    if (btn) return;
-    setOpen((v) => !v);
-  };
   return (
-    <>
-    <div className={cx("scr-sg-row scr-sg-tap", clan && "is-clan", open && "is-open")} onClick={onRow}>
+    <div className={cx("scr-sg-row", clan && "is-clan")}>
       <span className="scr-sg-c scr-sg-who">
         {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <WhoPlain member={row.member} />}
       </span>
@@ -195,8 +169,6 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
       <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} />
       {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} />)}
     </div>
-    {open && <div className="scr-sg-mix"><RaceCurves byRace={row.byRace} scale={scale} font={GRAPH_FS.statsMobile} /></div>}
-    </>
   );
 }
 
@@ -220,7 +192,6 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span>APM — 분당 행동 수 평균</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
             <span>머리를 누르면 정렬 — 데미지 · APM 은 누를 때마다 켜고 끄고, 전체 · 종족 머리는 승률 → 게임수 → 끔. 여럿이면 누른 차례대로</span>
-            <span>행을 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
           </span>
         </>
       ) : (
@@ -229,19 +200,17 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span>APM — 분당 행동 수 평균</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
-          <span>줄 끝 ▾ 를 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
         </span>
       )}
     />
   );
 }
 
-export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortKeys, onSortKeys }: SortProps & {
+export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>> } | null;
   clanGames: number;
   rows: StatGridRow[];
-  openAll: boolean;
   mobile: boolean;
 }) {
   const toggle = (k: StatSortKey) => ({ on: sortKeys.includes(k), onClick: () => onSortKeys(toggled(sortKeys, k)) });
@@ -250,8 +219,6 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortK
     on: sortKeys.includes(rate) || sortKeys.includes(plays), onClick: () => onSortKeys(cycled(sortKeys, rate, plays)),
   });
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace } : null;
-  /* 펼친 곡선은 모든 줄이 한 자(눈금)를 쓴다(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이" → 인구 0~100). */
-  const scale = curveScale([clanRow, ...rows].map((r) => r?.byRace));
   if (mobile) {
     return (
       <div className="scr-sg is-m" role="table" aria-label="통계">
@@ -264,8 +231,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortK
           <span className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle("rate", "plays")}>전체</SortHead></span>
           {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle(`${r}:rate`, `${r}:plays`)}>{r}</SortHead></span>)}
         </div>
-        {clanRow && <MobileRow row={clanRow} clan games={clanGames} openAll={openAll} scale={scale} />}
-        {rows.map((r) => <MobileRow key={r.member.id} row={r} openAll={openAll} scale={scale} />)}
+        {clanRow && <MobileRow row={clanRow} clan games={clanGames} />}
+        {rows.map((r) => <MobileRow key={r.member.id} row={r} />)}
       </div>
     );
   }
@@ -278,7 +245,6 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortK
           <span key={h} className="scr-sg-c scr-sg-h2"><SortHead {...toggle(k)}>{h}</SortHead></span>
         ))}
         {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hgroup">{r}</span>)}
-        <span className="scr-sg-c scr-sg-h2" />
         {RACES.map((r) => (
           <Fragment key={r}>
             <span className="scr-sg-c scr-sg-hsub"><SortHead {...toggle(`${r}:plays`)}>게임수</SortHead></span>
@@ -286,10 +252,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortK
           </Fragment>
         ))}
       </div>
-      {clanRow && <PcRow row={clanRow} clan games={clanGames} openAll={openAll} scale={scale} />}
-      {rows.map((r) => (
-        <Fragment key={r.member.id}><PcRow row={r} openAll={openAll} scale={scale} /></Fragment>
-      ))}
+      {clanRow && <PcRow row={clanRow} clan games={clanGames} />}
+      {rows.map((r) => <PcRow key={r.member.id} row={r} />)}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronsDownUp, ChevronsUpDown, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -87,8 +87,6 @@ export default function ClanStatsScreen() {
   const activeMembers = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended"), [members]);
   const userOpts = useMemo<ChipOpt[]>(() => activeMembers.map((m) => ({ value: m.nickname, member: m })), [activeMembers]);
   const [teamBuilder, setTeamBuilder] = useState(false);
-  /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
-  const [expandAll, setExpandAll] = useState(false);
   /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 머리를 누르면 끝에 붙고, 고른 머리를 누르면 빠진다(하나는 남는다).
      머리를 눌러 고르고(요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") 고른 차례는 정렬 줄 "정렬: 전체 승률 › APM" 에 하나씩 붙고 빠진다(요청: "누르면 '정렬:' 옆에 하나씩 나오고 없어짐").
      다 빼면 기본 차례만(줄에 "기본"). 머리를 누르는 셈(켜고 끄기 · 폰 전적 머리의 승률 → 게임수 → 끔)은 StatGrid 가 한다.
@@ -305,17 +303,7 @@ export default function ClanStatsScreen() {
         <header className="scr-clan-dash-head scr-stats-count-row">
           {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다. */}
           <span className="scr-clan-dash-sub">{viewMembers.length}명</span>
-          {/* 전부 펼치기·접기는 폰에도(2026-10-21, 요청: "통계 폰화면에도 전부 펼치기 접기 추가") — 폰 줄(MobileRow)도 openAll 을 탄다. */}
-          <button
-            type="button" className="scr-text-btn scr-clan-dash-expand"
-            aria-pressed={expandAll}
-            onClick={() => setExpandAll((v) => !v)}
-          >
-            {expandAll
-              ? <ChevronsDownUp size={13} aria-hidden />
-              : <ChevronsUpDown size={13} aria-hidden />}
-            {expandAll ? "전부 접기" : "전부 펼치기"}
-          </button>
+          {/* (걷음 2026-10-22, 요청: "통계 그래프 제거") 전부 펼치기·접기 — 펼칠 그래프가 없다. */}
         </header>
       )}
 
@@ -342,7 +330,6 @@ export default function ClanStatsScreen() {
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace } : null}
             clanGames={clanGames}
             rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace }))}
-            openAll={expandAll}
             mobile={isMobile}
             sortKeys={sortKeys}
             onSortKeys={setSortKeys}
