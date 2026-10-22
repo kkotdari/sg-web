@@ -1261,7 +1261,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* 정렬 탭 앞 이름표(2026-10-22, 요청: "정렬(복수선택) 라벨 추가"). */
 .scr-stats-sort-label { font-size: var(--fs-9); font-weight: 600; color: var(--muted); padding-bottom: 7px; white-space: nowrap; }
 /* 여러 자 정렬의 적용 차례(2026-10-22 · ClanStatsScreen sortKeys) — 탭 옆 작은 글씨. */
-.scr-stats-sort-chain { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-9); color: var(--muted); padding-bottom: 7px; white-space: nowrap; }
+.scr-stats-sort-chain { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-9); color: var(--muted); padding-bottom: 7px; white-space: nowrap; min-width: 26.5em; }   /* 자리는 늘 기준 넷일 때 폭(실측 26em) — 안 들어가면 처음부터 아랫줄(ClanStatsScreen ★) */
 .scr-stats-sort-chain-item { display: inline-flex; align-items: center; gap: 1px; }
 .scr-stats-sort-chain-sep { margin-right: 4px; }
 .scr-stats-sort-chain-x {

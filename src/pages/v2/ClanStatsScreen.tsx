@@ -360,20 +360,22 @@ export default function ClanStatsScreen() {
             );
           })}
         </div>
-        {sortKeys.length > 1 && (
-          <span className="scr-stats-sort-chain">
-            {sortKeys.map((k, i) => (
-              <span key={k} className="scr-stats-sort-chain-item">
-                {i > 0 && <span className="scr-stats-sort-chain-sep" aria-hidden>&gt;</span>}
-                {SORT_OPTS.find((o) => o.value === k)?.label}
+        {/* 적용 중인 기준 — 하나여도 보인다(2026-10-22, 되요청). 자리(min-width)는 늘 **기준 넷일 때 폭**이라, 탭 옆에 넷이 다 안 들어가는 화면(폰)에서는
+            처음부터 아랫줄에 서고 기준이 늘어도 중간에 줄이 바뀌지 않는다(되요청: "4개 들어갈 자리가 안 나오면 애초부터 아랫줄에"). 폰 힌트는 그 뒤 오른끝. */}
+        <span className="scr-stats-sort-chain">
+          {sortKeys.map((k, i) => (
+            <span key={k} className="scr-stats-sort-chain-item">
+              {i > 0 && <span className="scr-stats-sort-chain-sep" aria-hidden>&gt;</span>}
+              {SORT_OPTS.find((o) => o.value === k)?.label}
+              {sortKeys.length > 1 && (
                 <button type="button" className="scr-stats-sort-chain-x" onClick={() => toggleSort(k)} aria-label="정렬 기준 빼기">
                   <X size={10} />
                 </button>
-              </span>
-            ))}
-            적용중
-          </span>
-        )}
+              )}
+            </span>
+          ))}
+          적용중
+        </span>
         {/* 폰 줄 누름 힌트 — 표 밖, 정렬 탭 줄 오른끝(2026-10-20, 요청: "힌트 위치 그리드 외부 위"). */}
         {isMobile && <span className="scr-sg-hint">행을 눌러서 그래프 보기</span>}
       </div>
