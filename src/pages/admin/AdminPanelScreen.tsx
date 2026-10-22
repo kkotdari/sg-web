@@ -21,7 +21,6 @@ import { showToast } from "../../components/common/Toast";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { cx } from "../../utils/format";
 import { versionNumber } from "../../utils/appVersion";
-import { playCreak } from "../../utils/sfx";
 import { formatAgo, todayStr } from "../../utils/date";
 import type { GameResult } from "../../types";
 import { indexGame } from "../../utils/gameIndex";
@@ -34,7 +33,6 @@ interface AdminPanelScreenProps {
 }
 
 export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
-  useEffect(() => { playCreak(); }, []);
   const appVersion = useAppStore((s) => s.appVersion);
   const memberOf = useAppStore((s) => s.memberOf);
   const appVersions = useAppStore((s) => s.appVersions);

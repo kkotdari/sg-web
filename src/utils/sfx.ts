@@ -14,43 +14,6 @@ function getCtx(): AudioContext | null {
   }
 }
 
-export function playCreak(): void {
-  const ac = getCtx();
-  if (!ac) return;
-  try {
-    const t = ac.currentTime;
-    const osc = ac.createOscillator();
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(720, t);
-    osc.frequency.exponentialRampToValueAtTime(240, t + 0.42);
-
-    const lfo = ac.createOscillator();
-    lfo.type = "sine";
-    lfo.frequency.setValueAtTime(26, t);
-    lfo.frequency.linearRampToValueAtTime(15, t + 0.42);
-    const lfoGain = ac.createGain();
-    lfoGain.gain.setValueAtTime(50, t);
-    lfo.connect(lfoGain).connect(osc.frequency);
-
-    const bp = ac.createBiquadFilter();
-    bp.type = "bandpass";
-    bp.frequency.setValueAtTime(950, t);
-    bp.Q.setValueAtTime(6, t);
-
-    const gain = ac.createGain();
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.13, t + 0.04);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.46);
-
-    osc.connect(bp).connect(gain).connect(ac.destination);
-    osc.start(t);
-    lfo.start(t);
-    osc.stop(t + 0.5);
-    lfo.stop(t + 0.5);
-  } catch {
-  }
-}
-
 export function playMailChime(): void {
   const ac = getCtx();
   if (!ac) return;
