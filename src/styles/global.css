@@ -8182,15 +8182,16 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-rc-title { font-size: 12px; }
 
 /* 폰 — [유저 | APM | 데미지 | 전체 | 테란 | 프로토스 | 저그](2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 유저 칸 아래 한 줄
-   "APM 230 1.4 0.8"(그 줄 폭을 유저 칸이 먼저 가졌다) · 그 전엔 [유저 | 전적] 세로 쌓기. 유저 칸은 64px 부터 늘고(1.6fr) · APM 34 · 데미지 38 고정 · 전적 넷은 44px 부터(1fr). */
-.scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(64px, 1.6fr) 34px 38px repeat(4, minmax(44px, 1fr)); font-size: var(--fs-11); }
+   "APM 230 1.4 0.8"(그 줄 폭을 유저 칸이 먼저 가졌다) · 그 전엔 [유저 | 전적] 세로 쌓기. APM 34 · 데미지 38 고정 · 전적 넷은 36px 부터(1fr) ·
+   유저 칸은 닉네임 다섯 글자 + 말줄임이 늘 보이는 폭(min-content — 이름 최소 6em · 아래 .scr-sg-name)부터 1.6fr 로 는다(요청: "최소 다섯 글자는 나와야 해 닉네임"). */
+.scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(min-content, 1.6fr) 34px 38px repeat(4, minmax(36px, 1fr)); font-size: var(--fs-11); }
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
 .scr-sg.is-m .scr-sg-bar { width: 34px; height: 3px; }
-.scr-sg.is-m .scr-sg-who { justify-content: flex-start; gap: 6px; padding-left: 8px; padding-right: 2px; }
-.scr-sg.is-m .scr-sg-tap > .scr-sg-c.scr-sg-who { padding: 12px 4px 12px 8px; }
-/* 유저 칸 글자(2026-10-20, 요청: "유저 칸 글자 키우고" → "크기 적절히" → "아바타·닉네임 너무 큼") 19 → 17 → 15 → 14px · 아바타 24 → 20(2026-10-22 · 유저 칸이 좁아져서). */
-.scr-sg.is-m .scr-sg-name { font-size: 14px; }
+.scr-sg.is-m .scr-sg-who { justify-content: flex-start; gap: 4px; padding-left: 6px; padding-right: 2px; }
+.scr-sg.is-m .scr-sg-tap > .scr-sg-c.scr-sg-who { padding: 12px 4px 12px 6px; }
+/* 유저 칸 글자(2026-10-20, 요청: "유저 칸 글자 키우고" → "크기 적절히" → "아바타·닉네임 너무 큼") 19 → 17 → 15 → 14 → 13px · 아바타 24 → 20(2026-10-22 · 유저 칸이 좁아져서). */
+.scr-sg.is-m .scr-sg-name { font-size: 13px; min-width: 6em; flex: 1 1 0; contain: inline-size; }   /* 6em = 굵은 한글 다섯 + "…"(실측 78px) · 긴 이름이 칸을 넓히지 않게 제 폭은 0(contain) — 칸 최소 폭은 이 6em 이 정한다 */
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 20px !important; height: 20px !important; }
 .scr-sg.is-m .scr-sg-name-plain { white-space: normal; word-break: keep-all; overflow: visible; line-height: 1.2; }   /* "클랜원 전체"는 좁은 칸에서 두 줄로(말줄임 대신) */
 /* APM · 데미지 칸 — 숫자만(12px · tabular) · 데미지는 초록 딜 위 · 빨강 피해 아래. */
@@ -8227,8 +8228,9 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg-help-list { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.4; }
 /* 폰 표 머리 글자 fs-11 → 13px(2026-10-22, 요청: "헤더 폰트 키우기"). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-c { font-size: 13px; }
-/* 좁은 칸 머리(APM · 데미지 · 종족)는 11px(데미지가 38px · 프로토스가 44px 칸에 들게). */
-.scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-race-head, .scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-hnarrow { font-size: 11px; padding-left: 2px; padding-right: 2px; }
+/* 좁은 칸 머리(APM · 데미지 · 종족)는 11px(데미지가 38px 칸에 들게) · 종족은 10px · 자간 좁게(프로토스가 36px 칸에 들게). */
+.scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-race-head, .scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-hnarrow { font-size: 11px; padding-left: 1px; padding-right: 1px; }
+.scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-race-head { font-size: 10px; letter-spacing: -0.05em; }
 @media (max-width: 400px) {
   .scr-sg.is-m .scr-sg-race-head { font-size: var(--fs-10); letter-spacing: -0.04em; }
 }
