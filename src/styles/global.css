@@ -8093,7 +8093,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   display: grid; width: 100%;
   /* 종족마다 [전적(N회) | 승률] 두 칸(2026-10-20). */
   grid-template-columns: minmax(150px, 1.3fr) 104px 84px 60px 196px repeat(3, minmax(60px, .8fr) minmax(58px, .7fr)) 36px;
-  border: 1px solid var(--line); overflow: hidden; border-radius: var(--radius-sm);   /* 활동 목록과 같은 곡률(PC 8 · 폰 3 — 2026-10-22, 요청: "통계 · 게임 목록 테두리 둥글게 활동 목록처럼") · 한때 걷었다(2026-10-21) */
+  overflow: hidden; border-radius: var(--radius-sm);   /* 활동 목록과 같은 곡률(PC 8 · 폰 3 — 2026-10-22, 요청: "통계 · 게임 목록 테두리 둥글게 활동 목록처럼") · 바깥 테두리는 걷었다(같은 날 "테두리만 빼기로" — 게임 목록 표처럼 머리 칠이 시작을 말한다) */
   font-size: var(--fs-caption); color: var(--text);
 }
 .scr-sg-row { display: contents; }
@@ -8102,8 +8102,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   padding: 9px 8px; border-top: 2px solid var(--line-faint); white-space: nowrap;   /* 유저 사이 줄만 1 → 2px(2026-10-22, 요청: "유저 간 구분선만 좀 두껍게") */
 }
 .scr-sg-c + .scr-sg-c { border-left: 1px solid var(--line-hair, var(--line-faint)); }
-/* 칠은 없다 — 표는 바탕 그대로(흰색 · 2026-10-22, 요청: "통계 그리드 색 흰색으로") · 옛: 머리 0.06 · 클랜원 전체 줄 0.035 · 펼침 0.025 덧칠. */
-.scr-sg-head > .scr-sg-c { border-top: none; padding: 7px 8px; font-size: var(--fs-11); font-weight: 700; color: var(--dim); }
+/* 몸은 바탕 그대로(흰색 · 2026-10-22, 요청: "통계 그리드 색 흰색으로" — 옛 클랜원 전체 줄 0.035 · 펼침 0.025 덧칠 걷음) · 머리만 게임 목록 머리와 같은 0.06(바깥 테두리를 걷어 표의 시작을 말한다). */
+.scr-sg-head > .scr-sg-c { border-top: none; padding: 7px 8px; background: rgba(var(--overlay-rgb), 0.06); font-size: var(--fs-11); font-weight: 700; color: var(--dim); }
 /* 머리 두 줄 — 앞 다섯 칸·끝 칸은 두 줄을 내리 쓰고, 종족 이름은 [전적 | 승률] 두 칸을 덮는다(아래 줄이 전적·승률). */
 .scr-sg-head > .scr-sg-h2 { grid-row: 1 / span 2; }
 .scr-sg-head > .scr-sg-hgroup { grid-row: 1; grid-column: span 2; padding-bottom: 3px; border-bottom: 1px solid var(--line-faint); }
