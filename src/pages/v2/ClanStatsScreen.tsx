@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronsDownUp, ChevronsUpDown, Users, X } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, Users } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -98,7 +98,7 @@ export default function ClanStatsScreen() {
   /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
   const [expandAll, setExpandAll] = useState(false);
   /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 탭을 누르면 끝에 붙고, 고른 탭을 누르면 빠진다(하나는 남는다).
-     둘 이상이면 탭 옆에 작은 글씨로 "승률순 × > 참여순 × 적용중"(되요청 — 탭의 차례 번호 대신 · 작은 x 로도 뺀다). 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
+     둘 이상이면 탭 앞에 작고 옅은 차례 숫자(PC·폰 같게 · 되요청 — 한때 탭 옆 "승률순 × > 참여순 × 적용중" 줄이 있었다). 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
   const [sortKeys, setSortKeys] = useState<SortKey[]>(["rate"]);
   const toggleSort = (k: SortKey): void => setSortKeys((prev) => (prev.includes(k)
     ? (prev.length > 1 ? prev.filter((x) => x !== k) : prev)
@@ -355,31 +355,12 @@ export default function ClanStatsScreen() {
                 className={cx("scr-line-tab-btn", at >= 0 && "is-on")}
                 onClick={() => toggleSort(o.value)}
               >
-                {isMobile && sortKeys.length > 1 && at >= 0 && <span className="scr-stats-sort-no">{at + 1}</span>}
+                {sortKeys.length > 1 && at >= 0 && <span className="scr-stats-sort-no">{at + 1}</span>}
                 {o.label}
               </button>
             );
           })}
         </div>
-        {/* 적용 중인 기준 — 하나여도 보인다(2026-10-22, 되요청). 자리(min-width)는 늘 **기준 넷일 때 폭**이라, 탭 옆에 넷이 다 안 들어가는 화면(폰)에서는
-            처음부터 아랫줄에 서고 기준이 늘어도 중간에 줄이 바뀌지 않는다(되요청: "4개 들어갈 자리가 안 나오면 애초부터 아랫줄에").
-            폰은 이 줄 없이 탭 앞에 작은 차례 숫자(둘 이상일 때 · 되요청: "모바일은 행이 들쑥날쑥 — 1,2,3,4 숫자, 작고 안 튀는 글자로"). */}
-        {!isMobile && (
-          <span className="scr-stats-sort-chain">
-            {sortKeys.map((k, i) => (
-              <span key={k} className="scr-stats-sort-chain-item">
-                {i > 0 && <span className="scr-stats-sort-chain-sep" aria-hidden>&gt;</span>}
-                {SORT_OPTS.find((o) => o.value === k)?.label}
-                {sortKeys.length > 1 && (
-                  <button type="button" className="scr-stats-sort-chain-x" onClick={() => toggleSort(k)} aria-label="정렬 기준 빼기">
-                    <X size={10} />
-                  </button>
-              )}
-            </span>
-          ))}
-          적용중
-        </span>
-        )}
         {/* 폰 줄 누름 힌트 — 표 밖, 정렬 탭 줄 오른끝(2026-10-20, 요청: "힌트 위치 그리드 외부 위"). */}
         {isMobile && <span className="scr-sg-hint">행을 눌러서 그래프 보기</span>}
       </div>

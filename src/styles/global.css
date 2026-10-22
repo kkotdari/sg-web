@@ -1258,19 +1258,10 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-sort-tabs > .scr-line-tab-btn::after { left: 3px; right: 3px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child { padding-left: 2px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
-/* 폰 정렬 탭의 차례 숫자(2026-10-22) — 작고 옅은 글자(배지 아님). */
+/* 정렬 탭의 차례 숫자(2026-10-22 · PC·폰) — 작고 옅은 글자(배지 아님). */
 .scr-stats-sort-no { font-size: 9px; font-weight: 600; color: var(--muted); margin-right: 2px; vertical-align: 1px; }
 /* 정렬 탭 앞 이름표(2026-10-22, 요청: "정렬(복수선택) 라벨 추가"). */
 .scr-stats-sort-label { font-size: var(--fs-9); font-weight: 600; color: var(--muted); padding-bottom: 7px; white-space: nowrap; }
-/* 여러 자 정렬의 적용 차례(2026-10-22 · ClanStatsScreen sortKeys) — 탭 옆 작은 글씨. */
-.scr-stats-sort-chain { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-9); color: var(--muted); padding-bottom: 7px; white-space: nowrap; min-width: 26.5em; }   /* 자리는 늘 기준 넷일 때 폭(실측 26em) — 안 들어가면 처음부터 아랫줄(ClanStatsScreen ★) */
-.scr-stats-sort-chain-item { display: inline-flex; align-items: center; gap: 1px; }
-.scr-stats-sort-chain-sep { margin-right: 4px; }
-.scr-stats-sort-chain-x {
-  display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; padding: 0; border: 0; border-radius: 7px;
-  background: transparent; color: inherit; cursor: pointer; opacity: 0.7;
-}
-.scr-stats-sort-chain-x:hover { opacity: 1; background: rgba(var(--overlay-rgb), 0.1); }
 
 .scr-stat-cards { display: flex; flex-direction: column; }
 /* .scr-statcard 는 **클랜 전체의 두 장**(종족구성별 전적 · 클랜원 전체)이고, .scr-stat-person 은 개인 줄이다 — 개인 줄은 더는 카드로
