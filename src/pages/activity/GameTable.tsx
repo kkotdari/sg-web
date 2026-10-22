@@ -38,7 +38,8 @@ import type { GameResult, Member } from "../../types";
 /* 데이터 칸(2026-10-21, 요청: "로스터칸 폭 줄이고 분석그래프 컬럼 추가" → "컬럼명 데이터로 · 아이콘은 다른 것들처럼 평범한 아이콘 글자로") — 그래프 보기를 링크 칸에서 꺼내 제 칸에 · 링크 칸과 같은 아이콘 단추. */
 /* 차례(2026-10-21, 요청: "유형을 맵 앞으로 · 게임길이 컬럼을 로스터 다음으로 · 리그에선 리그 + 유형 합치기 맨 마지막에 유형을 괄호로 표시") —
    리그 탭은 유형 칸 없이 리그 칸 끝에 "(유형)" · 그 칸 이름은 "경기 정보"(같은 날 요청: "리그 컬럼명을 매치 정보로" → "매치래 경기"). */
-/* 링크 칸 → **도구** · 조회수 칸 → **추천**(2026-10-22, 요청: "PC 목록 링크 컬럼을 도구로 바꾸고 추천 버튼도 추가" · "조회수는 화면에서 제거하고 추천 수로"). */
+/* 링크 칸 → **도구** · 조회수 칸 → **추천**(2026-10-22, 요청: "PC 목록 링크 컬럼을 도구로 바꾸고 추천 버튼도 추가" · "조회수는 화면에서 제거하고 추천 수로" ·
+   같은 날 "추천 아이콘은 도구에서 추천 컬럼으로 이동"). */
 const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "로스터", "게임길이", "데이터", "도구", "추천"];
 
 export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
@@ -218,14 +219,14 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
             : <span className="scr-gtab-dim">-</span>}
         </span>
         <span className="scr-gtab-cell scr-gtab-links">
-          <RecommendButton rec={rec} className="scr-gtab-link" />
           {!secret && game.replay && linkBtn("save", "리플레이 저장", () => { void downloadReplay(game); void api.pingGameAction("replay", game); }, <Save size={13} />)}
           {!secret && linkBtn("scrap", "스크랩", () => { void scrap(); }, <Bookmark size={13} />, scrapping)}
           {!secret && linkBtn("share", "공유", () => { void share(); }, <Share2 size={13} />)}
           {canHide && linkBtn("hide", "숨기기", () => onHide?.(), <EyeOff size={13} />)}
           {secret && <span className="scr-gtab-dim">-</span>}
         </span>
-        <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : rec.n}</span>
+        {/* 추천 단추는 도구 칸이 아니라 추천 칸에 수와 함께(2026-10-22, 요청: "추천 아이콘은 도구에서 추천 컬럼으로 이동") — 단추가 안 서는 판(명예의 전당 · 손님)은 수만. */}
+        <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : rec.shown ? <RecommendButton rec={rec} count className="scr-gtab-rec" /> : rec.n}</span>
       </div>
       {graphOpen && <GameCurvesModal game={game} onClose={() => setGraphOpen(false)} />}
     </div>

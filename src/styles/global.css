@@ -5371,6 +5371,8 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-recommend-btn svg { flex-shrink: 0; }
 .scr-recommend-btn.is-on { color: var(--lighting-accent, var(--point)); }
 .scr-recommend-n { font-size: var(--fs-11); font-variant-numeric: tabular-nums; line-height: 1; }
+.scr-gtab-rec { width: auto; height: 26px; padding: 0 4px; gap: 4px; }
+.scr-gtab-rec .scr-recommend-n { font-size: inherit; }
 .scr-activity-row-rec { width: auto; min-width: 24px; height: 24px; padding: 0 4px; margin: -5px 4px -5px 0; }
 /* ★ 윗줄 = [재생 배지 왼끝 · 맵·시간 배지 **정가운데** · (NEW) 시각 오른끝](2026-10-19, 요청 위 ★★) — 맵 배지는 줄 몸의 가운데에 절대 자리(위 여백 7 = 줄 몸 위 패딩).
    리그 판 머리 줄(has-above)이 있는 줄은 그 아래라 자리를 모른다 — 양옆 auto 여백으로 가운데 어림. */
