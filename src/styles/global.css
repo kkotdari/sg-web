@@ -1254,10 +1254,12 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* 정렬 순서 — 검색창 바로 밑의 **작은** 밑줄 탭(2026-10, 요청: "크기 좀 작게"). 내전·공방 탭과 같은 모양을 한 치 줄여 쓴다. */
 /* 앞의 "정렬" 글은 걷었다(2026-10-20, 요청) — 탭 이름이 "승률순 · 딜순 · APM순 · 참여순"이라 뜻이 선다. */
 .scr-stats-sort { display: flex; align-items: flex-end; gap: 8px; margin: -2px 0 2px; flex-wrap: wrap; }
-.scr-stats-sort-tabs > .scr-line-tab-btn { font-size: var(--fs-11); padding: 2px 9px 6px; }
-.scr-stats-sort-tabs > .scr-line-tab-btn::after { left: 5px; right: 5px; }
+.scr-stats-sort-tabs > .scr-line-tab-btn { font-size: var(--fs-11); padding: 2px 6px 6px; }   /* 옆 9 → 6(2026-10-22, 요청: "탭 사이 간격 살짝 줄이고") */
+.scr-stats-sort-tabs > .scr-line-tab-btn::after { left: 3px; right: 3px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child { padding-left: 2px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
+/* 정렬 탭 앞 이름표(2026-10-22, 요청: "정렬(복수선택) 라벨 추가"). */
+.scr-stats-sort-label { font-size: var(--fs-9); font-weight: 600; color: var(--muted); padding-bottom: 7px; white-space: nowrap; }
 /* 여러 자 정렬의 적용 차례(2026-10-22 · ClanStatsScreen sortKeys) — 탭 옆 작은 글씨. */
 .scr-stats-sort-chain { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-9); color: var(--muted); padding-bottom: 7px; white-space: nowrap; }
 .scr-stats-sort-chain-item { display: inline-flex; align-items: center; gap: 1px; }

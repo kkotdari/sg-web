@@ -344,6 +344,7 @@ export default function ClanStatsScreen() {
       )}
 
       <div className="scr-stats-sort">
+        <span className="scr-stats-sort-label">정렬 (복수선택)</span>
         <div className="scr-line-tabs scr-stats-sort-tabs" role="tablist" aria-label="정렬 순서">
           {SORT_OPTS.map((o) => {
             const at = sortKeys.indexOf(o.value);
