@@ -354,10 +354,10 @@ export interface TeamRankingResponse {
   teams: TeamRankEntry[];
 }
 
-export type ScreenKey = "activity" | "ladder" | "clan" | "members" | "leagues" | "minimaps" | "control" | "scraps" | "guide"
+export type ScreenKey = "activity" | "ladder" | "clan" | "members" | "leagues" | "minimaps" | "control"
   | "catalog" | "explore";
 export const SCREEN_KEYS: ScreenKey[] = ["activity", "ladder", "clan", "members",
-  "leagues", "minimaps", "control", "scraps", "guide", "catalog", "explore"];
+  "leagues", "minimaps", "control", "catalog", "explore"];
 
 export interface ExtShareList {
   id: number;
@@ -372,15 +372,6 @@ export interface ExtShareAddResult {
   added: number;
   already: number;
   skipped: number;
-}
-
-export interface SceneScrap {
-  id: number;
-  title: string;
-  subtitle: string;
-  link: string;
-  gameNo?: string | null;
-  createdAt: string;
 }
 
 export type AppVersion = string;

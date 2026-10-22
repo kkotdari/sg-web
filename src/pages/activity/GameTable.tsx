@@ -1,10 +1,9 @@
 import { useState, type KeyboardEvent, type ReactNode } from "react";
-import { Bookmark, ChartLine, EyeOff, Play, Save, Share2 } from "lucide-react";
+import { ChartLine, EyeOff, Play, Save, Share2 } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { canManageGame } from "../../utils/gameAccess";
 import { shareToKakao } from "../../utils/kakaoShare";
 import { gameResultShareContent } from "./gameShare";
-import { SCRAP_FORMS } from "./activityItems";
 import { downloadReplay } from "../../utils/replayDownload";
 import { cachedReplayMap, useReplayMapTick } from "scplay";
 import { api } from "../../api/client";
@@ -32,7 +31,7 @@ import type { GameResult, Member } from "../../types";
    열 틀은 목록의 .has-league 가 고른다(global.css). */
 /* 재생 칸 → **링크** 칸(2026-10-20, 요청: "게임목록에 pc에 다운로드 버튼(디스켓) 아이콘도 추가(링크 컬럼 추가)") — 리플레이 받기(💾) ·
    (재생 ▶ 은 같은 날 게임길이 칸 아래로 옮겼다) ·
-   스크랩 · 공유 · 숨기기(같은 날 요청: "링크에 숨기기 버튼 추가 · 스크랩버튼 공유버튼도"). 스크랩은 선택 막대의 스크랩과 같다(처음 장면 · 묻지 않음) ·
+   공유 · 숨기기(같은 날 요청: "링크에 숨기기 버튼 추가 · 스크랩버튼 공유버튼도" · 스크랩은 2026-10-22 기능째 걷었다) ·
    공유는 게임 상세의 공유(카카오 · 안 되면 링크 복사) · 숨기기는 뛴 사람·운영자만(확인 창은 활동 화면이 띄운다 — onHide). */
 /* 숨김 칸은 걷었다(2026-10-20, 요청: "숨김 컬럼 제거하고 해제요청 버튼을 숨김 아래로") — 숨긴 판은 로스터 칸의 "비밀" 아래에 해제요청(폰 줄과 같은 꼴). */
 /* 데이터 칸(2026-10-21, 요청: "로스터칸 폭 줄이고 분석그래프 컬럼 추가" → "컬럼명 데이터로 · 아이콘은 다른 것들처럼 평범한 아이콘 글자로") — 그래프 보기를 링크 칸에서 꺼내 제 칸에 · 링크 칸과 같은 아이콘 단추. */
@@ -146,33 +145,17 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   const kind = secret ? "-" : gameKindText(game);
   const user = useAppStore((st) => st.user);
   const canHide = !!onHide && !game.hidden && canManageGame(game, user);
-  const [scrapping, setScrapping] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
   const rec = useRecommend(game);
-  const scrap = async () => {
-    if (scrapping) return;
-    setScrapping(true);
-    try {
-      const c9 = gameResultShareContent(game, memberOf);
-      const key9 = String(game.matchNo || game.id);
-      await api.createSceneScrap({ title: c9.title, subtitle: c9.description ?? "", link: `${window.location.origin}/games/${key9}`, gameNo: key9 });
-      void api.pingGameAction("scrap", game);
-      showToast(SCRAP_FORMS.did, { kind: "ok" });
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : SCRAP_FORMS.couldNot, { kind: "warn" });
-    } finally {
-      setScrapping(false);
-    }
-  };
   const share = async () => {
     const out = await shareToKakao(gameResultShareContent(game, memberOf));
     if (out === "shared" || out === "copied") void api.pingGameAction("share", game);
     if (out === "copied") showToast("링크를 복사했어요.", { kind: "ok" });
   };
   /** 링크 칸 단추 — 줄 열기로 번지지 않게 막는다. */
-  const linkBtn = (key: string, title: string, run: () => void, icon: ReactNode, off = false) => (
+  const linkBtn = (key: string, title: string, run: () => void, icon: ReactNode) => (
     <button
-      key={key} type="button" className="scr-icon-btn scr-gtab-link" title={title} aria-label={title} disabled={off}
+      key={key} type="button" className="scr-icon-btn scr-gtab-link" title={title} aria-label={title}
       onClick={(e) => { e.stopPropagation(); run(); }}
       onKeyDown={(e) => e.stopPropagation()}
     >
@@ -220,12 +203,11 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         </span>
         <span className="scr-gtab-cell scr-gtab-links">
           {!secret && game.replay && linkBtn("save", "리플레이 저장", () => { void downloadReplay(game); void api.pingGameAction("replay", game); }, <Save size={13} />)}
-          {!secret && linkBtn("scrap", "스크랩", () => { void scrap(); }, <Bookmark size={13} />, scrapping)}
           {!secret && linkBtn("share", "공유", () => { void share(); }, <Share2 size={13} />)}
           {canHide && linkBtn("hide", "숨기기", () => onHide?.(), <EyeOff size={13} />)}
           {secret && <span className="scr-gtab-dim">-</span>}
         </span>
-        {/* 추천 단추는 도구 칸이 아니라 추천 칸에 수와 함께(2026-10-22, 요청: "추천 아이콘은 도구에서 추천 컬럼으로 이동") — 단추가 안 서는 판(명예의 전당 · 손님)은 수만. */}
+        {/* 추천 단추는 도구 칸이 아니라 추천 칸에 수와 함께(2026-10-22, 요청: "추천 아이콘은 도구에서 추천 컬럼으로 이동") — 단추가 안 서는 판(손님 · 숨긴 판)은 수만. */}
         <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : rec.shown ? <RecommendButton rec={rec} count className="scr-gtab-rec" /> : rec.n}</span>
       </div>
       {graphOpen && <GameCurvesModal game={game} onClose={() => setGraphOpen(false)} />}

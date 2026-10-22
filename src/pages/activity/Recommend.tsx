@@ -9,7 +9,8 @@ import type { GameResult } from "../../types";
 
 /* ★ 게임 추천(2026-10-22, 요청: "게임에 추천 기능 추가 · PC 목록 링크 칸을 도구로 바꾸고 추천 단추 · 모바일은 데이터 옆 · 상세 툴박스에도") —
    한 사람이 한 판에 하나(서버 game_result_recommends). 누르면 곧바로 바꿔 그리고(되면 서버 값으로 맞춤 · 안 되면 되돌림) 같은 판을 그린 다른 자리(목록 줄 ·
-   추천 수 칸 · 상세)에도 알린다. 로그인 안 한 화면(손님)·숨긴 판·명예의 전당 판(2026-10-22, 요청: "명예의 전당은 추천 아이콘 없음")에는 안 선다. */
+   추천 수 칸 · 상세)에도 알린다. 로그인 안 한 화면(손님)·숨긴 판에는 안 선다.
+   명예의 전당 판도 그대로 누르고 거둔다 — 명예의 전당은 마감 때 표식으로 굳어 수가 3 아래로 내려가도 남는다(서버 set_recommend). */
 type Rec = { n: number; on: boolean };
 const listeners = new Set<(id: number, r: Rec) => void>();
 
@@ -35,7 +36,7 @@ export function useRecommend(game: GameResult): Rec & { toggle: () => void; busy
       .catch((e) => { publish(before); showToast(e instanceof Error ? e.message : "추천하지 못했어요.", { kind: "warn" }); })
       .finally(() => setBusy(false));
   };
-  return { ...rec, toggle, busy, shown: !!user && !isSecretGame(game) && !game.fame };
+  return { ...rec, toggle, busy, shown: !!user && !isSecretGame(game) };
 }
 
 /** 추천 단추 — 엄지 · 켜면 채운 엄지와 강조색. count 면 옆에 수. 줄 열기로 번지지 않는다. */

@@ -139,7 +139,6 @@ export function bulkDeleteMessageOf(items: DisplayItem[]): string {
 }
 
 export const HIDE_FORMS = { did: "숨겼어요", couldNot: "숨기지 못했어요" };
-export const SCRAP_FORMS = { did: "스크랩했어요", couldNot: "스크랩하지 못했어요" };
 
 const ROW_NAME_MAX = 1;
 

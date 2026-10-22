@@ -18,7 +18,6 @@ import { useIsMobile } from "../../hooks/useIsMobile";
 import { useEditableFocused } from "../../hooks/useEditableFocused";
 import { useSelection } from "../../hooks/useSelection";
 import { batchSummary, runBatch } from "../../utils/batch";
-import { gameResultShareContent } from "./gameShare";
 import { canManageGame, isSecretGame } from "../../utils/gameAccess";
 import { buildReplayDrafts, type ReplayDraft } from "../../utils/replayDraft";
 import { hasAppUpdatePreloadErrorOccurred } from "../../utils/appUpdate";
@@ -30,7 +29,7 @@ import GameDetailPage from "./GameDetailPage";
 import type { RowAct, RowView } from "./ActivityRow";
 import { FeedProvider, useFeedActions, useRecentLeague } from "./activityFeed";
 import {
-  GROUP_DEFS, GROUP_ITEM_KIND, GROUP_SCREEN_CODE, HIDE_FORMS, SCRAP_FORMS, bulkDeleteMessageOf, deletableOf,
+  GROUP_DEFS, GROUP_ITEM_KIND, GROUP_SCREEN_CODE, HIDE_FORMS, bulkDeleteMessageOf, deletableOf,
   detailGroupOf, detailIdOf, leagueMatchItem, scheduleItem, type DisplayItem, type GameTab,
 } from "./activityItems";
 
@@ -351,28 +350,6 @@ function ActivityRouter() {
     showToast(batchSummary("", done.length, failed.length, "개", HIDE_FORMS), { kind: failed.length > 0 ? "warn" : "ok" });
   };
 
-  /** 고른 게임마다 처음(0초) 장면 스크랩(SelectionActions ★) — 묻지 않고 바로 담는다(되돌리기는 스크랩 화면의 지우기). 제목·부제는 공유 글과 같은
-   *  자(gameResultShareContent) · 고리는 장면 시각 없는 게임 주소(그 게임을 마지막으로 본 시각이 붙지 않게). */
-  const [scrapBusy, setScrapBusy] = useState(false);
-  const scrapBusyRef = useRef(false);
-  const runBulkScrap = useCallback(async (items: DisplayItem[]) => {
-    const games = items.flatMap((it) => (it.kind === "gameResult" ? [it.gameResult] : []));
-    if (games.length === 0 || scrapBusyRef.current) return;
-    scrapBusyRef.current = true;
-    setScrapBusy(true);
-    const { done, failed } = await runBatch(games, async (g) => {
-      const c9 = gameResultShareContent(g, memberOf);
-      const key9 = String(g.matchNo || g.id);
-      await api.createSceneScrap({ title: c9.title, subtitle: c9.description ?? "", link: `${window.location.origin}/games/${key9}`, gameNo: key9 });
-      void api.pingGameAction("scrap", g);
-    });
-    scrapBusyRef.current = false;
-    setScrapBusy(false);
-    if (done.length > 0) selClear();
-    showToast(batchSummary("", done.length, failed.length, "개", SCRAP_FORMS), { kind: failed.length > 0 ? "warn" : "ok" });
-  }, [memberOf, selClear]);
-  const onScrapItems = useCallback((items: DisplayItem[]) => { void runBulkScrap(items); }, [runBulkScrap]);
-
   const listShown = view.kind === "home" || view.kind === "group";
 
   return (
@@ -402,8 +379,6 @@ function ActivityRouter() {
           canPick={canPick}
           onDeleteItems={askBulkDelete}
           onHideItems={askBulkHide}
-          onScrapItems={onScrapItems}
-          scrapBusy={scrapBusy}
           refreshKey={groupRefreshKey}
         />
       )}

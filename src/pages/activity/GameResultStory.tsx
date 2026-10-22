@@ -6,7 +6,6 @@ import { api } from "../../api/client";
 import ActivityComments from "./ActivityComments";
 import { gameResultShareContent } from "./gameShare";
 import { preloadKakao, shareToKakao } from "../../utils/kakaoShare";
-import { useSceneScrap } from "./SceneScrapPrompt";
 import RosterSide, { isMeleeGame, outcomeFor, resolveSlotName } from "./GameResultSides";
 import Avatar from "../../components/common/Avatar";
 import { GameDetailCloseContext } from "./gameDetailClose";
@@ -143,10 +142,6 @@ export default function GameResultStory({
     (raw: string): 1 | 2 | undefined => teamByRaw.get(raw), [teamByRaw],
   );
 
-  const { scrap: scrapScene, node: scrapPrompt } = useSceneScrap(
-    () => gameResultShareContent(gameResult, memberOf, { scene: true }),
-    String(gameResult.matchNo || gameResult.id),
-  );
   const shareScene = useCallback(async (): Promise<string | undefined> => {
     const out = await shareToKakao(gameResultShareContent(gameResult, memberOf, { scene: true }));
     return out === "shared" ? "공유됨" : out === "copied" ? "링크 복사됨" : undefined;
@@ -202,7 +197,6 @@ export default function GameResultStory({
         bases={bases} teamOfRaw={teamOfRaw} active={active}
         sceneLink={sceneLink}
         clockKey={String(gameResult.matchNo || gameResult.id)}
-        onScrap={scrapScene}
         onShare={shareScene}
         onDetailClose={detailClose ?? undefined}
         soleView={soleViewNow}
@@ -216,7 +210,6 @@ export default function GameResultStory({
           : undefined}
         menu={menu}
       />
-      {scrapPrompt}
     </div>
   );
 

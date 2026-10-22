@@ -22,8 +22,6 @@ import ProfileModal from "./modals/ProfileModal";
 import MemberProfileModal from "./modals/MemberProfileModal";
 import AdminPanelScreen from "./pages/admin/AdminPanelScreen";
 import MapCanonScreen from "./pages/minimaps/MapCanonScreen";
-import GuideScreen from "./pages/guide/GuideScreen";
-import ScrapScreen from "./pages/scraps/ScrapScreen";
 import AppUpdateNoticeModal from "./modals/AppUpdateNoticeModal";
 import AppReloadModal from "./modals/AppReloadModal";
 import ActivityScreen from "./pages/activity/ActivityScreen";
@@ -282,8 +280,6 @@ export default function App() {
             {isAdmin && !booting && resolvedScreen === "members" && <MembersScreen />}
             {!booting && resolvedScreen === "leagues" && <LeagueScreen />}
             {isAdmin && !booting && resolvedScreen === "minimaps" && <MapCanonScreen />}
-            {!booting && resolvedScreen === "guide" && <GuideScreen />}
-            {!booting && resolvedScreen === "scraps" && <ScrapScreen />}
             {!booting && resolvedScreen === "catalog" && <CatalogScreen />}
             {isAdmin && !booting && resolvedScreen === "control" && <AdminPanelScreen isAdmin={isAdmin} />}
           </main>

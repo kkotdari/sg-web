@@ -1,9 +1,8 @@
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
-import { ArrowLeft, BookOpen, Bookmark } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
 import { SelectionBar } from "../../components/common/Selection";
-import { useAppStore } from "../../store/appStore";
 import {
   activeMemberSearchTerms, memberMatchesTerm, normalizeSearchText, splitSearchTerms,
 } from "../../utils/memberSearch";
@@ -26,28 +25,16 @@ import {
 /* ★ 묶음 목록(일정·게임) — 2026-10-19 ActivityScreen 에서 뗐다(요청: "…목록과 상세등 모두 컴포넌트 분리").
    일정은 피드에서 제 묶음을 고르고, 게임은 서버 쪽수(아래)로 받는다. 줄은 memo(ActivityRow). */
 
-/* ★ 선택 막대 단추 = **스크랩 · 숨김 · 삭제**(2026-10-14, 요청: "게임 목록 선택 모드에 스크랩/숨김/삭제로 버튼 변경 · 버튼 모양 둥근 네모 컴팩트") —
-   알약(.scr-pill-btn) → 컴팩트 네모(.scr-compact-rect-btn). 스크랩은 고른 게임마다 **처음(0초) 장면 스크랩**을 하나씩 담는다(재생 화면의 장면 스크랩과
-   같은 API · 같은 '스크랩한 장면' 목록). 스크랩·숨김은 게임만 골랐을 때 켜진다. */
-function SelectionActions({ picked, onDelete, onHide, onScrap, scrapBusy }: {
+/* ★ 선택 막대 단추 = **숨김 · 삭제**(2026-10-14 컴팩트 네모 · 스크랩은 2026-10-22 기능째 걷었다 — 요청: "스크랩 기능 완전 제거"). 숨김은 게임만 골랐을 때 켜진다. */
+function SelectionActions({ picked, onDelete, onHide }: {
   picked: DisplayItem[];
   onDelete: (items: DisplayItem[]) => void;
   onHide: (items: DisplayItem[]) => void;
-  onScrap: (items: DisplayItem[]) => void;
-  scrapBusy: boolean;
 }) {
   const games = picked.filter((it) => it.kind === "gameResult");
   const onlyGames = picked.length > 0 && games.length === picked.length;
   return (
     <>
-      <button
-        type="button" className="scr-compact-rect-btn"
-        disabled={!onlyGames || scrapBusy}
-        onClick={() => onScrap(games)}
-        title={onlyGames ? "고른 게임을 처음부터 보는 장면으로 스크랩해요" : "게임만 골랐을 때 켜져요"}
-      >
-        {scrapBusy ? "스크랩 중…" : "스크랩"}
-      </button>
       <button
         type="button" className="scr-compact-rect-btn"
         disabled={!onlyGames}
@@ -80,7 +67,7 @@ export const tabQuery = (tab: GameTab) => (tab === "fame" ? { fameOnly: true } :
 export default memo(function ActivityGroupPage({
   groupKey, members, onBack, view, act,
   gameTab, onGameTabChange,
-  selection, canPick, onDeleteItems, onHideItems, onScrapItems, scrapBusy, refreshKey,
+  selection, canPick, onDeleteItems, onHideItems, refreshKey,
 }: {
   groupKey: ActivityGroupKey;
   members: Member[];
@@ -90,8 +77,6 @@ export default memo(function ActivityGroupPage({
   canPick: (it: DisplayItem) => boolean;
   onDeleteItems: (items: DisplayItem[]) => void;
   onHideItems: (items: DisplayItem[]) => void;
-  onScrapItems: (items: DisplayItem[]) => void;
-  scrapBusy: boolean;
   refreshKey: number;
   gameTab: GameTab;
   onGameTabChange: (next: GameTab) => void;
@@ -104,7 +89,6 @@ export default memo(function ActivityGroupPage({
   const items = useMemo<ActivityItem[]>(
     () => feedOfTab(feedAll, gameTab, memberOf).filter((it) => groupKeyOf(it) === groupKey),
     [feedAll, gameTab, memberOf, groupKey]);
-  const requestScreen = useAppStore((s) => s.requestScreen);
   const searchable = SEARCHABLE_GROUPS.has(groupKey);
   const suggestions = useMemo(() => activeMemberSearchTerms(members), [members]);
   const [searchApplied, setSearchApplied] = useUrlState("u");
@@ -229,24 +213,6 @@ export default memo(function ActivityGroupPage({
             <span>활동</span>
           </button>
           <h1 className="scr-title scr-crumb-title">{label}</h1>
-          {groupKey === "gameResult" && (
-            <div className="scr-crumb-tools">
-              <button
-                type="button" className="scr-compact-rect-btn"
-                onClick={() => requestScreen("scraps")}
-              >
-                <Bookmark size={13} />
-                <span>스크랩</span>
-              </button>
-              <button
-                type="button" className="scr-compact-rect-btn"
-                onClick={() => requestScreen("guide")}
-              >
-                <BookOpen size={13} />
-                <span>사용법</span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
       {onGames9 && (
@@ -289,7 +255,6 @@ export default memo(function ActivityGroupPage({
         >
           <SelectionActions
             picked={pickedItems} onDelete={onDeleteItems} onHide={onHideItems}
-            onScrap={onScrapItems} scrapBusy={scrapBusy}
           />
         </SelectionBar>
       )}

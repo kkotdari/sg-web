@@ -33,8 +33,6 @@ export function parseRoute(pathname: string = window.location.pathname): Route {
   if (segs.length === 0) return home;
   const group = SEG_GROUP[segs[0]];
   if (group) {
-    if (group === "gameResult" && segs[1] === "guide") return { screen: "guide", group, item: null };
-    if (group === "gameResult" && segs[1] === "scrap") return { screen: "scraps", group, item: null };
     return { screen: "activity", group, item: segs[1] ?? null };
   }
   const screen = SEG_SCREEN[segs[0]];
@@ -49,8 +47,6 @@ export function canonicalPathname(pathname: string = window.location.pathname): 
 }
 
 export function pathOf(r: { screen: ScreenKey; group?: ActivityGroupKey | null; item?: string | null }): string {
-  if (r.screen === "guide") return "/games/guide";
-  if (r.screen === "scraps") return "/games/scrap";
   if (r.screen === "activity") {
     if (!r.group) return "/";
     const base = `/${GROUP_SEG[r.group]}`;

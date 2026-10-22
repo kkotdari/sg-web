@@ -8,7 +8,6 @@ import type { GameCurve,
   League, LeagueListItem, LeagueCreatePayload, LeagueUpdatePayload,
   LeagueMatchSide, LeagueMatchSet, LeaguePoolKind, LeagueTeamCompositionEntry,
   Schedule, ScheduleWrite,
-  SceneScrap,
   ExtShareList, ExtShareAddResult,
   DeletedGameResult,
   GameUnhideRequest,
@@ -781,9 +780,9 @@ export const api = {
     });
   },
 
-  /** 게임 목록의 동작 기록(2026-10-21, 요청: "공유, 리플레이 다운로드, 스크랩, 그래프보기도 access_history 에 기록(특정 가능하게)") — 화면 코드 game_<동작> ·
+  /** 게임 목록의 동작 기록(2026-10-21, 요청: "공유, 리플레이 다운로드, 스크랩, 그래프보기도 access_history 에 기록(특정 가능하게)" · 스크랩은 2026-10-22 걷음) — 화면 코드 game_<동작> ·
    *  detail "game#게임번호". 기록이 안 돼도 동작은 그대로 간다(조용히 삼킨다). */
-  async pingGameAction(action: "share" | "replay" | "scrap" | "graph", game: { id: number; matchNo?: string | null }): Promise<void> {
+  async pingGameAction(action: "share" | "replay" | "graph", game: { id: number; matchNo?: string | null }): Promise<void> {
     try {
       await this.pingAccess(`game_${action}`, `game#${game.matchNo || String(game.id)}`);
     } catch { return; }
@@ -904,26 +903,6 @@ export const api = {
       method: "PUT", body: JSON.stringify({ scheduledAt }),
     });
   },
-  async listSceneScraps(): Promise<SceneScrap[]> {
-    const res = await request<{ items?: SceneScrap[] }>("/api/scene-scraps");
-    return res.items ?? [];
-  },
-  async createSceneScrap(
-    body: { title: string; subtitle: string; link: string; gameNo?: string | null },
-  ): Promise<SceneScrap> {
-    return request<SceneScrap>("/api/scene-scraps", {
-      method: "POST", body: JSON.stringify(body),
-    });
-  },
-  async renameSceneScrap(id: number, title: string): Promise<SceneScrap> {
-    return request<SceneScrap>(`/api/scene-scraps/${id}`, {
-      method: "PATCH", body: JSON.stringify({ title }),
-    });
-  },
-  async deleteSceneScrap(id: number): Promise<void> {
-    await request<void>(`/api/scene-scraps/${id}`, { method: "DELETE" });
-  },
-
   async setLeagueMatchResult(
     leagueId: number, matchId: number, setsWonA: number | null, setsWonB: number | null,
   ): Promise<League> {
