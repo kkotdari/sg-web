@@ -7565,7 +7565,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-row { display: contents; }
 .scr-sg-c {
   display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0;
-  padding: 9px 8px; border-top: 2px solid var(--line-faint); white-space: nowrap;   /* 유저 사이 줄만 1 → 2px(2026-10-22, 요청: "유저 간 구분선만 좀 두껍게") */
+  padding: 9px 8px; border-top: 1px solid var(--line-faint); white-space: nowrap;   /* 유저 사이 줄 1px(2026-10-22 같은 날 "유저 간 두꺼운 선 구분 제거" — 한때 2px "유저 간 구분선만 좀 두껍게") */
 }
 .scr-sg-c + .scr-sg-c { border-left: 1px solid var(--line-hair, var(--line-faint)); }
 /* 머리 정렬 단추(StatGrid SortHead · 2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") — 머리 글자 그대로 · 고른 자는 본문색으로 진하게. */
