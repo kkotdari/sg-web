@@ -5379,7 +5379,7 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-row-game.scr-gm .scr-activity-row-time { order: 1; text-align: left; line-height: 1.25; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc { order: 4; flex: 1 0 100%; }
 /* 머리 줄(시각·추천·데이터) ↔ 로스터 줄 사이 5 → 11(2026-10-22, 요청: "모바일 게임 목록 헤더줄과 로스터줄 사이 더 벌리기") — 줄 격자 틈(5)에 6 을 더 얹는다(리그 머리 줄 틈은 그대로). */
-.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc { margin-top: 6px; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc { margin-top: 6px; margin-bottom: 6px; }   /* 아래 여백도 9 → 15(같은 날 요청: "로스터 아래 여백도 늘리기") */
 /* 배지는 한 치 작게(요청) — 글자 12 → 11 · 여백도 한 겹 줄인다. */
 .scr-activity-row-game.scr-gm .scr-activity-row-status-dur {
   font-size: var(--fs-10); padding: 0 3px; gap: 2px; line-height: 1.3;
