@@ -5619,10 +5619,13 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   .scr-modal-page:not(.scr-modal-fit) .scr-modal-back { display: inline-flex; }
   .scr-modal-page:not(.scr-modal-fit) .scr-modal-close-x { display: none; }
 }
-.scr-activity-rows.scr-activity-group-page-rows { border-radius: 0; }
+/* 목록 페이지(게임 목록 등)도 활동 목록과 같은 곡률(PC --radius-sm · 폰 3px — .scr-activity-rows 그대로 · 2026-10-22, 요청: "게임 목록 테두리 둥글게 활동 목록처럼 곡률 똑같이").
+   넘침은 그대로 보이게 두고(overflow visible) 첫·끝 줄이 모서리를 물려받아 머리 줄 칠·줄 얹기 색이 모서리 밖으로 안 나간다. 옛: 곡률 0. */
 .scr-activity-rows.scr-activity-group-page-rows {
-  border: none; border-radius: 0; overflow: visible;
+  border: none; overflow: visible;
 }
+.scr-activity-rows.scr-activity-group-page-rows > :first-child { border-top-left-radius: inherit; border-top-right-radius: inherit; }
+.scr-activity-rows.scr-activity-group-page-rows > :last-child { border-bottom-left-radius: inherit; border-bottom-right-radius: inherit; }
 .scr-activity-rows:has(> :only-child:is(.scr-empty, .scr-adm-note)) { background: none; }
 
 .scr-activity-rows {
@@ -8090,7 +8093,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   display: grid; width: 100%;
   /* 종족마다 [전적(N회) | 승률] 두 칸(2026-10-20). */
   grid-template-columns: minmax(150px, 1.3fr) 104px 84px 60px 196px repeat(3, minmax(60px, .8fr) minmax(58px, .7fr)) 36px;
-  border: 1px solid var(--line); overflow: hidden;   /* 모서리 둥글림 걷음(2026-10-21, 요청: "통계 래디우스를 제거" — 게임 목록 표와 같게) */
+  border: 1px solid var(--line); overflow: hidden; border-radius: var(--radius-sm);   /* 활동 목록과 같은 곡률(PC 8 · 폰 3 — 2026-10-22, 요청: "통계 · 게임 목록 테두리 둥글게 활동 목록처럼") · 한때 걷었다(2026-10-21) */
   font-size: var(--fs-caption); color: var(--text);
 }
 .scr-sg-row { display: contents; }
@@ -8184,7 +8187,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* 폰 — [유저(아래 한 줄: 판수 · APM · 딜 · 피해) | 전체 | 테 | 프 | 저] · 칸마다 승률 · ▾ 는 이름 옆(펼침은 PC 와 같은 곡선). */
 /* 폰 — [유저 | 전체 | 테란 | 프로토스 | 저그](2026-10-20, 요청: "원래대로 · 유저 전체 테 프 저 전적으로 · 유저 칸 세 줄 유지 · 각 전적 칸은 위 전수 아래 승률").
    한때의 [유저 | 전적] 세로 쌓기(.scr-sg-stack)는 걷었다. 전적 칸 넷은 폭에 비례(13vw · 46~56px). 유저 칸 아래 줄은 칸 폭에 맞춰 글자를 줄인다(cqw). */
-.scr-sg.is-m { grid-template-columns: minmax(0, 1fr) repeat(4, clamp(50px, 14vw, 62px)); font-size: var(--fs-11); } /* 전적 칸 넓힘 46~56 → 50~62(요청: "너무 좁게 주지 말고") */
+.scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(0, 1fr) repeat(4, clamp(50px, 14vw, 62px)); font-size: var(--fs-11); } /* 전적 칸 넓힘 46~56 → 50~62(요청: "너무 좁게 주지 말고") */
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
 .scr-sg.is-m .scr-sg-bar { width: 34px; height: 3px; }
