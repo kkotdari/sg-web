@@ -4932,8 +4932,9 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 }
 .scr-league-row:last-child { border-bottom: none; }
 @media (hover: hover) { .scr-league-row:hover { background: rgba(var(--lighting-rgb), 0.07); } }
-.scr-league-row-name { font-size: var(--fs-subhead); font-weight: 700; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scr-league-row-meta { font-size: var(--fs-caption); color: var(--dim); flex: 1 1 auto; }
+/* 글자는 일정 목록 줄과 같은 급 — 이름 subhead·700 → caption·600 · 위 줄 caption → 11(2026-10-22, 요청: "리그 목록 폰트 크기 일정 목록 급으로 축소"). */
+.scr-league-row-name { font-size: var(--fs-caption); font-weight: 600; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr-league-row-meta { font-size: var(--fs-11); color: var(--dim); flex: 1 1 auto; }
 .scr-league-row-go { color: var(--dim); flex: 0 0 auto; }
 .scr-league-row-body { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-width: 0; }
 .scr-league-row-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
