@@ -3302,7 +3302,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc-col { flex: none; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .scr-rc-mode { display: flex; gap: 4px; }
 /* 볼 사람 고르기(2026-10-21) — 팀마다 한 줄 · 앞에 팀 이름(팀색) · 이름 앞 작은 색 점(그 선 색). */
-.scr-gc-users { display: flex; flex-direction: column; gap: 12px; }   /* 표시(모두 선택·해제) ↔ 팀 줄 6 → 12px(2026-10-22) */
+.scr-gc-users { display: flex; flex-direction: column; gap: 6px; }
 .scr-gc-uall { display: flex; align-items: center; gap: 6px; }
 .scr-gc-top .scr-rc-mode { align-items: center; }
 .scr-gc-flabel { flex: none; margin-right: 2px; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }   /* 고르기 줄 앞 라벨(2026-10-22) */
