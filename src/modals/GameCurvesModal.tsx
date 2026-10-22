@@ -38,6 +38,8 @@ const TECH_LABEL: Record<number, string> = {
   160: "게이트", 166: "포지", 164: "코어", 163: "아둔", 165: "아카이브", 155: "로보틱스", 171: "베이",
   159: "옵저버터리", 167: "스타게이트", 169: "플릿비컨", 170: "트리뷰널",
 };
+/** 종족 글자(볼 사람 고르기의 색 동그라미 안). */
+const RACE_LETTER: Record<string, string> = { 테란: "T", 프로토스: "P", 저그: "Z", 랜덤: "R" };
 const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
 
 /** group — 고르기(focus) 단위: 평소 그 사람(key) · 팀 보기면 그 팀(두 곡선 판의 팀 줄 key). */
@@ -222,10 +224,9 @@ const BUILD_LABEL: Record<number, string> = {
 const MORPH_TO: Record<number, string> = { 131: "레어", 132: "하이브", 141: "그레이터", 143: "성큰·스포어" };
 /** 첫 본진(경기 시작부터 있던 커맨드 · 해처리 · 넥서스) — '테크 건물만'에서도 보인다(2026-10-21, 요청: "첫 스타팅 기지도 표현"). */
 const MAIN_HALL = new Set([106, 131, 154]);
-/** PC 건설 줄 치수(px) — 종류마다 한 칸: 위에 이름(label 높이) · 아래에 그 종류 건물마다 가는 선 한 줄(step 간격) · 칸 끝 숨(pad). */
-const BL = { fs: 10.5, label: 13, step: 3.5, pad: 5, small: 7.5 } as const;
-/** 크립 줄의 변태 이름(성큰 · 스포어)은 작게 — 수없이 되풀이된다(2026-10-21, 요청: "성큰 변태가 엄청 반복될 거라 성큰 스포어는 글자 크기 대폭 축소"). */
-const SMALL_MORPH = new Set([146, 144]);
+/** PC 건설 줄 치수(px) — 건물 한 채마다 컴팩트 칩(fs 글자 · chipBox) · 칩 사이 gap · 단 사이 숨 tier · 사람 칸 위아래 숨 pad ·
+ *  단 안에서 선을 비켜 놓는 높이 jig(가운데 · 위 · 아래 · 2026-10-22, 요청: "미묘하게 높이를 다양화해서 선이 최대한 안 겹치게"). */
+const BL = { fs: 9.5, gap: 3, tier: 2, pad: 6, jig: 3 } as const;
 
 type BuildLane = { key: string; group: string; name: string; color: string; blds: GameCurve["blds"] };
 
@@ -257,38 +258,49 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     onAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (CW - PL - padR)) * maxX))));
   };
   const scrub = useScrub(pick, () => { setHover(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
+  /* ★ 건물 한 채 = 칩 하나(2026-10-22, 요청: "너무 한눈에 안 들어와 — 모든 건물에 하나하나 칩을 만들어(아주 컴팩트하게) · 종류별로 모으지 않기 · 시간 순서로 배치 ·
+     선이 겹쳐도 됨") — 옛 판은 종류마다 이름 한 줄 + 그 종류 건물마다 가는 선을 쌓아 칸이 길고 빽빽했다. 이제 사람 칸 안에서 건물을 **착공 차례**로 늘어놓아, 칩(이름)을
+     착공 자리에 두고 수명 선(짓는 중 점선 · 산 동안 실선 · 사라지면 ✕)을 그 칩의 단 가운데로 끌고 간다. 칩끼리만 안 겹치게 위 단부터 빈자리에 넣는다(선은 뒤 칩·선과 겹쳐도 된다).
+     변태(레어 · 성큰 …)·변태 취소도 같은 단의 작은 칩("→ 레어" · "→ 레어 ✕")으로 그 때에. */
+  const { h: CH, px: PX, r: RX } = chipBox(BL.fs);
+  const STEP = CH + BL.tier + 2 * BL.jig;
+  const JIGS = [0, -BL.jig, BL.jig] as const;
+  const RIGHT = CW - padR;
+  const chipW = (label: string): number => textW(label, BL.fs) + 2 * PX;
+  type Tag = { x: number; w: number; label: string; cut?: boolean; morph?: boolean };
   let y0 = 4;
   const rows = lanes.map((l) => {
-    const shown = l.blds.filter((b) => !techOnly || b.t in TECH_LABEL || b.m.some(([t]) => t in TECH_LABEL) || (b.s === 0 && MAIN_HALL.has(b.t)));
-    const order: number[] = [];
-    for (const b of shown) if (!order.includes(b.t)) order.push(b.t);
-    let yy = y0 + 4;
-    const groups = order.map((t) => {
-      const ends: number[] = [];
-      const items = shown.filter((b) => b.t === t).map((b) => {
-        let k = ends.findIndex((e) => e <= b.s);
-        if (k < 0) { k = ends.length; ends.push(0); }
-        ends[k] = b.e ?? Infinity;
-        return { b, k };
-      });
-      /* 그 줄의 변태 이름 — 종류마다 처음 변태를 시작한 자리에 한 번(성큰 여럿이 줄마다 이름을 달지 않게 · 2026-10-21, 요청: "변태 건물도 변태 시작점에 이름"). */
-      const morphs = new Map<number, number>();
-      for (const { b } of items) for (const [mt, ms] of b.m) if (!morphs.has(mt) || ms < (morphs.get(mt) ?? Infinity)) morphs.set(mt, ms);
-      /* 변태 취소 이름(같은 날 요청: "취소에도 이름은 표시") — 종류마다 처음 취소한 변태의 시작 자리에 한 번 "→ 레어 ✕". 바탕은 그때까지 다 된 변태의 마지막 종류. */
-      const cancels = new Map<string, number>();
-      for (const { b } of items) {
-        for (const [xs] of b.x ?? []) {
-          const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
-          const nm = MORPH_TO[base] ?? "변태";
-          if (!cancels.has(nm) || xs < (cancels.get(nm) ?? Infinity)) cancels.set(nm, xs);
-        }
+    const shown = l.blds
+      .filter((b) => !techOnly || b.t in TECH_LABEL || b.m.some(([t]) => t in TECH_LABEL) || (b.s === 0 && MAIN_HALL.has(b.t)))
+      .slice().sort((p, q) => p.s - q.s);
+    const used: [number, number][][] = [];
+    /** 단마다 놓인 선 [높이 비킴, 왼끝, 오른끝]. */
+    const lines: [number, number, number][][] = [];
+    const items = shown.map((b) => {
+      const tag = (at9: number, label: string, extra?: Partial<Tag>): Tag => {
+        const w = chipW(label) + (extra?.cut ? textW(" ✕", BL.fs) : 0);
+        return { x: Math.min(x(at9), RIGHT - w), w, label, ...extra };
+      };
+      const tags: Tag[] = [tag(b.s, BUILD_LABEL[b.t] ?? `#${b.t}`)];
+      for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, { morph: true }));
+      for (const [xs] of b.x ?? []) {
+        const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
+        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, { morph: true, cut: true }));
       }
-      const g = { t, items, top: yy, morphs: [...morphs], cancels: [...cancels] };
-      yy += BL.label + ends.length * BL.step + BL.pad;
-      return g;
+      const free = (k: number): boolean => tags.every((t) => used[k].every(([a9, z9]) => t.x + t.w + BL.gap <= a9 || t.x >= z9 + BL.gap));
+      let k = 0;
+      while (k < used.length && !free(k)) k += 1;
+      if (k === used.length) { used.push([]); lines.push([]); }
+      for (const t of tags) used[k].push([t.x, t.x + t.w]);
+      /* 그 단에서 같은 높이의 선과 가장 덜 포개지는 비킴(같으면 가운데 → 위 → 아래). */
+      const a9 = x(b.s); const z9 = x(b.e ?? END);
+      const over = (j: number): number => lines[k].reduce((acc, [o, la, lz]) => acc + (o === j ? Math.max(0, Math.min(z9, lz) - Math.max(a9, la)) : 0), 0);
+      const jig = JIGS.reduce((best, j) => (over(j) < over(best) ? j : best), JIGS[0] as number);
+      lines[k].push([jig, a9, z9]);
+      return { b, k, tags, jig };
     });
-    const h = Math.max(yy - y0 + 2, 36);
-    const row = { l, groups, top: y0, h };
+    const h = Math.max(used.length * STEP + 2 * BL.pad, 36);
+    const row = { l, items, top: y0, h };
     y0 += h;
     return row;
   });
@@ -298,53 +310,50 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       <figcaption className="scr-rc-title">건설<TitleSwitch label="테크 건물만" on={techOnly} onChange={onTechOnly} /></figcaption>
       <div className="scr-rc-plot">
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
-        {rows.map(({ l, groups, top, h }) => (
+        {rows.map(({ l, items, top, h }) => (
           <g key={l.key} className={focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row"}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
-            {groups.map((g) => (
-              <g key={g.t}>
-                <text className="scr-tl-label" x={x(g.items[0].b.s)} y={g.top + BL.label - 3} style={{ fontSize: BL.fs }}>{BUILD_LABEL[g.t] ?? `#${g.t}`}</text>
-                {g.morphs.map(([mt, at9]) => (
-                  <text key={mt} className="scr-tl-label scr-bl-morph" x={x(at9)} y={g.top + BL.label - 3} style={{ fontSize: SMALL_MORPH.has(mt) ? BL.small : BL.fs }}>→ {BUILD_LABEL[mt] ?? `#${mt}`}</text>
-                ))}
-                {g.cancels.map(([nm, at9]) => (
-                  <text key={`x${nm}`} className="scr-tl-label scr-bl-morph" x={x(at9)} y={g.top + BL.label - 3} style={{ fontSize: nm === MORPH_TO[143] ? BL.small : BL.fs }}>→ {nm} <tspan className="scr-bl-cut">✕</tspan></text>
-                ))}
-                {g.items.map(({ b, k }) => {
-                  const ly = g.top + BL.label + k * BL.step + 1;
-                  const end = b.e ?? END;
-                  /* 토막 — [시작, 끝, 짓는 중(점선)?] · 짓기 → 살아 있음 → (변태 중 → 살아 있음)… */
-                  const segs: [number, number, boolean][] = [];
-                  let t9 = b.s;
-                  const building = (a: number, z: number | null): void => { if (z === null) { segs.push([a, end, true]); t9 = end; } else { if (z > a) segs.push([a, z, true]); t9 = z; } };
-                  /* ✕ — 짓다가 사라짐 · 변태하다 취소(2026-10-21, 요청: "변태하다 취소하는 경우 · 건설 · 변태 취소는 옆에 X 표시"). */
-                  const cuts: number[] = [];
-                  building(t9, b.d);
-                  const evs = [...b.m.map(([, ms, md]) => ({ ms, z: md, cancel: false })), ...(b.x ?? []).map(([xs, xc]) => ({ ms: xs, z: xc as number | null, cancel: true }))]
-                    .sort((p, q) => p.ms - q.ms);
-                  for (const ev of evs) {
-                    if (ev.ms > t9) segs.push([t9, ev.ms, false]);
-                    if (ev.cancel) { segs.push([ev.ms, ev.z ?? end, true]); t9 = ev.z ?? end; cuts.push(t9); } else building(ev.ms, ev.z);
-                  }
-                  if (end > t9) segs.push([t9, end, false]);
-                  if (b.d === null && b.e !== null) cuts.push(b.e);
-                  const show = (): void => { setHover(b); onAt((b.d ?? b.s) / 60); };
-                  return (
-                    <g
-                      key={`${b.s}:${k}`} className={hover === b ? "scr-bl-hit is-hl" : "scr-bl-hit"}
-                      onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
-                      onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
-                    >
-                      {segs.map(([a, z, building], si) => (
-                        <line key={si} className={building ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
-                      ))}
-                      {cuts.map((c) => <text key={`x${c}`} className="scr-bl-cut" x={x(c)} y={ly} textAnchor="middle" dominantBaseline="central">✕</text>)}
-                      <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />
+            {items.map(({ b, k, tags, jig }) => {
+              const ly = top + BL.pad + BL.jig + k * STEP + CH / 2 + jig;
+              const end = b.e ?? END;
+              /* 토막 — [시작, 끝, 짓는 중(점선)?] · 짓기 → 살아 있음 → (변태 중 → 살아 있음)… */
+              const segs: [number, number, boolean][] = [];
+              let t9 = b.s;
+              const building = (a: number, z: number | null): void => { if (z === null) { segs.push([a, end, true]); t9 = end; } else { if (z > a) segs.push([a, z, true]); t9 = z; } };
+              /* ✕ — 짓다가 사라짐 · 파괴(2026-10-21, 요청: "건설 · 변태 취소는 옆에 X 표시"). 변태 취소는 칩("→ 레어 ✕")이 말한다. */
+              const cuts: number[] = [];
+              building(t9, b.d);
+              const evs = [...b.m.map(([, ms, md]) => ({ ms, z: md, cancel: false })), ...(b.x ?? []).map(([xs, xc]) => ({ ms: xs, z: xc as number | null, cancel: true }))]
+                .sort((p, q) => p.ms - q.ms);
+              for (const ev of evs) {
+                if (ev.ms > t9) segs.push([t9, ev.ms, false]);
+                if (ev.cancel) { segs.push([ev.ms, ev.z ?? end, true]); t9 = ev.z ?? end; } else building(ev.ms, ev.z);
+              }
+              if (end > t9) segs.push([t9, end, false]);
+              if (b.d === null && b.e !== null) cuts.push(b.e);
+              const show = (): void => { setHover(b); onAt((b.d ?? b.s) / 60); };
+              return (
+                <g
+                  key={`${b.s}:${b.t}:${k}`} className={hover === b ? "scr-bl-hit is-hl" : "scr-bl-hit"}
+                  onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
+                  onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
+                >
+                  {segs.map(([a, z, bld], si) => (
+                    <line key={si} className={bld ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
+                  ))}
+                  {cuts.map((c) => <text key={`x${c}`} className="scr-bl-cut" x={x(c)} y={ly} textAnchor="middle" dominantBaseline="central">✕</text>)}
+                  <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />
+                  {tags.map((t, ti) => (
+                    <g key={ti}>
+                      <rect className={t.morph ? "scr-bl-chip is-morph" : "scr-bl-chip"} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
+                      <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
+                        {t.label}{t.cut && <tspan className="scr-bl-cut"> ✕</tspan>}
+                      </text>
                     </g>
-                  );
-                })}
-              </g>
-            ))}
+                  ))}
+                </g>
+              );
+            })}
             <NameChip name={shortName(l.name, font.label)} color={l.color} right={Math.max(PL - 6, chipWOf(shortName(l.name, font.label), font.label))} cy={top + h / 2} fs={font.label} big={focus === l.group} onPick={() => onFocus(l.group)} />
           </g>
         ))}
@@ -548,23 +557,30 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
             <div className="scr-rc-empty scr-gc-wait">{error || "표시할 데이터가 아직 없어요 — 재분석하면 생겨요"}</div>
           ) : (
             <div className="scr-gc" ref={boxRef}>
+              {/* 맨 위 고르기(볼 사람 · 보기)는 창 위에 붙어 있는다(2026-10-22, 요청: "맨 위 필터는 고정되면 좋을 듯"). */}
+              <div className="scr-gc-top">
               <div className="scr-gc-users" aria-label="볼 사람">
                 <div className="scr-gc-uall">
                   <button type="button" className="scr-compact-rect-btn is-secondary" disabled={hidden.size === 0} onClick={() => setHidden(new Set())}>모두 선택</button>
                   <button type="button" className="scr-compact-rect-btn is-secondary" disabled={shown.length === 0} onClick={() => { setHidden(new Set((players ?? []).map((p) => p.playerName))); setFocus(null); }}>모두 해제</button>
                 </div>
+                {/* 팀은 한 줄에 나란히(2026-10-22, 요청: "PC 에선 모든 팀을 수평으로 · 모바일도 폭 되면 그렇게") — 폭이 모자라면 다음 줄로. */}
+                <div className="scr-gc-uteams">
                 {userGroups.map((g) => (
                   <div key={g.t} className="scr-gc-ugroup">
                     {g.t > 0 && <span className="scr-gc-ulabel" style={{ color: TEAM_COLOR[g.t] }}>{g.t}팀</span>}
                     {g.ps.map((p) => (
                       <label key={p.playerName} className="scr-checkbox-field scr-gc-user">
                         <input type="checkbox" checked={!hidden.has(p.playerName)} onChange={() => toggleShown(p.playerName)} />
-                        <i className="scr-gc-udot" style={{ background: colorOf(p) }} aria-hidden />
+                        {/* 색 동그라미 안에 종족 글자(2026-10-22, 요청: "맨 위 필터에 유저 종족도 표시 — 닉네임 왼쪽에 동그라미 글자로" → "종족 동그라미 말고 색깔 동그라미를
+                            좀 확대하고 그 안에 글자") — 동그라미 = 그 선 색 · 글자 = 그 바탕 위 잉크(inkOn). */}
+                        <i className="scr-gc-udot" style={{ background: colorOf(p), color: inkOn(colorOf(p)) }} title={p.race || undefined}>{RACE_LETTER[p.race] ?? ""}</i>
                         {nameOf(p)}
                       </label>
                     ))}
                   </div>
                 ))}
+                </div>
               </div>
               {teamGame && (
                 <div className="scr-rc-mode" role="radiogroup" aria-label="보기">
@@ -577,6 +593,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                   ))}
                 </div>
               )}
+              </div>
               {box.w > 0 && (twoCol ? (
                 <div className="scr-gc-cols">
                   <div className="scr-gc-col" style={{ width: colW }}>{lanesEl}</div>

@@ -3304,18 +3304,25 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 볼 사람 고르기(2026-10-21) — 팀마다 한 줄 · 앞에 팀 이름(팀색) · 이름 앞 작은 색 점(그 선 색). */
 .scr-gc-users { display: flex; flex-direction: column; gap: 6px; }
 .scr-gc-uall { display: flex; gap: 6px; }
+.scr-gc-uteams { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 36px; }
 .scr-gc-ugroup { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .scr-gc-ulabel { flex: none; min-width: 28px; font-size: var(--fs-caption); font-weight: 800; }
 .scr-gc-user { font-size: var(--fs-caption); color: var(--text); }
-.scr-gc-udot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.scr-gc-udot { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; font-style: normal; font-size: 9.5px; font-weight: 800; line-height: 1; }   /* 8px 점 → 15px 동그라미 + 종족 글자(2026-10-22) */
+/* 맨 위 고르기 고정(2026-10-22) — 창 몸(.scr-modal-body)이 스크롤하는 동안 위에 붙는다. 몸의 위 숨(4px)만큼 끌어올리고 판 색으로 뒤를 가린다. */
+.scr-gc-top { position: sticky; top: -4px; z-index: 3; display: flex; flex-direction: column; gap: 10px; margin: -4px 0 0; padding: 8px 0 10px; background: var(--panel-solid); }
 /* PC 데이터 창 제목 옆 설명은 작게(2026-10-21, 요청: "살아 있는 전투 유닛의 미네랄+가스 합 글자 크기 축소" 15 → 12). */
 @media (min-width: 961px) { .scr-modal-graph .scr-rc-title > i { font-size: 12px; } }
 .scr-tl-chip { fill: transparent; }
 .scr-tl-label { fill: var(--text); font-weight: 500; }
 /* PC 건설 줄(2026-10-21) — 짓는 동안 점선 · 다 지은 뒤 사라질 때까지 실선 · 위에 얹으면 진하게. 굵은 투명 선이 마우스 자리. */
-.scr-bl-build { stroke: var(--dim); stroke-width: 1.5; stroke-dasharray: 2 2; }
-.scr-bl-live { stroke: rgba(var(--overlay-rgb), 0.55); stroke-width: 2; stroke-linecap: round; }
+.scr-bl-build { stroke: var(--dim); stroke-width: 1; stroke-dasharray: 2 2; }   /* 선 얇게(2026-10-22, 요청: "선도 얇게" · 옛 1.5 · 2) */
+.scr-bl-live { stroke: rgba(var(--overlay-rgb), 0.55); stroke-width: 1.1; stroke-linecap: round; }
 .scr-bl-pad { stroke: transparent; stroke-width: 6; }
+/* 건물 칩(2026-10-22, 요청: "모든 건물에 하나하나 칩 · 아주 컴팩트하게") — 수명 선 위 착공 자리 · 변태 칩은 옅게. 바탕을 칠해 뒤 선을 가린다. */
+.scr-bl-chip { fill: var(--panel-raised, var(--panel)); stroke: rgba(var(--overlay-rgb), 0.28); stroke-width: 0.75; }
+.scr-bl-chip.is-morph { fill: rgba(var(--overlay-rgb), 0.06); stroke-dasharray: 2 1.5; }
+.scr-bl-hit.is-hl .scr-bl-chip { stroke: var(--text); }
 .scr-bl-hit { cursor: default; }
 .scr-bl-morph { fill: var(--dim); }
 .scr-bl-cut { fill: #e0565b; font-size: 9px; font-weight: 700; }   /* 짓다 사라짐 · 변태 취소 */
