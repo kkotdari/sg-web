@@ -96,7 +96,7 @@ function GameResultOutcomeDialog({ gameResult, memberOf, onChanged, onClose }: {
 /* ★ 게임 도구 = **늘 보이는 단추 줄**(2026-10-22, 요청: "케밥 메뉴 쓰는 곳을 전부 항시 노출 버튼 툴박스로 변경" · "상세 툴박스에도 추천") —
    옛 ⋯ 메뉴(리플레이 저장 · 결과 입력 · 숨김 · 삭제 · 공유)를 펼친 꼴이다. 추천(엄지 + 수)이 맨 앞. 못 쓰는 단추는 안 선다. */
 export function GameResultTools({
-  gameResult, canDelete, isAdmin = false, memberOf, onDelete, onChanged,
+  gameResult, canDelete, isAdmin = false, memberOf, onDelete, onChanged, graphDock = false,
 }: {
   gameResult: GameResult;
   canDelete: boolean;
@@ -104,6 +104,8 @@ export function GameResultTools({
   memberOf: (id: string) => Member | undefined;
   onDelete: (m: GameResult) => void;
   onChanged: (m: GameResult) => void;
+  /** 게임 상세 — 데이터 창을 넓은 PC 에선 오른쪽 칸으로(GameCurvesModal dock). */
+  graphDock?: boolean;
 }) {
   const [outcomeOpen, setOutcomeOpen] = useState(false);
   const [hideOpen, setHideOpen] = useState(false);
@@ -151,7 +153,7 @@ export function GameResultTools({
       />
       {canDelete && !gameResult.hidden && tool("hide", "숨김", () => setHideOpen(true), <EyeOff size={15} />, false, true)}
       {canDelete && tool("delete", "삭제", () => onDelete(gameResult), <Trash2 size={15} />, true, true)}
-      {graphOpen && <GameCurvesModal game={gameResult} onClose={() => setGraphOpen(false)} />}
+      {graphOpen && <GameCurvesModal game={gameResult} dock={graphDock} onClose={() => setGraphOpen(false)} />}
       {outcomeOpen && (
         <GameResultOutcomeDialog
           gameResult={gameResult} memberOf={memberOf} onChanged={onChanged}

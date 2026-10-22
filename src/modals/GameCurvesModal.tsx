@@ -396,8 +396,30 @@ function niceTicks(v: number, n = 5): number[] {
   return Array.from({ length: Math.ceil(top / step) + 1 }, (_, i) => i * step);
 }
 
-export default function GameCurvesModal({ game, onClose }: { game: GameResult; onClose: () => void }) {
-  useLockBodyScroll();
+/** 오른쪽 칸으로 붙이는 화면 폭(PC) — 이보다 좁으면 늘 떠 있는 창. */
+const DOCK_QUERY = "(min-width: 1280px)";
+function useDockWide(): boolean {
+  const [wide, setWide] = useState(() => window.matchMedia(DOCK_QUERY).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(DOCK_QUERY);
+    const sync = (): void => setWide(mq.matches);
+    mq.addEventListener("change", sync);
+    sync();
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return wide;
+}
+
+/** dock — 게임 상세에서 연 창. ★ PC 폭이 DOCK_QUERY 이상이면 **화면 오른쪽 칸**으로 붙는다(2026-10-22, 요청: "상세에서 데이터창 열면 PC 에서는 일정 폭 이상 시
+ *  재생기를 줄이고 화면 우측에 나타내기") — 덮개·스크롤 잠금 없이 body.scr-gc-docked 가 상세 본문에 칸 폭만큼 오른쪽 여백을 줘 재생기가 줄어든다(global.css). */
+export default function GameCurvesModal({ game, onClose, dock = false }: { game: GameResult; onClose: () => void; dock?: boolean }) {
+  const docked = useDockWide() && dock;
+  useLockBodyScroll(!docked);
+  useEffect(() => {
+    if (!docked) return undefined;
+    document.body.classList.add("scr-gc-docked");
+    return () => document.body.classList.remove("scr-gc-docked");
+  }, [docked]);
   const memberOf = useAppStore((s) => s.memberOf);
   /* 폰(2026-10-21, 요청: "모바일에서도 볼 수 있게" → … → "모바일 기기 화면폭") — 화면 가득 · 세 판은 화면 폭에 맞춰 그린다 · 글자는 통계 폰 눈금 크기(배수 1). */
   const mobile = useIsMobile();
@@ -570,10 +592,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
   const rmEl = !mobile && chartOf("rm", "미네랄", { note: "그때 쥔 양" });
   const rgEl = !mobile && chartOf("rg", "가스", { note: "그때 쥔 양" });
 
-  return createPortal(
-    <div className="scr-modal-overlay" onClick={(e) => { e.stopPropagation(); onClose(); }}>
-      <ModalHash hash="game-curves" onClose={onClose} />
-      <div className={cx("scr-modal scr-modal-graph", full && "is-full")} ref={modalRef} onClick={(e) => e.stopPropagation()}>
+  const panel = (
+      <div className={cx("scr-modal scr-modal-graph", docked && "scr-gc-dock", full && "is-full")} ref={modalRef} onClick={(e) => e.stopPropagation()}>
         <div className="scr-modal-head">
           <span>데이터<i className="scr-gc-sub">게임번호: {game.matchNo}</i></span>
           <span className="scr-gc-headbtns">
@@ -647,7 +667,14 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
           )}
         </div>
       </div>
-    </div>,
+  );
+  return createPortal(
+    docked ? panel : (
+      <div className="scr-modal-overlay" onClick={(e) => { e.stopPropagation(); onClose(); }}>
+        <ModalHash hash="game-curves" onClose={onClose} />
+        {panel}
+      </div>
+    ),
     document.body,
   );
 }

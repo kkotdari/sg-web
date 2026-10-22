@@ -3316,6 +3316,19 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 맨 위 고르기 고정(2026-10-22) — 창 몸(.scr-modal-body)이 스크롤하는 동안 위에 붙는다. 몸의 위 숨(4px)만큼 끌어올리고 판 색으로 뒤를 가린다. */
 .scr-gc-top { position: sticky; top: -4px; z-index: 3; display: flex; flex-direction: column; gap: 16px; margin: -4px 0 0; padding: 8px 0 10px; background: var(--panel-solid);  transition: transform .22s ease; }
 .scr-gc-top.is-hidden { transform: translateY(calc(-100% - 8px)); pointer-events: none; }   /* 내리면 숨김(2026-10-22 · GameCurvesModal topHidden) */
+/* 오른쪽 칸 데이터 창(GameCurvesModal dock · 2026-10-22, 요청: "상세에서 데이터 창 열면 PC 에서는 일정 폭 이상 시 재생기를 줄이고 화면 우측에 나타내기") —
+   1280 이상에서 게임 상세가 연 창은 덮개 없이 화면 오른쪽 위아래 가득 붙는다. 상세 본문은 칸 폭만큼 오른쪽 여백을 받아 재생기가 줄어든다(위로 띄운 맨 위 단추도 칸 밖으로). */
+@media (min-width: 1280px) {
+  body.scr-gc-docked { --gc-dock-w: clamp(560px, 44vw, 1000px); }
+  body.scr-gc-docked .scr-main:has(.scr-game-page-card) { padding-right: calc(var(--gc-dock-w) + var(--main-pad-x)); }
+  body.scr-gc-docked .scr-scrolltop { right: calc(var(--gc-dock-w) + 20px); }
+  .scr-modal.scr-modal-graph.scr-gc-dock:not(.is-full) {
+    position: fixed; left: auto; top: 0; right: 0; bottom: 0; transform: none; z-index: 40;
+    width: var(--gc-dock-w); max-width: none; height: auto; max-height: none; border-radius: 0; box-shadow: none;
+    border-left: 1px solid var(--line-faint);
+  }
+  .scr-modal.scr-modal-graph.scr-gc-dock:not(.is-full)::before { border-radius: 0; background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
 /* PC 데이터 창 제목 옆 설명은 작게(2026-10-21, 요청: "살아 있는 전투 유닛의 미네랄+가스 합 글자 크기 축소" 15 → 12). */
 @media (min-width: 961px) { .scr-modal-graph .scr-rc-title > i { font-size: 12px; } }
 .scr-tl-chip { fill: transparent; }

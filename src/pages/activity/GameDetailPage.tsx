@@ -82,6 +82,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
       memberOf={memberOf}
       onDelete={setPendingDelete}
       onChanged={onChanged}
+      graphDock
     />
   );
   return (
