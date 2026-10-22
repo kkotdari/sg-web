@@ -458,11 +458,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 <div className="scr-adm-row">
                   <div className="scr-adm-row-text">
                     <span className="scr-adm-row-title">월 마감</span>
-                    <span className="scr-adm-row-desc">
-                      {closedUntil === undefined ? "마감 상태를 읽는 중이에요."
-                        : closedUntil ? `${monthLabel(closedUntil)}까지 마감했어요. ` : "아직 마감한 달이 없어요. "}
-                      마감한 달의 게임은 등록(자동·수동)·삭제가 막히고 참값(재생 자료)을 지워요. 통계·색인·그래프는 남고 재분석도 되지만 참값은 다시 남기지 않아요. 되돌릴 수 없어요.
-                    </span>
+                    {closedUntil && <span className="scr-adm-row-desc">{monthLabel(closedUntil)}까지 마감</span>}
                     <div className="scr-adm-row-field">
                       <span className="scr-adm-row-field-label">마감할 달</span>
                       <input
