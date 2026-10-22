@@ -8,6 +8,7 @@ import { useLongPress } from "../../hooks/useLongPress";
 import { isSecretGame } from "../../utils/gameAccess";
 import { api } from "../../api/client";
 import GameCurvesModal from "../../modals/GameCurvesModal";
+import { RecommendButton, useRecommend } from "./Recommend";
 import type { GameResult, GameResultSlot, Member } from "../../types";
 
 /** 이름 줄(PC) — 넘치면 **말줄임으로 자른다**(2026-10, 요청: "글자 좌우 압축 제거 · 글자가 잘리면 할수없이 자르기").
@@ -22,17 +23,22 @@ export function FlatLine({ children }: { children: ReactNode }) {
 
 /** 데이터 단추(폰 게임 줄 윗줄 오른끝 · 2026-10-21, 요청: "모바일에서 재생버튼 살짝 왼쪽으로 밀고 그자리에 데이터 아이콘") — 누르면 데이터 모달(GameCurvesModal).
  *  모달은 포털이지만 React 이벤트는 이 줄로 거슬러 올라온다 — 줄의 누름(열기·길게 눌러 고르기)이 안 타게 감싸 막는다. */
-export function GameDataButton({ game }: { game: GameResult }) {
+export function GameDataButton({ game, graph = true }: { game: GameResult; graph?: boolean }) {
   const [open, setOpen] = useState(false);
+  const rec = useRecommend(game);
   const stop = (e: { stopPropagation: () => void }): void => e.stopPropagation();
   return (
     <span className="scr-activity-row-data-wrap" onPointerDown={stop} onPointerUp={stop} onClick={stop} onKeyDown={stop} onContextMenu={stop}>
-      <button
-        type="button" className="scr-icon-btn scr-activity-row-data" title="데이터 그래프" aria-label="데이터 그래프"
-        onClick={() => { setOpen(true); void api.pingGameAction("graph", game); }}
-      >
-        <ChartLine size={15} />
-      </button>
+      {/* 추천(폰 · 데이터 옆 · 2026-10-22 요청) — 수와 함께. */}
+      <RecommendButton rec={rec} size={14} count className="scr-activity-row-rec" />
+      {graph && (
+        <button
+          type="button" className="scr-icon-btn scr-activity-row-data" title="데이터 그래프" aria-label="데이터 그래프"
+          onClick={() => { setOpen(true); void api.pingGameAction("graph", game); }}
+        >
+          <ChartLine size={15} />
+        </button>
+      )}
       {open && <GameCurvesModal game={game} onClose={() => setOpen(false)} />}
     </span>
   );
@@ -53,7 +59,7 @@ export function GameRowStatus({ game, data, play }: { game: GameResult; data?: b
     ?? cachedReplayMap(game.mapHash)?.canonName
     ?? game.mapName);
   const map = full.length > 5 ? full.slice(0, 5) : full;
-  const tail = !!data && !game.ums;
+  const tail = !!data;   // 추천은 유즈맵에도 · 그래프만 유즈맵에 없다(GameDataButton graph)
   if (sec == null && !map && !tail) return null;
   return (<>
     {(sec != null || map !== "") && (
@@ -63,7 +69,7 @@ export function GameRowStatus({ game, data, play }: { game: GameResult; data?: b
         {play && <Play size={9} className="scr-activity-row-play scr-activity-row-status-play" aria-label="재생 가능" fill="currentColor" />}
       </span>
     )}
-    {tail && <GameDataButton game={game} />}
+    {tail && <GameDataButton game={game} graph={!game.ums} />}
   </>);
 }
 

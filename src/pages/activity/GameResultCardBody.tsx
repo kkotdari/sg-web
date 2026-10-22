@@ -1,7 +1,7 @@
-import { useState, useRef, useLayoutEffect } from "react";
+import { useState, type ReactNode } from "react";
 import { downloadReplay } from "../../utils/replayDownload";
 import { createPortal } from "react-dom";
-import { MoreHorizontal } from "lucide-react";
+import { EyeOff, Save, SquarePen, Trash2 } from "lucide-react";
 import GameResultStory from "./GameResultStory";
 import { gameResultShareContent } from "./gameShare";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
@@ -12,8 +12,8 @@ import { useAppStore } from "../../store/appStore";
 import { isAdminRole } from "../../constants/roles";
 import { canManageGame } from "../../utils/gameAccess";
 import { cx } from "../../utils/format";
-import { attachPopover } from "../../utils/popover";
 import KakaoShareButton from "../../components/common/KakaoShareButton";
+import { RecommendButton, useRecommend } from "./Recommend";
 import type { GameResult, Member, GameResultSlot, GameOutcome } from "../../types";
 
 export interface SearchListRow {
@@ -92,8 +92,10 @@ function GameResultOutcomeDialog({ gameResult, memberOf, onChanged, onClose }: {
   );
 }
 
-export function GameResultActionsMenu({
-  gameResult, canDelete, isAdmin = false, memberOf, onDelete, onChanged, showNo = false,
+/* ★ 게임 도구 = **늘 보이는 단추 줄**(2026-10-22, 요청: "케밥 메뉴 쓰는 곳을 전부 항시 노출 버튼 툴박스로 변경" · "상세 툴박스에도 추천") —
+   옛 ⋯ 메뉴(리플레이 저장 · 결과 입력 · 숨김 · 삭제 · 공유)를 펼친 꼴이다. 추천(엄지 + 수)이 맨 앞. 못 쓰는 단추는 안 선다. */
+export function GameResultTools({
+  gameResult, canDelete, isAdmin = false, memberOf, onDelete, onChanged,
 }: {
   gameResult: GameResult;
   canDelete: boolean;
@@ -101,20 +103,12 @@ export function GameResultActionsMenu({
   memberOf: (id: string) => Member | undefined;
   onDelete: (m: GameResult) => void;
   onChanged: (m: GameResult) => void;
-  showNo?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const [outcomeOpen, setOutcomeOpen] = useState(false);
   const [hideOpen, setHideOpen] = useState(false);
   const [hiding, setHiding] = useState(false);
   const [hideErr, setHideErr] = useState<string | null>(null);
-  const anchorRef = useRef<HTMLButtonElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!open || !anchorRef.current || !dropRef.current) return;
-    return attachPopover(anchorRef.current, dropRef.current, { growToContent: true, maxWidth: 200 });
-  }, [open]);
+  const rec = useRecommend(gameResult);
 
   const confirmHide = async (): Promise<void> => {
     setHiding(true);
@@ -131,54 +125,26 @@ export function GameResultActionsMenu({
     }
   };
 
-  const items: { key: string; label: string; danger?: boolean; onSelect: () => void }[] = [
-    ...(gameResult.replay ? [{ key: "download", label: "리플레이 저장", onSelect: () => void downloadReplay(gameResult) }] : []),
-    ...(isAdmin && gameResult.result === "unknown"
-      ? [{ key: "outcome", label: "결과 입력", onSelect: () => setOutcomeOpen(true) }] : []),
-    ...(canDelete && !gameResult.hidden ? [{ key: "hide", label: "숨김", onSelect: () => setHideOpen(true) }] : []),
-    ...(canDelete ? [{ key: "delete", label: "삭제", danger: true, onSelect: () => onDelete(gameResult) }] : []),
-  ];
+  const tool = (key: string, title: string, run: () => void, icon: ReactNode, danger = false) => (
+    <button
+      key={key} type="button" className={cx("scr-icon-btn scr-tools-btn", danger && "is-danger")} title={title} aria-label={title}
+      onClick={(e) => { e.stopPropagation(); run(); }}
+    >
+      {icon}
+    </button>
+  );
 
   return (
-    <div className="scr-activity-post-menu">
-      <button
-        type="button" ref={anchorRef}
-        className="scr-activity-post-menu-btn scr-activity-kebab-btn"
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
-        aria-label="더보기" aria-haspopup="menu" aria-expanded={open}
-      >
-        <MoreHorizontal size={16} />
-      </button>
-      {open && createPortal(
-        <>
-          <div
-            className="scr-activity-add-backdrop scr-menu-pop-backdrop"
-            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
-            aria-hidden
-          />
-        <div
-          className="scr-menu-pop-drop scr-activity-post-menu-drop scr-scroll" ref={dropRef} role="menu"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {showNo && <div className="scr-menu-pop-head" role="presentation">경기 {gameResult.matchNo || gameResult.id}</div>}
-          {items.map((it) => (
-            <button
-              key={it.key} type="button" role="menuitem"
-              className={cx("scr-menu-pop-opt", it.danger && "scr-activity-post-menu-opt-danger")}
-              onClick={(e) => { e.stopPropagation(); it.onSelect(); setOpen(false); }}
-            >
-              {it.label}
-            </button>
-          ))}
-          <KakaoShareButton
-            variant="menu"
-            content={() => gameResultShareContent(gameResult, memberOf)}
-            onDone={() => setOpen(false)}
-          />
-        </div>
-        </>,
-        document.body,
-      )}
+    <div className="scr-tools" role="toolbar" aria-label="게임 도구" onClick={(e) => e.stopPropagation()}>
+      <RecommendButton rec={rec} size={15} count className="scr-tools-btn" />
+      {gameResult.replay && tool("download", "리플레이 저장", () => void downloadReplay(gameResult), <Save size={15} />)}
+      {isAdmin && gameResult.result === "unknown" && tool("outcome", "결과 입력", () => setOutcomeOpen(true), <SquarePen size={15} />)}
+      <KakaoShareButton
+        className="scr-tools-btn" icon="share" label="공유"
+        content={() => gameResultShareContent(gameResult, memberOf)}
+      />
+      {canDelete && !gameResult.hidden && tool("hide", "숨김", () => setHideOpen(true), <EyeOff size={15} />)}
+      {canDelete && tool("delete", "삭제", () => onDelete(gameResult), <Trash2 size={15} />, true)}
       {outcomeOpen && (
         <GameResultOutcomeDialog
           gameResult={gameResult} memberOf={memberOf} onChanged={onChanged}
@@ -235,7 +201,7 @@ export default function GameResultCardBody({
               <div key={r.id} className="scr-game-result-trow">
                 <div className="scr-game-result-trow-topline">
                   <div className="scr-game-result-trow-topmeta">
-                    <GameResultActionsMenu
+                    <GameResultTools
                       gameResult={r.raw} canDelete={canManageGame(r.raw, user)} isAdmin={isAdmin} memberOf={memberOf}
                       onDelete={setDeleteTarget} onChanged={onChanged}
                     />
@@ -246,7 +212,7 @@ export default function GameResultCardBody({
                   memberOf={memberOf} active={active}
                   highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms}
                   menu={(
-                    <GameResultActionsMenu
+                    <GameResultTools
                       gameResult={r.raw} canDelete={canManageGame(r.raw, user)} isAdmin={isAdmin} memberOf={memberOf}
                       onDelete={setDeleteTarget} onChanged={onChanged}
                     />

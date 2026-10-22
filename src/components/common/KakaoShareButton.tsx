@@ -14,7 +14,7 @@ function KakaoIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-type Variant = "icon" | "menu" | "full";
+type Variant = "icon" | "full";
 type Glyph = "kakao" | "share";
 
 interface KakaoShareButtonProps {
@@ -29,9 +29,9 @@ interface KakaoShareButtonProps {
 
 export default function KakaoShareButton({
   content, variant = "icon", className,
-  label = variant === "menu" ? "공유" : "카카오톡 공유",
+  label = "카카오톡 공유",
   iconOnly = false, onDone,
-  icon = variant === "menu" ? "share" : "kakao",
+  icon = "kakao",
 }: KakaoShareButtonProps) {
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -68,20 +68,6 @@ export default function KakaoShareButton({
         disabled={busy}
       >
         {glyph(16)}
-      </button>
-    );
-  }
-
-  if (variant === "menu") {
-    return (
-      <button
-        type="button" role="menuitem"
-        className={cx("scr-menu-pop-opt scr-kakao-menu-opt", className)}
-        onClick={(e) => { e.stopPropagation(); void share(); }}
-        disabled={busy}
-      >
-        {glyph(15)}
-        {copied ? "링크 복사됨" : busy ? "만드는 중..." : label}
       </button>
     );
   }

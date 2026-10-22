@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { MoreHorizontal, Trophy } from "lucide-react";
+import { Trophy } from "lucide-react";
 import KakaoShareButton from "../../components/common/KakaoShareButton";
 import { cx } from "../../utils/format";
 import { normalizeSearchText } from "../../utils/memberSearch";
@@ -51,33 +50,11 @@ export function rankShiftShareContent(shift: RankingShift): KakaoShareContent {
   };
 }
 
+/* 순위 변동 도구 — 늘 보이는 단추 줄(2026-10-22, 요청: "케밥 메뉴 쓰는 곳을 전부 항시 노출 버튼 툴박스로") · 옛 ⋯ 메뉴(공유)를 펼친 꼴. */
 export function RankingShiftMenu({ shift }: { shift: RankingShift }) {
-  const [open, setOpen] = useState(false);
   return (
-    <div className="scr-activity-chal-menu">
-      <button
-        type="button" className="scr-activity-post-menu-btn scr-activity-kebab-btn"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="더보기" aria-haspopup="menu" aria-expanded={open}
-      >
-        <MoreHorizontal size={16} />
-      </button>
-      {open && (
-        <>
-          <div
-            className="scr-activity-add-backdrop"
-            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
-            aria-hidden
-          />
-          <div className="scr-menu-pop-drop scr-activity-chal-menu-drop" role="menu">
-            <KakaoShareButton
-              variant="menu"
-              content={() => rankShiftShareContent(shift)}
-              onDone={() => setOpen(false)}
-            />
-          </div>
-        </>
-      )}
+    <div className="scr-tools" role="toolbar" aria-label="순위 변동 도구">
+      <KakaoShareButton className="scr-tools-btn" icon="share" label="공유" content={() => rankShiftShareContent(shift)} />
     </div>
   );
 }

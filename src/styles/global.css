@@ -836,10 +836,6 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   transition: color .12s, border-radius .12s;
 }
 .scr-menu-pop-opt-label { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; }
-.scr-menu-pop-head {
-  padding: 6px 12px 5px; margin-bottom: 2px; border-bottom: 1px solid var(--line);
-  font-size: var(--fs-micro); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; cursor: default;
-}
 .scr-menu-pop-opt-active { color: var(--text); font-weight: 700; }
 .scr-menu-pop-drop-inline .scr-menu-pop-opt { -webkit-tap-highlight-color: transparent; }
 @media (hover: hover) {
@@ -2620,11 +2616,6 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
   background: rgba(var(--divider-tint), 0.35);
 }
 
-.scr-activity-post-menu-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  background: transparent; border: none; padding: 4px; margin: -4px; color: var(--dim); flex-shrink: 0; cursor: pointer;
-}
-@media (hover: hover) { .scr-activity-post-menu-btn:hover { color: var(--text); } }
 @media (min-width: 961px) {
   .scr-game-result-list-panel-v2 .scr-game-result-row {
     grid-template-columns: 148px auto 148px; gap: 4px 10px;
@@ -2727,10 +2718,14 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
 @media (hover: hover) { .scr-activity-note-icon-danger:hover { color: var(--loss); background: rgba(220, 70, 70, 0.14); } }
 .scr-activity-note-err { margin: 4px 0 8px; }
 .scr-activity-note-compose-row { margin-top: 2px; }
-.scr-activity-post-menu { display: inline-flex; flex-shrink: 0; }
+/* 늘 보이는 도구 줄(GameResultTools · 일정 · 순위 변동 · 2026-10-22, 요청: "케밥 메뉴 쓰는 곳을 전부 항시 노출 버튼 툴박스로") — 옛 ⋯ 메뉴를 펼친 꼴. */
+.scr-tools { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.scr-tools .scr-tools-btn { width: auto; min-width: 30px; height: 30px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
+@media (hover: hover) { .scr-tools .scr-tools-btn:hover { color: var(--text); } }
+.scr-tools .scr-tools-btn.is-on { color: var(--lighting-accent, var(--point)); }
+.scr-tools .scr-tools-btn.is-danger { color: var(--loss); }
+@media (hover: hover) { .scr-tools .scr-tools-btn.is-danger:hover { background: rgba(220, 70, 70, 0.14); } }
 .scr-activity-post-menu-drop { min-width: 128px; }
-.scr-activity-post-menu-drop .scr-activity-post-menu-opt-danger { color: var(--loss); }
-@media (hover: hover) { .scr-activity-post-menu-drop .scr-activity-post-menu-opt-danger:hover { color: var(--loss); background: rgba(220, 70, 70, 0.14); } }
 .scr-game-result-list-panel-v2, .scr-game-result-cards { min-width: 0; }
 
 .scr-game-result-cards { display: flex; flex-direction: column; overflow-anchor: none; padding: 0 20px 20px; }
@@ -4202,7 +4197,6 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 @media (hover: hover) { .scr-kakao-share-btn:hover { filter: brightness(0.96); } }
 .scr-kakao-share-btn svg { color: #3c1e1e; }
 .scr-kakao-share-btn-icon { padding-left: 11px; padding-right: 11px; gap: 0; }
-.scr-kakao-menu-opt svg { flex-shrink: 0; }
 
 .scr-share-page { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
 .scr-share-foot {
@@ -5109,11 +5103,9 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-light-theme .scr-activity-detail-full::after { box-shadow: none; }
 .scr-activity-detail-body { padding-top: var(--scr-detail-head-h); }
 .scr-activity-detail-modal .scr-game-result-list-panel-v2 .scr-game-result-trow { position: static; }
-.scr-activity-detail-modal .scr-activity-chal-menu,
 .scr-activity-detail-modal .scr-activity-game-result-body .scr-game-result-trow-topmeta {
   top: calc(7px - var(--scr-detail-head-h)); left: 4px; right: auto;
 }
-.scr-activity-detail-modal .scr-activity-chal-menu-drop,
 .scr-activity-detail-modal .scr-activity-post-menu-drop {
   left: 0; right: auto;
 }
@@ -5377,6 +5369,12 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-data-wrap { display: flex; align-items: center; padding: 4px 4px 0 0; order: 0; }   /* 위·옆 여백 더(요청: "플레이, 데이터 아이콘 위 옆 여백좀 키우고") · 재생 배지는 걷었다(요청: "데이터랑 상관없이 재생배지 지우란 거였어") */
 /* 데이터 단추 — 윗줄 오른끝(2026-10-21, 요청: "모바일에서 … 그자리에 데이터 아이콘") · 줄 높이를 안 바꾼다. */
 .scr-activity-row-data { width: 24px; height: 24px; margin: -5px -5px -5px 0; color: var(--row-dim); }
+/* 추천 단추(Recommend.tsx · 2026-10-22) — 켜면 채운 엄지 · 강조색. 폰 줄은 데이터 옆에 수와 함께. */
+.scr-recommend-btn { color: var(--row-dim, var(--muted)); gap: 3px; }
+.scr-recommend-btn svg { flex-shrink: 0; }
+.scr-recommend-btn.is-on { color: var(--lighting-accent, var(--point)); }
+.scr-recommend-n { font-size: var(--fs-11); font-variant-numeric: tabular-nums; line-height: 1; }
+.scr-activity-row-rec { width: auto; min-width: 24px; height: 24px; padding: 0 4px; margin: -5px 4px -5px 0; }
 /* ★ 윗줄 = [재생 배지 왼끝 · 맵·시간 배지 **정가운데** · (NEW) 시각 오른끝](2026-10-19, 요청 위 ★★) — 맵 배지는 줄 몸의 가운데에 절대 자리(위 여백 7 = 줄 몸 위 패딩).
    리그 판 머리 줄(has-above)이 있는 줄은 그 아래라 자리를 모른다 — 양옆 auto 여백으로 가운데 어림. */
 /* 윗줄은 격자 [재생 1fr | 맵·시간 | (NEW) 시각 1fr] — 양옆이 같은 1fr 라 맵 배지가 늘 정가운데다(리그 판 머리 줄이 있어도 · 옛 flex 차례 order 1~4 를 덮는다).
@@ -5435,8 +5433,6 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-row-body .scr-activity-card > .scr-activity-card-body { padding-top: 14px; }
 .scr-activity-card-head-off > .scr-activity-card > .scr-activity-card-head { display: none; }
 .scr-activity-card-void { opacity: 0.55; }
-.scr-activity-card-void .scr-activity-post-menu,
-.scr-activity-card-void .scr-activity-chal-menu { opacity: 1; }
 .scr-activity-row-body .scr-activity-card-head-title { display: none; }
 .scr-activity-row-body .scr-activity-card { --card-kebab-top: 4px; }
 .scr-activity-row-body .scr-activity-card-stack-reveal { animation: none; }
@@ -5543,8 +5539,6 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-game-result-body .scr-game-result-trow-topmeta {
   position: absolute; top: var(--card-kebab-top); right: 10px; z-index: 2; display: flex;
 }
-.scr-activity-game-result-body .scr-game-result-trow-topmeta .scr-activity-kebab-btn, .scr-activity-chal-menu .scr-activity-kebab-btn { width: 26px; height: 26px; min-height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
-.scr-activity-chal-menu { position: absolute; top: var(--card-kebab-top); right: 10px; z-index: 3; display: flex; }
 .scr-activity-card .scr-roster-name { font-size: var(--fs-caption); }
 .scr-activity-game-result-body .scr-game-result-trow-map, .scr-activity-game-result-body .scr-game-result-trow-dur { font-size: var(--fs-micro); }
 .scr-activity-card-comment .scr-comment-text { font-size: var(--fs-caption); }
@@ -5909,10 +5903,6 @@ input.scr-schedule-title { font-weight: 800; }
 .scr-light-theme .scr-activity-shift-up { color: #16a34a; }
 .scr-light-theme .scr-activity-shift-down { color: #e11d48; }
 .scr-light-theme .scr-activity-shift-new { color: #2563eb; }
-.scr-activity-chal-menu-drop {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 95;
-  display: flex; flex-direction: column; min-width: 140px;
-}
 
 @media (max-width: 960px) {
   .scr-modal.scr-modal:not(.scr-modal-confirm):not(.scr-modal-fit) {

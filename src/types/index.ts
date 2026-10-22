@@ -186,6 +186,10 @@ export interface GameResult {
   mapHash: string | null;
   mapCanonName?: string | null;
   viewCount?: number;
+  /** 추천 수 · 내가 추천했나(2026-10-22) · 명예의 전당 판인가(마감 때 추천 3 이상). */
+  recommendCount?: number;
+  recommended?: boolean;
+  fame?: boolean;
   hasTruth?: boolean | null;
   hidden?: boolean;
   /** 내전(참가자 전원이 회원)인가 — 서버가 실어 준다(비공개 판은 팀이 비어 슬롯으로 못 가른다 · 2026-10-12). 옛 서버면 없다. */

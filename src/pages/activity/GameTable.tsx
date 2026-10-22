@@ -17,12 +17,13 @@ import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
 import { isMeleeGame } from "./GameResultSides";
 import { GameRowNames } from "./GameRow";
+import { RecommendButton, useRecommend } from "./Recommend";
 import GameCurvesModal from "../../modals/GameCurvesModal";
 import InfoTip from "../../components/common/InfoTip";
 import type { GameResult, Member } from "../../types";
 
 /* ★★ PC 게임 목록 = **표**(2026-10-19, 요청: "피시는 오히려 배지들 제거하고 완전 그리드 형태로 변경(헤더로우도 만듦) · 로스터는 모바일과 같은 형태 ·
-   컬럼: 게임번호 시작일시 게임길이 맵 로스터 유형(팀전, 유즈맵, 프리포올 등) 재생가능여부 조회수 숨김 · 숨긴 게임은 해제요청 버튼").
+   컬럼: 게임번호 시작일시 게임길이 맵 로스터 유형(팀전, 유즈맵, 프리포올 등) 재생가능여부 조회수(→ 추천 2026-10-22) 숨김 · 숨긴 게임은 해제요청 버튼").
    2026-10-20: 게임번호 칸 뺌 · 리그는 제 칸 · 일시는 기본 타임스탬프 · 맵 칸 좁히고 가운데(요청).
    머리 줄(GameTableHead)과 줄(GameTableRow)이 같은 열 틀(--gtab-cols · global.css)을 쓴다 — 맵·시간·재생·NEW·'몇 분 전' 배지는 없다.
    로스터 칸은 폰과 같은 꼴(GameRowNames mobile — 팀마다 승패 배지 · 세로 이름 · vs). 폰은 옛 줄(ActivityRow → ListRow) 그대로. */
@@ -37,7 +38,8 @@ import type { GameResult, Member } from "../../types";
 /* 데이터 칸(2026-10-21, 요청: "로스터칸 폭 줄이고 분석그래프 컬럼 추가" → "컬럼명 데이터로 · 아이콘은 다른 것들처럼 평범한 아이콘 글자로") — 그래프 보기를 링크 칸에서 꺼내 제 칸에 · 링크 칸과 같은 아이콘 단추. */
 /* 차례(2026-10-21, 요청: "유형을 맵 앞으로 · 게임길이 컬럼을 로스터 다음으로 · 리그에선 리그 + 유형 합치기 맨 마지막에 유형을 괄호로 표시") —
    리그 탭은 유형 칸 없이 리그 칸 끝에 "(유형)" · 그 칸 이름은 "경기 정보"(같은 날 요청: "리그 컬럼명을 매치 정보로" → "매치래 경기"). */
-const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "로스터", "게임길이", "데이터", "링크", "조회수"];
+/* 링크 칸 → **도구** · 조회수 칸 → **추천**(2026-10-22, 요청: "PC 목록 링크 컬럼을 도구로 바꾸고 추천 버튼도 추가" · "조회수는 화면에서 제거하고 추천 수로"). */
+const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "로스터", "게임길이", "데이터", "도구", "추천"];
 
 export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
   return (
@@ -145,6 +147,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   const canHide = !!onHide && !game.hidden && canManageGame(game, user);
   const [scrapping, setScrapping] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
+  const rec = useRecommend(game);
   const scrap = async () => {
     if (scrapping) return;
     setScrapping(true);
@@ -215,13 +218,14 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
             : <span className="scr-gtab-dim">-</span>}
         </span>
         <span className="scr-gtab-cell scr-gtab-links">
+          <RecommendButton rec={rec} className="scr-gtab-link" />
           {!secret && game.replay && linkBtn("save", "리플레이 저장", () => { void downloadReplay(game); void api.pingGameAction("replay", game); }, <Save size={13} />)}
           {!secret && linkBtn("scrap", "스크랩", () => { void scrap(); }, <Bookmark size={13} />, scrapping)}
           {!secret && linkBtn("share", "공유", () => { void share(); }, <Share2 size={13} />)}
           {canHide && linkBtn("hide", "숨기기", () => onHide?.(), <EyeOff size={13} />)}
           {secret && <span className="scr-gtab-dim">-</span>}
         </span>
-        <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : game.viewCount ?? "-"}</span>
+        <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : rec.n}</span>
       </div>
       {graphOpen && <GameCurvesModal game={game} onClose={() => setGraphOpen(false)} />}
     </div>

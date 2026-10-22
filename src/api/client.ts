@@ -532,6 +532,14 @@ export const api = {
   async purgeTruthOf(ids: number[]): Promise<{ deleted: number }> {
     return request<{ deleted: number }>("/api/game-results/admin/purge-truth", { method: "POST", body: JSON.stringify({ ids }) });
   },
+  /** 게임 추천 켜기·거두기(2026-10-22) — 한 사람이 한 판에 하나. */
+  async recommendGame(id: number, on: boolean): Promise<{ recommendCount: number; recommended: boolean }> {
+    return request<{ recommendCount: number; recommended: boolean }>(`/api/game-results/${id}/recommend`, { method: on ? "POST" : "DELETE" });
+  },
+  /** 그 판을 추천한 사람(추천한 차례대로). */
+  async listGameRecommends(id: number): Promise<{ memberId: string; nickname: string; createdAt: string }[]> {
+    return (await request<{ items: { memberId: string; nickname: string; createdAt: string }[] }>(`/api/game-results/${id}/recommends`)).items;
+  },
   /** 게임 자료 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
   async getGamesClose(): Promise<{ closedUntil: string | null }> {
     return request<{ closedUntil: string | null }>("/api/game-results/admin/close");

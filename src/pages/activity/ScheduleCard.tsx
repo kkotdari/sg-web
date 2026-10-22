@@ -1,6 +1,6 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, ExternalLink, MoreHorizontal, Paperclip } from "lucide-react";
+import { CalendarDays, ExternalLink, Paperclip, Trash2 } from "lucide-react";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import KakaoShareButton from "../../components/common/KakaoShareButton";
@@ -9,7 +9,6 @@ import { cx, formatBytes } from "../../utils/format";
 import { formatWhen, pad } from "../../utils/date";
 import { LoadingMark } from "../../components/common/Feedback";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
-import { attachPopover } from "../../utils/popover";
 import { api, apiStatusOf } from "../../api/client";
 import { readAsDataUrl } from "../../utils/image";
 import { showAlert } from "../../components/common/AlertDialog";
@@ -129,21 +128,15 @@ function shareContentOf(schedule: Schedule): KakaoShareContent {
   };
 }
 
+/* 일정 도구 — 늘 보이는 단추 줄(2026-10-22, 요청: "케밥 메뉴 쓰는 곳을 전부 항시 노출 버튼 툴박스로") · 옛 ⋯ 메뉴(공유 · 삭제)를 펼친 꼴. */
 function ScheduleActionsMenu({ schedule, canDelete, onDeleted }: {
   schedule: Schedule;
   canDelete: boolean;
   onDeleted: (id: number) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const anchorRef = useRef<HTMLButtonElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    if (!open || !anchorRef.current || !dropRef.current) return undefined;
-    return attachPopover(anchorRef.current, dropRef.current, { growToContent: true, maxWidth: 200, placement: "bottom-end" });
-  }, [open]);
 
   const remove = async () => {
     setBusy(true);
@@ -160,40 +153,15 @@ function ScheduleActionsMenu({ schedule, canDelete, onDeleted }: {
   };
 
   return (
-    <div className="scr-activity-chal-menu scr-schedule-menu">
-      <button
-        type="button" ref={anchorRef} className="scr-activity-post-menu-btn scr-activity-kebab-btn"
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
-        aria-label="더보기" aria-haspopup="menu" aria-expanded={open}
-      >
-        <MoreHorizontal size={16} />
-      </button>
-      {open && createPortal(
-        <>
-          <div
-            className="scr-activity-add-backdrop scr-menu-pop-backdrop"
-            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
-            aria-hidden
-          />
-          <div
-            className="scr-menu-pop-drop scr-activity-post-menu-drop scr-scroll" ref={dropRef} role="menu"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <KakaoShareButton
-              variant="menu" content={() => shareContentOf(schedule)} onDone={() => setOpen(false)}
-            />
-            {canDelete && (
-              <button
-                type="button" role="menuitem"
-                className={cx("scr-menu-pop-opt", "scr-activity-post-menu-opt-danger")}
-                onClick={() => { setOpen(false); setConfirmOpen(true); }}
-              >
-                삭제
-              </button>
-            )}
-          </div>
-        </>,
-        document.body,
+    <div className="scr-tools scr-schedule-menu" role="toolbar" aria-label="일정 도구" onClick={(e) => e.stopPropagation()}>
+      <KakaoShareButton className="scr-tools-btn" icon="share" label="공유" content={() => shareContentOf(schedule)} />
+      {canDelete && (
+        <button
+          type="button" className="scr-icon-btn scr-tools-btn is-danger" title="삭제" aria-label="삭제"
+          onClick={() => setConfirmOpen(true)}
+        >
+          <Trash2 size={15} />
+        </button>
       )}
       {confirmOpen && (
         <ConfirmDialog

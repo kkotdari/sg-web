@@ -8,7 +8,7 @@ import { api } from "../../api/client";
 import { canManageGame, isSecretGame } from "../../utils/gameAccess";
 import type { GameResult } from "../../types";
 import ActivityComments from "./ActivityComments";
-import { GameResultActionsMenu } from "./GameResultCardBody";
+import { GameResultTools } from "./GameResultCardBody";
 import GameResultStory from "./GameResultStory";
 import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
 
@@ -75,14 +75,13 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
 
   if (!game) return <div className="scr-activity-list"><LoadingMark /></div>;
   const menu = (
-    <GameResultActionsMenu
+    <GameResultTools
       gameResult={game}
       canDelete={canManageGame(game, user)}
       isAdmin={isAdmin}
       memberOf={memberOf}
       onDelete={setPendingDelete}
       onChanged={onChanged}
-      showNo
     />
   );
   return (
