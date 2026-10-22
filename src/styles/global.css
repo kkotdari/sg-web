@@ -8277,14 +8277,17 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-gs-opt-v { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scr-gs-opt-tag { flex: none; font-size: var(--fs-10); color: var(--dim); }
 .scr-gs-toggles { display: flex; flex-wrap: wrap; gap: 4px; }
+/* 검색 폼 종족 · 유형 칩 — 테두리 없이 흰 칩 + 약한 그림자 · 1px 림으로만 가른다(2026-10-22, 요청: "테두리 없애고 흰 칩 + 약한 그림자와 림으로 구분감만" — 옛: 1px --line 테두리 · 투명 바탕). */
 .scr-gs-tog {
-  display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: 1px solid var(--line); border-radius: 999px;
-  background: transparent; color: var(--muted); font: inherit; font-size: var(--fs-11); font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: none; border-radius: 999px;
+  background: var(--panel-solid); color: var(--muted); font: inherit; font-size: var(--fs-11); font-weight: 700; cursor: pointer;
+  box-shadow: 0 0 0 1px var(--line-faint), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .scr-gs-tog > i { width: 7px; height: 7px; border-radius: 2px; }
 .scr-gs-tog.is-on {
-  color: var(--text); border-color: var(--lighting-accent, #5c9df5);
-  background: color-mix(in srgb, var(--lighting-accent, #5c9df5) 14%, transparent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--lighting-accent, #5c9df5) 14%, var(--panel-solid));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--lighting-accent, #5c9df5) 60%, transparent), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .scr-gs-link-list { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .scr-gs-link-add { margin-top: 4px; }   /* 조건 추가 단추 위 틈(2026-10-20 요청) */
