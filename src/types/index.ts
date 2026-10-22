@@ -87,7 +87,8 @@ export interface GameCurve {
   rg: number[];
   /** 모든 건물의 생애(초) — t 처음 종류 · s 짓기 시작 · d 다 지음(못 지었으면 null) · e 사라짐(끝까지 남았으면 null)
    *  · m 변태들 [새 종류, 변태 시작, 다 됨(못 됐으면 null)](해처리 → 레어 · 크립 → 성큰 …) · PC 건설 줄. */
-  blds: { t: number; s: number; d: number | null; e: number | null; m: [number, number, number | null][]; x: [number, number][] }[];
+  /** h — 애드온만: 붙어 있던 본 건물 [같은 사람 blds 안 차례, 붙은 초] · 본 건물이 바뀔 때마다 한 줄(2026-10-22). */
+  blds: { t: number; s: number; d: number | null; e: number | null; m: [number, number, number | null][]; x: [number, number][]; h?: [number, number][] }[];
   /** 테크 건물 종류별 첫 한 채 — t 유닛 종류 · s 짓기 시작 초 · e 다 지은 초. */
   techs: { t: number; s: number; e: number }[];
 }

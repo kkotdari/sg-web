@@ -222,6 +222,8 @@ const BUILD_LABEL: Record<number, string> = {
 };
 /** 변태 취소의 이름 — 취소하면 종류가 안 바뀌어 트랙에 무엇으로 변태하던 중이었는지가 없다. 바탕 건물로 어림한다(크립은 성큰 · 스포어 둘 다 될 수 있다). */
 const MORPH_TO: Record<number, string> = { 131: "레어", 132: "하이브", 141: "그레이터", 143: "성큰·스포어" };
+/** 애드온 → 붙는 본 건물(서버 series.ADDON_HOSTS 와 짝) — 같이 강조. 컴샛·핵사일로 → 커맨드 · 컨트롤타워 → 스타포트 · 코버트·피직스 → 사이언스 · 머신샵 → 팩토리. */
+const ADDON_HOST9: Record<number, number> = { 107: 106, 108: 106, 115: 114, 117: 116, 118: 116, 120: 113 };
 /** 첫 본진(경기 시작부터 있던 커맨드 · 해처리 · 넥서스) — '테크 건물만'에서도 보인다(2026-10-21, 요청: "첫 스타팅 기지도 표현"). */
 const MAIN_HALL = new Set([106, 131, 154]);
 /** PC 건설 줄 치수(px) — 건물 한 채마다 컴팩트 칩(fs 글자 · chipBox) · 칩 사이 gap · 단 사이 숨 tier · 사람 칸 위아래 숨 pad ·
@@ -273,7 +275,17 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   type Tag = { x: number; w: number; label: string; kind?: number; cut?: boolean; morph?: boolean };
   let y0 = 4;
   const rows = lanes.map((l) => {
+    /* ★ 애드온은 **본 건물의 선 위 칩**으로(2026-10-22, 요청: "애드온은 본 건물에" · "애드온 간 본 건물 변경이 가능") — 서버가 붙어 있던 구간마다 [본 건물 차례, 붙은 초](b.h)를 준다.
+       그 본 건물 줄에 그때 "+머신샵" 칩을 달고, 애드온은 제 줄을 안 갖는다. 다 짓지 못한 애드온은 딤(is-cut). b.h 가 없는 옛 굽기·본 건물을 못 찾은 것은 종전처럼 제 줄. */
+    const onHost9 = new Map<GameCurve["blds"][number], { at: number; a: GameCurve["blds"][number] }[]>();
+    for (const a of l.blds) for (const [hi9, at9] of a.h ?? []) {
+      const host9 = l.blds[hi9];
+      if (!host9) continue;
+      const got9 = onHost9.get(host9);
+      if (got9) got9.push({ at: at9, a }); else onHost9.set(host9, [{ at: at9, a }]);
+    }
     const shown = l.blds
+      .filter((b) => !(b.h && b.h.length > 0 && b.h.some(([hi9]) => !!l.blds[hi9])))
       .filter((b) => !techOnly || b.t in TECH_LABEL || b.m.some(([t]) => t in TECH_LABEL) || (b.s === 0 && MAIN_HALL.has(b.t)))
       .slice().sort((p, q) => p.s - q.s);
     const used: [number, number][][] = [];
@@ -281,11 +293,12 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     const lines: [number, number, number][][] = [];
     const items = shown.map((b) => {
       const tag = (at9: number, label: string, extra?: Partial<Tag>): Tag => {
-        const w = chipW(label) + (extra?.cut ? textW(" ✕", BL.fs) : 0);
+        const w = chipW(label);
         return { x: Math.min(x(at9), RIGHT - w), w, label, ...extra };
       };
       const tags: Tag[] = [tag(b.s, BUILD_LABEL[b.t] ?? `#${b.t}`, { kind: b.t })];
       for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, { morph: true, kind: mt }));
+      for (const { at: at9, a } of onHost9.get(b) ?? []) tags.push(tag(at9, `+${BUILD_LABEL[a.t] ?? `#${a.t}`}`, { kind: a.t, cut: a.d === null && a.e !== null }));
       for (const [xs] of b.x ?? []) {
         const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
         tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, { morph: true, cut: true }));
@@ -319,42 +332,33 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
             {items.map(({ b, k, tags, jig }) => {
               const ly = top + BL.pad + BL.jig + k * STEP + CH / 2 + jig;
               const end = b.e ?? END;
-              /* 토막 — [시작, 끝, 짓는 중(점선)?] · 짓기 → 살아 있음 → (변태 중 → 살아 있음)… */
-              const segs: [number, number, boolean][] = [];
-              let t9 = b.s;
-              const building = (a: number, z: number | null): void => { if (z === null) { segs.push([a, end, true]); t9 = end; } else { if (z > a) segs.push([a, z, true]); t9 = z; } };
-              /* ✕ — 짓다가 사라짐 · 파괴(2026-10-21, 요청: "건설 · 변태 취소는 옆에 X 표시"). 변태 취소는 칩("→ 레어 ✕")이 말한다. */
-              const cuts: number[] = [];
-              building(t9, b.d);
-              const evs = [...b.m.map(([, ms, md]) => ({ ms, z: md, cancel: false })), ...(b.x ?? []).map(([xs, xc]) => ({ ms: xs, z: xc as number | null, cancel: true }))]
-                .sort((p, q) => p.ms - q.ms);
-              for (const ev of evs) {
-                if (ev.ms > t9) segs.push([t9, ev.ms, false]);
-                if (ev.cancel) { segs.push([ev.ms, ev.z ?? end, true]); t9 = ev.z ?? end; } else building(ev.ms, ev.z);
-              }
-              if (end > t9) segs.push([t9, end, false]);
-              if (b.d === null && b.e !== null) cuts.push(b.e);
+              /* 토막 — 처음 짓는 동안만 점선 · 그 뒤는 실선(변태 중·변태 취소도 실선 — 2026-10-22, 요청: "변태한 건물 점선 말고 실선으로"). */
+              const built9 = b.d ?? (b.e !== null ? b.e : end);
+              const segs: [number, number, boolean][] = [[b.s, built9, true], ...(end > built9 ? [[built9, end, false] as [number, number, boolean]] : [])];
+              /* 짓다가 사라짐(취소·파괴) = ✕ 대신 반투명 딤(2026-10-22, 요청: "취소는 x 대신 반투명 딤 처리") — 칩·선 통째로(.is-cut). */
+              const cut9 = b.d === null && b.e !== null;
               const show = (): void => { setHover(b); setHoverKind(b.t); onAt((b.d ?? b.s) / 60); };
               return (
                 <g
-                  key={`${b.s}:${b.t}:${k}`} className={hover === b ? "scr-bl-hit is-hl" : "scr-bl-hit"}
+                  key={`${b.s}:${b.t}:${k}`} className={cx("scr-bl-hit", hover === b && "is-hl", cut9 && "is-cut")}
                   onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
                   onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(null); setHoverKind(null); } }}
                 >
                   {segs.map(([a, z, bld], si) => (
                     <line key={si} className={bld ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
                   ))}
-                  {cuts.map((c) => <text key={`x${c}`} className="scr-bl-cut" x={x(c)} y={ly} textAnchor="middle" dominantBaseline="central">✕</text>)}
                   <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />
                   {tags.map((t, ti) => {
-                    /* ★ 얹은 건물과 **같은 종류**의 칩은 사람과 상관없이 모두 그 임자색으로 칠한다(2026-10-22, 요청: "마우스 오버 시 같은 건물들은 사람 관계없이 모두 강조 · 강조 시 임자색") —
-                       얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩 · 글자는 그 바탕 위 잉크(inkOn). */
-                    const hl9 = hoverKind !== null && t.kind === hoverKind;
+                    /* ★ 얹은 건물과 **같은 종류**의 칩은 사람과 상관없이 모두 강조색으로(2026-10-22, 요청: "마우스 오버 시 같은 건물들은 사람 관계없이 모두 강조" → "강조 시 임자색" →
+                       "임자색 말고 강조색으로" — 폰 테크 칩 강조(.scr-tl-chip.is-hl)와 같은 색) · 얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩. */
+                    /* 애드온과 본 건물은 함께(같은 날 "애드온과 본 건물은 같이 강조") — 팩토리에 얹으면 머신샵도 · 머신샵에 얹으면 팩토리도(ADDON_HOST9). */
+                    const hl9 = hoverKind !== null && t.kind !== undefined
+                      && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
                     return (
-                    <g key={ti} onPointerEnter={(e) => { if (e.pointerType === "mouse") setHoverKind(t.kind ?? null); }}>
-                      <rect className={t.morph ? "scr-bl-chip is-morph" : "scr-bl-chip"} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} style={hl9 ? { fill: l.color, stroke: l.color } : undefined} />
-                      <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={hl9 ? { fontSize: BL.fs, fill: inkOn(l.color) } : { fontSize: BL.fs }}>
-                        {t.label}{t.cut && <tspan className="scr-bl-cut"> ✕</tspan>}
+                    <g key={ti} className={t.cut ? "is-cut" : undefined} onPointerEnter={(e) => { if (e.pointerType === "mouse") setHoverKind(t.kind ?? null); }}>
+                      <rect className={cx("scr-bl-chip", t.morph && "is-morph", hl9 && "is-hl")} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
+                      <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
+                        {t.label}
                       </text>
                     </g>
                     );
@@ -593,15 +597,18 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                 </div>
               </div>
               {teamGame && (
-                <div className="scr-rc-mode" role="radiogroup" aria-label="개인/팀별">
+                <div className="scr-rc-mode">
                   <span className="scr-gc-flabel" aria-hidden>개인/팀별:</span>
-                  {VIEW_MODES.map(([m, label]) => (
-                    <button
-                      key={m} type="button" role="radio" aria-checked={mode === m}
-                      className={cx("scr-compact-rect-btn", mode !== m && "is-secondary")}
-                      onClick={() => { setView(m); setFocus(null); }}
-                    >{label}</button>
-                  ))}
+                  {/* 탭 꼴(2026-10-22, 요청: "여기에 탭 디자인 적용") — 게임 목록 · 통계 탭과 같은 .scr-line-tabs. */}
+                  <div className="scr-line-tabs" role="tablist" aria-label="개인/팀별">
+                    {VIEW_MODES.map(([m, label]) => (
+                      <button
+                        key={m} type="button" role="tab" aria-selected={mode === m}
+                        className={cx("scr-line-tab-btn", mode === m && "is-on")}
+                        onClick={() => { setView(m); setFocus(null); }}
+                      >{label}</button>
+                    ))}
+                  </div>
                 </div>
               )}
               </div>
