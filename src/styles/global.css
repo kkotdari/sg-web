@@ -959,14 +959,20 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-rail-hotzone {
     /* 폭 16 → 6(2026-10-09, 지적: "다른 버튼 누르려다가 자꾸 나옴") → 14(2026-10-10, 지적: "레일 메뉴 꺼내기가 너무 어려운 거 같아 다시 영역을 좀 넓혀주고 대신 윗부분은
        제외해줘(브래드크럼 부분)") — 위 72px(브레드크럼 줄 · 뒤로 단추)는 비운다. 여는 것은 그대로 140ms 머문 뒤다(useRail railEnterSoon). */
-    display: block; position: fixed; left: 0; top: 72px; bottom: 0; width: 14px; z-index: 29;
+    /* → 24(2026-10-22, 요청: "나오는 트리거 폭도 넓히고"). */
+    display: block; position: fixed; left: 0; top: 72px; bottom: 0; width: 24px; z-index: 29;
     color: var(--muted);
   }
+  /* 꺼내기 택 — 가운데 막대(3×56)였던 것을 위로(존 위 72 + 64 = 화면 136px) 올리고 세로 글씨 '메뉴'를 단 탭으로(2026-10-22, 요청: "레일 메뉴 오픈하라고 튀어나온 택을
+     좀 많이 위로 옮겨 줘 · 세로로 메뉴라고 적어 줘"). */
   .scr-rail-hotzone::after {
-    content: ""; position: absolute; left: 1px; top: 50%; width: 3px; height: 56px; margin-top: -28px;
-    border-radius: 2px; background: currentColor; opacity: 0.28; transition: opacity .15s;
+    content: "메뉴"; position: absolute; left: 0; top: 64px;
+    writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px;
+    font-size: 11px; font-weight: 600; line-height: 1; padding: 9px 4px;
+    border-radius: 0 6px 6px 0; background: rgba(var(--overlay-rgb), 0.08); border: 1px solid rgba(var(--overlay-rgb), 0.14); border-left: 0;
+    opacity: 0.6; transition: opacity .15s;
   }
-  .scr-rail-hotzone:hover::after { opacity: 0.7; }
+  .scr-rail-hotzone:hover::after { opacity: 1; }
   .scr-rail-hotzone-open::after, .scr-rail-hotzone-open:hover::after { opacity: 0; }
 }
 @media (min-width: 961px) and (hover: hover) {
