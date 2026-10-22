@@ -10,7 +10,7 @@ import type { BaseRace, Member, MemberStats } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
    C 의 승률 막대를 얹어(요청: "A에 C의 그래프를 시각적으로 도입")).
-   PC: [유저 | 경기 | 승률 | APM | 데미지 | 테란·프로토스·저그 (전적 | 승률) | ▾] · 폰: [유저(아래 한 줄: APM · 딜 · 피해) | 전적: 전체·종족 판수(승률)] · 폰은 줄을 눌러 편다(▾ 없음).
+   PC: [유저 | 경기 | 승률 | APM | 데미지 | 테란·프로토스·저그 (전적 | 승률) | ▾] · 폰: [유저 | APM | 데미지 | 전적: 전체·종족 판수(승률)] · 폰은 줄을 눌러 편다(▾ 없음).
    PC 의 ▾ · 폰의 줄 누름은 모두 그 줄 아래에 **분당 곡선 두 판**(인구 · 일꾼 수, 세 종족 겹침 — RaceCurves)을 편다(2026-10-20, 요청: "펼친 부분 내용 변경 ·
    폰 피시 공통"). 옛 펼침(종족마다 유닛·스킬·공방업 글 · MixLines)과 폰의 '펼치기 없음'은 걷었다. 승률 막대(시안 C)도 걷었다. */
 
@@ -162,20 +162,12 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
     <>
     <div className={cx("scr-sg-row scr-sg-tap", clan && "is-clan", open && "is-open")} onClick={onRow}>
       <span className="scr-sg-c scr-sg-who">
-        <span className="scr-sg-who-top">
-          {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <WhoPlain member={row.member} />}
-        </span>
-        <span className="scr-sg-who-sub">
-          {/* 판수는 오른쪽 전적 칸의 "전체 N전" 으로 옮겼다(2026-10-20 · 전적 칸 세로 쌓기). */}
-          {/* "APM 231" — 라벨이 앞(2026-10-20, 요청: "N APM → APM N 으로 순서 변경"). 딜 · 피해도 라벨이 앞이다. */}
-          {/* APM · 딜 · 피해는 줄마다 세로로 맞춘다(2026-10-20, 요청: "모바일 apm 딜 피해 로우 간 세로 줄 맞추기") — 값 칸 폭을 고정하고(CSS),
-              APM 이 없는 사람도 "APM -" 로 자리를 지킨다(빠지면 딜·피해가 왼쪽으로 붙었다). */}
-          <span className="scr-sg-v scr-sg-lab"><i>APM</i><b>{s.avgApm ?? "-"}</b></span>
-          {/* 딜 · 피해는 APM 과 한 줄 · "데미지" 이름표 없음(2026-10-22, 요청: "APM 데미지 한 줄에 표시 · %, APM, 딜, 피해만 남김" — 뜻은 머리 설명이 말한다).
-              옛: APM 아래 제 줄 "데미지 딜 … 피해 …". 클랜원 전체는 없다. */}
-          {!clan && <Dmg s={s} compact />}
-        </span>
+        {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <WhoPlain member={row.member} />}
       </span>
+      {/* APM · 데미지(초록 딜 위 · 빨강 피해 아래)는 제 칸(2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 닉네임 아래 한 줄 "APM 230 1.4 0.8".
+          클랜원 전체는 데미지가 없다. */}
+      <span className="scr-sg-c scr-sg-mnum">{s.avgApm ?? <Dash />}</span>
+      <span className="scr-sg-c scr-sg-mnum">{clan ? <Dash /> : <Dmg s={s} compact />}</span>
       <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} />
       {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} />)}
     </div>
@@ -185,7 +177,7 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
 }
 
 /** 통계 표 도움말(2026-10-22, 요청: "도움말 · 헤더 설명 다 제거하고 '행 누르면…' 자리에 도움말 아이콘 단추 · 툴팁에 표 모양과 설명" → "PC 에도 알아서") —
- *  폰은 말풍선에 한 줄짜리 표 그림(칸에 이름표가 없어서)과 풀이 · PC 는 칸 머리가 다 적혀 있어 그림 없이 데미지 뜻과 펼치기만 푼다. */
+ *  폰은 말풍선에 한 줄짜리 표 그림(숫자에 단위가 없어서)과 풀이 · PC 는 칸 머리 · 단위가 다 적혀 있어 그림 없이 데미지 뜻과 펼치기만 푼다. */
 export function StatHelp({ mobile }: { mobile: boolean }) {
   return (
     <InfoTip
@@ -193,14 +185,16 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
       text={mobile ? (
         <>
           <span className="scr-sg-help-mock" aria-hidden>
-            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">전체</span><span className="scr-sg-help-h">테란</span>
-            <span className="scr-sg-help-who"><b>닉네임</b><span>APM <b>230</b> <b className="is-dealt">1.4</b> <b className="is-taken">0.8</b></span></span>
-            <span className="scr-sg-help-rec"><b>68</b><i>54</i></span><span className="scr-sg-help-rec"><b>40</b><i>42</i></span>
+            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">APM</span><span className="scr-sg-help-h">데미지</span><span className="scr-sg-help-h">전체</span>
+            <span className="scr-sg-help-who"><b>닉네임</b></span>
+            <span className="scr-sg-help-rec"><b>230</b></span>
+            <span className="scr-sg-help-rec"><b className="is-dealt">1.4</b><b className="is-taken">0.8</b></span>
+            <span className="scr-sg-help-rec"><b>68</b><i>54</i></span>
           </span>
           <span className="scr-sg-help-list">
-            <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
-            <span><b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해 — 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
             <span>APM — 분당 행동 수 평균</span>
+            <span>데미지 — <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
+            <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
             <span>행을 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
           </span>
         </>
@@ -233,6 +227,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
         {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 · 전적은 전체·종족 넷을 덮는다. 뜻 풀이는 정렬 줄의 도움말 단추(StatHelp)로 옮겼다(2026-10-22, 요청: "헤더 설명 다 제거 · 도움말 아이콘 툴팁에 표 모양과 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow">APM</span>
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow">데미지</span>
           <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
           {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head">{r}</span>)}
         </div>
