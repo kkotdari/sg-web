@@ -790,6 +790,12 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   animation: scr-brand-star-spin 5s linear infinite;
   transform: translate(-50%, -50%);
 }
+/* 별 자리의 투명 누름판(로그인 화면 숨은 가입 진입 · BrandLogo onStar) — 별 그림은 돌아서 누름 자리가 흔들린다. */
+.scr-brand-logo-star-hit {
+  position: absolute; left: 32.62%; top: 29.8%; width: 17.79%; aspect-ratio: 1;
+  transform: translate(-50%, -50%); padding: 0; border: 0; background: transparent;
+  cursor: default; -webkit-tap-highlight-color: transparent; outline: none; touch-action: manipulation;
+}
 @keyframes scr-brand-star-spin {
   0% { transform: translate(-50%, -50%) rotateY(0deg); animation-timing-function: cubic-bezier(0.6, 0, 0.4, 1); }
   40%, 100% { transform: translate(-50%, -50%) rotateY(1080deg); }
