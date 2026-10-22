@@ -981,9 +981,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
     font-size: 11px; font-weight: 600; line-height: 1; padding: 18px 4px 14px;   /* 위아래 길게(되요청 "탭 위아래 길이도 좀 더 길게" · 옛 9px · 글자 사이 2px) — 키 ≈ 46 → 62 */
     /* 강조색 바탕 · 흰 글씨(2026-10-22, 요청: "레일 메뉴 탭 강조색으로" — 옛: 0.08 덧칠 · 0.14 테두리 · 옅은 글씨). */
     border-radius: 0 6px 6px 0; background: var(--lighting-accent); color: #fff;
-    opacity: 0.85; transition: opacity .15s;
+    transition: opacity .15s;   /* 불투명(같은 날 "레일 메뉴 탭 불투명하게" — 옛 0.85 · 얹으면 1) */
   }
-  .scr-rail-hotzone:hover::after { opacity: 1; }
   .scr-rail-hotzone-open::after, .scr-rail-hotzone-open:hover::after { opacity: 0; }
 }
 @media (min-width: 961px) and (hover: hover) {
@@ -2369,14 +2368,15 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 /* 탭 — 게임 목록의 리그·내전·공방 · 통계의 규모·맵 탭이 함께 쓴다. .scr-line-tabs/.scr-line-tab-btn 이 이름이고 옛 .scr-activity-game-tab* 은 그대로 둔 별명이다.
    ★ 고른 탭은 **컴팩트한 음영 직사각형**만 깔고 탭끼리 틈이 없다 — 둘 이상 켜지면 음영이 쭉 이어진다(2026-10-22, 요청: "탭을 단순히 컴팩트한 음영 직사각형만 ·
    각 탭의 음영끼리 갭 없이 · 다 켜져 있다면 쭉 이어지게"). 옛: 밑줄 탭(고른 탭 아래 강조색 2px 막대 · 탭 사이 2px).
-   같은 날 "더 컴팩트하게 · 색은 버튼 채우기 색과 동일하게" — 여백 5/12 → 3/8(폰 좌우 10 → 7) · 음영 0.1 덧칠 → --btn-fill-bg/--btn-fill-text. */
+   같은 날 "더 컴팩트하게 · 색은 버튼 채우기 색과 동일하게" — 여백 5/12 → 3/8(폰 좌우 10 → 7) · 음영 0.1 덧칠 → --btn-fill-bg/--btn-fill-text.
+   또 같은 날 "탭 더 컴팩트하게" — 3/8 → 2/6(폰 좌우 7 → 5) · 줄 높이 1.35 → 1.2. */
 .scr-activity-game-tabs, .scr-line-tabs {
   display: flex; align-items: stretch; gap: 0; flex: 0 0 auto; width: fit-content; max-width: 100%; min-width: 0;
 }
 .scr-activity-group > .scr-activity-game-tabs { margin: 8px 0 10px; }
 .scr-activity-game-tab, .scr-line-tab-btn {
   position: relative; background: none; border: none; border-radius: 0; cursor: pointer; font-family: inherit;
-  padding: 3px 8px; line-height: 1.35;
+  padding: 2px 6px; line-height: 1.2;
   font-size: var(--fs-caption); font-weight: 700; color: var(--muted); letter-spacing: 0.02em;
   transition: background-color .15s ease, color .15s ease;
   -webkit-tap-highlight-color: transparent;
@@ -2387,7 +2387,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 }
 .scr-activity-game-tab:focus-visible, .scr-line-tab-btn:focus-visible { outline: 2px solid var(--point); outline-offset: -2px; border-radius: 6px; }
 @media (max-width: 960px) {
-  .scr-activity-game-tab, .scr-line-tab-btn { padding-left: 7px; padding-right: 7px; }
+  .scr-activity-game-tab, .scr-line-tab-btn { padding-left: 5px; padding-right: 5px; }
   /* (걷음 2026-10-12, 요청: "내전 공방 탭이랑 길게 눌러서 선택 글자 왼쪽 패딩을 PC 에서처럼 모바일에도 좀 줘야 할 듯") 첫 탭 왼쪽 여백 0 — 이제 첫 탭도 10px 라
      글자가 목록 줄 안 글자(줄 좌우 여백 10px)와 같은 x 에 선다. */
 }
