@@ -1258,6 +1258,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-sort-tabs > .scr-line-tab-btn::after { left: 3px; right: 3px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child { padding-left: 2px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
+/* 폰 정렬 탭의 차례 숫자(2026-10-22) — 작고 옅은 글자(배지 아님). */
+.scr-stats-sort-no { font-size: 9px; font-weight: 600; color: var(--muted); margin-right: 2px; vertical-align: 1px; }
 /* 정렬 탭 앞 이름표(2026-10-22, 요청: "정렬(복수선택) 라벨 추가"). */
 .scr-stats-sort-label { font-size: var(--fs-9); font-weight: 600; color: var(--muted); padding-bottom: 7px; white-space: nowrap; }
 /* 여러 자 정렬의 적용 차례(2026-10-22 · ClanStatsScreen sortKeys) — 탭 옆 작은 글씨. */
