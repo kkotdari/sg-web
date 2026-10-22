@@ -7314,6 +7314,10 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 @media (hover: hover) { .scr-sb-slide-x:hover { background: var(--loss); } }
 /* 슬라이드 [순서 변경] 단추(2026-10-22) — 전체 다운로드와 같은 컴팩트 네모 · 켜면 [완료]. */
 .scr-sb-orderbtn { display: inline-flex; align-items: center; gap: 3px; margin-right: 4px; flex: 0 0 auto; --btn-border-w: 1px; }
+/* 순서 변경 팝업(2026-10-22, 요청: "순서 변경 팝업으로") — 격자는 사진 목록과 같은 칸(.scr-sb-order) · 팝업 폭에 맞춰 줄을 나눈다. */
+.scr-sb-order-modal { width: min(720px, calc(100vw - 32px)); max-width: 720px; }
+.scr-sb-order-modal .scr-sb-order { margin-top: 0; }
+.scr-sb-order-modal-foot { display: flex; justify-content: flex-end; padding: 12px 0 14px; }
 .scr-sb-slide-save {
   position: absolute; top: 8px; right: 8px; z-index: 1;
   display: inline-flex; align-items: center; justify-content: center;

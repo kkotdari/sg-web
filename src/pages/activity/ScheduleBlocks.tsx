@@ -12,6 +12,8 @@ import { showAlert } from "../../components/common/AlertDialog";
 import { cx, formatBytes } from "../../utils/format";
 import { pickPhoto, readAsDataUrl } from "../../utils/image";
 import { attachPopover } from "../../utils/popover";
+import ModalHash from "../../utils/modalHash";
+import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { isPhotoSet, type ScheduleBlock, type SchedulePhoto } from "../../types";
 import { imgSrc } from "../../utils/imgSrc";
 import { canSaveToAlbum, downloadFiles, fetchMedia, isVideoItem, MAX_VIDEO_BYTES, shareToAlbum } from "../../utils/media";
@@ -757,6 +759,30 @@ function PhotoOrder({
   );
 }
 
+function SlideOrderModal({ photos, onReorder, onClose }: {
+  photos: SchedulePhoto[]; onReorder: (next: SchedulePhoto[]) => void; onClose: () => void;
+}) {
+  useLockBodyScroll(true, onClose);
+  return createPortal(
+    <div className="scr-modal-overlay" onClick={onClose}>
+      <ModalHash hash="slide-order" onClose={onClose} />
+      <div className="scr-modal scr-sb-order-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="scr-modal-head">
+          <span>순서 변경</span>
+          <button type="button" className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
+        </div>
+        <div className="scr-modal-body">
+          <PhotoOrder photos={photos} at={-1} onPick={() => {}} onReorder={onReorder} sortable />
+        </div>
+        <div className="scr-sb-order-modal-foot">
+          <button type="button" className="scr-compact-rect-btn" onClick={onClose}>완료</button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 type SlideAct = {
   play: (id: string, i: number) => void; stop: () => void; view: (i: number) => void; remove: (p: SchedulePhoto) => void;
 };
@@ -818,8 +844,8 @@ function PhotosBlock({
      나눔 · 사진 목록엔 큰 액자 없음 · 슬라이드엔 그리드 없음") — 목록은 격자(PhotoOrder)만 서고 칸을 누르면 크게 보기(PhotoViewer), 슬라이드는 큰 액자만
      서고 사진 더하기는 머리의 + 단추다(옛 격자 끝 + 칸 대신). 옛 '큰 액자 + 격자' 한 요소였던 photos 는 사진 목록이 된다. */
   const slides = block.kind === "slides";
-  /* 슬라이드 순서 바꾸기(2026-10-22, 요청: "슬라이드 순서 변경 … 순서 변경 버튼을 만들자" — 장마다 ←→ 로 한 칸씩 옮기던 것은 너무 힘들어 걷었다) —
-     머리의 [순서 변경]을 누르는 동안만 슬라이드 아래에 끌어 옮기는 격자(사진 목록과 같은 PhotoOrder)가 선다. [완료]로 접는다. */
+  /* 슬라이드 순서 바꾸기(2026-10-22, 요청: "슬라이드 순서 변경 … 순서 변경 버튼을 만들자" — 장마다 ←→ 로 한 칸씩 옮기던 것은 너무 힘들어 걷었다 ·
+     같은 날 "순서 변경 팝업으로") — 머리의 [순서 변경]이 팝업을 띄우고, 그 안의 격자(사진 목록과 같은 PhotoOrder)를 끌어 옮긴다. 옮기는 즉시 반영된다. */
   const [ordering, setOrdering] = useState(false);
   const strip = useRef<HTMLDivElement | null>(null);
   const [at, setAt] = useState(0);
@@ -865,11 +891,11 @@ function PhotosBlock({
           )}
           {slides && canEdit && n > 1 && (
             <button
-              type="button" className={cx("scr-compact-rect-btn", "scr-sb-orderbtn", ordering && "is-on")}
-              onClick={(e) => { e.stopPropagation(); setOrdering((v) => !v); }} aria-pressed={ordering}
+              type="button" className="scr-compact-rect-btn scr-sb-orderbtn"
+              onClick={(e) => { e.stopPropagation(); setOrdering(true); }}
             >
               <ArrowLeftRight size={13} aria-hidden />
-              {ordering ? "완료" : "순서 변경"}
+              순서 변경
             </button>
           )}
           {n > 0 && <SaveAllBtn photos={block.photos} title={block.title || "사진"} />}
@@ -910,11 +936,8 @@ function PhotosBlock({
           )}
         </div>
       )}
-      {slides && ordering && canEdit && n > 1 && (
-        <PhotoOrder
-          photos={block.photos} at={idx} onPick={(i) => go(i, false)}
-          onReorder={(next) => onChange({ photos: next })} sortable
-        />
+      {slides && ordering && (
+        <SlideOrderModal photos={block.photos} onReorder={(next) => onChange({ photos: next })} onClose={() => setOrdering(false)} />
       )}
       {!slides && (canEdit || n > 0) && (
         <PhotoOrder
