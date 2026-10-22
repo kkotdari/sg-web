@@ -98,7 +98,7 @@ export default function ClanStatsScreen() {
   /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
   const [expandAll, setExpandAll] = useState(false);
   /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 탭을 누르면 끝에 붙고, 고른 탭을 누르면 빠진다(하나는 남는다).
-     탭에 차례 번호(둘 이상일 때). 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
+     둘 이상이면 탭 옆에 작은 글씨로 "승률순 > 참여순 적용중"(되요청 — 탭의 차례 번호 대신). 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
   const [sortKeys, setSortKeys] = useState<SortKey[]>(["rate"]);
   const toggleSort = (k: SortKey): void => setSortKeys((prev) => (prev.includes(k)
     ? (prev.length > 1 ? prev.filter((x) => x !== k) : prev)
@@ -354,12 +354,16 @@ export default function ClanStatsScreen() {
                 className={cx("scr-line-tab-btn", at >= 0 && "is-on")}
                 onClick={() => toggleSort(o.value)}
               >
-                {sortKeys.length > 1 && at >= 0 && <span className="scr-stats-sort-no">{at + 1}</span>}
                 {o.label}
               </button>
             );
           })}
         </div>
+        {sortKeys.length > 1 && (
+          <span className="scr-stats-sort-chain">
+            {sortKeys.map((k) => SORT_OPTS.find((o) => o.value === k)?.label).join(" > ")} 적용중
+          </span>
+        )}
         {/* 폰 줄 누름 힌트 — 표 밖, 정렬 탭 줄 오른끝(2026-10-20, 요청: "힌트 위치 그리드 외부 위"). */}
         {isMobile && <span className="scr-sg-hint">행을 눌러서 그래프 보기</span>}
       </div>
