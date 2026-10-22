@@ -7312,15 +7312,8 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
   background: rgba(0, 0, 0, 0.6); color: #fff; cursor: pointer;
 }
 @media (hover: hover) { .scr-sb-slide-x:hover { background: var(--loss); } }
-/* 슬라이드 순서 단추(왼 위 · 2026-10-22) — 저장·삭제 원과 같은 꼴. */
-.scr-sb-slide-move { position: absolute; top: 8px; left: 8px; z-index: 1; display: inline-flex; gap: 6px; }
-.scr-sb-slide-move > button {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6); color: #fff; cursor: pointer;
-}
-.scr-sb-slide-move > button:disabled { opacity: 0.35; cursor: default; }
-@media (hover: hover) { .scr-sb-slide-move > button:not(:disabled):hover { background: rgba(0, 0, 0, 0.8); } }
+/* 슬라이드 [순서 변경] 단추(2026-10-22) — 전체 다운로드와 같은 컴팩트 네모 · 켜면 [완료]. */
+.scr-sb-orderbtn { display: inline-flex; align-items: center; gap: 3px; margin-right: 4px; flex: 0 0 auto; --btn-border-w: 1px; }
 .scr-sb-slide-save {
   position: absolute; top: 8px; right: 8px; z-index: 1;
   display: inline-flex; align-items: center; justify-content: center;
@@ -7377,14 +7370,14 @@ html.scr-light-theme .scr-photo-counter { background: rgba(255, 255, 255, 0.85);
 /* 사진첩 단추는 라이팅 테마 기본(채움) 단추 색이다(요청: "사진첩에 저장 버튼이랑 사진 목록에서 쓰이는 버튼들 왜 채우기가 없어?") —
    전체 저장은 컴팩트 네모(.scr-compact-rect-btn) 그대로, 사진 위에 뜨는 둥근 단추(저장·지우기·앞뒤·추가·크게 보기의 저장·앞뒤)는
    같은 --btn-fill-* 를 읽는다. 채움 색은 반투명이라 사진 위에선 바탕 판(--panel-solid)을 한 겹 깔아 쪽 위의 단추와 같은 색이 되게 한다. */
-html.color-lighting :is(.scr-sb-slide-save, .scr-sb-slide-x, .scr-sb-slide-move > button, .scr-sb-slide-nav, .scr-sb-order-add, .scr-photo-save, .scr-photo-nav) {
+html.color-lighting :is(.scr-sb-slide-save, .scr-sb-slide-x, .scr-sb-slide-nav, .scr-sb-order-add, .scr-photo-save, .scr-photo-nav) {
   color: var(--btn-fill-text);
   background: linear-gradient(var(--btn-fill-bg), var(--btn-fill-bg)), var(--panel-solid);
   border: 1px solid var(--btn-fill-border);
   box-shadow: var(--btn-fill-glow), 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 @media (hover: hover) {
-  html.color-lighting :is(.scr-sb-slide-save, .scr-sb-slide-move > button, .scr-sb-slide-nav, .scr-sb-order-add, .scr-photo-save, .scr-photo-nav):not(:disabled):hover {
+  html.color-lighting :is(.scr-sb-slide-save, .scr-sb-slide-nav, .scr-sb-order-add, .scr-photo-save, .scr-photo-nav):not(:disabled):hover {
     border-color: var(--btn-hover-border); box-shadow: var(--btn-hover-glow), 0 1px 3px rgba(0, 0, 0, 0.18);
   }
   html.color-lighting .scr-sb-slide-x:hover { color: #fff; background: var(--loss); border-color: var(--loss); }
