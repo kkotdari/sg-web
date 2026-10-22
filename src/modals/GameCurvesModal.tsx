@@ -58,7 +58,7 @@ const TL = {
 } as const;
 /** 가로축 눈금 숫자를 가로축에서 더 띄우는 몫(2026-10-21, 요청: "가로축 눈금 숫자를 가로축에서 좀 더 아래로 · 데이터 창만") — 세 판 모두. */
 const AXIS_DROP = 6;
-/** 전체화면 2열 — 판 폭 이만큼이면 둘로 나눈다(한 열 ≈ 650) · 열 사이. */
+/** 전체화면 2열 — 판 폭 이만큼이면 탭의 두 판을 나란히(한 판 ≈ 650) · 판 사이. 건설 줄은 온 폭. */
 const FULL_TWO_COL = 1340;
 const FULL_COL_GAP = 40;
 /** 닉네임 칩 글 — 폭으로 자른다(칩 글자 6.5 자 폭 · 2026-10-21, 요청: "닉네임 칩 가로폭 봐서 적절히 글자수 제한"). 끝 칩 · 테크 줄 앞머리가 같이 쓴다. */
@@ -487,7 +487,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       const w = Math.floor(el.clientWidth);
       setBox({
         w,
-        h: full && w >= FULL_TWO_COL ? Math.max(200, Math.floor((window.innerHeight - 330) / 4)) : Math.max(216, Math.floor((window.innerHeight - 330) / 3)),
+        h: full && w >= FULL_TWO_COL ? Math.max(240, Math.floor((window.innerHeight - 330) / 2)) : Math.max(216, Math.floor((window.innerHeight - 330) / 3)),
       });
     };
     measure();
@@ -582,12 +582,12 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
 
   const lanesEl = mobile ? (
     <TechLanes
-      maxX={sc.x} ticksX={sc.xt} w={colW} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
+      maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
       lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), techs: p.techs }))}
     />
   ) : (
     <BuildLanes
-      maxX={sc.x} ticksX={sc.xt} w={colW} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
+      maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
       techOnly={techOnly} onTechOnly={setTechOnly}
       lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds }))}
     />
@@ -598,8 +598,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       lines={linesOf(k)} maxX={sc.x} maxY={sc[k][sc[k].length - 1]} ticksX={sc.xt} ticksY={sc[k]} width={colW} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
   );
   /* 자원 판은 폰도(2026-10-22, 요청: "모바일에도 자원판 추가" · 옛 PC 만). */
-  const rmEl = chartOf("rm", "미네랄", { note: "그때 쥔 양" });
-  const rgEl = chartOf("rg", "가스", { note: "그때 쥔 양" });
+  const rmEl = chartOf("rm", "미네랄");
+  const rgEl = chartOf("rg", "가스");
   /* 인구 탭의 인구 판 제목은 "전체"(2026-10-22, 요청: "인구 탭의 인구 헤더 타이틀을 전체로 변경"). */
   const spEl = chartOf(spKey, "전체", { titleExtra: <TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} /> });
   const wkEl = chartOf("wk", "일꾼 수");
@@ -614,12 +614,9 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       ))}
     </span>
   );
-  const dmgEls = hasDmg ? (
-    <>
-      {chartOf("dd", "준 데미지", { titleExtra: dmgModeEl })}
-      {chartOf("dt", "입은 데미지")}
-    </>
-  ) : <div className="scr-rc-empty scr-gc-nodmg">데미지 데이터가 아직 없어요 — 재분석하면 생겨요</div>;
+  const pair: [ReactNode, ReactNode] | null = tab === "sp" ? [spEl, wkEl]
+    : tab === "rs" ? [rmEl, rgEl]
+    : hasDmg ? [chartOf("dd", "준 데미지", { titleExtra: dmgModeEl }), chartOf("dt", "입은 데미지")] : null;
   const tabsEl = (
     <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label="인구 · 데미지 · 자원">
       {GROUP_TABS.map(([k, label]) => (
@@ -627,9 +624,22 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       ))}
     </div>
   );
-  const groupEls = <>{tabsEl}{tab === "sp" ? <>{spEl}{wkEl}</> : tab === "dmg" ? dmgEls : <>{rmEl}{rgEl}</>}</>;
+  /* ★ PC 전체화면(2열 폭)은 건설 줄이 온 폭 · 그 아래 탭의 두 판이 반씩 나란히(2026-10-22, 요청: "위쪽은 건물 판이 전체 폭 다 쓰고 그 아래 각 탭은 그래프가 반반씩 폭 쓰기 ·
+     전체화면만") — 옛 2열(왼쪽 건설 · 오른쪽 판 넷)을 갈았다. 아니면 두 판이 위아래. */
+  const groupEls = (
+    <>
+      {tabsEl}
+      {pair === null ? <div className="scr-rc-empty scr-gc-nodmg">데미지 데이터가 아직 없어요 — 재분석하면 생겨요</div>
+        : twoCol ? (
+          <div className="scr-gc-cols">
+            <div className="scr-gc-col" style={{ width: colW }}>{pair[0]}</div>
+            <div className="scr-gc-col" style={{ width: colW }}>{pair[1]}</div>
+          </div>
+        ) : <>{pair[0]}{pair[1]}</>}
+    </>
+  );
 
-  /* 맨 위 고르기 — PC 전체화면 2열이면 왼쪽 열(건설 위) 반 폭에 선다(2026-10-22, 요청: "PC 전체화면 필터는 왼쪽 반 폭 공간에") · 아니면 판 맨 위 온 폭. */
+  /* 맨 위 고르기 — 늘 판 맨 위 온 폭(한때 PC 전체화면 2열의 왼쪽 반 폭 · 2026-10-22 같은 날 건설 줄이 온 폭이 되며 되돌림). */
   const topEl = (
     <>
       {/* 맨 위 고르기(볼 사람 · 보기)는 창 위에 붙어 있는다(2026-10-22, 요청: "맨 위 필터는 고정되면 좋을 듯"). */}
@@ -697,15 +707,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
             <div className="scr-rc-empty scr-gc-wait">{error || "표시할 데이터가 아직 없어요 — 재분석하면 생겨요"}</div>
           ) : (
             <div className="scr-gc" ref={boxRef}>
-              {!twoCol && topEl}
-              {box.w > 0 && (twoCol ? (
-                <div className="scr-gc-cols">
-                  <div className="scr-gc-col" style={{ width: colW }}>{topEl}{lanesEl}</div>
-                  <div className="scr-gc-col" style={{ width: colW }}>{groupEls}</div>
-                </div>
-              ) : (
-                <>{lanesEl}{groupEls}</>
-              ))}
+              {topEl}
+              {box.w > 0 && <>{lanesEl}{groupEls}</>}
             </div>
           )}
         </div>
