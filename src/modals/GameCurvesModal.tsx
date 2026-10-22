@@ -317,10 +317,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     });
     const h = Math.max(used.length * STEP + 2 * BL.pad, 36);
     const row = { l, items, top: y0, h };
-    y0 += h;
+    y0 += h + AXIS_H;   // 사람마다 제 가로축 띠(아래 ★)
     return row;
   });
-  const H = y0 + AXIS_H;
+  const H = y0;
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">건설<TitleSwitch label="간단히 보기" on={techOnly} onChange={onTechOnly} /></figcaption>
@@ -329,6 +329,13 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         {rows.map(({ l, items, top, h }) => (
           <g key={l.key} className={focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row"}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
+            {/* ★ 가로축은 **사람마다**(2026-10-22, 요청: "PC 건설 그래프 사람별로 가로축 표시") — 칸이 길어 맨 아래 눈금 하나로는 읽히지 않았다. 칸 아래 띠(AXIS_H)에 분 눈금 · 세로선의 분. */}
+            {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m * 60) - x(at * 60)) > 30)).map((m) => (
+              <text key={m} className="scr-rc-axis" x={x(m * 60)} y={top + h + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{m}분</text>
+            ))}
+            {at !== null && (
+              <text className="scr-rc-at" x={x(at * 60)} y={top + h + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{`${Math.round(at)}분`}</text>
+            )}
             {items.map(({ b, k, tags, jig }) => {
               const ly = top + BL.pad + BL.jig + k * STEP + CH / 2 + jig;
               const end = b.e ?? END;
@@ -337,11 +344,13 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
               const segs: [number, number, boolean][] = [[b.s, built9, true], ...(end > built9 ? [[built9, end, false] as [number, number, boolean]] : [])];
               /* 짓다가 사라짐(취소·파괴) = ✕ 대신 반투명 딤(2026-10-22, 요청: "취소는 x 대신 반투명 딤 처리") — 칩·선 통째로(.is-cut). */
               const cut9 = b.d === null && b.e !== null;
+              /* 같은 종류 강조는 **선도**(2026-10-22, 요청: "강조 시 선도 강조") — 처음 종류·변태 종류가 얹은 종류이거나, 얹은 것이 이 건물에 붙는 애드온일 때. */
+              const kindHl9 = hoverKind !== null && (b.t === hoverKind || b.m.some(([mt]) => mt === hoverKind) || ADDON_HOST9[hoverKind] === b.t);
               /* 얹어도 세로 시간축은 안 옮긴다(2026-10-22, 요청: "강조 시 자동으로 세로 시간축이 그 건물 처음으로 이동하지 않게" · 옛: 완공(못 지었으면 착공) 때로). */
               const show = (): void => { setHover(b); setHoverKind(b.t); };
               return (
                 <g
-                  key={`${b.s}:${b.t}:${k}`} className={cx("scr-bl-hit", hover === b && "is-hl", cut9 && "is-cut")}
+                  key={`${b.s}:${b.t}:${k}`} className={cx("scr-bl-hit", hover === b && "is-hl", kindHl9 && "is-kind", cut9 && "is-cut")}
                   onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
                   onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(null); setHoverKind(null); } }}
                 >
@@ -370,15 +379,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
             <NameChip name={shortName(l.name, font.label)} color={l.color} right={Math.max(PL - 6, chipWOf(shortName(l.name, font.label), font.label))} cy={top + h / 2} fs={font.label} big={focus === l.group} onPick={() => onFocus(l.group)} />
           </g>
         ))}
-        {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m * 60) - x(at * 60)) > 30)).map((m) => (
-          <text key={m} className="scr-rc-axis" x={x(m * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{m}분</text>
-        ))}
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
-        {at !== null && (
-          <text className="scr-rc-at" x={x(at * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>
-            {`${Math.round(at)}분`}
-          </text>
-        )}
       </svg>
       </div>
     </figure>
