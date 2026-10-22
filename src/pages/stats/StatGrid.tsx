@@ -74,11 +74,12 @@ function Dmg({ s, compact }: { s: MemberStats; compact?: boolean }) {
       </span>
     );
   }
+  /* PC 도 숫자만 — 초록 딜 / 빨강 피해(2026-10-22, 요청: "데미지도 간단히 숫자만 표시" · 옛: "평균의 1.4배 딜 / 0.8배 피해"). */
   return (
     <span className="scr-sg-dmg" title="준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)">
-      <i>평균의</i><b className="is-dealt">{(d / 100).toFixed(1)}</b><i>배 딜</i>
+      <b className="is-dealt">{(d / 100).toFixed(1)}</b>
       <span className="scr-sg-dim">/</span>
-      <b className="is-taken">{(t / 100).toFixed(1)}</b><i>배 피해</i>
+      <b className="is-taken">{(t / 100).toFixed(1)}</b>
     </span>
   );
 }
