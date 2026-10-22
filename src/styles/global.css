@@ -8186,12 +8186,16 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 
 /* 폰 — [유저(아래 한 줄: 판수 · APM · 딜 · 피해) | 전체 | 테 | 프 | 저] · 칸마다 승률 · ▾ 는 이름 옆(펼침은 PC 와 같은 곡선). */
 /* 폰 — [유저 | 전체 | 테란 | 프로토스 | 저그](2026-10-20, 요청: "원래대로 · 유저 전체 테 프 저 전적으로 · 유저 칸 세 줄 유지 · 각 전적 칸은 위 전수 아래 승률").
-   한때의 [유저 | 전적] 세로 쌓기(.scr-sg-stack)는 걷었다. 전적 칸 넷은 폭에 비례(13vw · 46~56px). 유저 칸 아래 줄은 칸 폭에 맞춰 글자를 줄인다(cqw). */
-.scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(0, 1fr) repeat(4, clamp(50px, 14vw, 62px)); font-size: var(--fs-11); } /* 전적 칸 넓힘 46~56 → 50~62(요청: "너무 좁게 주지 말고") */
+   한때의 [유저 | 전적] 세로 쌓기(.scr-sg-stack)는 걷었다. 칸 폭은 아래 grid-template-columns 주석. */
+/* 유저 칸은 제 아래 줄(APM · 딜 · 피해)이 다 들어가는 폭(max-content)을 먼저 갖고, 모자라면 전적 칸 넷이 62px 에서 42px 까지 나눠 준다
+   (2026-10-22, 요청: "APM·데미지 폰트 키우고 최소폭 모자라면 전적 칸 조금씩 나눠 주기") — 이름·머리 뜻 풀이는 폭을 안 늘린다(contain). 옛: 유저 1fr · 전적 clamp(50, 14vw, 62) · 아래 줄 글자를 cqw 로 줄였다. */
+.scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(max-content, 1fr) repeat(4, minmax(42px, 62px)); font-size: var(--fs-11); }
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
 .scr-sg.is-m .scr-sg-bar { width: 34px; height: 3px; }
-.scr-sg.is-m .scr-sg-who { flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; padding-left: 8px; padding-right: 2px; container-type: inline-size; }
+.scr-sg.is-m .scr-sg-who { flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px; padding-left: 8px; padding-right: 2px; }
+.scr-sg.is-m .scr-sg-who-top, .scr-sg.is-m .scr-sg-hnote { contain: inline-size; align-self: stretch; }
+.scr-sg.is-m .scr-sg-hnote { white-space: normal; text-align: center; }
 .scr-sg-who-top { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 /* 아래 줄(APM · 데미지)은 아바타만큼 들이지 않고 칸 왼끝에서(2026-10-20, 요청: "굳이 아바타만큼 왼쪽 여백 남겨둘 필요없음"). */
 /* 한 줄(2026-10-20, 요청: "폰 메인셀 데이터 한줄에 표시") — 접어 내리지 않는다. */
@@ -8210,8 +8214,9 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* 한 줄에 담으려 값도 라벨과 같은 작은 글자 · 딜 묶음과 피해 묶음 사이만 조금 띄운다(360 폭에서 판수·APM·딜·피해가 한 줄). */
 .scr-sg.is-m .scr-sg-who-sub { font-size: var(--fs-10); gap: 5px; }
 .scr-sg.is-m .scr-sg-who-sub .scr-sg-dmg > b.is-dealt { margin-right: 3px; }
-/* 아래 줄(APM · 딜 · 피해) 한 줄 — 글자는 크게(12px) · 칸이 좁으면 폭에 비례해 줄인다(7.5cqw · 9.5px 밑으로 안 간다). */
-.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: max(8.5px, min(12px, 7.4cqw)); }   /* APM · 딜 · 피해 한 줄(2026-10-22) — 9.2cqw(9.5~13px) → 7.4cqw(8.5~12px) */
+/* 아래 줄(APM · 딜 · 피해) 한 줄 — 11px 고정(2026-10-22, 요청: "폰트 키우고" · 옛 7.4cqw ≈ 9px) · APM 과 딜 사이를 더 띄운다(요청: "APM/데미지 사이 더 벌리기"). */
+.scr-sg.is-m .scr-sg-who-sub { gap: 0.45em; letter-spacing: -0.01em; font-size: 11px; }
+.scr-sg.is-m .scr-sg-who-sub > .scr-sg-dmg { margin-left: 0.8em; }
 /* 유저 칸 글자 크게(2026-10-20, 요청: "유저 칸 글자 키우고") — 이름 19px · 아바타 32. */
 .scr-sg.is-m .scr-sg-name { font-size: 15px; } /* 19 → 17 → 15(요청: "크기 적절히" → "아바타·닉네임 너무 큼") */
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 24px !important; height: 24px !important; }
@@ -8229,8 +8234,8 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-mrec { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .scr-sg-mrec > .scr-sg-v > b { font-weight: 600; }
 .scr-sg-mrec > .scr-sg-v:first-child > b { font-weight: 600; color: var(--text); } /* 전수도 본문색(승률과 같게 · 요청) */
-/* 폰 전적 칸 아래 승률 "(N)" · 클랜 경기 수 "(N)" — 판수보다 작게(2026-10-22, 요청: "승률이 좀 작게"). */
-.scr-sg-mrate { font-size: 10px; font-weight: 600; color: var(--muted); line-height: 1; }
+/* 폰 전적 칸 아래 승률 · 클랜 경기 수 — 판수보다 작게(괄호 없음)(2026-10-22, 요청: "승률이 좀 작게"). */
+.scr-sg-mrate { font-size: 10px; font-weight: 500; color: var(--dim); opacity: 0.85; line-height: 1; }   /* 괄호 없이 더 옅게(2026-10-22, 요청: "승률 괄호 제거하고 연하게") */
 /* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름 · 머리마다 작은 뜻 풀이(scr-sg-hnote). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; flex-direction: column; gap: 2px; }
 .scr-sg.is-m .scr-sg-head > .scr-sg-who.scr-sg-h2 { gap: 2px; }
