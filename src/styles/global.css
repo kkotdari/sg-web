@@ -7566,6 +7566,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-who { justify-content: flex-start; gap: 8px; padding-left: 12px; }
 .scr-sg-avatar { flex: none; padding: 0; border: none; background: none; cursor: pointer; display: flex; }
 .scr-sg-avatar .scr-avatar { width: 28px !important; height: 28px !important; border-radius: 50% !important; }
+/* 평균 줄도 사람 줄과 같은 높이(2026-10-22, 지적: "평균 로우만 높이가 낮은 문제" — 사람 줄은 아바타 28px 가 키를 정하는데 평균 줄엔 아바타가 없어 PC 41 · 폰 44px 이었다). 칸 하나만 받치면 줄 전체가 선다. */
+.scr-sg-row.is-clan > .scr-sg-who { min-height: 48px; }
 .scr-sg-name {
   min-width: 0; padding: 0; border: none; background: none; cursor: pointer; font: inherit;
   font-size: var(--fs-body); font-weight: 400; color: var(--text); overflow: hidden; text-overflow: clip; white-space: nowrap;   /* 말줄임 없이 잘린다(2026-10-22, 요청: "말줄임표 x") · 굵지 않게(같은 날 "닉네임도 두껍지 않게" · 옛 700) */
@@ -7574,7 +7576,6 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-v { display: inline-flex; align-items: baseline; gap: 2px; font-variant-numeric: tabular-nums; }
 .scr-sg-v > b { font-weight: 400; }   /* 데이터 숫자는 굵지 않게(2026-10-22, 요청: "데이터 글자 두껍게 x" · 옛 700) */
 .scr-sg-v > i { font-style: normal; font-size: var(--fs-10); font-weight: 400; color: var(--dim); }   /* 몸 글자는 400(게임 목록 칸과 같게 · 같은 날 · 옛 600) */
-.scr-sg-paren { margin-left: 3px; }
 .scr-sg-dim { color: var(--dim); opacity: 0.7; }
 .scr-sg-rate { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
 .scr-sg-bar { display: block; width: 44px; height: 4px; border-radius: 2px; background: rgba(var(--overlay-rgb), 0.12); overflow: hidden; }
@@ -7650,6 +7651,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* 유저 칸 글자(2026-10-20, 요청: "유저 칸 글자 키우고" → "크기 적절히" → "아바타·닉네임 너무 큼") 19 → 17 → 15 → 14 → 13px · 아바타 24 → 20(2026-10-22 · 유저 칸이 좁아져서). */
 .scr-sg.is-m .scr-sg-name { font-size: 13px; min-width: 5em; flex: 1 1 0; contain: inline-size; }   /* 5em = 한글 다섯(실측 65px) · 긴 이름이 칸을 넓히지 않게 제 폭은 0(contain) — 칸 최소 폭은 이 5em 이 정한다 */
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 20px !important; height: 20px !important; }
+.scr-sg.is-m .scr-sg-row.is-clan > .scr-sg-who { min-height: 46px; }
 /* APM · 데미지 칸 — 숫자만(12px · tabular) · 데미지는 초록 딜 위 · 빨강 피해 아래. */
 .scr-sg.is-m .scr-sg-mnum { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; }
 .scr-sg.is-m .scr-sg-mnum > .scr-sg-dmg { flex-direction: column; align-items: center; gap: 3px; }
