@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { createPortal, flushSync } from "react-dom";
 import Sortable from "sortablejs";
 import {
-  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GripVertical, Heading, Image as ImageIcon,
+  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GalleryHorizontal, GripVertical, Heading, Image as ImageIcon,
   IndentDecrease, IndentIncrease, List as ListIcon, Paperclip,
   Play, Plus, Trash2, Type, X,
 } from "lucide-react";
@@ -12,7 +12,7 @@ import { showAlert } from "../../components/common/AlertDialog";
 import { cx, formatBytes } from "../../utils/format";
 import { pickPhoto, readAsDataUrl } from "../../utils/image";
 import { attachPopover } from "../../utils/popover";
-import type { ScheduleBlock, SchedulePhoto } from "../../types";
+import { isPhotoSet, type ScheduleBlock, type SchedulePhoto } from "../../types";
 import { imgSrc } from "../../utils/imgSrc";
 import { canSaveToAlbum, downloadFiles, fetchMedia, isVideoItem, MAX_VIDEO_BYTES, shareToAlbum } from "../../utils/media";
 
@@ -33,7 +33,7 @@ export const splitTitles = (blocks: ScheduleBlock[]): ScheduleBlock[] => blocks.
       { ...b, id: `${b.id}t`, title: "", collapsed: false, indent: under },
     ];
   }
-  if ((b.kind === "list" || b.kind === "photos") && title) {
+  if ((b.kind === "list" || isPhotoSet(b)) && title) {
     return [
       { ...b, id: `${b.id}h`, kind: "text", title: b.title, text: "", items: [], levels: [], photos: [] },
       { ...b, title: "", collapsed: false, indent: under },
@@ -814,6 +814,10 @@ function PhotosBlock({
 } & FoldProps) {
   const ownFold = useFold(block, canEdit, (collapsed) => onChange({ collapsed }));
   const [folded, toggle] = fold ?? ownFold;
+  /* ★ 사진 목록(photos)과 사진 슬라이드(slides)는 딴 요소다(2026-10-22, 요청: "일정 사진 목록 변경 · 스티키 없애고 요소를 사진 목록과 사진 슬라이드로
+     나눔 · 사진 목록엔 큰 액자 없음 · 슬라이드엔 그리드 없음") — 목록은 격자(PhotoOrder)만 서고 칸을 누르면 크게 보기(PhotoViewer), 슬라이드는 큰 액자만
+     서고 사진 더하기는 머리의 + 단추다(옛 격자 끝 + 칸 대신). 옛 '큰 액자 + 격자' 한 요소였던 photos 는 사진 목록이 된다. */
+  const slides = block.kind === "slides";
   const strip = useRef<HTMLDivElement | null>(null);
   const [at, setAt] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
@@ -852,14 +856,15 @@ function PhotosBlock({
           {canEdit && (
             <span className="scr-sb-handles">
               {grip}
-              <IconBtn label="사진 목록 삭제" onClick={onDelete} danger><X size={14} /></IconBtn>
+              {slides && <IconBtn label="사진 추가" onClick={onAdd}><Plus size={14} /></IconBtn>}
+              <IconBtn label={slides ? "사진 슬라이드 삭제" : "사진 목록 삭제"} onClick={onDelete} danger><X size={14} /></IconBtn>
             </span>
           )}
           {n > 0 && <SaveAllBtn photos={block.photos} title={block.title || "사진"} />}
-          {hasKids && <FoldBtn folded={folded} onToggle={toggle} what="사진 목록" />}
+          {hasKids && <FoldBtn folded={folded} onToggle={toggle} what={slides ? "사진 슬라이드" : "사진 목록"} />}
         </div>
       )}
-      {n > 0 && (
+      {slides && n > 0 && (
         <div className="scr-sb-slides-wrap">
           <div
             className="scr-sb-slides" ref={strip} onScroll={onScroll} tabIndex={0}
@@ -893,9 +898,9 @@ function PhotosBlock({
           )}
         </div>
       )}
-      {(canEdit || n > 1) && (
+      {!slides && (canEdit || n > 0) && (
         <PhotoOrder
-          photos={block.photos} at={idx} onPick={(i) => go(i, false)}
+          photos={block.photos} at={-1} onPick={view}
           onReorder={(next) => onChange({ photos: next })}
           sortable={canEdit} onAdd={canEdit ? onAdd : undefined}
         />
@@ -1023,7 +1028,7 @@ const BlockRow = memo(function BlockRow({ b, kids, folded, canEdit, lifted, sel,
         <TextBlock block={b} canEdit={canEdit} grip={grip} onDelete={onDelete} onChange={onChange} nav={nav} fold={fold} hasKids={kids > 0} />
       ) : b.kind === "list" ? (
         <ListBlock block={b} canEdit={canEdit} grip={grip} onDelete={onDelete} onChange={onChange} nav={nav} fold={fold} hasKids={kids > 0} ask={ask} />
-      ) : b.kind === "photos" ? (
+      ) : isPhotoSet(b) ? (
         <PhotosBlock
           block={b} canEdit={canEdit} grip={grip} onDelete={onDelete} onChange={onChange}
           onAdd={() => on().pickPhotos(key)} fold={fold} hasKids={kids > 0} ask={ask}
@@ -1084,7 +1089,7 @@ export default function ScheduleBlocks({
   const previewRef = useRef<string[] | null>(null);
   const [asking, setAsking] = useState<{ message: string; run: () => void } | null>(null);
   const ask: Ask = (message, run) => setAsking({ message, run });
-  const KIND_KO: Record<ScheduleBlock["kind"], string> = { text: "글", list: "목록", photo: "사진", photos: "사진 목록", file: "파일" };
+  const KIND_KO: Record<ScheduleBlock["kind"], string> = { text: "글", list: "목록", photo: "사진", photos: "사진 목록", slides: "사진 슬라이드", file: "파일" };
   const askDrop = (b: DraftBlock): void => {
     const what = isHeading(b) ? "제목" : KIND_KO[b.kind];
     const kids = kidsAt(latest.current, latest.current.findIndex((x) => x.key === b.key));
@@ -1174,7 +1179,7 @@ export default function ScheduleBlocks({
   const blockText = (b: DraftBlock): string => (
     b.kind === "text" ? (isHeading(b) ? b.title : b.text)
       : b.kind === "list" ? b.items.map((x, k) => `${"  ".repeat(b.levels?.[k] ?? 0)}- ${x}`).join("\n")
-        : b.kind === "photos" ? `[사진 ${b.photos.length}장]` : b.name
+        : isPhotoSet(b) ? `[사진 ${b.photos.length}장]` : b.name
   );
   const onBlockSelKey = (e: React.KeyboardEvent): void => {
     if (!blockSel || e.target !== listRef.current) return;
@@ -1452,7 +1457,7 @@ export default function ScheduleBlocks({
     else if (b.kind === "list") {
       if (b.items.length) focusOn(b.key, "item", "end", b.items.length - 1);
       else focusOn(b.key, "title", "end");
-    } else if (b.kind === "photos") focusOn(b.key, "title", "end");
+    } else if (isPhotoSet(b)) focusOn(b.key, "title", "end");
   };
   const textAfter = (cur: DraftBlock, text: string): DraftBlock => ({ ...emptyBlock("text"), text, indent: cur.indent ?? 0 });
   const navFor = (b: { key: string }): BlockNav => ({
@@ -1550,7 +1555,8 @@ export default function ScheduleBlocks({
     { kind: "heading" as const, label: "제목", icon: <Heading size={14} aria-hidden /> },
     { kind: "text" as const, label: "글", icon: <Type size={14} aria-hidden /> },
     { kind: "list" as const, label: "목록", icon: <ListIcon size={14} aria-hidden /> },
-    { kind: "photos" as const, label: "사진", icon: <ImageIcon size={14} aria-hidden /> },
+    { kind: "photos" as const, label: "사진 목록", icon: <ImageIcon size={14} aria-hidden /> },
+    { kind: "slides" as const, label: "사진 슬라이드", icon: <GalleryHorizontal size={14} aria-hidden /> },
     { kind: "file" as const, label: "파일", icon: <Paperclip size={14} aria-hidden /> },
   ];
   const clearSlash = (bs: DraftBlock[], sl: NonNullable<typeof slot>): DraftBlock[] => bs.map((x) => {

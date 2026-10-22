@@ -572,7 +572,7 @@ export interface SchedulePhoto {
 
 export interface ScheduleBlock {
   id: string;
-  kind: "text" | "list" | "photo" | "photos" | "file";
+  kind: "text" | "list" | "photo" | "photos" | "slides" | "file";
   text: string;
   title: string;
   items: string[];
@@ -586,6 +586,9 @@ export interface ScheduleBlock {
   /** 화면만 쓰는 표식 — 아직 비어 있는 새 제목 요소(저장하지 않는다 · 제목 글자가 생기면 title 로 안다). */
   heading?: boolean;
 }
+
+/** 사진을 담는 요소 — 사진 목록(photos · 격자)과 사진 슬라이드(slides · 큰 액자)(2026-10-22, 요청: "요소를 사진 목록과 사진 슬라이드로 나눔"). */
+export const isPhotoSet = (b: { kind: ScheduleBlock["kind"] }): b is { kind: "photos" | "slides" } => b.kind === "photos" || b.kind === "slides";
 
 export interface Schedule {
   id: number;
@@ -605,7 +608,7 @@ export interface Schedule {
 export type ScheduleBlockWrite = (
   | { kind: "text"; id?: string; title: string; text: string }
   | { kind: "list"; id?: string; title: string; items: string[]; levels: number[] }
-  | { kind: "photos"; id?: string; title: string; photos: ({ id: string } | { file: { name: string; data: string } })[] }
+  | { kind: "photos" | "slides"; id?: string; title: string; photos: ({ id: string } | { file: { name: string; data: string } })[] }
   | { kind: "photo" | "file"; id: string }
   | { kind: "photo" | "file"; file: { name: string; data: string } }
 ) & { collapsed?: boolean; indent?: number };

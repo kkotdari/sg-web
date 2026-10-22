@@ -7278,11 +7278,10 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
   background: var(--panel); cursor: zoom-in;
 }
 .scr-sb-photo img { display: block; width: 100%; max-height: 420px; object-fit: contain; }
-/* ★ 큰 사진 칸은 내릴 때 화면 위에 붙어 있다(2026-10-20, 요청: "사진첩 그리드가 길어지면 선택한 사진 보이는 곳이 밀려 올라감" →
-   "1번(위에 붙여 두기) · 일단 줄임 없이") — 사진 목록 블록 안에서만 붙고, 그리드가 그 밑으로 흘러간다.
-   밑으로 지나가는 칸이 비치지 않게 바탕은 불투명(panel 을 panel-solid 위에 깐다). */
+/* 큰 사진 칸(사진 슬라이드 요소) — 위에 붙여 두던 것(2026-10-20 sticky)은 걷었다(2026-10-22, 요청: "스티키 없애고 요소를 사진 목록과 사진 슬라이드로
+   나눔") — 격자가 딴 요소(사진 목록)로 나가 밑으로 흘러갈 것이 없다. */
 .scr-sb-slides-wrap {
-  position: sticky; top: var(--safe-top, 0px); z-index: 3;
+  position: relative;
   border: 1px solid var(--line); overflow: hidden;
   background: linear-gradient(var(--panel), var(--panel)), var(--panel-solid);
 }

@@ -12,7 +12,7 @@ import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { api, apiStatusOf } from "../../api/client";
 import { readAsDataUrl } from "../../utils/image";
 import { showAlert } from "../../components/common/AlertDialog";
-import type { Schedule, ScheduleBlock, ScheduleFile, SchedulePhoto, ScheduleWrite, ScheduleBlockWrite } from "../../types";
+import { isPhotoSet, type Schedule, type ScheduleBlock, type ScheduleFile, type SchedulePhoto, type ScheduleWrite, type ScheduleBlockWrite } from "../../types";
 import { ActivityCard } from "./ActivityCard";
 import ScheduleBlocks, { NEW_PREFIX, sortingNow, splitTitles, withKeys, type DraftBlock } from "./ScheduleBlocks";
 import { imgSrc } from "../../utils/imgSrc";
@@ -247,7 +247,7 @@ const normBlock = (b: ScheduleBlock): ScheduleBlock => {
 const equivalent = (mine: ScheduleBlock, server: ScheduleBlock): boolean => sameBlock(normBlock(mine), server);
 const isEphemeral = (b: ScheduleBlock): boolean =>
   (b.kind === "text" && !b.text.trim() && !b.title.trim()) || (b.kind === "list" && !b.title.trim() && !b.items.some((x) => x.trim()))
-  || (b.kind === "photos" && b.photos.length === 0);
+  || (isPhotoSet(b) && b.photos.length === 0);
 const isNew = (id: string): boolean => id.startsWith(NEW_PREFIX);
 
 /** 저장될 내용의 지문 — 키(화면용)는 빼고 서버가 남기는 꼴로 줄인다. 마지막 저장본과 같으면 자동 저장을 건너뛴다(요청: "자동 저장은 변경이 있을 때만"). */
@@ -262,7 +262,7 @@ const snapOf = (d: Draft): string => JSON.stringify([
 ]);
 
 const countNewPhotos = (d: Draft): number =>
-  d.blocks.reduce((n, b) => n + (b.kind === "photos" ? b.photos.filter((p) => isNew(p.id)).length : 0), 0);
+  d.blocks.reduce((n, b) => n + (isPhotoSet(b) ? b.photos.filter((p) => isNew(p.id)).length : 0), 0);
 const PHOTO_BATCH_BYTES = 12_000_000;
 type Outgoing = { payload: ScheduleWrite; deferred: Set<string> };
 
@@ -278,15 +278,15 @@ async function payloadOf(d: Draft, expectedUpdatedAt: string): Promise<Outgoing>
       blocks.push({ kind: "list", id: b.id, title: b.title, items: b.items, levels: levelsOf(b), collapsed, indent });
       continue;
     }
-    if (b.kind === "photos") {
-      const photos: Extract<ScheduleBlockWrite, { kind: "photos" }>["photos"] = [];
+    if (b.kind === "photos" || b.kind === "slides") {
+      const photos: Extract<ScheduleBlockWrite, { kind: "photos" | "slides" }>["photos"] = [];
       for (const p of b.photos) {
         if (!isNew(p.id)) { photos.push({ id: p.id }); continue; }
         if (bytes > 0 && bytes + p.size > PHOTO_BATCH_BYTES) { deferred.add(p.id); continue; }
         bytes += p.size;
         photos.push({ file: { name: p.name, data: p.file ? await readAsDataUrl(p.file) : p.url } });
       }
-      blocks.push({ kind: "photos", id: b.id, title: b.title, photos, collapsed, indent });
+      blocks.push({ kind: b.kind, id: b.id, title: b.title, photos, collapsed, indent });
       continue;
     }
     blocks.push(isNew(b.id) ? { kind: b.kind, file: { name: b.name, data: b.url }, collapsed, indent } : { kind: b.kind, id: b.id, collapsed, indent });
@@ -319,13 +319,13 @@ function adoptIds(sent: DraftBlock[], saved: ScheduleBlock[], deferred: Set<stri
     if (!s) break;
     const fits = s.kind === b.kind && (isNew(b.id)
       ? (b.kind === "text" ? s.text === b.text.trim() && s.title === b.title.trim()
-        : b.kind === "list" || b.kind === "photos" ? s.title === b.title.trim()
+        : b.kind === "list" || isPhotoSet(b) ? s.title === b.title.trim()
           : s.name === b.name)
       : b.id === s.id);
     if (!fits) continue;
     const a: Adopted = {};
     if (b.id !== s.id) a.id = s.id;
-    if (b.kind === "photos") {
+    if (isPhotoSet(b)) {
       const photos = adoptPhotoIds(b.photos, s.photos, deferred);
       if (photos.size > 0) a.photos = photos;
     }
@@ -353,7 +353,7 @@ function adoptServerMedia(mine: Draft, server: Draft): Draft | null {
   const blocks = mine.blocks.map((b) => {
     const sb = byId.get(b.id);
     if (!sb || sb.kind !== b.kind) return b;
-    if (b.kind === "photos") {
+    if (isPhotoSet(b)) {
       const sp = new Map(sb.photos.map((p) => [p.id, p]));
       let hit = false;
       const photos = b.photos.map((p) => {
