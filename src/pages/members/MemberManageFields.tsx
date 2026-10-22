@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { RefreshCw, Save } from "lucide-react";
+import { KeyRound, RefreshCw, Save } from "lucide-react";
 import Select from "../../components/common/Select";
 import PhotoViewer from "../../components/common/PhotoViewer";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import { api } from "../../api/client";
 import { Spinner } from "../../components/common/Feedback";
 import { useAppStore } from "../../store/appStore";
 import { ROLE_INFO, ASSIGNABLE_ROLES } from "../../constants/roles";
@@ -24,6 +26,10 @@ export default function MemberManageFields({ member }: { member: Member }) {
   const [saving, setSaving] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [photoOpen, setPhotoOpen] = useState(false);
+  /* 비밀번호 초기화(2026-10-22, 요청: "회원 관리 화면에 비밀번호 초기화 버튼 추가하고 1234로 초기화") — 확인 창을 거쳐 서버가 1234 로 되돌린다. */
+  const [pwConfirm, setPwConfirm] = useState(false);
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwDone, setPwDone] = useState(false);
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -61,6 +67,20 @@ export default function MemberManageFields({ member }: { member: Member }) {
       setErr(e instanceof Error ? e.message : "처리에 실패했어요.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const doResetPw = async () => {
+    setPwConfirm(false);
+    setErr("");
+    setPwBusy(true);
+    try {
+      await api.resetMemberPassword(member.id);
+      setPwDone(true);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "비밀번호 초기화에 실패했어요.");
+    } finally {
+      setPwBusy(false);
     }
   };
 
@@ -102,6 +122,15 @@ export default function MemberManageFields({ member }: { member: Member }) {
             </dd>
           </div>
         )}
+        <div className="scr-detail-row">
+          <dt>비밀번호</dt>
+          <dd className="scr-member-info-links">
+            <button type="button" className="scr-link-btn" onClick={() => setPwConfirm(true)} disabled={pwBusy}>
+              {pwBusy ? <Spinner size={11} /> : <KeyRound size={11} />} 1234로 초기화
+            </button>
+            {pwDone && <span className="scr-member-info-note">초기화했어요</span>}
+          </dd>
+        </div>
         <div className="scr-detail-row scr-member-info-center">
           <dt>권한</dt>
           <dd className="scr-member-info-roles">
@@ -140,6 +169,15 @@ export default function MemberManageFields({ member }: { member: Member }) {
       </dl>
       {err && <div className="scr-err">{err}</div>}
 
+      {pwConfirm && (
+        <ConfirmDialog
+          title="비밀번호를 초기화할까요?"
+          message={`${member.nickname}님의 비밀번호가 1234로 바뀌어요.`}
+          confirmLabel="초기화"
+          onConfirm={doResetPw}
+          onCancel={() => setPwConfirm(false)}
+        />
+      )}
       {photoOpen && member.avatar && (
         <PhotoViewer src={member.avatar} alt={member.nickname} onClose={() => setPhotoOpen(false)} />
       )}

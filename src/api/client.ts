@@ -725,6 +725,11 @@ export const api = {
     });
   },
 
+  /** 운영자 비밀번호 초기화 — 1234 로 되돌린다(2026-10-22). */
+  async resetMemberPassword(id: string): Promise<Member> {
+    return request<Member>(`/api/members/${id}/password/reset`, { method: "POST" });
+  },
+
   async reprocessMemberAvatar(id: string): Promise<Member> {
     return request<Member>(`/api/members/${id}/avatar/reprocess`, { method: "POST" });
   },
