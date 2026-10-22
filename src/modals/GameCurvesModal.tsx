@@ -25,9 +25,9 @@ import type { GameCurve, GameResult } from "../types";
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
 type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "dd" | "dt";
-/** 인구 · 데미지 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환"). */
-type GroupTab = "sp" | "dmg";
-const GROUP_TABS: [GroupTab, string][] = [["sp", "인구"], ["dmg", "데미지"]];
+/** 인구 · 데미지 · 자원 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환" → "인구 데미지 자원 세 개구나 탭이") — 자원은 PC 만(폰은 자원 판이 없다). */
+type GroupTab = "sp" | "dmg" | "rs";
+const GROUP_TABS: [GroupTab, string][] = [["sp", "인구"], ["dmg", "데미지"], ["rs", "자원"]];
 const cumsum = (a: readonly number[]): number[] => { let s = 0; return a.map((v) => (s += v)); };
 const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
 
@@ -597,6 +597,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       title={title} {...extra}
       lines={linesOf(k)} maxX={sc.x} maxY={sc[k][sc[k].length - 1]} ticksX={sc.xt} ticksY={sc[k]} width={colW} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
   );
+  const rmEl = !mobile && chartOf("rm", "미네랄", { note: "그때 쥔 양" });
+  const rgEl = !mobile && chartOf("rg", "가스", { note: "그때 쥔 양" });
   /* 인구 탭의 인구 판 제목은 "전체"(2026-10-22, 요청: "인구 탭의 인구 헤더 타이틀을 전체로 변경"). */
   const spEl = chartOf(spKey, "전체", { titleExtra: <TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} /> });
   const wkEl = chartOf("wk", "일꾼 수");
@@ -611,15 +613,13 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
     </>
   ) : <div className="scr-rc-empty scr-gc-nodmg">데미지 데이터가 아직 없어요 — 재분석하면 생겨요</div>;
   const tabsEl = (
-    <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label="인구 · 데미지">
-      {GROUP_TABS.map(([k, label]) => (
+    <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label="인구 · 데미지 · 자원">
+      {GROUP_TABS.filter(([k]) => !mobile || k !== "rs").map(([k, label]) => (
         <button key={k} type="button" role="tab" aria-selected={tab === k} className={cx("scr-line-tab-btn", tab === k && "is-on")} onClick={() => setTab(k)}>{label}</button>
       ))}
     </div>
   );
-  const groupEls = <>{tabsEl}{tab === "sp" ? <>{spEl}{wkEl}</> : dmgEls}</>;
-  const rmEl = !mobile && chartOf("rm", "미네랄", { note: "그때 쥔 양" });
-  const rgEl = !mobile && chartOf("rg", "가스", { note: "그때 쥔 양" });
+  const groupEls = <>{tabsEl}{tab === "sp" ? <>{spEl}{wkEl}</> : tab === "dmg" ? dmgEls : <>{rmEl}{rgEl}</>}</>;
 
   const panel = (
       <div className={cx("scr-modal scr-modal-graph", docked && "scr-gc-dock", full && "is-full")} ref={modalRef} onClick={(e) => e.stopPropagation()}>
@@ -687,10 +687,10 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
               {box.w > 0 && (twoCol ? (
                 <div className="scr-gc-cols">
                   <div className="scr-gc-col" style={{ width: colW }}>{lanesEl}</div>
-                  <div className="scr-gc-col" style={{ width: colW }}>{rmEl}{rgEl}{groupEls}</div>
+                  <div className="scr-gc-col" style={{ width: colW }}>{groupEls}</div>
                 </div>
               ) : (
-                <>{lanesEl}{groupEls}{rmEl}{rgEl}</>
+                <>{lanesEl}{groupEls}</>
               ))}
             </div>
           )}
