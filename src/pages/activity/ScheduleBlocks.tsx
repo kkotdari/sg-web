@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { createPortal, flushSync } from "react-dom";
 import Sortable from "sortablejs";
 import {
-  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GalleryHorizontal, GripVertical, Heading, Image as ImageIcon,
+  ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Download, GalleryHorizontal, GripVertical, Heading, Image as ImageIcon,
   IndentDecrease, IndentIncrease, List as ListIcon, Paperclip,
   Play, Plus, Trash2, Type, X,
 } from "lucide-react";
@@ -759,10 +759,11 @@ function PhotoOrder({
 
 type SlideAct = {
   play: (id: string, i: number) => void; stop: () => void; view: (i: number) => void; remove: (p: SchedulePhoto) => void;
+  move: (i: number, by: -1 | 1) => void;
 };
 
-const PhotoSlide = memo(function PhotoSlide({ p, i, playing, canEdit, act }: {
-  p: SchedulePhoto; i: number; playing: boolean; canEdit: boolean; act: SlideAct;
+const PhotoSlide = memo(function PhotoSlide({ p, i, last, playing, canEdit, act }: {
+  p: SchedulePhoto; i: number; last: boolean; playing: boolean; canEdit: boolean; act: SlideAct;
 }) {
   const video = isVideoItem(p);
   return (
@@ -793,6 +794,19 @@ const PhotoSlide = memo(function PhotoSlide({ p, i, playing, canEdit, act }: {
         </button>
       )}
       <SaveOneBtn photo={p} className="scr-sb-slide-save" />
+      {/* 순서 바꾸기(2026-10-22, 요청: "슬라이드 순서 변경 방법도 필요") — 슬라이드에는 격자가 없어 이 장을 한 칸 앞·뒤로 옮기는 단추 둘(왼 위). */}
+      {canEdit && (
+        <span className="scr-sb-slide-move">
+          <button type="button" aria-label="앞으로 옮기기" title="앞으로 옮기기" disabled={i === 0}
+            onClick={(e) => { e.stopPropagation(); act.move(i, -1); }}>
+            <ArrowLeft size={14} />
+          </button>
+          <button type="button" aria-label="뒤로 옮기기" title="뒤로 옮기기" disabled={last}
+            onClick={(e) => { e.stopPropagation(); act.move(i, 1); }}>
+            <ArrowRight size={14} />
+          </button>
+        </span>
+      )}
       {canEdit && (
         <button
           type="button" className="scr-sb-slide-x" aria-label="이 사진 삭제" title="이 사진 삭제"
@@ -841,10 +855,18 @@ function PhotosBlock({
   const view = (i: number): void => { setPlaying(null); setOpen(i); go(i, false); };
   /* 슬라이드 하나하나는 memo(PhotoSlide) — 넘길 때(onScroll → at)·차례를 바꿀 때 바뀐 장만 다시 그린다(옛 길은 장 전부를 다시 그려
      200장에서 놓기 한 번이 0.35초였다 · CPU 4배 느림). 손잡이는 늘 같은 그릇(slideAct)으로 넘기고 그 속만 갈아 끼운다. */
-  const slideAct = useRef<SlideAct>({ play: () => {}, stop: () => {}, view: () => {}, remove: () => {} }).current;
+  const slideAct = useRef<SlideAct>({ play: () => {}, stop: () => {}, view: () => {}, remove: () => {}, move: () => {} }).current;
   slideAct.play = (id, i) => { setPlaying(id); setAt(i); };
   slideAct.stop = () => setPlaying(null);
   slideAct.view = view;
+  /* 옮긴 장을 계속 보여 준다 — 차례가 바뀌어 그려진 뒤(다음 프레임) 그 장의 새 자리로 넘긴다. */
+  slideAct.move = (i, by) => {
+    const next = [...block.photos];
+    const [p] = next.splice(i, 1);
+    next.splice(i + by, 0, p);
+    onChange({ photos: next });
+    requestAnimationFrame(() => go(i + by, false));
+  };
   slideAct.remove = (p) => ask(isVideoItem(p) ? "이 동영상을 지울까요?" : "이 사진을 지울까요?", () => onChange({ photos: block.photos.filter((x) => x.id !== p.id) }));
   return (
     <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
@@ -875,7 +897,7 @@ function PhotosBlock({
             }}
           >
             {block.photos.map((p, i) => (
-              <PhotoSlide key={p.id} p={p} i={i} playing={playing === p.id} canEdit={canEdit} act={slideAct} />
+              <PhotoSlide key={p.id} p={p} i={i} last={i === n - 1} playing={playing === p.id} canEdit={canEdit} act={slideAct} />
             ))}
           </div>
           {n > 1 && (
