@@ -24,7 +24,7 @@ import type { GameCurve, GameResult } from "../types";
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
-type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "dd" | "dt";
+type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "cm" | "cg" | "dd" | "dt";
 /** 인구 · 데미지 · 자원 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환" → "인구 데미지 자원 세 개구나 탭이"). */
 type GroupTab = "sp" | "dmg" | "rs";
 const GROUP_TABS: [GroupTab, string][] = [["sp", "인구"], ["dmg", "데미지"], ["rs", "자원"]];
@@ -506,6 +506,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const [tab, setTab] = useState<GroupTab>("sp");
   /* 데미지는 누적이 기본 · '분당'을 켜면 그 앞 1분 동안의 몫(2026-10-22, 요청: "누적을 기본 · 분당으로 전환 가능"). */
   const [dmgMin, setDmgMin] = useState(false);
+  /* 자원은 누적(캔 양) 이 기본 · '순간'이면 그때 쥔 양(2026-10-22, 요청: "자원은 누적 · 순간"). */
+  const [rsNow, setRsNow] = useState(false);
   /* PC 건설 줄의 '테크 건물만'(2026-10-21, 요청: "테크 건물만 토글 넣고"). */
   const [techOnly, setTechOnly] = useState(false);
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
@@ -554,13 +556,13 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 자원 = 그 분에 쥔 미네랄(rm) · 가스(rg) — 판을 나눈다(PC · 2026-10-21, 요청: "자원 그래프 추가" → "미네랄 가스 분리"). */
   const series = useMemo((): ({ key: string; p: GameCurve | null; team: 1 | 2 } & Record<CurveKey, number[]>)[] => {
     const dm = (a: number[] | undefined): number[] => (dmgMin ? a ?? [] : cumsum(a ?? []));
-    const ps = shown.map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg, dd: dm(p.dd), dt: dm(p.dt) }));
+    const ps = shown.map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg, cm: cumsum(p.cm ?? []), cg: cumsum(p.cg ?? []), dd: dm(p.dd), dt: dm(p.dt) }));
     if (!teamOn) return ps.map((q) => ({ key: q.p.playerName, team: teamNo(q.p.team), ...q }));
     const sum = (ms: typeof ps, k: CurveKey): number[] =>
       Array.from({ length: Math.max(0, ...ms.map((q) => q[k].length)) }, (_, m) => ms.reduce((a, q) => a + (q[k][m] ?? 0), 0));
     return ([1, 2] as const).map((t) => {
       const ms = ps.filter((q) => teamNo(q.p.team) === t);
-      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg"), dd: sum(ms, "dd"), dt: sum(ms, "dt") };
+      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg"), cm: sum(ms, "cm"), cg: sum(ms, "cg"), dd: sum(ms, "dd"), dt: sum(ms, "dt") };
     });
   }, [shown, teamOn, dmgMin]);
   const sc = useMemo(() => {
@@ -568,7 +570,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
     const ticks = (k: CurveKey): number[] => niceTicks(Math.max(0, ...series.flatMap((s) => s[k])));
     /* 준 · 입은 데미지는 한 자(둘 중 큰 쪽)를 같이 쓴다 — 두 판을 나란히 견준다. */
     const dmg = niceTicks(Math.max(0, ...series.flatMap((s) => [...s.dd, ...s.dt])));
-    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg"), dd: dmg, dt: dmg };
+    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg"), cm: ticks("cm"), cg: ticks("cg"), dd: dmg, dt: dmg };
   }, [series]);
   const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s) => (s[key].length < 2 ? [] : [s.p
     ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p), ys: s[key] }
@@ -598,7 +600,6 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       lines={linesOf(k)} maxX={sc.x} maxY={sc[k][sc[k].length - 1]} ticksX={sc.xt} ticksY={sc[k]} width={colW} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
   );
   /* 자원 판은 폰도(2026-10-22, 요청: "모바일에도 자원판 추가" · 옛 PC 만). */
-  const rmEl = chartOf("rm", "미네랄");
   const rgEl = chartOf("rg", "가스");
   /* 인구 탭의 인구 판 제목은 "전체"(2026-10-22, 요청: "인구 탭의 인구 헤더 타이틀을 전체로 변경"). */
   const spEl = chartOf(spKey, "전체", { titleExtra: <TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} /> });
@@ -606,17 +607,21 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 데미지 탭(2026-10-22, 요청: "딜 피해 그래프") — 적에게 준 · 적에게 입은 체력+실드(유닛 + 건물 합). 팀별 합산이어도 두 판 다(같은 날 "팀별 합산이어도 각각").
      옛 판(참값 판 13 아래)은 데이터가 없어 재분석하라는 글. */
   const hasDmg = (players ?? []).some((p) => (p.dd?.length ?? 0) > 1);
-  /* 누적 · 분당은 작은 탭(2026-10-22, 요청: "분당 누적도 작은 탭으로" · 옛 '분당' 스위치). */
-  const dmgModeEl = (
-    <span className="scr-line-tabs scr-gc-minitabs" role="tablist" aria-label="누적 · 분당">
-      {([[false, "누적"], [true, "분당"]] as const).map(([v, label]) => (
-        <button key={label} type="button" role="tab" aria-selected={dmgMin === v} className={cx("scr-line-tab-btn", dmgMin === v && "is-on")} onClick={() => setDmgMin(v)}>{label}</button>
+  /* 판 제목 옆 작은 탭 — 데미지 누적 · 분당(2026-10-22, 요청: "분당 누적도 작은 탭으로" · 옛 '분당' 스위치) · 자원 누적 · 순간(같은 날). */
+  const miniTabs = (on: boolean, set: (v: boolean) => void, off: string, onLabel: string): ReactNode => (
+    <span className="scr-line-tabs scr-gc-minitabs" role="tablist" aria-label={`${off} · ${onLabel}`}>
+      {([[false, off], [true, onLabel]] as const).map(([v, label]) => (
+        <button key={label} type="button" role="tab" aria-selected={on === v} className={cx("scr-line-tab-btn", on === v && "is-on")} onClick={() => set(v)}>{label}</button>
       ))}
     </span>
   );
+  /* 캔 자원은 재분석한 판만 있다(series rs.cm · cg). */
+  const hasGather = (players ?? []).some((p) => (p.cm?.length ?? 0) > 1);
+  const rsModeEl = miniTabs(rsNow, setRsNow, "누적", "순간");
   const pair: [ReactNode, ReactNode] | null = tab === "sp" ? [spEl, wkEl]
-    : tab === "rs" ? [rmEl, rgEl]
-    : hasDmg ? [chartOf("dd", "준 데미지", { titleExtra: dmgModeEl }), chartOf("dt", "입은 데미지")] : null;
+    : tab === "rs" ? (rsNow ? [chartOf("rm", "미네랄", { titleExtra: rsModeEl }), rgEl]
+      : hasGather ? [chartOf("cm", "미네랄", { titleExtra: rsModeEl }), chartOf("cg", "가스")] : null)
+    : hasDmg ? [chartOf("dd", "준 데미지", { titleExtra: miniTabs(dmgMin, setDmgMin, "누적", "분당") }), chartOf("dt", "입은 데미지")] : null;
   const tabsEl = (
     <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label="인구 · 데미지 · 자원">
       {GROUP_TABS.map(([k, label]) => (
@@ -629,7 +634,12 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const groupEls = (
     <>
       {tabsEl}
-      {pair === null ? <div className="scr-rc-empty scr-gc-nodmg">데미지 데이터가 아직 없어요 — 재분석하면 생겨요</div>
+      {pair === null ? (
+        <div className="scr-rc-empty scr-gc-nodmg">
+          {tab === "rs" && <>{rsModeEl}<br /></>}
+          {tab === "rs" ? "캔 자원" : "데미지"} 데이터가 아직 없어요 — 재분석하면 생겨요
+        </div>
+      )
         : twoCol ? (
           <div className="scr-gc-cols">
             <div className="scr-gc-col" style={{ width: colW }}>{pair[0]}</div>
