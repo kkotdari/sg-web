@@ -69,7 +69,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const monthLabel = (ym: string) => `${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5, 7))}월`;
   const closeGames = async () => {
     const typed = window.prompt(
-      `${monthLabel(closeMonth)}까지 마감합니다. 그때까지의 게임은 등록(자동·수동)과 삭제가 막히고 참값(재생 자료)이 지워져요(리그·외부 공개 판은 남겨요). 추천 3 이상인 판은 명예의 전당으로 옮겨 남겨요. 되돌릴 수 없어요.\n마감하려면 "마감"을 입력하세요.`,
+      `${monthLabel(closeMonth)}까지 마감합니다. 그때까지의 게임은 등록(자동·수동)과 삭제가 막히고 참값(재생 자료)이 지워져요(리그·외부 공개 판은 남겨요). 추천 1 이상인 판은 명예의 전당으로 옮겨 남겨요. 되돌릴 수 없어요.\n마감하려면 "마감"을 입력하세요.`,
     );
     if (typed !== "마감") return;
     setClosing(true);
