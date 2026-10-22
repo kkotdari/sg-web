@@ -412,6 +412,27 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
      창 자체를 브라우저 전체화면으로 · Esc 로 나오면 원래 창. 막혀도 창은 화면을 채운다. */
   const modalRef = useRef<HTMLDivElement>(null);
   const [full, setFull] = useState(false);
+  /* ★ 맨 위 고르기는 **내리면 숨고 올리면 나온다**(2026-10-22, 요청: "데이터 창 필터링부를 완전 스티키 말고 아래로 스크롤하면 숨기고 위로 스크롤 좀 하면 나오는 식") —
+     창 몸의 스크롤 방향을 본다: 고르기 키(TOP_HIDE_AT)를 지나 아래로 TOP_STEP 넘게 내리면 숨기고, 위로 TOP_STEP 넘게 올리거나 맨 위 근처면 다시 보인다. 숨김은 위로 밀어 올림(.is-hidden). */
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [topHidden, setTopHidden] = useState(false);
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return undefined;
+    let last = el.scrollTop;
+    const TOP_HIDE_AT = 140;
+    const TOP_STEP = 8;
+    const onScroll = (): void => {
+      const y = el.scrollTop;
+      const d = y - last;
+      if (y < TOP_HIDE_AT) { setTopHidden(false); last = y; return; }
+      if (Math.abs(d) < TOP_STEP) return;
+      setTopHidden(d > 0);
+      last = y;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
   useEffect(() => {
     const onChange = (): void => { if (!document.fullscreenElement) setFull(false); };
     document.addEventListener("fullscreenchange", onChange);
@@ -564,7 +585,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
             <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
           </span>
         </div>
-        <div className="scr-modal-body">
+        <div className="scr-modal-body" ref={bodyRef}>
           {players === null ? (
             <div className="scr-rc-empty scr-gc-wait"><Spinner /> 불러오는 중…</div>
           ) : players.length === 0 ? (
@@ -572,7 +593,7 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
           ) : (
             <div className="scr-gc" ref={boxRef}>
               {/* 맨 위 고르기(볼 사람 · 보기)는 창 위에 붙어 있는다(2026-10-22, 요청: "맨 위 필터는 고정되면 좋을 듯"). */}
-              <div className="scr-gc-top">
+              <div className={cx("scr-gc-top", topHidden && "is-hidden")}>
               <div className="scr-gc-users" aria-label="볼 사람">
                 <div className="scr-gc-uall">
                   {/* 고르기 줄 앞 라벨(2026-10-22, 요청: "필터에 라벨 추가 — 표시: 모두 선택 모두 해제 · 개인/팀별:") */}
