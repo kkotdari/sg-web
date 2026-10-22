@@ -55,6 +55,34 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     api.listUnhideRequests().then((r) => { if (alive) setUnhideCount(r.length); }).catch(() => {});
     return () => { alive = false; };
   }, [unhideOpen]);
+  /* ★ 게임 자료 월 마감(2026-10-22, 요청: "월 단위로 마감 · 마감하면 그때 이전으로는 게임 결과 등록 X(자동이든 수동이든) · 삭제도 안 됨" →
+     "참값만 지우고 · 해제 버튼 X · 재분석 허용하지만 참값은 안 만듦") — 막기·지우기는 서버가 한다. 고를 수 있는 달은 지난달까지. */
+  const lastMonth = (() => { const d = new Date(); d.setDate(0); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; })();
+  const [closedUntil, setClosedUntil] = useState<string | null | undefined>(undefined);
+  const [closeMonth, setCloseMonth] = useState(lastMonth);
+  const [closing, setClosing] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    api.getGamesClose().then((r) => { if (alive) setClosedUntil(r.closedUntil); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const monthLabel = (ym: string) => `${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5, 7))}월`;
+  const closeGames = async () => {
+    const typed = window.prompt(
+      `${monthLabel(closeMonth)}까지 마감합니다. 그때까지의 게임은 등록(자동·수동)과 삭제가 막히고 참값(재생 자료)이 지워져요(리그·외부 공개 판은 남겨요). 되돌릴 수 없어요.\n마감하려면 "마감"을 입력하세요.`,
+    );
+    if (typed !== "마감") return;
+    setClosing(true);
+    try {
+      const r = await api.closeGames(closeMonth);
+      setClosedUntil(r.closedUntil);
+      showToast(`${monthLabel(r.closedUntil)}까지 마감했어요 — 참값 ${r.purged}판을 지웠어요.`, { kind: "ok" });
+    } catch (e) {
+      showAlert(e instanceof Error ? e.message : "마감하지 못했어요.");
+    } finally {
+      setClosing(false);
+    }
+  };
   const [togglingNotice, setTogglingNotice] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [redo, setRedo] = useState<{ done: number; total: number; failed: number } | null>(null);
@@ -424,6 +452,33 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                         {redo.failed > 0 ? ` · 실패 ${redo.failed}` : ""}
                       </>
                     ) : purging || deletingGames ? <Spinner /> : "열기"}
+                  </button>
+                </div>
+
+                <div className="scr-adm-row">
+                  <div className="scr-adm-row-text">
+                    <span className="scr-adm-row-title">월 마감</span>
+                    <span className="scr-adm-row-desc">
+                      {closedUntil === undefined ? "마감 상태를 읽는 중이에요."
+                        : closedUntil ? `${monthLabel(closedUntil)}까지 마감했어요. ` : "아직 마감한 달이 없어요. "}
+                      마감한 달의 게임은 등록(자동·수동)·삭제가 막히고 참값(재생 자료)을 지워요. 통계·색인·그래프는 남고 재분석도 되지만 참값은 다시 남기지 않아요. 되돌릴 수 없어요.
+                    </span>
+                    <div className="scr-adm-row-field">
+                      <span className="scr-adm-row-field-label">마감할 달</span>
+                      <input
+                        type="month" className="scr-input scr-input-sm scr-adm-close-month"
+                        value={closeMonth} max={lastMonth}
+                        min={closedUntil ? closedUntil.slice(0, 7) : undefined}
+                        onChange={(e) => setCloseMonth(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button" className="scr-rect-btn scr-adm-row-btn"
+                    onClick={() => { void closeGames(); }}
+                    disabled={closing || !closeMonth || closeMonth > lastMonth || (!!closedUntil && closeMonth <= closedUntil.slice(0, 7))}
+                  >
+                    {closing ? <Spinner /> : "마감"}
                   </button>
                 </div>
 

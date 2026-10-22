@@ -533,6 +533,14 @@ export const api = {
   async purgeTruthOf(ids: number[]): Promise<{ deleted: number }> {
     return request<{ deleted: number }>("/api/game-results/admin/purge-truth", { method: "POST", body: JSON.stringify({ ids }) });
   },
+  /** 게임 자료 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
+  async getGamesClose(): Promise<{ closedUntil: string | null }> {
+    return request<{ closedUntil: string | null }>("/api/game-results/admin/close");
+  },
+  /** 그 달("YYYY-MM")까지 마감 — 그날까지의 게임은 등록·삭제가 막히고 참값을 지운다(되돌릴 수 없다). */
+  async closeGames(month: string): Promise<{ closedUntil: string; purged: number }> {
+    return request<{ closedUntil: string; purged: number }>("/api/game-results/admin/close", { method: "POST", body: JSON.stringify({ month }) });
+  },
   /** 제어판 데이터 관리 — 고른 판들을 리플레이째 지운다(되돌릴 수 없다 · 리그 판은 서버가 남긴다). */
   async deleteGamesOf(ids: number[]): Promise<{ deleted: number }> {
     return request<{ deleted: number }>("/api/game-results/admin/delete", { method: "POST", body: JSON.stringify({ ids }) });

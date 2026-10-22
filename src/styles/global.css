@@ -3229,6 +3229,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-adm-row-btn { flex: none; min-width: 92px; }
 .scr-adm-row-field { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .scr-adm-row-field-label { font-size: var(--fs-caption); color: var(--muted); }
+.scr-adm-close-month { width: auto; }   /* 월 마감 달 고르기(2026-10-22) */
 .scr-adm-row-switch { flex: none; }
 .scr-adm-note { margin: 0; font-size: var(--fs-body); color: var(--muted); text-align: center; }
 
