@@ -1253,8 +1253,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* 정렬 순서 — 검색창 바로 밑의 **작은** 밑줄 탭(2026-10, 요청: "크기 좀 작게"). 내전·공방 탭과 같은 모양을 한 치 줄여 쓴다. */
 /* 앞의 "정렬" 글은 걷었다(2026-10-20, 요청) — 탭 이름이 "승률순 · 딜순 · APM순 · 참여순"이라 뜻이 선다. */
 .scr-stats-sort { display: flex; align-items: flex-end; gap: 8px; margin: -2px 0 2px; flex-wrap: wrap; }
-/* 정렬 탭(2026-10-22) — 옆 9 → 6(요청: "탭 사이 간격 살짝 줄이고") · 고르면 **글자만 굵게**(요청: "선택 시 글자만 두껍게 하고 다른 효과 x" — 밑줄·색 바뀜 없음)
-   · 차례 숫자는 글자 **위** 제 칸(모든 탭이 비워 둠). 굵어져도 폭이 안 변하게 ::after 에 굵은 글자를 숨겨 폭을 미리 잡는다(밑줄 자리였던 ::after 를 쓴다). */
+/* 정렬 탭(2026-10-22) — 옆 9 → 6(요청: "탭 사이 간격 살짝 줄이고") · 고르면 **글자만 굵게**(요청: "선택 시 글자만 두껍게 하고 다른 효과 x" — 밑줄·색 바뀜 없음).
+   굵어져도 폭이 안 변하게 ::after 에 굵은 글자를 숨겨 폭을 미리 잡는다(밑줄 자리였던 ::after 를 쓴다). 차례 숫자는 걷었다(요청: "정렬 순의 숫자 제거"). */
 .scr-stats-sort-tabs > .scr-line-tab-btn {
   display: inline-flex; flex-direction: column; align-items: center;
   font-size: 13px; font-weight: 500; color: var(--text); padding: 0 6px 6px;   /* fs-11 → 13px(2026-10-22, 요청: "정렬 폰트 키우기") */
@@ -1266,8 +1266,6 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   font-weight: 800; background: none; box-shadow: none;
 }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child { padding-left: 2px; }
-/* 정렬 탭의 차례 숫자(2026-10-22 · PC·폰) — 작고 옅은 글자(배지 아님) · 글자 위 제 칸(비어도 높이를 지킨다). */
-.scr-stats-sort-no { display: block; height: 10px; line-height: 10px; margin-bottom: 1px; font-size: 9px; font-weight: 600; color: var(--muted); }
 /* 정렬 탭 앞 이름표 "정렬"(2026-10-22, 요청: "정렬(복수선택) 라벨 추가" → "복수선택도 글자 제거"). */
 .scr-stats-sort-label { font-size: 12px; font-weight: 600; color: var(--muted); padding-bottom: 7px; white-space: nowrap; }   /* fs-9 → 12px(2026-10-22, 요청: "정렬 · 도움말 · 헤더 폰트 키우기") */
 

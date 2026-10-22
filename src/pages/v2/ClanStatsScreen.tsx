@@ -98,8 +98,7 @@ export default function ClanStatsScreen() {
   /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
   const [expandAll, setExpandAll] = useState(false);
   /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 탭을 누르면 끝에 붙고, 고른 탭을 누르면 빠진다(하나는 남는다).
-     고른 탭 **위**에 작고 옅은 차례 숫자(하나여도 1 · 자리는 모든 탭이 미리 비워 둔다 — 고를 때 아무것도 안 움직인다) · 고른 탭은 글자만 굵다(밑줄·색 없음)
-     (2026-10-22 되요청들 · 한때 탭 옆 "승률순 × > 참여순 × 적용중" 줄 · 탭 앞 숫자). 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
+     고른 탭은 글자만 굵다(밑줄·색 없음 · 차례는 안 보인다 — 2026-10-22 되요청들: 한때 탭 옆 "승률순 × > 참여순 × 적용중" 줄 · 탭 앞 숫자 · 탭 위 숫자 → "정렬 순의 숫자 제거"). 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
   const [sortKeys, setSortKeys] = useState<SortKey[]>(["rate"]);
   const toggleSort = (k: SortKey): void => setSortKeys((prev) => (prev.includes(k)
     ? (prev.length > 1 ? prev.filter((x) => x !== k) : prev)
@@ -357,7 +356,6 @@ export default function ClanStatsScreen() {
                 data-label={o.label}
                 onClick={() => toggleSort(o.value)}
               >
-                <span className="scr-stats-sort-no" aria-hidden>{at >= 0 ? at + 1 : ""}</span>
                 {o.label}
               </button>
             );
