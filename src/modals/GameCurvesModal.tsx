@@ -25,7 +25,7 @@ import type { GameCurve, GameResult } from "../types";
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
 type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "dd" | "dt";
-/** 인구 · 데미지 · 자원 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환" → "인구 데미지 자원 세 개구나 탭이") — 자원은 PC 만(폰은 자원 판이 없다). */
+/** 인구 · 데미지 · 자원 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환" → "인구 데미지 자원 세 개구나 탭이"). */
 type GroupTab = "sp" | "dmg" | "rs";
 const GROUP_TABS: [GroupTab, string][] = [["sp", "인구"], ["dmg", "데미지"], ["rs", "자원"]];
 const cumsum = (a: readonly number[]): number[] => { let s = 0; return a.map((v) => (s += v)); };
@@ -597,15 +597,15 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       title={title} {...extra}
       lines={linesOf(k)} maxX={sc.x} maxY={sc[k][sc[k].length - 1]} ticksX={sc.xt} ticksY={sc[k]} width={colW} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
   );
-  const rmEl = !mobile && chartOf("rm", "미네랄", { note: "그때 쥔 양" });
-  const rgEl = !mobile && chartOf("rg", "가스", { note: "그때 쥔 양" });
+  /* 자원 판은 폰도(2026-10-22, 요청: "모바일에도 자원판 추가" · 옛 PC 만). */
+  const rmEl = chartOf("rm", "미네랄", { note: "그때 쥔 양" });
+  const rgEl = chartOf("rg", "가스", { note: "그때 쥔 양" });
   /* 인구 탭의 인구 판 제목은 "전체"(2026-10-22, 요청: "인구 탭의 인구 헤더 타이틀을 전체로 변경"). */
   const spEl = chartOf(spKey, "전체", { titleExtra: <TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} /> });
   const wkEl = chartOf("wk", "일꾼 수");
   /* 데미지 탭(2026-10-22, 요청: "딜 피해 그래프") — 적에게 준 · 적에게 입은 체력+실드(유닛 + 건물 합). 팀별 합산이어도 두 판 다(같은 날 "팀별 합산이어도 각각").
      옛 판(참값 판 13 아래)은 데이터가 없어 재분석하라는 글. */
   const hasDmg = (players ?? []).some((p) => (p.dd?.length ?? 0) > 1);
-  const dmgNote = "체력+실드";
   /* 누적 · 분당은 작은 탭(2026-10-22, 요청: "분당 누적도 작은 탭으로" · 옛 '분당' 스위치). */
   const dmgModeEl = (
     <span className="scr-line-tabs scr-gc-minitabs" role="tablist" aria-label="누적 · 분당">
@@ -616,13 +616,13 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   );
   const dmgEls = hasDmg ? (
     <>
-      {chartOf("dd", "준 데미지", { note: dmgNote, titleExtra: dmgModeEl })}
-      {chartOf("dt", "입은 데미지", { note: dmgNote })}
+      {chartOf("dd", "준 데미지", { titleExtra: dmgModeEl })}
+      {chartOf("dt", "입은 데미지")}
     </>
   ) : <div className="scr-rc-empty scr-gc-nodmg">데미지 데이터가 아직 없어요 — 재분석하면 생겨요</div>;
   const tabsEl = (
     <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label="인구 · 데미지 · 자원">
-      {GROUP_TABS.filter(([k]) => !mobile || k !== "rs").map(([k, label]) => (
+      {GROUP_TABS.map(([k, label]) => (
         <button key={k} type="button" role="tab" aria-selected={tab === k} className={cx("scr-line-tab-btn", tab === k && "is-on")} onClick={() => setTab(k)}>{label}</button>
       ))}
     </div>
