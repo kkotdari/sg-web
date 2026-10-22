@@ -57,7 +57,7 @@ export default function AuthScreen() {
           <BrandLogo light={lightTheme} onStar={signup ? undefined : onStar} />
         </div>
         {signup ? (
-          <div className="scr-auth-card scr-auth-card-plain">
+          <div className="scr-auth-card scr-auth-card-plain scr-auth-card-signup">
             <button type="button" className="scr-link-btn scr-auth-back-btn" onClick={toLogin}>
               <ArrowLeft size={13} /> 로그인
             </button>

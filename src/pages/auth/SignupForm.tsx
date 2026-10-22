@@ -98,12 +98,31 @@ export default function SignupForm({ onDone }: SignupFormProps) {
         </div>
       </div>
 
-      <input className="scr-input" value={id} onChange={(e) => setId(e.target.value)} placeholder="사용할 아이디 (영문/숫자, 최대 12자) *" />
-      <input className="scr-input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호 (최대 24자) *" />
-      <input className="scr-input" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="비밀번호 확인 *" />
-      <input className="scr-input" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="닉네임 (최대 한글 8자/영문·숫자·기호 16자) *" />
-      <input className="scr-input" value={tag} onChange={(e) => setTag(e.target.value)} placeholder="배틀태그 (Nickname#0000) *" />
-      <input className="scr-input" value={insta} onChange={(e) => setInsta(e.target.value)} placeholder="인스타 닉네임 (선택, nickname)" />
+      {/* 칸 위에 이름표(회원정보 수정 창과 같은 꼴) · 필수는 이름표 옆 붉은 별 · 자리표시엔 형식만(2026-10-22, 요청). */}
+      <label className="scr-field">
+        <span className="scr-label">아이디<span className="scr-auth-req" aria-hidden="true">*</span></span>
+        <input className="scr-input" value={id} onChange={(e) => setId(e.target.value)} placeholder="영문/숫자, 최대 12자" />
+      </label>
+      <label className="scr-field">
+        <span className="scr-label">비밀번호<span className="scr-auth-req" aria-hidden="true">*</span></span>
+        <input className="scr-input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="최대 24자" />
+      </label>
+      <label className="scr-field">
+        <span className="scr-label">비밀번호 확인<span className="scr-auth-req" aria-hidden="true">*</span></span>
+        <input className="scr-input" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+      </label>
+      <label className="scr-field">
+        <span className="scr-label">닉네임<span className="scr-auth-req" aria-hidden="true">*</span></span>
+        <input className="scr-input" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="최대 한글 8자/영문·숫자·기호 16자" />
+      </label>
+      <label className="scr-field">
+        <span className="scr-label">배틀태그<span className="scr-auth-req" aria-hidden="true">*</span></span>
+        <input className="scr-input" value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Nickname#0000" />
+      </label>
+      <label className="scr-field">
+        <span className="scr-label">인스타 닉네임 (선택)</span>
+        <input className="scr-input" value={insta} onChange={(e) => setInsta(e.target.value)} placeholder="nickname" />
+      </label>
 
       {err && <div className="scr-err">{err}</div>}
       <button type="submit" className="scr-rect-btn" disabled={busy}>

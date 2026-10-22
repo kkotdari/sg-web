@@ -294,6 +294,9 @@ button, a, [role="button"], summary, label, select { touch-action: manipulation;
   filter: drop-shadow(0 0 18px rgba(var(--point-rgb), 0.35)) drop-shadow(0 0 4px rgba(255,255,255,0.25));
 }
 .scr-auth-card { width: 100%; max-width: 290px; z-index: 1; }
+/* 가입 칸은 넓게(2026-10-22, 요청: "가입창의 인풋창 최소 너비 넓혀 주고") — 290 → 360(칸 320) · 이름표 옆 필수 붉은 별. */
+.scr-auth-card-signup { max-width: 360px; }
+.scr-auth-req { color: #e5484d; font-weight: 700; margin-left: -2px; }
 .scr-auth-card-plain {
   background: transparent;
   border-radius: var(--radius); padding: 12px 20px; position: relative;
