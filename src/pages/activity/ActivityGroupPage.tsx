@@ -1,7 +1,6 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import { ArrowLeft, BookOpen, Bookmark } from "lucide-react";
-import { LoadingMark } from "../../components/common/Feedback";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
 import { SelectionBar } from "../../components/common/Selection";
 import { useAppStore } from "../../store/appStore";
@@ -69,12 +68,13 @@ function SelectionActions({ picked, onDelete, onHide, onScrap, scrapBusy }: {
   );
 }
 
-/** 탭 → 서버 목록 조건 — 리그 판은 리그 탭에만(leagueOnly), 내전·공방은 리그 판을 뺀다(noLeague). */
-const tabQuery = (tab: GameTab) => ({
+/** 탭 → 서버 목록 조건 — 리그 판은 리그 탭에만(leagueOnly), 내전·공방은 리그 판을 뺀다(noLeague). 명예의 전당 판은 그 탭에만(fameOnly · 나머지 noFame). */
+export const tabQuery = (tab: GameTab) => (tab === "fame" ? { fameOnly: true } : {
   membersOnly: tab === "clan" || undefined,
   pubOnly: tab === "pub" || undefined,
   leagueOnly: tab === "league" || undefined,
   noLeague: tab !== "league" || undefined,
+  noFame: true,
 });
 
 export default memo(function ActivityGroupPage({
@@ -141,14 +141,14 @@ export default memo(function ActivityGroupPage({
     setFormRaw(encodeGameSearch(next));
   }, [onGames9, searchApplied]);
   const searchKey9 = onGames9 ? formRaw : searchApplied;
-  /* 상세에서 뒤로 온 칸이면 적어 둔 스크롤 y(route.ts takeListScroll — 읽는 즉시 칸에서 지운다). 게임 목록은 새로 받아 그려 보고 페이지가 y 까지
-     내려갈 만큼 길어질 때까지 더 받은 뒤 y 로(줄 높이·새 판 수와 무관 · 더 받을 게 없으면 끝까지), 그 밖의 목록은 바로 y 로. */
+  /* ★ 게임 목록은 **한 번에 다** 받는다(2026-10-22, 요청: "이제 길어야 한달정도만 나오니까 게임목록 무한스크롤 말고 한번에 다 조회로") — 마감이 지난 달을
+     지우니 목록은 한 달 남짓이다. 서버 한 쪽 상한(100)이라 커서를 끝까지 따라 모은 뒤 한 번에 그린다. 상세에서 뒤로 온 칸이면 적어 둔 스크롤 y
+     (route.ts takeListScroll — 읽는 즉시 칸에서 지운다)로, 그 밖의 목록은 바로 y 로. */
   const [restoreY9] = useState(takeListScroll);
   const restore9 = useRef(restoreY9);
-  type GamesPage9 = { items: ActivityItem[]; total: number; cursor: string | null };
+  type GamesPage9 = { items: ActivityItem[]; total: number };
   const [serverGames, setServerGames] = useState<GamesPage9 | null>(null);
   const [serverBusy, setServerBusy] = useState(false);
-  const [moreBusy, setMoreBusy] = useState(false);
   useEffect(() => {
     const onGames = groupKey === "gameResult";
     const merged = onGames ? formToServer(decodeGameSearch(formRaw))
@@ -161,18 +161,15 @@ export default memo(function ActivityGroupPage({
     (async () => {
       const q9 = { any: merged.any, linked: merged.linked, limit: 100, sort: "latest" as const, ...tabQuery(gameTab) };
       let page = await api.getGameResultsPage(q9);
+      const total = page.total;
       const items = page.items.map((m) => gameResultItem(m));
-      const show = () => flushSync(() => setServerGames({ items: [...items], total: page.total ?? items.length, cursor: page.nextCursor }));
-      if (dead) return;
-      show();
-      if (y9 === null) return;
-      // 더 받을 게 없거나(커서 없음) 받다 실패하면 그만 — 받은 만큼 둔 채 y 로(짧으면 브라우저가 끝으로 맞춘다).
-      while (document.documentElement.scrollHeight < y9 + window.innerHeight && page.nextCursor && !dead) {
-        try { page = await api.getGameResultsPage({ ...q9, cursor: page.nextCursor }); } catch { break; }
+      while (page.nextCursor && !dead) {
+        page = await api.getGameResultsPage({ ...q9, cursor: page.nextCursor });
         items.push(...page.items.map((m) => gameResultItem(m)));
-        if (!dead) show();
       }
       if (dead) return;
+      flushSync(() => setServerGames({ items, total: total ?? items.length }));
+      if (y9 === null) return;
       restore9.current = null;
       window.scrollTo({ top: y9, behavior: "instant" });
     })()
@@ -180,38 +177,6 @@ export default memo(function ActivityGroupPage({
       .finally(() => { if (!dead) setServerBusy(false); });
     return () => { dead = true; };
   }, [groupKey, searchKey9, gameTab, refreshKey]);
-
-  const loadMoreGames = useCallback(async () => {
-    const cursor = serverGames?.cursor;
-    if (!cursor || moreBusy || serverBusy) return;
-    setMoreBusy(true);
-    try {
-      const merged = formToServer(decodeGameSearch(formRaw));
-      const page = await api.getGameResultsPage({
-        any: merged.any, linked: merged.linked, limit: 100, sort: "latest",
-        ...tabQuery(gameTab), cursor,
-      });
-      setServerGames((prev) => (prev && prev.cursor === cursor ? {
-        total: prev.total,
-        items: [...prev.items, ...page.items.map((m) => gameResultItem(m))],
-        cursor: page.nextCursor,
-      } : prev));
-    } catch {
-    } finally {
-      setMoreBusy(false);
-    }
-  }, [serverGames?.cursor, moreBusy, serverBusy, formRaw, gameTab]);
-
-  const moreRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = moreRef.current;
-    if (!el || !serverGames?.cursor) return undefined;
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) void loadMoreGames();
-    }, { rootMargin: "600px 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [serverGames?.cursor, loadMoreGames]);
 
   const slotMatchesTerm = (slot: GameResultSlot, term: string): boolean => {
     const m = memberOf(slot.memberId);
@@ -337,11 +302,6 @@ export default memo(function ActivityGroupPage({
             const { key, ...p } = rowPropsOf(item, { selecting: !!selection, canPick, picked: pickedSet ?? null });
             return <ActivityRow key={key} {...p} minute={minute} view={view} act={act} />;
           })
-        )}
-        {serverGames?.cursor && (
-          <div ref={moreRef} className="scr-activity-more-sentinel">
-            {moreBusy && <LoadingMark />}
-          </div>
         )}
       </div>
     </div>

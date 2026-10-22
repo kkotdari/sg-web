@@ -2297,9 +2297,6 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
   align-self: flex-end; font-size: var(--fs-micro);
   margin-top: 6px; margin-left: 0; margin-bottom: 10px; position: relative; top: 1px;
 }
-.scr-activity-more-sentinel {
-  display: flex; align-items: center; justify-content: center; min-height: 40px;
-}
 .scr-coming {
   margin: 0 0 22px; padding: 12px 14px 10px; position: relative;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);

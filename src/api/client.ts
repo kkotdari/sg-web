@@ -69,6 +69,8 @@ export interface GameResultListParams {
   pubOnly?: boolean;
   leagueOnly?: boolean;
   noLeague?: boolean;
+  fameOnly?: boolean;
+  noFame?: boolean;
   teamMemberIds?: string[];
 }
 
@@ -270,6 +272,8 @@ export const api = {
       pubOnly: params.pubOnly,
       leagueOnly: params.leagueOnly,
       noLeague: params.noLeague,
+      fameOnly: params.fameOnly,
+      noFame: params.noFame,
       matchAllUsers: params.matchAllUsers,
       q: params.q,
       any: params.any,
@@ -545,8 +549,8 @@ export const api = {
     return request<{ closedUntil: string | null }>("/api/game-results/admin/close");
   },
   /** 그 달("YYYY-MM")까지 마감 — 그날까지의 게임은 등록·삭제가 막히고 참값을 지운다(되돌릴 수 없다). */
-  async closeGames(month: string): Promise<{ closedUntil: string; purged: number }> {
-    return request<{ closedUntil: string; purged: number }>("/api/game-results/admin/close", { method: "POST", body: JSON.stringify({ month }) });
+  async closeGames(month: string): Promise<{ closedUntil: string; purged: number; famed: number }> {
+    return request<{ closedUntil: string; purged: number; famed: number }>("/api/game-results/admin/close", { method: "POST", body: JSON.stringify({ month }) });
   },
   /** 제어판 데이터 관리 — 고른 판들을 리플레이째 지운다(되돌릴 수 없다 · 리그 판은 서버가 남긴다). */
   async deleteGamesOf(ids: number[]): Promise<{ deleted: number }> {

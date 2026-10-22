@@ -1,4 +1,5 @@
-import { memo, useEffect, useMemo, useRef, type RefObject } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { api } from "../../api/client";
 import { LoadingMark } from "../../components/common/Feedback";
 import ComingMatches from "./ComingMatches";
 import { GameTableHead } from "./GameTable";
@@ -6,7 +7,7 @@ import { cx } from "../../utils/format";
 import { ActivityRow, rowPropsOf, useRowClock, type RowAct, type RowView } from "./ActivityRow";
 import { useFeedData } from "./activityFeed";
 import {
-  GROUP_DEFS, GameTabs, feedOfTab, groupKeyOf, previewMaxOf, rowFlagsOf, touchMsOf,
+  GROUP_DEFS, GameTabs, feedOfTab, gameResultItem, groupKeyOf, previewMaxOf, rowFlagsOf, touchMsOf,
   type ActivityItem, type GameTab,
 } from "./activityItems";
 import type { ActivityGroupKey } from "../../utils/route";
@@ -28,11 +29,22 @@ export default memo(function ActivityHome({ gameTab, onGameTab, error, onOpenGro
   const { feedAll, comingMatches, loading, loadingMore, hasMore, loadMore } = useFeedData();
   const minute = useRowClock();
   const feed = useMemo(() => feedOfTab(feedAll, gameTab, view.memberOf), [feedAll, gameTab, view.memberOf]);
+  /* ★ 명예의 전당 탭은 피드에 없다(마감 지난 옛 판) — 서버(fameOnly)에서 미리보기 줄 수만큼 따로 받는다. 비어도 게임 묶음(탭)은 남긴다. */
+  const [fameRows, setFameRows] = useState<ActivityItem[] | null>(null);
+  useEffect(() => {
+    if (gameTab !== "fame") { setFameRows(null); return undefined; }
+    let dead = false;
+    api.getGameResultsPage({ fameOnly: true, limit: previewMaxOf("gameResult"), sort: "latest" })
+      .then((page) => { if (!dead) setFameRows(page.items.map((m) => gameResultItem(m))); })
+      .catch(() => { if (!dead) setFameRows([]); });
+    return () => { dead = true; };
+  }, [gameTab]);
 
   const homePreview = useMemo(() => {
     const buckets = new Map<ActivityGroupKey, ActivityItem[]>();
     for (const g of GROUP_DEFS) buckets.set(g.key, []);
     for (const item of feed) buckets.get(groupKeyOf(item))!.push(item);
+    if (gameTab === "fame") buckets.set("gameResult", fameRows ?? []);
     /* ★ 새 소식 순 차례는 **탭과 무관하게** 잰다(2026-10-11, 지적: "게임목록 탭 내전·공방 선택 시 게임목록과 일정목록 순서가 바뀌는 문제") — 거른 목록으로 재면
        공방에만 새 게임이 있을 때 내전 탭에서는 게임 묶음이 새 소식을 잃어 일정 아래로 내려갔다. 목록(items)은 그대로 거른 것. */
     const freshOf = new Map<ActivityGroupKey, number>();
@@ -43,7 +55,7 @@ export default memo(function ActivityHome({ gameTab, onGameTab, error, onOpenGro
     }
     const sections = GROUP_DEFS
       .map((g, order) => ({ ...g, order, items: buckets.get(g.key)!, freshAt: freshOf.get(g.key) ?? 0 }))
-      .filter((s) => s.items.length > 0 && s.key !== "league");
+      .filter((s) => (s.items.length > 0 || (s.key === "gameResult" && gameTab === "fame")) && s.key !== "league");
     sections.sort((a, b) => {
       if ((a.freshAt > 0) !== (b.freshAt > 0)) return a.freshAt > 0 ? -1 : 1;
       if (a.freshAt !== b.freshAt) return b.freshAt - a.freshAt;
@@ -53,7 +65,7 @@ export default memo(function ActivityHome({ gameTab, onGameTab, error, onOpenGro
       ...section,
       rows: [...section.items].sort((a, b) => touchMsOf(b) - touchMsOf(a)).slice(0, previewMaxOf(section.key)),
     }));
-  }, [feed, feedAll, minute]);
+  }, [feed, feedAll, minute, gameTab, fameRows]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -104,7 +116,8 @@ export default memo(function ActivityHome({ gameTab, onGameTab, error, onOpenGro
               </div>
               {section.key === "gameResult" && <GameTabs value={gameTab} onChange={onGameTab} />}
               <div className={cx("scr-activity-rows", section.key === "gameResult" && !view.isMobile && "scr-gtab-list", view.leagueCol && "has-league")}>
-                {section.key === "gameResult" && !view.isMobile && <GameTableHead selecting={false} leagueCol={view.leagueCol} />}
+                {section.key === "gameResult" && !view.isMobile && section.rows.length > 0 && <GameTableHead selecting={false} leagueCol={view.leagueCol} />}
+                {section.rows.length === 0 && <div className="scr-empty">{fameRows ? "명예의 전당에 오른 게임이 없어요" : "찾는 중…"}</div>}
                 {section.rows.map((item) => {
                   const { key, ...p } = rowPropsOf(item, NO_PICK);
                   return <ActivityRow key={key} {...p} minute={minute} view={view} act={act} />;
