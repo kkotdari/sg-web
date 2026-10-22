@@ -1259,7 +1259,14 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child { padding-left: 2px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
 /* 여러 자 정렬의 적용 차례(2026-10-22 · ClanStatsScreen sortKeys) — 탭 옆 작은 글씨. */
-.scr-stats-sort-chain { font-size: var(--fs-9); color: var(--muted); padding-bottom: 7px; white-space: nowrap; }
+.scr-stats-sort-chain { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-9); color: var(--muted); padding-bottom: 7px; white-space: nowrap; }
+.scr-stats-sort-chain-item { display: inline-flex; align-items: center; gap: 1px; }
+.scr-stats-sort-chain-sep { margin-right: 4px; }
+.scr-stats-sort-chain-x {
+  display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; padding: 0; border: 0; border-radius: 7px;
+  background: transparent; color: inherit; cursor: pointer; opacity: 0.7;
+}
+.scr-stats-sort-chain-x:hover { opacity: 1; background: rgba(var(--overlay-rgb), 0.1); }
 
 .scr-stat-cards { display: flex; flex-direction: column; }
 /* .scr-statcard 는 **클랜 전체의 두 장**(종족구성별 전적 · 클랜원 전체)이고, .scr-stat-person 은 개인 줄이다 — 개인 줄은 더는 카드로
