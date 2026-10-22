@@ -10,7 +10,7 @@ import type { BaseRace, Member, MemberStats } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
    C 의 승률 막대를 얹어(요청: "A에 C의 그래프를 시각적으로 도입")).
-   PC: [유저 | 경기 | 승률 | APM | 데미지 | 테란·프로토스·저그 (전적 | 승률) | ▾] · 폰: [유저 | APM | 데미지 | 전적: 전체·종족 판수(승률)] · 폰은 줄을 눌러 편다(▾ 없음).
+   PC: [유저 | 게임수 | 승률 | APM | 데미지 | 테란·프로토스·저그 (게임수 | 승률) | ▾] · 폰: [유저 | APM | 데미지 | 전적: 전체·종족 판수(승률)] · 폰은 줄을 눌러 편다(▾ 없음).
    PC 의 ▾ · 폰의 줄 누름은 모두 그 줄 아래에 **분당 곡선 두 판**(인구 · 일꾼 수, 세 종족 겹침 — RaceCurves)을 편다(2026-10-20, 요청: "펼친 부분 내용 변경 ·
    폰 피시 공통"). 옛 펼침(종족마다 유닛·스킬·공방업 글 · MixLines)과 폰의 '펼치기 없음'은 걷었다. 승률 막대(시안 C)도 걷었다. */
 
@@ -29,11 +29,11 @@ const cycled = (keys: readonly StatSortKey[], rate: StatSortKey, plays: StatSort
   if (keys.includes(plays)) return keys.filter((x) => x !== plays);
   return [...keys, rate];
 };
-/** 머리 정렬 단추 — 고른 자는 머리 글자가 본문색으로 진해진다 · note 는 그 아래 작은 글(폰 전적 머리의 "승률" · "게임수"). */
-function SortHead({ on, onClick, note, children }: { on: boolean; onClick: () => void; note?: string; children: React.ReactNode }) {
+/** 머리 정렬 단추 — 고른 자는 머리 글자가 본문색으로 진해진다(폰 전적 머리 아래 "승률" · "게임수" 작은 글은 걷었다 · 2026-10-22, 요청: "굳이 헤더에 승률 전적 표시는 안 해도 돼"). */
+function SortHead({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button type="button" className={cx("scr-sg-sort", on && "is-on")} aria-pressed={on} onClick={onClick}>
-      {children}{note && <i className="scr-sg-sort-note">{note}</i>}
+      {children}
     </button>
   );
 }
@@ -224,9 +224,9 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
       ) : (
         <span className="scr-sg-help-list">
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
-          <span>종족 칸 — 그 종족으로 뛴 전적 · 승률</span>
+          <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>APM — 분당 행동 수 평균</span>
-          <span>머리(경기 · 승률 · APM · 데미지 · 종족별 전적 · 승률)를 누르면 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
+          <span>머리(게임수 · 승률 · APM · 데미지 · 종족별 게임수 · 승률)를 누르면 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
           <span>줄 끝 ▾ 를 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
         </span>
       )}
@@ -243,11 +243,10 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortK
   mobile: boolean;
 }) {
   const toggle = (k: StatSortKey) => ({ on: sortKeys.includes(k), onClick: () => onSortKeys(toggled(sortKeys, k)) });
-  /** 폰 전적 머리(전체 · 종족) — 승률 → 게임수 → 끔 · 켜진 쪽 이름을 머리 아래에 작게. */
-  const cycle = (rate: StatSortKey, plays: StatSortKey) => {
-    const which = sortKeys.includes(rate) ? "승률" : sortKeys.includes(plays) ? "게임수" : undefined;
-    return { on: which !== undefined, note: which, onClick: () => onSortKeys(cycled(sortKeys, rate, plays)) };
-  };
+  /** 폰 전적 머리(전체 · 종족) — 승률 → 게임수 → 끔. */
+  const cycle = (rate: StatSortKey, plays: StatSortKey) => ({
+    on: sortKeys.includes(rate) || sortKeys.includes(plays), onClick: () => onSortKeys(cycled(sortKeys, rate, plays)),
+  });
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace } : null;
   /* 펼친 곡선은 모든 줄이 한 자(눈금)를 쓴다(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이" → 인구 0~100). */
   const scale = curveScale([clanRow, ...rows].map((r) => r?.byRace));
@@ -270,17 +269,17 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortK
   }
   return (
     <div className="scr-sg" role="table" aria-label="통계">
-      {/* 머리는 두 줄 — 종족 이름이 [전적 | 승률] 두 칸을 덮고, 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
+      {/* 머리는 두 줄 — 종족 이름이 [게임수 | 승률] 두 칸을 덮고(PC 머리 "경기"·"전적" → "게임수" · 2026-10-22), 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
-        {([["경기", "plays"], ["승률", "rate"], ["APM", "apm"], ["데미지", "dmg"]] as const).map(([h, k]) => (
+        {([["게임수", "plays"], ["승률", "rate"], ["APM", "apm"], ["데미지", "dmg"]] as const).map(([h, k]) => (
           <span key={h} className="scr-sg-c scr-sg-h2"><SortHead {...toggle(k)}>{h}</SortHead></span>
         ))}
         {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hgroup">{r}</span>)}
         <span className="scr-sg-c scr-sg-h2" />
         {RACES.map((r) => (
           <Fragment key={r}>
-            <span className="scr-sg-c scr-sg-hsub"><SortHead {...toggle(`${r}:plays`)}>전적</SortHead></span>
+            <span className="scr-sg-c scr-sg-hsub"><SortHead {...toggle(`${r}:plays`)}>게임수</SortHead></span>
             <span className="scr-sg-c scr-sg-hsub"><SortHead {...toggle(`${r}:rate`)}>승률</SortHead></span>
           </Fragment>
         ))}

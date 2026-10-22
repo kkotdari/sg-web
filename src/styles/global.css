@@ -8078,9 +8078,6 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 머리 정렬 단추(StatGrid SortHead · 2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") — 머리 글자 그대로 · 고른 자는 본문색으로 진하게. */
 .scr-sg-sort { padding: 2px 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .scr-sg-sort.is-on { color: var(--text); font-weight: 800; }
-/* 폰 전적 머리 아래 켜진 쪽 이름("승률" · "게임수") — 승률 → 게임수 → 끔. */
-.scr-sg-sort { display: inline-flex; flex-direction: column; align-items: center; }
-.scr-sg-sort-note { font-style: normal; font-size: 9px; font-weight: 600; color: var(--text); line-height: 1.1; }
 @media (hover: hover) { .scr-sg-sort:hover { color: var(--text); } }
 /* 몸은 바탕 그대로(흰색 · 2026-10-22, 요청: "통계 그리드 색 흰색으로" — 옛 클랜원 전체 줄 0.035 · 펼침 0.025 덧칠 걷음) · 머리만 게임 목록 머리와 같은 0.06(바깥 테두리를 걷어 표의 시작을 말한다). */
 .scr-sg-head > .scr-sg-c { border-top: none; padding: 7px 8px; background: rgba(var(--overlay-rgb), 0.06); font-size: var(--fs-11); font-weight: 700; color: var(--dim); }
