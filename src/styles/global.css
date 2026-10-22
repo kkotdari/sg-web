@@ -8226,7 +8226,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-mrec { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .scr-sg-mrec > .scr-sg-v > b { font-weight: 600; }
 .scr-sg-mrec > .scr-sg-v:first-child > b { font-weight: 600; color: var(--text); } /* 전수도 본문색(승률과 같게 · 요청) */
-/* 폰 전적 칸 아래 "(N%)" · 클랜 "(N)" — 판수보다 작게(2026-10-22, 요청: "승률이 좀 작게"). */
+/* 폰 전적 칸 아래 승률 "(N)" · 클랜 경기 수 "(N)" — 판수보다 작게(2026-10-22, 요청: "승률이 좀 작게"). */
 .scr-sg-mrate { font-size: 10px; font-weight: 600; color: var(--muted); line-height: 1; }
 /* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름 · 머리마다 작은 뜻 풀이(scr-sg-hnote). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; flex-direction: column; gap: 2px; }

@@ -128,7 +128,7 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
   );
 }
 
-/** 폰 전적 칸 — 위 판수 "N" · 아래 작은 "(N%)"(2026-10-22, 요청: "모바일 통계 단위 제거하고 전적은 N / (N%) 승률이 좀 작게" — 머리에 "전적 게임수(승률)" 설명이 선다).
+/** 폰 전적 칸 — 위 판수 "N" · 아래 작은 "(N)" 승률(2026-10-22, 요청: "모바일 통계 단위 제거하고 전적은 N / (N%) 승률이 좀 작게" → "%도 제거" — 머리에 "전적 게임수(승률)" 설명이 선다).
  *  그 종족 판이 없으면 "-". 클랜원 전체의 전체 칸은 아래가 경기 수 "(N)"(내전이라 승률은 늘 반반). 옛: "N전" · 이름표 "승률" · "N%". */
 function MCell({ s, games, noRate }: { s?: MemberStats; games?: number; noRate?: boolean }) {
   if (!s || s.plays === 0) return <span className="scr-sg-c scr-sg-mrec"><Dash /></span>;
@@ -137,7 +137,7 @@ function MCell({ s, games, noRate }: { s?: MemberStats; games?: number; noRate?:
       <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b></span>
       {games !== undefined
         ? <span className="scr-sg-mrate">({games.toLocaleString()})</span>
-        : noRate ? <Dash /> : <span className="scr-sg-mrate">({s.winRate}%)</span>}
+        : noRate ? <Dash /> : <span className="scr-sg-mrate">({s.winRate})</span>}
     </span>
   );
 }
