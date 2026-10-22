@@ -629,6 +629,54 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   );
   const groupEls = <>{tabsEl}{tab === "sp" ? <>{spEl}{wkEl}</> : tab === "dmg" ? dmgEls : <>{rmEl}{rgEl}</>}</>;
 
+  /* 맨 위 고르기 — PC 전체화면 2열이면 왼쪽 열(건설 위) 반 폭에 선다(2026-10-22, 요청: "PC 전체화면 필터는 왼쪽 반 폭 공간에") · 아니면 판 맨 위 온 폭. */
+  const topEl = (
+    <>
+      {/* 맨 위 고르기(볼 사람 · 보기)는 창 위에 붙어 있는다(2026-10-22, 요청: "맨 위 필터는 고정되면 좋을 듯"). */}
+      <div className={cx("scr-gc-top", topHidden && "is-hidden")}>
+      <div className="scr-gc-users" aria-label="볼 사람">
+        <div className="scr-gc-uall">
+          {/* 고르기 줄 앞 라벨(2026-10-22, 요청: "필터에 라벨 추가 — 표시: 모두 선택 모두 해제 · 개인/팀별:") */}
+          <span className="scr-gc-flabel">표시:</span>
+          <button type="button" className="scr-compact-rect-btn is-secondary" disabled={hidden.size === 0} onClick={() => setHidden(new Set())}>모두 선택</button>
+          <button type="button" className="scr-compact-rect-btn is-secondary" disabled={shown.length === 0} onClick={() => { setHidden(new Set((players ?? []).map((p) => p.playerName))); setFocus(null); }}>모두 해제</button>
+        </div>
+        {/* 팀은 한 줄에 나란히(2026-10-22, 요청: "PC 에선 모든 팀을 수평으로 · 모바일도 폭 되면 그렇게") — 폭이 모자라면 다음 줄로. */}
+        <div className="scr-gc-uteams">
+        {userGroups.map((g) => (
+          <div key={g.t} className="scr-gc-ugroup">
+            {g.t > 0 && <span className="scr-gc-ulabel" style={{ color: TEAM_COLOR[g.t] }}>{g.t}팀</span>}
+            {g.ps.map((p) => (
+              <label key={p.playerName} className="scr-checkbox-field scr-gc-user">
+                <input type="checkbox" checked={!hidden.has(p.playerName)} onChange={() => toggleShown(p.playerName)} />
+                {/* 색 동그라미 안에 종족 글자(2026-10-22, 요청: "맨 위 필터에 유저 종족도 표시 — 닉네임 왼쪽에 동그라미 글자로" → "종족 동그라미 말고 색깔 동그라미를
+                    좀 확대하고 그 안에 글자") — 동그라미 = 그 선 색 · 글자 = 그 바탕 위 잉크(inkOn). */}
+                <i className="scr-gc-udot" style={{ background: colorOf(p), color: inkOn(colorOf(p)) }} title={p.race || undefined}>{RACE_LETTER[p.race] ?? ""}</i>
+                {nameOf(p)}
+              </label>
+            ))}
+          </div>
+        ))}
+        </div>
+      </div>
+      {teamGame && (
+        <div className="scr-rc-mode">
+          <span className="scr-gc-flabel" aria-hidden>개인/팀별:</span>
+          {/* 탭 꼴(2026-10-22, 요청: "여기에 탭 디자인 적용") — 게임 목록 · 통계 탭과 같은 .scr-line-tabs. */}
+          <div className="scr-line-tabs" role="tablist" aria-label="개인/팀별">
+            {VIEW_MODES.map(([m, label]) => (
+              <button
+                key={m} type="button" role="tab" aria-selected={mode === m}
+                className={cx("scr-line-tab-btn", mode === m && "is-on")}
+                onClick={() => { setView(m); setFocus(null); }}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+      )}
+      </div>
+    </>
+  );
   const panel = (
       <div className={cx("scr-modal scr-modal-graph", docked && "scr-gc-dock", full && "is-full")} ref={modalRef} onClick={(e) => e.stopPropagation()}>
         <div className="scr-modal-head">
@@ -649,52 +697,10 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
             <div className="scr-rc-empty scr-gc-wait">{error || "표시할 데이터가 아직 없어요 — 재분석하면 생겨요"}</div>
           ) : (
             <div className="scr-gc" ref={boxRef}>
-              {/* 맨 위 고르기(볼 사람 · 보기)는 창 위에 붙어 있는다(2026-10-22, 요청: "맨 위 필터는 고정되면 좋을 듯"). */}
-              <div className={cx("scr-gc-top", topHidden && "is-hidden")}>
-              <div className="scr-gc-users" aria-label="볼 사람">
-                <div className="scr-gc-uall">
-                  {/* 고르기 줄 앞 라벨(2026-10-22, 요청: "필터에 라벨 추가 — 표시: 모두 선택 모두 해제 · 개인/팀별:") */}
-                  <span className="scr-gc-flabel">표시:</span>
-                  <button type="button" className="scr-compact-rect-btn is-secondary" disabled={hidden.size === 0} onClick={() => setHidden(new Set())}>모두 선택</button>
-                  <button type="button" className="scr-compact-rect-btn is-secondary" disabled={shown.length === 0} onClick={() => { setHidden(new Set((players ?? []).map((p) => p.playerName))); setFocus(null); }}>모두 해제</button>
-                </div>
-                {/* 팀은 한 줄에 나란히(2026-10-22, 요청: "PC 에선 모든 팀을 수평으로 · 모바일도 폭 되면 그렇게") — 폭이 모자라면 다음 줄로. */}
-                <div className="scr-gc-uteams">
-                {userGroups.map((g) => (
-                  <div key={g.t} className="scr-gc-ugroup">
-                    {g.t > 0 && <span className="scr-gc-ulabel" style={{ color: TEAM_COLOR[g.t] }}>{g.t}팀</span>}
-                    {g.ps.map((p) => (
-                      <label key={p.playerName} className="scr-checkbox-field scr-gc-user">
-                        <input type="checkbox" checked={!hidden.has(p.playerName)} onChange={() => toggleShown(p.playerName)} />
-                        {/* 색 동그라미 안에 종족 글자(2026-10-22, 요청: "맨 위 필터에 유저 종족도 표시 — 닉네임 왼쪽에 동그라미 글자로" → "종족 동그라미 말고 색깔 동그라미를
-                            좀 확대하고 그 안에 글자") — 동그라미 = 그 선 색 · 글자 = 그 바탕 위 잉크(inkOn). */}
-                        <i className="scr-gc-udot" style={{ background: colorOf(p), color: inkOn(colorOf(p)) }} title={p.race || undefined}>{RACE_LETTER[p.race] ?? ""}</i>
-                        {nameOf(p)}
-                      </label>
-                    ))}
-                  </div>
-                ))}
-                </div>
-              </div>
-              {teamGame && (
-                <div className="scr-rc-mode">
-                  <span className="scr-gc-flabel" aria-hidden>개인/팀별:</span>
-                  {/* 탭 꼴(2026-10-22, 요청: "여기에 탭 디자인 적용") — 게임 목록 · 통계 탭과 같은 .scr-line-tabs. */}
-                  <div className="scr-line-tabs" role="tablist" aria-label="개인/팀별">
-                    {VIEW_MODES.map(([m, label]) => (
-                      <button
-                        key={m} type="button" role="tab" aria-selected={mode === m}
-                        className={cx("scr-line-tab-btn", mode === m && "is-on")}
-                        onClick={() => { setView(m); setFocus(null); }}
-                      >{label}</button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              </div>
+              {!twoCol && topEl}
               {box.w > 0 && (twoCol ? (
                 <div className="scr-gc-cols">
-                  <div className="scr-gc-col" style={{ width: colW }}>{lanesEl}</div>
+                  <div className="scr-gc-col" style={{ width: colW }}>{topEl}{lanesEl}</div>
                   <div className="scr-gc-col" style={{ width: colW }}>{groupEls}</div>
                 </div>
               ) : (
