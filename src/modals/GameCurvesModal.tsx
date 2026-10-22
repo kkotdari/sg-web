@@ -24,7 +24,11 @@ import type { GameCurve, GameResult } from "../types";
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
-type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg";
+type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "dd" | "dt";
+/** 인구 · 데미지 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환"). */
+type GroupTab = "sp" | "dmg";
+const GROUP_TABS: [GroupTab, string][] = [["sp", "인구"], ["dmg", "데미지"]];
+const cumsum = (a: readonly number[]): number[] => { let s = 0; return a.map((v) => (s += v)); };
 const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
@@ -499,6 +503,9 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 인구 그래프의 '일꾼 제외'(2026-10-21, 요청: "인구 그래프 타이틀 옆에 일꾼 제외 라벨드 토글") — 켜면 일꾼 뺀 인구(sx). */
   const [noWorker, setNoWorker] = useState(false);
   const spKey: CurveKey = noWorker ? "sx" : "sp";
+  const [tab, setTab] = useState<GroupTab>("sp");
+  /* 데미지는 누적이 기본 · '분당'을 켜면 그 앞 1분 동안의 몫(2026-10-22, 요청: "누적을 기본 · 분당으로 전환 가능"). */
+  const [dmgMin, setDmgMin] = useState(false);
   /* PC 건설 줄의 '테크 건물만'(2026-10-21, 요청: "테크 건물만 토글 넣고"). */
   const [techOnly, setTechOnly] = useState(false);
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
@@ -546,19 +553,22 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 그릴 줄 — 팀 보기면 팀마다 분별 합(그 팀에서 아직 선이 있는 사람만 더한다 · 길이는 그 팀에서 가장 긴 사람). */
   /* 자원 = 그 분에 쥔 미네랄(rm) · 가스(rg) — 판을 나눈다(PC · 2026-10-21, 요청: "자원 그래프 추가" → "미네랄 가스 분리"). */
   const series = useMemo((): ({ key: string; p: GameCurve | null; team: 1 | 2 } & Record<CurveKey, number[]>)[] => {
-    const ps = shown.map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg }));
+    const dm = (a: number[] | undefined): number[] => (dmgMin ? a ?? [] : cumsum(a ?? []));
+    const ps = shown.map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg, dd: dm(p.dd), dt: dm(p.dt) }));
     if (!teamOn) return ps.map((q) => ({ key: q.p.playerName, team: teamNo(q.p.team), ...q }));
     const sum = (ms: typeof ps, k: CurveKey): number[] =>
       Array.from({ length: Math.max(0, ...ms.map((q) => q[k].length)) }, (_, m) => ms.reduce((a, q) => a + (q[k][m] ?? 0), 0));
     return ([1, 2] as const).map((t) => {
       const ms = ps.filter((q) => teamNo(q.p.team) === t);
-      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg") };
+      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg"), dd: sum(ms, "dd"), dt: sum(ms, "dt") };
     });
-  }, [shown, teamOn]);
+  }, [shown, teamOn, dmgMin]);
   const sc = useMemo(() => {
     const x = Math.max(1, ...series.map((s) => Math.max(s.wk.length, s.sp.length) - 1));
     const ticks = (k: CurveKey): number[] => niceTicks(Math.max(0, ...series.flatMap((s) => s[k])));
-    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg") };
+    /* 준 · 입은 데미지는 한 자(둘 중 큰 쪽)를 같이 쓴다 — 두 판을 나란히 견준다. */
+    const dmg = niceTicks(Math.max(0, ...series.flatMap((s) => [...s.dd, ...s.dt])));
+    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg"), dd: dmg, dt: dmg };
   }, [series]);
   const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s) => (s[key].length < 2 ? [] : [s.p
     ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p), ys: s[key] }
@@ -587,8 +597,27 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       title={title} {...extra}
       lines={linesOf(k)} maxX={sc.x} maxY={sc[k][sc[k].length - 1]} ticksX={sc.xt} ticksY={sc[k]} width={colW} height={box.h} padL={PL} padR={mobile ? padR : undefined} focus={focus} onFocus={pickFocus} fs={font.label} axisFs={font.axis} padB={CHART_PAD.b + AXIS_DROP} at={at} onAt={setAt} />
   );
-  const spEl = chartOf(spKey, "인구", { titleExtra: <TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} /> });
+  /* 인구 탭의 인구 판 제목은 "전체"(2026-10-22, 요청: "인구 탭의 인구 헤더 타이틀을 전체로 변경"). */
+  const spEl = chartOf(spKey, "전체", { titleExtra: <TitleSwitch label="일꾼 제외" on={noWorker} onChange={setNoWorker} /> });
   const wkEl = chartOf("wk", "일꾼 수");
+  /* 데미지 탭(2026-10-22, 요청: "딜 피해 그래프") — 적에게 준 · 적에게 입은 체력+실드(유닛 + 건물 합). 팀별 합산이어도 두 판 다(같은 날 "팀별 합산이어도 각각").
+     옛 판(참값 판 13 아래)은 데이터가 없어 재분석하라는 글. */
+  const hasDmg = (players ?? []).some((p) => (p.dd?.length ?? 0) > 1);
+  const dmgNote = dmgMin ? "그 앞 1분 동안 · 체력+실드" : "누적 · 체력+실드";
+  const dmgEls = hasDmg ? (
+    <>
+      {chartOf("dd", "준 데미지", { note: dmgNote, titleExtra: <TitleSwitch label="분당" on={dmgMin} onChange={setDmgMin} /> })}
+      {chartOf("dt", "입은 데미지", { note: dmgNote })}
+    </>
+  ) : <div className="scr-rc-empty scr-gc-nodmg">데미지 데이터가 아직 없어요 — 재분석하면 생겨요</div>;
+  const tabsEl = (
+    <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label="인구 · 데미지">
+      {GROUP_TABS.map(([k, label]) => (
+        <button key={k} type="button" role="tab" aria-selected={tab === k} className={cx("scr-line-tab-btn", tab === k && "is-on")} onClick={() => setTab(k)}>{label}</button>
+      ))}
+    </div>
+  );
+  const groupEls = <>{tabsEl}{tab === "sp" ? <>{spEl}{wkEl}</> : dmgEls}</>;
   const rmEl = !mobile && chartOf("rm", "미네랄", { note: "그때 쥔 양" });
   const rgEl = !mobile && chartOf("rg", "가스", { note: "그때 쥔 양" });
 
@@ -658,10 +687,10 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
               {box.w > 0 && (twoCol ? (
                 <div className="scr-gc-cols">
                   <div className="scr-gc-col" style={{ width: colW }}>{lanesEl}</div>
-                  <div className="scr-gc-col" style={{ width: colW }}>{rmEl}{rgEl}{spEl}{wkEl}</div>
+                  <div className="scr-gc-col" style={{ width: colW }}>{rmEl}{rgEl}{groupEls}</div>
                 </div>
               ) : (
-                <>{lanesEl}{spEl}{wkEl}{rmEl}{rgEl}</>
+                <>{lanesEl}{groupEls}{rmEl}{rgEl}</>
               ))}
             </div>
           )}

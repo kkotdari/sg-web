@@ -3301,6 +3301,10 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc-cols { display: flex; gap: 40px; align-items: flex-start; }
 .scr-gc-col { flex: none; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .scr-rc-mode { display: flex; gap: 4px; }
+/* 인구 · 데미지 탭(2026-10-22) — 판 무리 머리. 판 사이 가는 줄을 탭 위로 올리고 바로 아래 판은 줄 없이 붙인다. */
+.scr-gc > .scr-gc-tabs, .scr-gc-col > .scr-gc-tabs { align-self: flex-start; padding-top: 14px; border-top: 1px solid var(--line-faint); margin-bottom: -12px; width: 100%; }
+.scr-gc > .scr-gc-tabs + .scr-rc-chart, .scr-gc-col > .scr-gc-tabs + .scr-rc-chart, .scr-gc-tabs + .scr-rc-empty { border-top: 0; padding-top: 0; }
+.scr-gc-nodmg { padding: 40px 0; }
 /* 볼 사람 고르기(2026-10-21) — 팀마다 한 줄 · 앞에 팀 이름(팀색) · 이름 앞 작은 색 점(그 선 색). */
 .scr-gc-users { display: flex; flex-direction: column; gap: 6px; }
 .scr-gc-uall { display: flex; align-items: center; gap: 6px; }
