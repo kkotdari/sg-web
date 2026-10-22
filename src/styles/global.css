@@ -1258,6 +1258,11 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-sort-tabs > .scr-line-tab-btn::after { left: 5px; right: 5px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child { padding-left: 2px; }
 .scr-stats-sort-tabs > .scr-line-tab-btn:first-child::after { left: 0; }
+/* 여러 자 정렬의 차례 번호(2026-10-22 · ClanStatsScreen sortKeys). */
+.scr-stats-sort-no {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 13px; height: 13px; margin-right: 3px; padding: 0 3px;
+  border-radius: 7px; background: var(--point); color: #fff; font-size: 9px; font-weight: 700; line-height: 1; vertical-align: 1px;
+}
 
 .scr-stat-cards { display: flex; flex-direction: column; }
 /* .scr-statcard 는 **클랜 전체의 두 장**(종족구성별 전적 · 클랜원 전체)이고, .scr-stat-person 은 개인 줄이다 — 개인 줄은 더는 카드로

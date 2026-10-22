@@ -97,7 +97,12 @@ export default function ClanStatsScreen() {
   const [teamBuilder, setTeamBuilder] = useState(false);
   /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
   const [expandAll, setExpandAll] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("rate");
+  /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 탭을 누르면 끝에 붙고, 고른 탭을 누르면 빠진다(하나는 남는다).
+     탭에 차례 번호(둘 이상일 때). 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
+  const [sortKeys, setSortKeys] = useState<SortKey[]>(["rate"]);
+  const toggleSort = (k: SortKey): void => setSortKeys((prev) => (prev.includes(k)
+    ? (prev.length > 1 ? prev.filter((x) => x !== k) : prev)
+    : [...prev, k]));
   const matchedMembers = useMemo(() => {
     const terms = users.map((u) => normalizeSearchText(u).trim()).filter(Boolean);
     return activeMembers.filter((m) => terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t)));
@@ -246,9 +251,9 @@ export default function ClanStatsScreen() {
         case "cmd": return noAvgLast(a, b, "avgCmd") || dirSign * ((a.stats.avgCmd ?? 0) - (b.stats.avgCmd ?? 0));
       }
     };
-    /** 고른 자를 맨 앞에 두고, 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드)로 가린다. */
+    /** 고른 자들(누른 차례)을 맨 앞에 두고, 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드)로 가린다. */
     const BASE_ORDER: DataKey[] = ["plays", "rate", "apm", "cmd"];
-    const DATA_ORDER: DataKey[] = [sortKey, ...BASE_ORDER.filter((k) => k !== sortKey)];
+    const DATA_ORDER: DataKey[] = [...sortKeys, ...BASE_ORDER.filter((k) => !(sortKeys as DataKey[]).includes(k))];
     sorted.sort((a, b) => {
       for (const key of DATA_ORDER) {
         const c = compareData(key, a, b);
@@ -257,7 +262,7 @@ export default function ClanStatsScreen() {
       return nicknameTiebreak(a, b);
     });
     return sorted;
-  }, [viewMembers, view, sortKey]);
+  }, [viewMembers, view, sortKeys]);
 
 
   return (
@@ -340,16 +345,20 @@ export default function ClanStatsScreen() {
 
       <div className="scr-stats-sort">
         <div className="scr-line-tabs scr-stats-sort-tabs" role="tablist" aria-label="정렬 순서">
-          {SORT_OPTS.map((o) => (
-            <button
-              key={o.value} type="button" role="tab"
-              aria-selected={o.value === sortKey}
-              className={cx("scr-line-tab-btn", o.value === sortKey && "is-on")}
-              onClick={() => setSortKey(o.value)}
-            >
-              {o.label}
-            </button>
-          ))}
+          {SORT_OPTS.map((o) => {
+            const at = sortKeys.indexOf(o.value);
+            return (
+              <button
+                key={o.value} type="button" role="tab"
+                aria-selected={at >= 0}
+                className={cx("scr-line-tab-btn", at >= 0 && "is-on")}
+                onClick={() => toggleSort(o.value)}
+              >
+                {sortKeys.length > 1 && at >= 0 && <span className="scr-stats-sort-no">{at + 1}</span>}
+                {o.label}
+              </button>
+            );
+          })}
         </div>
         {/* 폰 줄 누름 힌트 — 표 밖, 정렬 탭 줄 오른끝(2026-10-20, 요청: "힌트 위치 그리드 외부 위"). */}
         {isMobile && <span className="scr-sg-hint">행을 눌러서 그래프 보기</span>}
