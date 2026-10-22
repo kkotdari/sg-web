@@ -337,7 +337,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
               const segs: [number, number, boolean][] = [[b.s, built9, true], ...(end > built9 ? [[built9, end, false] as [number, number, boolean]] : [])];
               /* 짓다가 사라짐(취소·파괴) = ✕ 대신 반투명 딤(2026-10-22, 요청: "취소는 x 대신 반투명 딤 처리") — 칩·선 통째로(.is-cut). */
               const cut9 = b.d === null && b.e !== null;
-              const show = (): void => { setHover(b); setHoverKind(b.t); onAt((b.d ?? b.s) / 60); };
+              /* 얹어도 세로 시간축은 안 옮긴다(2026-10-22, 요청: "강조 시 자동으로 세로 시간축이 그 건물 처음으로 이동하지 않게" · 옛: 완공(못 지었으면 착공) 때로). */
+              const show = (): void => { setHover(b); setHoverKind(b.t); };
               return (
                 <g
                   key={`${b.s}:${b.t}:${k}`} className={cx("scr-bl-hit", hover === b && "is-hl", cut9 && "is-cut")}
@@ -375,7 +376,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
         {at !== null && (
           <text className="scr-rc-at" x={x(at * 60)} y={H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>
-            {hover ? clock(hover.d ?? hover.s) : `${Math.round(at)}분`}
+            {`${Math.round(at)}분`}
           </text>
         )}
       </svg>

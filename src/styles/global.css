@@ -3326,8 +3326,9 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-bl-chip.is-morph { fill: rgba(var(--overlay-rgb), 0.06); }   /* 테두리 실선(2026-10-22, 요청: "변태한 건물 점선 말고 실선으로" · 옛 점선) */
 .scr-bl-hit.is-cut, .scr-bl-hit .is-cut { opacity: 0.38; }   /* 짓다 사라짐 · 변태 취소 · 못 지은 애드온 = 반투명 딤(같은 날 "취소는 x 대신 반투명 딤 처리" · 옛 ✕) */
 .scr-bl-hit.is-hl .scr-bl-chip { stroke: var(--text); }
-.scr-bl-chip.is-hl { fill: var(--lighting-accent, var(--point)); fill-opacity: 0.3; stroke: var(--lighting-accent, var(--point)); }   /* 같은 종류 강조 = 강조색(폰 테크 칩 .scr-tl-chip.is-hl 과 같은 색 · 2026-10-22) */
-html:not(.scr-light-theme) .scr-bl-chip.is-hl { fill-opacity: 0.85; }
+/* 같은 종류 강조 = 강조색(폰 테크 칩 .scr-tl-chip.is-hl 과 같은 색 · 2026-10-22) — **불투명**(같은 날 "강조 시 뒤 안 보이게 불투명") — 반투명 강조색을 칩 바탕에 미리 섞어 칠한다. */
+.scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 30%, var(--panel-raised, var(--panel))); fill-opacity: 1; stroke: var(--lighting-accent, var(--point)); }
+html:not(.scr-light-theme) .scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 85%, var(--panel-raised, var(--panel))); }
 .scr-bl-hit { cursor: default; }
 .scr-bl-morph { fill: var(--dim); }
 .scr-bl-hit.is-hl > .scr-bl-live { stroke: var(--text); }
