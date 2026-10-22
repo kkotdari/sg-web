@@ -1,9 +1,9 @@
 import type { ScreenKey } from "../types";
 
-export type ActivityGroupKey = "notice" | "schedule" | "league" | "call" | "gameResult";
+export type ActivityGroupKey = "notice" | "schedule" | "league" | "gameResult";
 
 export const GROUP_SEG: Record<ActivityGroupKey, string> = {
-  notice: "notices", schedule: "schedules", league: "league", call: "calls", gameResult: "games",
+  notice: "notices", schedule: "schedules", league: "league", gameResult: "games",
 };
 const SEG_GROUP: Record<string, ActivityGroupKey> = Object.fromEntries(
   (Object.entries(GROUP_SEG) as [ActivityGroupKey, string][]).map(([k, v]) => [v, k]),

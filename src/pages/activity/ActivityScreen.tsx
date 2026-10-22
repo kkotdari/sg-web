@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { CalendarPlus, Phone, Upload } from "lucide-react";
+import { CalendarPlus, Upload } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import ReplayReviewModal from "../../modals/ReplayReviewModal";
-import ChallengeFormModal from "../../modals/ChallengeFormModal";
 import ScheduleFormModal from "../../modals/ScheduleFormModal";
 import { focusFirstLineOnOpen } from "./ScheduleCard";
 import { SCENE_LINK_KEYS9 } from "scplay";
@@ -42,7 +41,7 @@ const MAX_REPLAY_FILES = 20;
 
 /* ★ 활동 화면 = **주소로 고르는 라우터**(2026-10-19, 요청: "활동과 일정 너나와 리그 게임 목록과 상세등 모두 컴포넌트 분리").
    주소(/ · /schedules · /schedules/7 · /games/123 …)가 곧 화면이고, 화면마다 제 컴포넌트다 — 홈(ActivityHome) · 묶음 목록(ActivityGroupPage) ·
-   상세(ActivityDetailPage: 일정·너 나와!·리그) · 게임 상세(GameDetailPage). 피드(목록 데이터)는 FeedProvider 가 들고 목록 화면만 구독한다 —
+   상세(ActivityDetailPage: 일정·리그) · 게임 상세(GameDetailPage). 피드(목록 데이터)는 FeedProvider 가 들고 목록 화면만 구독한다 —
    상세는 제 항목을 제 상태로 들어, 목록이 바뀌어도(다시 받기·다른 카드 저장) 상세는 다시 그려지지 않는다. 라우터는 피드를 구독하지 않는다. */
 
 type View =
@@ -99,7 +98,7 @@ function ActivityRouter() {
 
   const openGroup = (key: ActivityGroupKey): void => {
     homeScrollRef.current = window.scrollY;
-    // 게임 탭(tab)은 게임 전체 보기에만 넘긴다(2026-10-20 · App.tsx 같은 요청) — 일정·너 나와! 묶음엔 쓸모가 없다.
+    // 게임 탭(tab)은 게임 전체 보기에만 넘긴다(2026-10-20 · App.tsx 같은 요청) — 일정 묶음엔 쓸모가 없다.
     go(pathOf({ screen: "activity", group: key }), { search: linkParams(key === "gameResult" ? ["u", "q"] : ["u", "q", "tab"]) });
     pushedGroupRef.current = true;
     void api.pingAccess(GROUP_SCREEN_CODE[key]);
@@ -240,14 +239,12 @@ function ActivityRouter() {
   const [parsingReplays, setParsingReplays] = useState(false);
   const [reviewDrafts, setReviewDrafts] = useState<ReplayDraft[] | null>(null);
   const pendingNoticeRef = useRef<{ text: string; kind: "success" | "error" } | null>(null);
-  const [challengeFormOpen, setChallengeFormOpen] = useState(false);
   const [scheduleFormOpen, setScheduleFormOpen] = useState(false);
   const [error, setError] = useState("");
   const directAdd: (() => void) | null =
     groupKey === "gameResult" ? () => replayInputRef.current?.click()
-      : groupKey === "call" ? () => setChallengeFormOpen(true)
-        : groupKey === "schedule" ? () => setScheduleFormOpen(true)
-          : null;
+      : groupKey === "schedule" ? () => setScheduleFormOpen(true)
+        : null;
 
   const handleReplayFilesChosen = async (e: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
@@ -306,18 +303,15 @@ function ActivityRouter() {
     setBulkProgress({ done: 0, total: items.length });
     const { done, failed } = await runBatch(items, async (it) => {
       if (it.kind === "gameResult") await api.deleteGameResult(it.gameResult.id);
-      else if (it.kind === "challenge") await api.deleteChallenge(it.challenge.id);
       else if (it.kind === "schedule") await api.deleteSchedule(it.schedule.id);
     }, { onProgress: (n) => setBulkProgress({ done: n, total: items.length }) });
     if (done.length > 0) {
       const gameIds = new Set(done.flatMap((it) => (it.kind === "gameResult" ? [it.gameResult.id] : [])));
-      const challengeIds = new Set(done.flatMap((it) => (it.kind === "challenge" ? [it.challenge.id] : [])));
       const scheduleIds = new Set(done.flatMap((it) => (it.kind === "schedule" ? [it.schedule.id] : [])));
       feed.patch((prev) => prev
         .map((it) => (it.gameResults.some((g) => gameIds.has(g.id))
           ? { ...it, gameResults: it.gameResults.filter((g) => !gameIds.has(g.id)) }
           : it))
-        .filter((it) => !(it.challenge && challengeIds.has(it.challenge.id)))
         .filter((it) => !(it.schedule && scheduleIds.has(it.schedule.id)))
         .filter((it) => it.kind !== "gameResultPost" || it.gameResults.length > 0));
       setGroupRefreshKey((k) => k + 1);
@@ -449,12 +443,6 @@ function ActivityRouter() {
               </button>
               <button
                 type="button" role="menuitem"
-                onClick={() => { setAddMenuOpen(false); setChallengeFormOpen(true); }}
-              >
-                <Phone size={14} aria-hidden /> 너 나와! 등록
-              </button>
-              <button
-                type="button" role="menuitem"
                 onClick={() => { setAddMenuOpen(false); setScheduleFormOpen(true); }}
               >
                 <CalendarPlus size={14} aria-hidden /> 일정 등록
@@ -496,13 +484,6 @@ function ActivityRouter() {
           error={bulkErr}
           onConfirm={() => { if (!bulkProgress) void runBulkHide(bulkHide); }}
           onCancel={() => { if (!bulkProgress) { setBulkHide(null); setBulkErr(null); } }}
-        />
-      )}
-
-      {challengeFormOpen && (
-        <ChallengeFormModal
-          onClose={() => setChallengeFormOpen(false)}
-          onCreated={(c) => { feed.upsertChallenge(c); setChallengeFormOpen(false); }}
         />
       )}
 

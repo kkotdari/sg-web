@@ -155,7 +155,7 @@ export interface RankingShift {
 }
 
 export type ActivityTargetType =
-  | "gameResult" | "challenge" | "rankingShift" | "leagueMatch" | "schedule" | "notice";
+  | "gameResult" | "rankingShift" | "leagueMatch" | "schedule" | "notice";
 export interface ActivityComment {
   id: number;
   targetType: ActivityTargetType;
@@ -389,60 +389,6 @@ export interface AppVersionStatus {
 export interface AppVersionInfo {
   number: AppVersion;
   notes: string;
-}
-
-export type ChallengeMatchType = "0101" | "0102";
-export type ChallengeTargetResponse = "pending" | "accepted" | "rejected" | "discarded";
-export type ChallengeStatus = "pending" | "confirmed" | "done" | "discarded";
-export type ChallengeSide = "creator" | "target";
-export type ChallengeResult = "creator" | "target" | "draw" | "not_held";
-
-export interface ChallengeTarget {
-  memberId: string;
-  nickname: string;
-  battletag: string;
-  avatar: string | null;
-  response: ChallengeTargetResponse;
-  responseMessage: string;
-}
-
-export interface ChallengeOwnMember {
-  memberId: string;
-  nickname: string;
-  battletag: string;
-  avatar: string | null;
-}
-
-export interface Challenge {
-  id: number;
-  matchType: ChallengeMatchType;
-  message: string;
-  scheduledAt: string | null;
-  scheduledDate: string | null;
-  scheduledTimeNote: string;
-  status: ChallengeStatus;
-  createdBy: { id: string; nickname: string; avatar: string | null };
-  targets: ChallengeTarget[];
-  ownMembers: ChallengeOwnMember[];
-  createdAt: string;
-  updatedAt: string;
-  discardedAt: string | null;
-  canceledBy: { id: string; nickname: string; avatar: string | null } | null;
-  resultWinnerSide: ChallengeResult | null;
-  backdropUrl: string | null;
-  backdropShareUrl: string | null;
-  backdropShareWidth: number | null;
-  backdropShareHeight: number | null;
-}
-
-export interface ChallengeCreatePayload {
-  scheduledDate?: string | null;
-  scheduledTimeNote?: string;
-  message?: string;
-  targetMemberIds: string[];
-  ownTeamMemberIds?: string[];
-  backdrop?: string | null;
-  backdropShare?: string | null;
 }
 
 export type PeriodPreset = "all" | "today" | "week" | "month" | "year" | "custom";
@@ -693,8 +639,7 @@ export interface ActivityNotice {
 
 export interface ActivityFeedItem {
   key: string;
-  kind: "challenge" | "gameResultPost" | "leagueMatch" | "schedule" | "notice";
-  challenge?: Challenge | null;
+  kind: "gameResultPost" | "leagueMatch" | "schedule" | "notice";
   gameResults: GameResult[];
   leagueMatch?: LeagueMatchActivity | null;
   schedule?: Schedule | null;

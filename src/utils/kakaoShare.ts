@@ -53,8 +53,6 @@ export function preloadKakao(): void {
 const SHARE_THUMB_W = 1200;
 const SHARE_THUMB_H = 600;
 const SHARE_THUMBS = {
-  challengeCall: "share_thumb_challenge_call.png",
-  challengeReply: "share_thumb_challenge_reply.png",
   gameResultList: "share_thumb_game_result_list.png",
   gameResult: "share_thumb_game_result.png",
   rankShift: "share_thumb_rank_shift.png",
@@ -84,18 +82,6 @@ export function shareThumb(kind: ShareThumbKind, photo?: SharePhoto | null): {
     imageUrl: shareThumbUrl(kind),
     imageWidth: SHARE_THUMB_W,
     imageHeight: SHARE_THUMB_H,
-  };
-}
-
-export function challengePhoto(challenge: {
-  backdropShareUrl: string | null;
-  backdropShareWidth: number | null;
-  backdropShareHeight: number | null;
-}): SharePhoto {
-  return {
-    url: challenge.backdropShareUrl,
-    width: challenge.backdropShareWidth,
-    height: challenge.backdropShareHeight,
   };
 }
 

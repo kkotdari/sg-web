@@ -4,7 +4,7 @@ import { versionNumber } from "../utils/appVersion";
 import { parseRoute } from "../utils/route";
 import type {
   Member, GameResult, NewGameResult, MemberCreatePayload, MemberStatus, MemberRole, AppVersion,
-  AppVersionInfo, Challenge, ScreenKey,
+  AppVersionInfo, ScreenKey,
 } from "../types";
 
 export interface UpdateNotice {
@@ -71,10 +71,6 @@ interface AppState {
   justLoggedIn: boolean;
   clearJustLoggedIn: () => void;
   viewingMemberId: string | null;
-  inboxChallenges: Challenge[];
-  dismissInboxChallenges: () => void;
-  resultInboxChallenges: Challenge[];
-  dismissResultInboxChallenges: () => void;
   updateNotice: UpdateNotice | null;
   dismissUpdateNotice: () => void;
 
@@ -132,10 +128,6 @@ export const useAppStore = create<AppState>()((set, get) => ({
   viewingMemberId: null,
   justLoggedIn: false,
   clearJustLoggedIn: () => set({ justLoggedIn: false }),
-  inboxChallenges: [],
-  dismissInboxChallenges: () => set({ inboxChallenges: [] }),
-  resultInboxChallenges: [],
-  dismissResultInboxChallenges: () => set({ resultInboxChallenges: [] }),
   updateNotice: null,
   dismissUpdateNotice: () => set({ updateNotice: null }),
 
@@ -167,18 +159,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
     try {
       const [
         members, { activeVersion, noticeEnabled }, appVersions, earliestGameResultDate,
-        { items: inboxChallenges }, { items: resultInboxChallenges },
       ] = await Promise.all([
         api.getMembers(),
         api.getAppVersion(),
         api.getAppVersions(),
         api.getEarliestGameResultDate(),
-        api.getPendingChallengesForMe(),
-        api.getResultPendingChallengesForMe(),
       ]);
       set({
         members, appVersion: activeVersion, appVersions, noticeEnabled, earliestGameResultDate,
-        inboxChallenges, resultInboxChallenges,
         updateNotice: computeUpdateNotice(activeVersion, noticeEnabled, appVersions),
       });
     } finally {

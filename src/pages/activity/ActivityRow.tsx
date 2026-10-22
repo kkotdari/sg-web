@@ -5,12 +5,11 @@ import { cx } from "../../utils/format";
 import { formatAgo } from "../../utils/date";
 import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
-import { challengeStatusInfo } from "../challenge/ChallengeScreen";
 import { GameRowNames, GameRowStatus, ListRow } from "./GameRow";
 import { GameTableRow, UnhideRequestButton } from "./GameTable";
 import { commentStatOf, subscribeComments } from "./ActivityComments";
 import {
-  ROW_VOID, STATUS_FADED, commentTargetOf, nameNodes, namesWithRest, rowFlagsOf, rowKeyOf, type DisplayItem,
+  commentTargetOf, namesWithRest, rowFlagsOf, rowKeyOf, type DisplayItem,
 } from "./activityItems";
 import type { GameResult, Member } from "../../types";
 
@@ -47,14 +46,7 @@ function rowStatusOf(item: DisplayItem) {
     );
   }
   if (item.kind === "gameResult") return <GameRowStatus game={item.gameResult} data play={gamePlayable(item.gameResult)} />;
-  if (item.kind !== "challenge") return null;
-  const s = challengeStatusInfo(item.challenge);
-  const text = s.text === "대기중" ? "대기" : s.text;
-  return (
-    <span className={cx("scr-activity-row-status", STATUS_FADED.has(text) && "scr-activity-row-status-faded")}>
-      {text}
-    </span>
-  );
+  return null;
 }
 
 /** 게임 줄 이름 — 맵 이름이 늦게 오면(맵 받기) 이 줄만 다시 그린다. */
@@ -64,22 +56,6 @@ function GameNames({ game, memberOf, mobile }: { game: GameResult; memberOf: Row
 }
 
 function rowDesc(item: DisplayItem, view: RowView) {
-  if (item.kind === "challenge") {
-    const c = item.challenge;
-    const mine = [c.createdBy.nickname, ...c.ownMembers.map((m) => m.nickname)];
-    const theirs = c.targets.map((t) => t.nickname);
-    return (
-      <>
-        <span className="scr-activity-row-name">
-          <span className="scr-activity-row-name-main">{nameNodes(mine)}</span>
-        </span>
-        <span className="scr-activity-row-arrow" aria-hidden>→</span>
-        <span className="scr-activity-row-name">
-          <span className="scr-activity-row-name-main">{nameNodes(theirs)}</span>
-        </span>
-      </>
-    );
-  }
   if (item.kind === "leagueMatch") {
     const m = item.match;
     const sideText = (t: typeof m.teamA) => (
@@ -136,7 +112,6 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
   const key = rowKeyOf(item);
   const { isMobile, selecting, selMode } = view;
   const secret = item.kind === "gameResult" && isSecretGame(item.gameResult);
-  const voided = item.kind === "challenge" && ROW_VOID.has(challengeStatusInfo(item.challenge).text);
   const check = selecting && (
     <RowCheck
       checked={picked} disabled={!pickable}
@@ -171,7 +146,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
       picked={picked}
       className={cx(
         item.kind === "gameResult" && "scr-activity-row-game scr-gm",
-        voided && "scr-activity-row-void", secret && "scr-activity-row-secret",
+        secret && "scr-activity-row-secret",
       )}
       disabled={secret && !(isMobile && selMode)}
       onClick={() => {
@@ -202,7 +177,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
           {flag === "new" ? "NEW" : "UPDATE"}
         </span>
       )}
-      side={item.kind === "challenge" && item.undated ? "미정" : formatAgo(item.time)}
+      side={formatAgo(item.time)}
     />
   );
 });

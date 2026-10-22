@@ -5,7 +5,6 @@ import type { GameCurve,
   GameResultSlot, GameResultPage, GameResultStatsResponse, GameOutcome, GameType, Race, TeamRankingResponse,
   RatingHistoryResponse, RivalryPair,
   ReplayNameClassificationEntry, ReplayNameKind, ReplayNameMappingEntry, ReplayNameMappingKind,
-  Challenge, ChallengeCreatePayload, ChallengeResult,
   League, LeagueListItem, LeagueCreatePayload, LeagueUpdatePayload,
   LeagueMatchSide, LeagueMatchSet, LeaguePoolKind, LeagueTeamCompositionEntry,
   Schedule, ScheduleWrite,
@@ -606,14 +605,6 @@ export const api = {
     await request<void>(`/api/schedules/${id}`, { method: "DELETE" });
   },
 
-  async deleteChallenge(id: number): Promise<void> {
-    await request<void>(`/api/challenges/${id}`, { method: "DELETE" });
-  },
-
-  async cancelChallenge(id: number): Promise<Challenge> {
-    return request<Challenge>(`/api/challenges/${id}/cancel`, { method: "POST" });
-  },
-
   async listActivityComments(targetType: ActivityTargetType, targetId: number): Promise<ActivityComment[]> {
     return request<ActivityComment[]>(`/api/activities/comments?targetType=${targetType}&targetId=${targetId}`);
   },
@@ -832,53 +823,6 @@ export const api = {
       body: JSON.stringify({ password }),
     });
     return res.ok;
-  },
-
-  async getChallenges(): Promise<{ items: Challenge[] }> {
-    return request<{ items: Challenge[] }>("/api/challenges");
-  },
-
-  async getPendingChallengesForMe(): Promise<{ items: Challenge[] }> {
-    return request<{ items: Challenge[] }>("/api/challenges/pending-for-me");
-  },
-
-  async getResultPendingChallengesForMe(): Promise<{ items: Challenge[] }> {
-    return request<{ items: Challenge[] }>("/api/challenges/result-pending-for-me");
-  },
-
-  async createChallenge(payload: ChallengeCreatePayload): Promise<Challenge> {
-    return request<Challenge>("/api/challenges", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-  },
-
-  async respondToChallenge(
-    id: number, response: "accepted" | "rejected",
-    schedule?: { scheduledDate?: string | null; scheduledTimeNote?: string }, message?: string,
-  ): Promise<Challenge> {
-    return request<Challenge>(`/api/challenges/${id}/respond`, {
-      method: "POST",
-      body: JSON.stringify({ response, ...schedule, message }),
-    });
-  },
-
-  async rescheduleChallenge(
-    id: number, scheduledDate: string | null, scheduledTimeNote: string,
-  ): Promise<Challenge> {
-    return request<Challenge>(`/api/challenges/${id}/schedule`, {
-      method: "PATCH",
-      body: JSON.stringify({ scheduledDate, scheduledTimeNote }),
-    });
-  },
-
-  async enterChallengeResult(
-    id: number, winnerSide: ChallengeResult, scheduledDate: string,
-  ): Promise<Challenge> {
-    return request<Challenge>(`/api/challenges/${id}/result`, {
-      method: "POST",
-      body: JSON.stringify({ winnerSide, scheduledDate }),
-    });
   },
 
   async getLeagues(): Promise<LeagueListItem[]> {

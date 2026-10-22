@@ -2,23 +2,12 @@ import { type ReactNode } from "react";
 import { cx } from "../../utils/format";
 import { serverMs } from "../../utils/date";
 import { parseRoute, type ActivityGroupKey } from "../../utils/route";
-import type { Challenge, ActivityTargetType, GameResult, LeagueMatchActivity, Member, RankingShift, Schedule } from "../../types";
+import type { ActivityTargetType, GameResult, LeagueMatchActivity, Member, RankingShift, Schedule } from "../../types";
 
 /* 활동 화면들(홈·묶음 목록·상세·게임 상세)이 함께 쓰는 항목 꼴과 셈 — 2026-10-19 화면을 컴포넌트로 나누며 ActivityScreen 에서 옮겼다. */
 
 export const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
-export const STATUS_FADED = new Set(["거절", "버림", "만료", "취소", "미실시", "완료"]);
-export const ROW_VOID = new Set(["거절", "버림", "만료", "취소", "미실시"]);
 export const TOUCHED_SLACK_MS = 5000;
-
-export interface ChallengeItem {
-  kind: "challenge";
-  time: number;
-  withClock: boolean;
-  sortTime: number;
-  undated: boolean;
-  challenge: Challenge;
-}
 
 export interface GameResultItem {
   kind: "gameResult";
@@ -50,46 +39,12 @@ export interface ScheduleItem {
 }
 
 export type ActivityItem =
-  | ChallengeItem | GameResultItem | RankingShiftItem | LeagueMatchItem | ScheduleItem;
+  | GameResultItem | RankingShiftItem | LeagueMatchItem | ScheduleItem;
 
 export type DisplayItem = ActivityItem;
 
 export function sortMsOf(it: ActivityItem): number {
-  return it.kind === "challenge" || it.kind === "schedule" ? it.sortTime : it.time;
-}
-
-export function challengeItem(c: Challenge): ChallengeItem {
-  const ended = c.status === "discarded" && c.discardedAt;
-  const iso = c.scheduledAt ?? (ended ? c.discardedAt! : c.createdAt);
-  return {
-    kind: "challenge",
-    time: serverMs(iso),
-    withClock: false,
-    sortTime: challengeSortMs(c),
-    undated: !c.scheduledDate && !ended,
-    challenge: c,
-  };
-}
-
-export function isUpcomingChallenge(it: { kind: string; challenge?: Challenge }): boolean {
-  return it.kind === "challenge"
-    && (it.challenge!.status === "pending" || it.challenge!.status === "confirmed");
-}
-
-const UNDATED_SORT_BASE = 4e15;
-
-function challengeSortMs(c: Challenge): number {
-  const base = serverMs(c.scheduledAt ?? c.createdAt);
-  if (c.status === "pending" || c.status === "confirmed") {
-    if (!c.scheduledDate) return UNDATED_SORT_BASE + serverMs(c.createdAt);
-    const endOfDay = new Date(`${c.scheduledDate}T23:59:59`).getTime();
-    return Math.max(endOfDay, Date.now() + 1);
-  }
-  if (!c.scheduledDate) {
-    if (c.status === "discarded" && c.discardedAt) return serverMs(c.discardedAt);
-    return base;
-  }
-  return new Date(`${c.scheduledDate}T00:00:00`).getTime() + SESSION_DAY_START_HOUR * 3600_000;
+  return it.kind === "schedule" ? it.sortTime : it.time;
 }
 
 export function scheduleItem(s: Schedule): ScheduleItem {
@@ -131,16 +86,14 @@ export function sessionDateOf(it: GameResultItem): string {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 export function detailIdOf(it: DisplayItem): number | null {
-  return it.kind === "challenge" ? it.challenge.id
-    : it.kind === "schedule" ? it.schedule.id
+  return it.kind === "schedule" ? it.schedule.id
       : it.kind === "rankingShift" ? it.shift.id
         : it.kind === "leagueMatch" ? it.match.id
           : null;
 }
 
 export function detailGroupOf(it: DisplayItem): ActivityGroupKey | null {
-  return it.kind === "challenge" ? "call"
-    : it.kind === "schedule" ? "schedule"
+  return it.kind === "schedule" ? "schedule"
       : it.kind === "rankingShift" ? "notice"
         : it.kind === "leagueMatch" ? "league"
           : null;
@@ -150,7 +103,6 @@ export const GROUP_ITEM_KIND: Record<ActivityGroupKey, string> = {
   notice: "rankingShift",
   schedule: "schedule",
   league: "leagueMatch",
-  call: "challenge",
   gameResult: "gameResult",
 };
 
@@ -160,23 +112,21 @@ export function gameParamOf(): string | null {
 }
 
 export function commentTargetOf(it: DisplayItem): { type: ActivityTargetType; id: number } {
-  return it.kind === "challenge" ? { type: "challenge", id: it.challenge.id }
-    : it.kind === "schedule" ? { type: "schedule", id: it.schedule.id }
+  return it.kind === "schedule" ? { type: "schedule", id: it.schedule.id }
       : it.kind === "rankingShift" ? { type: "rankingShift", id: it.shift.id }
         : it.kind === "leagueMatch" ? { type: "leagueMatch", id: it.match.id }
           : { type: "gameResult", id: it.gameResult.id };
 }
 
 export function rowKeyOf(it: DisplayItem): string {
-  return it.kind === "challenge" ? `c-${it.challenge.id}`
-    : it.kind === "rankingShift" ? `rs-${it.shift.id}`
+  return it.kind === "rankingShift" ? `rs-${it.shift.id}`
       : it.kind === "leagueMatch" ? `lm-${it.match.id}`
         : it.kind === "schedule" ? `sc-${it.schedule.id}`
           : `m-${it.gameResult.id}`;
 }
 
 export function deletableOf(it: DisplayItem): boolean {
-  return it.kind === "gameResult" || it.kind === "challenge" || it.kind === "schedule";
+  return it.kind === "gameResult" || it.kind === "schedule";
 }
 
 export function bulkDeleteMessageOf(items: DisplayItem[]): string {
@@ -184,7 +134,7 @@ export function bulkDeleteMessageOf(items: DisplayItem[]): string {
   const others = items.length - games;
   const parts: string[] = [];
   if (games > 0) parts.push(`게임 ${games}개는 목록·통계에서 사라지고, 운영자가 제어판의 '삭제된 경기'에서 복원할 수 있어요.`);
-  if (others > 0) parts.push(`너 나와·일정 ${others}개는 되돌릴 수 없어요.`);
+  if (others > 0) parts.push(`일정 ${others}개는 되돌릴 수 없어요.`);
   return parts.join(" ");
 }
 
@@ -211,10 +161,6 @@ export function namesWithRest(names: string[]): ReactNode {
   );
 }
 
-export function rowPhoto(item: DisplayItem): string | null {
-  return item.kind === "challenge" ? item.challenge.backdropUrl : null;
-}
-
 export function sessionDateLabel(date: string): string {
   const [, m, d] = date.split("-");
   return `${Number(m)}월 ${Number(d)}일`;
@@ -224,7 +170,6 @@ export function sessionDateLabel(date: string): string {
 export const GROUP_DEFS: { key: ActivityGroupKey; label: string }[] = [
   { key: "schedule", label: "일정" },
   { key: "league", label: "리그" },
-  { key: "call", label: "너 나와!" },
   { key: "gameResult", label: "게임" },
 ];
 
@@ -232,13 +177,11 @@ export const GROUP_SCREEN_CODE: Record<ActivityGroupKey, string> = {
   notice: "activity_notice",
   schedule: "activity_schedule",
   league: "activity_league",
-  call: "activity_call",
   gameResult: "activity_game",
 };
 
 export function groupKeyOf(item: ActivityItem): ActivityGroupKey {
   return item.kind === "gameResult" ? "gameResult"
-    : item.kind === "challenge" ? "call"
     : item.kind === "leagueMatch" ? "league"
     : item.kind === "schedule" ? "schedule"
     : "notice";
@@ -249,7 +192,7 @@ const GAME_PREVIEW_MAX = 10;
 export const previewMaxOf = (k: ActivityGroupKey): number =>
   (k === "gameResult" ? GAME_PREVIEW_MAX : GROUP_PREVIEW_MAX);
 
-export const SEARCHABLE_GROUPS = new Set<ActivityGroupKey>(["league", "call", "gameResult"]);
+export const SEARCHABLE_GROUPS = new Set<ActivityGroupKey>(["league", "gameResult"]);
 
 /* ★ 내전·공방은 **서버가 실어 준 clan** 으로 가른다(2026-10-12, 지적: "활동 화면과 게임 목록에서 내전·공방 목록이 달라 — 원래 공방에 있던 게 내전에") — 비공개(숨긴) 판은
    팀을 비워 내려와 옛 셈(슬롯 전원이 회원)이 빈 목록에서 늘 참이라 공방 판이 내전 탭에 들었다. 게임 목록(서버 membersOnly)과 같은 셈이다. 옛 서버(clan 없음)만 슬롯으로 잰다. */
@@ -297,9 +240,6 @@ export const dateLabelOf = (item: { time: number }): string => {
 };
 
 export function touchMsOf(it: DisplayItem): number {
-  if (it.kind === "challenge") {
-    return Math.max(serverMs(it.challenge.createdAt), serverMs(it.challenge.updatedAt));
-  }
   if (it.kind === "leagueMatch") {
     return Math.max(serverMs(it.match.postedAt), serverMs(it.match.updatedAt));
   }
@@ -313,14 +253,6 @@ export function touchMsOf(it: DisplayItem): number {
 export function rowFlagsOf(it: DisplayItem): ("new" | "update")[] {
   const now = Date.now();
   const fresh = (ms: number) => now - ms >= 0 && now - ms <= NEW_WINDOW_MS;
-  if (it.kind === "challenge") {
-    const created = serverMs(it.challenge.createdAt);
-    const updated = serverMs(it.challenge.updatedAt);
-    const flags: ("new" | "update")[] = [];
-    if (fresh(created)) flags.push("new");
-    if (updated - created > TOUCHED_SLACK_MS && fresh(updated)) flags.push("update");
-    return flags;
-  }
   if (it.kind === "leagueMatch") {
     const posted = serverMs(it.match.postedAt);
     const updated = serverMs(it.match.updatedAt);

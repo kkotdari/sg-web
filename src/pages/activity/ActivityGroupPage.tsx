@@ -14,7 +14,7 @@ import { api } from "../../api/client";
 import { useUrlState } from "../../hooks/useUrlState";
 import type { Selection } from "../../hooks/useSelection";
 import { takeListScroll, type ActivityGroupKey } from "../../utils/route";
-import type { Challenge, GameResultSlot, Member } from "../../types";
+import type { GameResultSlot, Member } from "../../types";
 import { GameTableHead } from "./GameTable";
 import { cx } from "../../utils/format";
 import { ActivityRow, rowPropsOf, useRowClock, type RowAct, type RowView } from "./ActivityRow";
@@ -24,8 +24,8 @@ import {
   type ActivityItem, type DisplayItem, type GameTab,
 } from "./activityItems";
 
-/* ★ 묶음 목록(일정·너 나와!·게임) — 2026-10-19 ActivityScreen 에서 뗐다(요청: "…목록과 상세등 모두 컴포넌트 분리").
-   일정·너 나와!는 피드에서 제 묶음을 고르고, 게임은 서버 쪽수(아래)로 받는다. 줄은 memo(ActivityRow). */
+/* ★ 묶음 목록(일정·게임) — 2026-10-19 ActivityScreen 에서 뗐다(요청: "…목록과 상세등 모두 컴포넌트 분리").
+   일정은 피드에서 제 묶음을 고르고, 게임은 서버 쪽수(아래)로 받는다. 줄은 memo(ActivityRow). */
 
 /* ★ 선택 막대 단추 = **스크랩 · 숨김 · 삭제**(2026-10-14, 요청: "게임 목록 선택 모드에 스크랩/숨김/삭제로 버튼 변경 · 버튼 모양 둥근 네모 컴팩트") —
    알약(.scr-pill-btn) → 컴팩트 네모(.scr-compact-rect-btn). 스크랩은 고른 게임마다 **처음(0초) 장면 스크랩**을 하나씩 담는다(재생 화면의 장면 스크랩과
@@ -218,12 +218,6 @@ export default memo(function ActivityGroupPage({
     if (m && memberMatchesTerm(m, term)) return true;
     return !!slot.rawName && normalizeSearchText(slot.rawName).includes(term);
   };
-  const challengeMatchesTerm = (c: Challenge, term: string): boolean => {
-    const names = [c.createdBy.nickname, ...c.ownMembers.map((m) => m.nickname), ...c.targets.map((t) => t.nickname)];
-    if (names.some((n) => normalizeSearchText(n).includes(term))) return true;
-    const ids = [c.createdBy.id, ...c.ownMembers.map((m) => m.memberId), ...c.targets.map((t) => t.memberId)];
-    return ids.some((id) => { const m = memberOf(id); return !!m && memberMatchesTerm(m, term); });
-  };
 
   const serverSearch = groupKey === "gameResult";
   const base = serverGames ? serverGames.items
@@ -235,9 +229,6 @@ export default memo(function ActivityGroupPage({
       if (item.kind === "gameResult") {
         const slots = [...item.gameResult.team1, ...item.gameResult.team2];
         return searchTerms.every((term) => slots.some((slot) => slotMatchesTerm(slot, term)));
-      }
-      if (item.kind === "challenge") {
-        return searchTerms.every((term) => challengeMatchesTerm(item.challenge, term));
       }
       if (item.kind === "leagueMatch") {
         const names = [item.match.teamA, item.match.teamB]

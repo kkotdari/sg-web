@@ -24,8 +24,6 @@ import AdminPanelScreen from "./pages/admin/AdminPanelScreen";
 import MapCanonScreen from "./pages/minimaps/MapCanonScreen";
 import GuideScreen from "./pages/guide/GuideScreen";
 import ScrapScreen from "./pages/scraps/ScrapScreen";
-import ChallengeInboxModal from "./modals/ChallengeInboxModal";
-import ChallengeResultInboxModal from "./modals/ChallengeResultInboxModal";
 import AppUpdateNoticeModal from "./modals/AppUpdateNoticeModal";
 import AppReloadModal from "./modals/AppReloadModal";
 import ActivityScreen from "./pages/activity/ActivityScreen";
@@ -34,7 +32,6 @@ import ClanStatsScreen from "./pages/v2/ClanStatsScreen";
 import SharePage, { type ShareTarget } from "./pages/share/SharePage";
 import CatalogScreen from "./pages/catalog/CatalogScreen";
 import GuestApp from "./pages/guest/GuestApp";
-import ShareLoginGate from "./pages/share/ShareLoginGate";
 
 import type { ScreenKey } from "./types";
 
@@ -46,8 +43,7 @@ function shareTargetFromUrl(): ShareTarget | null {
   const params = new URLSearchParams(window.location.search);
   const sv = params.get("sv");
   const id = Number(params.get("sid"));
-  if ((sv === "gameResult" || sv === "challenge" || sv === "challengeReply" || sv === "rankingShift"
-    || sv === "schedule")
+  if ((sv === "gameResult" || sv === "rankingShift" || sv === "schedule")
     && Number.isFinite(id) && id > 0) {
     return { type: sv, id };
   }
@@ -92,10 +88,6 @@ export default function App() {
   const closeMemberProfile = useAppStore((s) => s.closeMemberProfile);
   const memberOf = useAppStore((s) => s.memberOf);
   const viewingMember = viewingMemberId ? memberOf(viewingMemberId) : undefined;
-  const inboxChallenges = useAppStore((s) => s.inboxChallenges);
-  const dismissInboxChallenges = useAppStore((s) => s.dismissInboxChallenges);
-  const resultInboxChallenges = useAppStore((s) => s.resultInboxChallenges);
-  const dismissResultInboxChallenges = useAppStore((s) => s.dismissResultInboxChallenges);
   const updateNotice = useAppStore((s) => s.updateNotice);
   const appVersion = useAppStore((s) => s.appVersion);
   const dismissUpdateNotice = useAppStore((s) => s.dismissUpdateNotice);
@@ -241,14 +233,6 @@ export default function App() {
 
   if (!user) {
     if (guest && !shareTarget) return <GuestApp />;
-    if (shareTarget?.type === "challenge") {
-      return (
-            <div className="scr-app scr-app-fallback-scroll" id="scr-app">
-            <InAppBrowserNotice compact />
-            <ShareLoginGate />
-          </div>
-        );
-    }
     return (
         <div className="scr-app scr-app-fallback-scroll" id="scr-app">
           <InAppBrowserNotice compact={shareLanding} />
@@ -314,12 +298,6 @@ export default function App() {
         {updateNotice && <AppUpdateNoticeModal notes={updateNotice.notes} onClose={dismissUpdateNotice} />}
         {staleVersion && bootVersion.current && (
           <AppReloadModal from={bootVersion.current} to={staleVersion} />
-        )}
-        {inboxChallenges.length > 0 && (
-          <ChallengeInboxModal challenges={inboxChallenges} onClose={dismissInboxChallenges} />
-        )}
-        {inboxChallenges.length === 0 && resultInboxChallenges.length > 0 && (
-          <ChallengeResultInboxModal challenges={resultInboxChallenges} onClose={dismissResultInboxChallenges} />
         )}
         {!booting && <ScrollTopButton />}
         <ToastHost />
