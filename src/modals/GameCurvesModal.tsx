@@ -605,10 +605,18 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 데미지 탭(2026-10-22, 요청: "딜 피해 그래프") — 적에게 준 · 적에게 입은 체력+실드(유닛 + 건물 합). 팀별 합산이어도 두 판 다(같은 날 "팀별 합산이어도 각각").
      옛 판(참값 판 13 아래)은 데이터가 없어 재분석하라는 글. */
   const hasDmg = (players ?? []).some((p) => (p.dd?.length ?? 0) > 1);
-  const dmgNote = dmgMin ? "그 앞 1분 동안 · 체력+실드" : "누적 · 체력+실드";
+  const dmgNote = "체력+실드";
+  /* 누적 · 분당은 작은 탭(2026-10-22, 요청: "분당 누적도 작은 탭으로" · 옛 '분당' 스위치). */
+  const dmgModeEl = (
+    <span className="scr-line-tabs scr-gc-minitabs" role="tablist" aria-label="누적 · 분당">
+      {([[false, "누적"], [true, "분당"]] as const).map(([v, label]) => (
+        <button key={label} type="button" role="tab" aria-selected={dmgMin === v} className={cx("scr-line-tab-btn", dmgMin === v && "is-on")} onClick={() => setDmgMin(v)}>{label}</button>
+      ))}
+    </span>
+  );
   const dmgEls = hasDmg ? (
     <>
-      {chartOf("dd", "준 데미지", { note: dmgNote, titleExtra: <TitleSwitch label="분당" on={dmgMin} onChange={setDmgMin} /> })}
+      {chartOf("dd", "준 데미지", { note: dmgNote, titleExtra: dmgModeEl })}
       {chartOf("dt", "입은 데미지", { note: dmgNote })}
     </>
   ) : <div className="scr-rc-empty scr-gc-nodmg">데미지 데이터가 아직 없어요 — 재분석하면 생겨요</div>;
