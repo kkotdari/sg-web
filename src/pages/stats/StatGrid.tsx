@@ -184,12 +184,13 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
   );
 }
 
-/** 폰 통계 표 도움말(2026-10-22, 요청: "도움말 · 헤더 설명 다 제거하고 '행 누르면…' 자리에 도움말 아이콘 단추 · 툴팁에 표 모양과 설명") — 말풍선에 한 줄짜리 표 그림과 풀이. */
-export function StatHelp() {
+/** 통계 표 도움말(2026-10-22, 요청: "도움말 · 헤더 설명 다 제거하고 '행 누르면…' 자리에 도움말 아이콘 단추 · 툴팁에 표 모양과 설명" → "PC 에도 알아서") —
+ *  폰은 말풍선에 한 줄짜리 표 그림(칸에 이름표가 없어서)과 풀이 · PC 는 칸 머리가 다 적혀 있어 그림 없이 데미지 뜻과 펼치기만 푼다. */
+export function StatHelp({ mobile }: { mobile: boolean }) {
   return (
     <InfoTip
       label="통계 표" size={16} triggerClassName="scr-infotip scr-sg-help-btn" bubbleClassName="scr-sg-help"
-      text={(
+      text={mobile ? (
         <>
           <span className="scr-sg-help-mock" aria-hidden>
             <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">전체</span><span className="scr-sg-help-h">테란</span>
@@ -203,6 +204,13 @@ export function StatHelp() {
             <span>행을 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
           </span>
         </>
+      ) : (
+        <span className="scr-sg-help-list">
+          <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
+          <span>종족 칸 — 그 종족으로 뛴 전적 · 승률</span>
+          <span>APM — 분당 행동 수 평균</span>
+          <span>줄 끝 ▾ 를 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
+        </span>
       )}
     />
   );

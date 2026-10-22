@@ -316,7 +316,7 @@ export default function ClanStatsScreen() {
       {/* 검색창과 명수 자리 바꿈(2026-10-20, 요청: "통계의 명수와 검색창 위치 바꾸기") — 검색창이 맵 탭 바로 아래(옛 명수 자리) · 명수와 "전부 펼치기"는
           정렬 줄 바로 위(옛 검색창 자리)로. 종족구성별 전적은 그대로 검색창 아래다. */}
       <div className="scr-stats-search">
-        <ChipInput values={users} onChange={setUsers} options={userOpts} placeholder="조회할 유저 닉네임" />
+        <ChipInput values={users} onChange={setUsers} options={userOpts} placeholder="유저 닉네임" />
       </div>
       {/* 종족구성별 전적은 한 규모(4:4 · 3:3 · 2:2)를 골랐을 때만(2026-10-20, 요청: "팀전 전체에서 종족구성별 전적 숨기기") — 1:1 엔 구성이 없다.
           클랜원 전체는 아래 표(StatGrid)의 맨 윗줄로 옮겼다(2026-10-20). */}
@@ -363,8 +363,8 @@ export default function ClanStatsScreen() {
             );
           })}
         </div>
-        {/* 폰 표 도움말 단추 — 정렬 줄 오른끝(옛 "행을 눌러서 그래프 보기" 글 자리 · 2026-10-22, 요청: "도움말과 헤더 설명 다 제거하고 그 자리에 도움말 아이콘 단추"). */}
-        {isMobile && <StatHelp />}
+        {/* 표 도움말 단추 — 정렬 줄 오른끝(옛 폰 "행을 눌러서 그래프 보기" 글 자리 · 2026-10-22, 요청: "도움말과 헤더 설명 다 제거하고 그 자리에 도움말 아이콘 단추" → "PC 에도 알아서"). */}
+        <StatHelp mobile={isMobile} />
       </div>
 
       {error && <div className="scr-err">{error}</div>}
