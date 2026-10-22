@@ -561,6 +561,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
               <div className="scr-gc-top">
               <div className="scr-gc-users" aria-label="볼 사람">
                 <div className="scr-gc-uall">
+                  {/* 고르기 줄 앞 라벨(2026-10-22, 요청: "필터에 라벨 추가 — 표시: 모두 선택 모두 해제 · 개인/팀별:") */}
+                  <span className="scr-gc-flabel">표시:</span>
                   <button type="button" className="scr-compact-rect-btn is-secondary" disabled={hidden.size === 0} onClick={() => setHidden(new Set())}>모두 선택</button>
                   <button type="button" className="scr-compact-rect-btn is-secondary" disabled={shown.length === 0} onClick={() => { setHidden(new Set((players ?? []).map((p) => p.playerName))); setFocus(null); }}>모두 해제</button>
                 </div>
@@ -583,7 +585,8 @@ export default function GameCurvesModal({ game, onClose }: { game: GameResult; o
                 </div>
               </div>
               {teamGame && (
-                <div className="scr-rc-mode" role="radiogroup" aria-label="보기">
+                <div className="scr-rc-mode" role="radiogroup" aria-label="개인/팀별">
+                  <span className="scr-gc-flabel" aria-hidden>개인/팀별:</span>
                   {VIEW_MODES.map(([m, label]) => (
                     <button
                       key={m} type="button" role="radio" aria-checked={mode === m}
