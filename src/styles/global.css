@@ -8106,7 +8106,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 }
 .scr-sg-name-plain { cursor: default; }
 .scr-sg-v { display: inline-flex; align-items: baseline; gap: 2px; font-variant-numeric: tabular-nums; }
-.scr-sg-v > b { font-weight: 700; }
+.scr-sg-v > b { font-weight: 400; }   /* 데이터 숫자는 굵지 않게(2026-10-22, 요청: "데이터 글자 두껍게 x" · 옛 700) */
 .scr-sg-v > i, .scr-sg-dmg > i { font-style: normal; font-size: var(--fs-10); font-weight: 600; color: var(--dim); }
 .scr-sg-paren { margin-left: 3px; }
 .scr-sg-dim { color: var(--dim); opacity: 0.7; }
@@ -8115,7 +8115,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-bar > span { display: block; height: 100%; border-radius: 2px; }
 .scr-sg-race { gap: 8px; }
 .scr-sg-dmg { display: inline-flex; align-items: baseline; gap: 2px; font-variant-numeric: tabular-nums; }
-.scr-sg-dmg > b { font-weight: 700; }
+.scr-sg-dmg > b { font-weight: 400; }
 .scr-sg-dmg > b.is-dealt { color: var(--win, #16a34a); }
 .scr-sg-dmg > b.is-taken { color: var(--loss, #dc2626); }
 .scr-sg-dmg > .scr-sg-dim { margin: 0 2px; }
@@ -8185,18 +8185,16 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-name { font-size: 13px; min-width: 5em; flex: 1 1 0; contain: inline-size; }   /* 5em = 굵은 한글 다섯(실측 65px) · 긴 이름이 칸을 넓히지 않게 제 폭은 0(contain) — 칸 최소 폭은 이 5em 이 정한다 */
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 20px !important; height: 20px !important; }
 /* APM · 데미지 칸 — 숫자만(12px · tabular) · 데미지는 초록 딜 위 · 빨강 피해 아래. */
-.scr-sg.is-m .scr-sg-mnum { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.scr-sg.is-m .scr-sg-mnum { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; }
 .scr-sg.is-m .scr-sg-mnum > .scr-sg-dmg { flex-direction: column; align-items: center; gap: 3px; }
-.scr-sg.is-m .scr-sg-dmg > b { font-weight: 600; }
 /* 표 머리는 PC·폰 모두 칸 가운데(2026-10-20, 요청: "통계 그리드 헤더 가운데 정렬"). */
 .scr-sg .scr-sg-row.scr-sg-head > .scr-sg-c { justify-content: center; text-align: center; padding-left: 8px; padding-right: 8px; }
 .scr-sg.is-m .scr-sg-row.scr-sg-head > .scr-sg-c.scr-sg-race-head { padding-left: 2px; padding-right: 2px; }
 /* 폰 전적 칸 — 위 "N전" · 아래 승률(가운데). */
 .scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-mrec { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
-.scr-sg-mrec > .scr-sg-v > b { font-weight: 600; }
-.scr-sg-mrec > .scr-sg-v:first-child > b { font-weight: 600; color: var(--text); } /* 전수도 본문색(승률과 같게 · 요청) */
+.scr-sg-mrec > .scr-sg-v:first-child > b { color: var(--text); } /* 전수도 본문색(승률과 같게 · 요청) */
 /* 폰 전적 칸 아래 승률 · 클랜 경기 수 — 판수보다 작게(괄호 없음)(2026-10-22, 요청: "승률이 좀 작게"). */
-.scr-sg-mrate { font-size: 10px; font-weight: 500; color: var(--dim); opacity: 0.85; line-height: 1; }   /* 괄호 없이 더 옅게(2026-10-22, 요청: "승률 괄호 제거하고 연하게") */
+.scr-sg-mrate { font-size: 10px; font-weight: 400; color: var(--dim); opacity: 0.85; line-height: 1; }   /* 괄호 없이 더 옅게(2026-10-22, 요청: "승률 괄호 제거하고 연하게") */
 /* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름. 뜻 풀이는 도움말 말풍선(.scr-sg-help). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; }
 /* 폰 표 도움말(StatHelp · 2026-10-22) — 정렬 줄 오른끝 단추 · 말풍선에 한 줄짜리 표 그림(.scr-sg-help-mock)과 풀이 목록. */
@@ -8211,7 +8209,8 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg-help-h { background: rgba(var(--overlay-rgb), 0.06); font-weight: 700; color: var(--dim); border-bottom: 1px solid var(--line-faint); }
 .scr-sg-help-mock > span:nth-child(5) { border-left: none; }
 .scr-sg-help-who { align-items: flex-start !important; gap: 2px; }
-.scr-sg-help-who b, .scr-sg-help-rec b { font-weight: 700; color: var(--text); }
+.scr-sg-help-who b { font-weight: 700; color: var(--text); }
+.scr-sg-help-rec b { font-weight: 400; color: var(--text); }   /* 표 숫자처럼 굵지 않게 */
 .scr-sg-help-rec > i, .scr-sg-help-list i { font-style: normal; font-size: 10px; color: var(--dim); }
 .scr-sg-help b.is-dealt { color: var(--win, #16a34a); }
 .scr-sg-help b.is-taken { color: var(--loss, #dc2626); }
