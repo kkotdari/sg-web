@@ -15,8 +15,8 @@ import type { BaseRace, Member, MemberStats } from "../../types";
    폰 피시 공통"). 옛 펼침(종족마다 유닛·스킬·공방업 글 · MixLines)과 폰의 '펼치기 없음'은 걷었다. 승률 막대(시안 C)도 걷었다. */
 
 const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
-/** 맨 윗줄 이름 — "클랜평균"(2026-10-22, 요청: "클랜원 전체 → 네 글자로 · 클랜평균으로 바꾸자" · 폰 닉네임 칸 다섯 글자 안에 든다). */
-const CLAN_LABEL = "클랜평균";
+/** 맨 윗줄 이름 — "평균"(2026-10-22, 요청: "클랜원 전체 → 클랜평균으로 바꾸자" → "클랜평균은 평균으로 변경"). */
+const CLAN_LABEL = "평균";
 /** 정렬 자 — 표 머리를 눌러 고른다(2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추" → "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개").
  *  APM · 데미지 · 전체(rate · plays) · 종족별("테란:rate" · "테란:plays" …). */
 export type StatSortKey = "rate" | "plays" | "dmg" | "apm" | `${BaseRace}:rate` | `${BaseRace}:plays`;
