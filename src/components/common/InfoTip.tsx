@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Info } from "lucide-react";
 import { swallowNextClick } from "../../utils/bodyScrollLock";
@@ -8,8 +8,9 @@ let closeOpenTip: (() => void) | null = null;
 const EDGE = 8;
 
 export default function InfoTip(
-  { text, label, size = 12, trigger, triggerClassName }:
-  { text: string; label?: string; size?: number; trigger?: string; triggerClassName?: string },
+  { text, label, size = 12, trigger, triggerClassName, bubbleClassName }:
+  /** text — 글 한 줄이거나 그림이 든 덩이(통계 표 도움말 · 2026-10-22). bubbleClassName — 그런 덩이의 말풍선 폭·여백. */
+  { text: ReactNode; label?: string; size?: number; trigger?: string; triggerClassName?: string; bubbleClassName?: string },
 ) {
   const [pos, setPos] = useState<{ top: number; left: number; anchorTop: number } | null>(null);
   const ref = useRef<HTMLSpanElement>(null);
@@ -77,7 +78,7 @@ export default function InfoTip(
       {open && pos && createPortal(
         <span
           ref={bubbleRef}
-          className="scr-infotip-bubble"
+          className={bubbleClassName ? `scr-infotip-bubble ${bubbleClassName}` : "scr-infotip-bubble"}
           role="tooltip"
           style={{ top: pos.top, left: pos.left }}
           onClick={(e) => e.stopPropagation()}

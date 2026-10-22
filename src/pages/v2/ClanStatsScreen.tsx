@@ -6,7 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { currentMonthValue, fmt, monthInputToRange, todayStr } from "../../utils/date";
-import StatGrid, { CompGrid } from "../stats/StatGrid";
+import StatGrid, { CompGrid, StatHelp } from "../stats/StatGrid";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -345,7 +345,7 @@ export default function ClanStatsScreen() {
       )}
 
       <div className="scr-stats-sort">
-        <span className="scr-stats-sort-label">정렬 (복수선택)</span>
+        <span className="scr-stats-sort-label">정렬</span>
         <div className="scr-line-tabs scr-stats-sort-tabs" role="tablist" aria-label="정렬 순서">
           {SORT_OPTS.map((o) => {
             const at = sortKeys.indexOf(o.value);
@@ -363,8 +363,8 @@ export default function ClanStatsScreen() {
             );
           })}
         </div>
-        {/* 폰 줄 누름 힌트 — 표 밖, 정렬 탭 줄 오른끝(2026-10-20, 요청: "힌트 위치 그리드 외부 위"). */}
-        {isMobile && <span className="scr-sg-hint">행을 눌러서 그래프 보기</span>}
+        {/* 폰 표 도움말 단추 — 정렬 줄 오른끝(옛 "행을 눌러서 그래프 보기" 글 자리 · 2026-10-22, 요청: "도움말과 헤더 설명 다 제거하고 그 자리에 도움말 아이콘 단추"). */}
+        {isMobile && <StatHelp />}
       </div>
 
       {error && <div className="scr-err">{error}</div>}

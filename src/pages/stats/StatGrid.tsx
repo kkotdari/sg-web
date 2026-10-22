@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
+import InfoTip from "../../components/common/InfoTip";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
 import RaceCurves, { curveScale, GRAPH_FS, type CurveScale } from "./RaceCurves";
@@ -41,7 +42,7 @@ function Rate({ s }: { s?: MemberStats }) {
 function Dmg({ s, compact }: { s: MemberStats; compact?: boolean }) {
   const d = s.dmgDealtRel, t = s.dmgTakenRel;
   if (typeof d !== "number" || typeof t !== "number") return <Dash />; // 폰도 "데미지 -"(이름표만 덩그러니 남지 않게)
-  /* 폰은 칸이 좁아 배수만 — 이름표("딜" · "피해")도 없이 초록 딜 · 빨강 피해 숫자 둘(2026-10-22, 요청: "딜 피해 라벨 제거" — 뜻은 머리 풀이가 같은 색으로 말한다).
+  /* 폰은 칸이 좁아 배수만 — 이름표("딜" · "피해")도 없이 초록 딜 · 빨강 피해 숫자 둘(2026-10-22, 요청: "딜 피해 라벨 제거" — 뜻은 도움말 StatHelp 가 같은 색으로 말한다).
      옛: "딜 1.4 피해 0.8"(2026-10-20). */
   if (compact) {
     return (
@@ -183,6 +184,30 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
   );
 }
 
+/** 폰 통계 표 도움말(2026-10-22, 요청: "도움말 · 헤더 설명 다 제거하고 '행 누르면…' 자리에 도움말 아이콘 단추 · 툴팁에 표 모양과 설명") — 말풍선에 한 줄짜리 표 그림과 풀이. */
+export function StatHelp() {
+  return (
+    <InfoTip
+      label="통계 표" size={16} triggerClassName="scr-infotip scr-sg-help-btn" bubbleClassName="scr-sg-help"
+      text={(
+        <>
+          <span className="scr-sg-help-mock" aria-hidden>
+            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">전체</span><span className="scr-sg-help-h">테란</span>
+            <span className="scr-sg-help-who"><b>닉네임</b><span>APM <b>230</b> <b className="is-dealt">1.4</b> <b className="is-taken">0.8</b></span></span>
+            <span className="scr-sg-help-rec"><b>68</b><i>54</i></span><span className="scr-sg-help-rec"><b>40</b><i>42</i></span>
+          </span>
+          <span className="scr-sg-help-list">
+            <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
+            <span><b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해 — 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
+            <span>APM — 분당 행동 수 평균</span>
+            <span>행을 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
+          </span>
+        </>
+      )}
+    />
+  );
+}
+
 export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>> } | null;
@@ -197,10 +222,10 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   if (mobile) {
     return (
       <div className="scr-sg is-m" role="table" aria-label="통계">
-        {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 아래에 "딜·피해" 뜻 · 전적은 전체·종족 넷을 덮는 머리에 "게임수(승률)"(2026-10-22, 요청: "단위 대신 헤더에 간단 설명"). */}
+        {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 · 전적은 전체·종족 넷을 덮는다. 뜻 풀이는 정렬 줄의 도움말 단추(StatHelp)로 옮겼다(2026-10-22, 요청: "헤더 설명 다 제거 · 도움말 아이콘 툴팁에 표 모양과 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
-          <span className="scr-sg-c scr-sg-who scr-sg-h2">유저<i className="scr-sg-hnote"><span className="is-dealt">딜</span>·<span className="is-taken">피해</span>: 평균 데미지 대비 비율</i></span>
-          <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적<i className="scr-sg-hnote">게임수(승률)</i></span>
+          <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
+          <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
           {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head">{r}</span>)}
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} openAll={openAll} scale={scale} />}
