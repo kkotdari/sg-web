@@ -6083,7 +6083,9 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 .scr-story-mid {
   flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px;
   min-width: 0;
+  align-self: center;   /* vs · 승패 배지는 로스터 칸의 세로 가운데(2026-10-22, 지적: "로스터랑 vs랑 승패 배지랑 줄이 안 맞음(세로)" — 옛: 위에 붙고 7px 내림 · 로스터 가운데보다 4~6px 위) */
 }
+.scr-story-mid > .scr-challenge-arrow-row { margin-top: 0; margin-bottom: 0; }
 @media (min-width: 961px) {
   .scr-activity-detail-modal { --scr-detail-pad-x: 8px; }
 }
@@ -6094,7 +6096,7 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
   .scr-activity-detail-full .scr-activity-card-head { display: none; }
 }
 @media (min-width: 961px) {
-  .scr-story-mid .scr-challenge-arrow-row { gap: 8px; margin-bottom: 2px; }
+  .scr-story-mid .scr-challenge-arrow-row { gap: 8px; }
   .scr-story-mid .scr-challenge-arrow { width: 23px; height: 23px; }
   .scr-story-mid .scr-challenge-arrow-vs { font-size: 16px; }
   .scr-story-mid .scr-challenge-inline-win { width: 23px; height: 23px; font-size: 16px; }

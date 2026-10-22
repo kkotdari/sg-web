@@ -14,7 +14,6 @@ import { cleanMapName } from "../../utils/mapName";
 import { parseRoute } from "../../utils/route";
 import { cx } from "../../utils/format";
 import { hasComputerSlot, truthMissing } from "../../utils/gamePlayable";
-import { showToast } from "../../components/common/Toast";
 import { normalizeSearchText } from "../../utils/memberSearch";
 import type { GameResult, GameResultSlot, Member } from "../../types";
 
@@ -108,10 +107,6 @@ export default function GameResultStory({
   const playerWait = !showRoster && !!storyMap && !playerReady;
   const [revealWin, setRevealWin] = useState(false);
   const soleViewNow = !!detailClose || linkQuery !== null;
-  useEffect(() => {
-    if (!noTruth || !soleViewNow) return;
-    showToast("더 이상 리플레이를 재생할 수 없어요.", { kind: "warn" });
-  }, [noTruth, soleViewNow]);
   const showMapLine = showRoster && !headSlot && Boolean(mapName || minutes !== null);
 
   const stopBubble = {
