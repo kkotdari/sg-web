@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { downloadReplay } from "../../utils/replayDownload";
 import { createPortal } from "react-dom";
-import { EyeOff, Save, SquarePen, Trash2 } from "lucide-react";
+import { ChartLine, EyeOff, Save, SquarePen, Trash2 } from "lucide-react";
 import GameResultStory from "./GameResultStory";
 import { gameResultShareContent } from "./gameShare";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
@@ -10,10 +10,11 @@ import { showAlert } from "../../components/common/AlertDialog";
 import { showToast } from "../../components/common/Toast";
 import { useAppStore } from "../../store/appStore";
 import { isAdminRole } from "../../constants/roles";
-import { canManageGame } from "../../utils/gameAccess";
+import { canManageGame, isSecretGame } from "../../utils/gameAccess";
 import { cx } from "../../utils/format";
 import KakaoShareButton from "../../components/common/KakaoShareButton";
 import { RecommendButton, useRecommend } from "./Recommend";
+import GameCurvesModal from "../../modals/GameCurvesModal";
 import type { GameResult, Member, GameResultSlot, GameOutcome } from "../../types";
 
 export interface SearchListRow {
@@ -108,6 +109,7 @@ export function GameResultTools({
   const [hideOpen, setHideOpen] = useState(false);
   const [hiding, setHiding] = useState(false);
   const [hideErr, setHideErr] = useState<string | null>(null);
+  const [graphOpen, setGraphOpen] = useState(false);
   const rec = useRecommend(gameResult);
 
   const confirmHide = async (): Promise<void> => {
@@ -137,6 +139,8 @@ export function GameResultTools({
   return (
     <div className="scr-tools" role="toolbar" aria-label="게임 도구" onClick={(e) => e.stopPropagation()}>
       <RecommendButton rec={rec} size={15} count className="scr-tools-btn" />
+      {/* 데이터 창 보기(2026-10-22, 요청: "게임 상세 툴박스에 데이터창 보기 버튼 추가") — 목록 데이터 칸과 같은 창(GameCurvesModal). 유즈맵·숨긴 판은 없다. */}
+      {!gameResult.ums && !isSecretGame(gameResult) && tool("graph", "데이터 그래프", () => { setGraphOpen(true); void api.pingGameAction("graph", gameResult); }, <ChartLine size={15} />)}
       {gameResult.replay && tool("download", "리플레이 저장", () => void downloadReplay(gameResult), <Save size={15} />)}
       {isAdmin && gameResult.result === "unknown" && tool("outcome", "결과 입력", () => setOutcomeOpen(true), <SquarePen size={15} />)}
       <KakaoShareButton
@@ -145,6 +149,7 @@ export function GameResultTools({
       />
       {canDelete && !gameResult.hidden && tool("hide", "숨김", () => setHideOpen(true), <EyeOff size={15} />)}
       {canDelete && tool("delete", "삭제", () => onDelete(gameResult), <Trash2 size={15} />, true)}
+      {graphOpen && <GameCurvesModal game={gameResult} onClose={() => setGraphOpen(false)} />}
       {outcomeOpen && (
         <GameResultOutcomeDialog
           gameResult={gameResult} memberOf={memberOf} onChanged={onChanged}
