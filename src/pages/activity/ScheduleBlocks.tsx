@@ -916,24 +916,25 @@ function PhotosBlock({
               <PhotoSlide key={p.id} p={p} i={i} playing={playing === p.id} canEdit={canEdit} act={slideAct} />
             ))}
           </div>
-          {n > 1 && (
-            <>
-              <button
-                type="button" className="scr-sb-slide-nav scr-sb-slide-prev" aria-label="이전 사진"
-                onClick={(e) => { e.stopPropagation(); go(idx - 1); }} disabled={idx === 0}
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                type="button" className="scr-sb-slide-nav scr-sb-slide-next" aria-label="다음 사진"
-                onClick={(e) => { e.stopPropagation(); go(idx + 1); }} disabled={idx === n - 1}
-              >
-                <ChevronRight size={18} />
-              </button>
-              <div className="scr-sb-slide-count" aria-hidden>{idx + 1} / {n}</div>
-              {/* (걷어냄 · 2026-10-19, 요청: "일정 사진목록의 아래 점점점 제거 · 별 효과가 없는듯 숫자만 있으면 돼") 아래 점 줄(.scr-sb-slide-dots) — 몇 번째인지는 위 숫자가 말한다. */}
-            </>
-          )}
+        </div>
+      )}
+      {/* 넘김 단추 둘과 n/n 은 슬라이드 **밖 아래 가운데** 한 줄이다(2026-10-22, 요청: "좌우 이동 버튼과 n/n 을 슬라이드 외부 하단 가운데로") —
+          옛 자리(사진 위 좌우 가운데 · 오른아래 숫자)는 사진을 가렸다. 단추는 폰에도 선다(옛 자리는 호버 기기만). */}
+      {slides && n > 1 && (
+        <div className="scr-sb-slide-bar">
+          <button
+            type="button" className="scr-sb-slide-nav" aria-label="이전 사진"
+            onClick={(e) => { e.stopPropagation(); go(idx - 1); }} disabled={idx === 0}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="scr-sb-slide-count" aria-live="polite">{idx + 1} / {n}</span>
+          <button
+            type="button" className="scr-sb-slide-nav" aria-label="다음 사진"
+            onClick={(e) => { e.stopPropagation(); go(idx + 1); }} disabled={idx === n - 1}
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
       {slides && ordering && (

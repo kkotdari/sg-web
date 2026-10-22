@@ -7280,10 +7280,11 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-photo img { display: block; width: 100%; max-height: 420px; object-fit: contain; }
 /* 큰 사진 칸(사진 슬라이드 요소) — 위에 붙여 두던 것(2026-10-20 sticky)은 걷었다(2026-10-22, 요청: "스티키 없애고 요소를 사진 목록과 사진 슬라이드로
    나눔") — 격자가 딴 요소(사진 목록)로 나가 밑으로 흘러갈 것이 없다. */
+/* 테 대신 림 + 그림자 · 둥근 모서리(2026-10-22, 요청: "슬라이드 디자인 개선 · 테두리 없애고 그림자나 림으로 구분 · 보더 래디우스 주기"). */
 .scr-sb-slides-wrap {
-  position: relative;
-  border: 1px solid var(--line); overflow: hidden;
+  position: relative; overflow: hidden; border-radius: 12px;
   background: linear-gradient(var(--panel), var(--panel)), var(--panel-solid);
+  box-shadow: 0 0 0 1px var(--line-hair, rgba(127, 127, 127, 0.18)), 0 6px 18px rgba(0, 0, 0, 0.14);
 }
 .scr-sb-slides {
   /* 높이 = 화면 높이의 40%(2026-10-20, 요청: "정사각형 취소 · 화면 높이의 몇 %로 제한" → 45% → "40%로 축소") — 붙어 있어도 그리드가
@@ -7337,22 +7338,15 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-photos-head > .scr-sb-handles {
   max-width: none; transition: opacity .2s ease .5s, visibility 0s linear var(--sb-tools-vis, .7s);
 }
-.scr-sb-slide-count {
-  position: absolute; right: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px;
-  font-size: 11.5px; font-weight: 700; color: #fff; background: rgba(0, 0, 0, 0.55);
-  pointer-events: none;
-}
+.scr-sb-slide-bar { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; }
+.scr-sb-slide-count { min-width: 44px; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* (걷어냄 · 2026-10-19) 사진 넘김 아래 점 줄 .scr-sb-slide-dots · .scr-sb-slide-dot(-on) — 숫자(.scr-sb-slide-count)만 남긴다. */
 .scr-sb-slide-nav {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  display: none; align-items: center; justify-content: center;
-  width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5); color: #fff; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--line-hair, var(--line)); background: var(--panel-raised); color: var(--text);
 }
-.scr-sb-slide-prev { left: 8px; }
-.scr-sb-slide-next { right: 8px; }
 .scr-sb-slide-nav:disabled { opacity: 0.3; cursor: default; }
-@media (hover: hover) { .scr-sb-slide-nav { display: inline-flex; } }
 .scr-sb-slide-video { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
 .scr-sb-slide-img video { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; background: #000; }
 .scr-sb-slide-play {
@@ -7366,7 +7360,7 @@ input.scr-sb-line { touch-action: pan-y pinch-zoom; }
 .scr-sb-saveall-armed { border-color: var(--timeline-blue); color: var(--timeline-blue); }
 /* 밝은 테마(요청: "전체 다운로드 포함 사진첩 버튼들 라이팅테마") — 사진 위에 뜨는 둥근 단추·쪽수·점은 검은 반투명이라
    밝은 화면에서 혼자 무겁게 떴다. 흰 반투명 + 진한 글자로 바꾼다. 전체 다운로드 알약은 테두리·글자를 테마 글자색에 맞춘다. */
-html.scr-light-theme .scr-sb-slide-count, html.scr-light-theme .scr-sb-slide-play {
+html.scr-light-theme .scr-sb-slide-play {
   background: rgba(255, 255, 255, 0.82); color: #000; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 html.scr-light-theme .scr-sb-order-play { background: rgba(255, 255, 255, 0.85); color: #000; }
