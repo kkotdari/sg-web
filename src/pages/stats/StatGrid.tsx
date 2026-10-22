@@ -41,12 +41,13 @@ function Rate({ s }: { s?: MemberStats }) {
 function Dmg({ s, compact }: { s: MemberStats; compact?: boolean }) {
   const d = s.dmgDealtRel, t = s.dmgTakenRel;
   if (typeof d !== "number" || typeof t !== "number") return <Dash />; // 폰도 "데미지 -"(이름표만 덩그러니 남지 않게)
-  /* 폰은 칸이 좁아 "딜 1.4 피해 0.8"(배수만) — "평균의 · 배"는 뜻이 같아 줄인다. 가운뎃점도 뺐다(한 줄에 담으려 · 2026-10-20). */
+  /* 폰은 칸이 좁아 배수만 — 이름표("딜" · "피해")도 없이 초록 딜 · 빨강 피해 숫자 둘(2026-10-22, 요청: "딜 피해 라벨 제거" — 뜻은 머리 풀이가 같은 색으로 말한다).
+     옛: "딜 1.4 피해 0.8"(2026-10-20). */
   if (compact) {
     return (
       <span className="scr-sg-dmg" title="준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)">
-        <i>딜</i><b className="is-dealt">{(d / 100).toFixed(1)}</b>
-        <i>피해</i><b className="is-taken">{(t / 100).toFixed(1)}</b>
+        <b className="is-dealt">{(d / 100).toFixed(1)}</b>
+        <b className="is-taken">{(t / 100).toFixed(1)}</b>
       </span>
     );
   }
@@ -198,7 +199,7 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
       <div className="scr-sg is-m" role="table" aria-label="통계">
         {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 아래에 "딜·피해" 뜻 · 전적은 전체·종족 넷을 덮는 머리에 "게임수(승률)"(2026-10-22, 요청: "단위 대신 헤더에 간단 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
-          <span className="scr-sg-c scr-sg-who scr-sg-h2">유저<i className="scr-sg-hnote">딜·피해: 평균 데미지 대비 비율</i></span>
+          <span className="scr-sg-c scr-sg-who scr-sg-h2">유저<i className="scr-sg-hnote"><span className="is-dealt">딜</span>·<span className="is-taken">피해</span>: 평균 데미지 대비 비율</i></span>
           <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적<i className="scr-sg-hnote">게임수(승률)</i></span>
           {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head">{r}</span>)}
         </div>
