@@ -8298,8 +8298,8 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-gs-go { padding: 6px 14px; }
 @media (max-width: 960px) {
   .scr-gs-panel { grid-template-columns: minmax(0, 1fr); }
-  .scr-gs-link { grid-template-columns: minmax(0, 1fr) auto; }
-  .scr-gs-link > .scr-gs-chips:nth-of-type(2) { grid-column: 1 / -1; grid-row: 2; }
+  /* 폰도 한 줄 [선수 | 유닛·건물·스킬·전술 | ×](2026-10-22, 요청: "한 줄로" — 옛: 선수 · × 윗줄, 유닛 아랫줄). */
+  .scr-gs-link { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) auto; gap: 4px; }
 }
 
 /* 레이팅(RatingBoardModal · 2026-10-20) — 역대 퀸 창과 같은 틀 · 한 줄 [순위 | 아바타 | 닉네임(아래 전적) | 점수]. */
