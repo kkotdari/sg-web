@@ -12,8 +12,6 @@ interface MonthCalendarProps {
   maxMonth: string;
   allValue?: string;
   allLabel?: string;
-  /** 하루 고르기(2026-10-21, 요청: "전체기간 옆에 오늘도 선택 가능하게" → "어제랑 오늘 두개") — [전체 기간] 옆에 차례대로 선다. */
-  days?: { value: string; label: string }[];
   className?: string;
 }
 
@@ -22,11 +20,10 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const yearOf = (m: string) => Number(m.slice(0, 4));
 
 export default function MonthCalendar({
-  value, onChange, minMonth, maxMonth, allValue, allLabel = "전체 기간", days = [], className,
+  value, onChange, minMonth, maxMonth, allValue, allLabel = "전체 기간", className,
 }: MonthCalendarProps) {
   const [open, setOpen] = useState(false);
-  const day = days.find((d) => d.value === value);
-  const isAll = (allValue !== undefined && value === allValue) || !!day;
+  const isAll = allValue !== undefined && value === allValue;
   const [year, setYear] = useState(() => (isAll ? yearOf(maxMonth) : yearOf(value)));
   const ref = useRef<HTMLDivElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
@@ -74,7 +71,7 @@ export default function MonthCalendar({
         aria-haspopup="dialog" aria-expanded={open}
       >
         <CalendarDays size={14} aria-hidden />
-        <span>{day ? day.label : isAll ? allLabel : monthLabel(value)}</span>
+        <span>{isAll ? allLabel : monthLabel(value)}</span>
       </button>
       {open && createPortal(
         <div className="scr-month-cal-pop" ref={popRef} role="dialog" aria-label="기간 고르기">
@@ -107,26 +104,15 @@ export default function MonthCalendar({
               );
             })}
           </div>
-          {(allValue !== undefined || days.length > 0) && (
+          {allValue !== undefined && (
             <div className="scr-month-cal-extra">
-              {allValue !== undefined && (
-                <button
-                  type="button"
-                  className={cx("scr-month-cal-all", value === allValue && "scr-month-cal-cell-on")}
-                  onClick={() => commit(allValue)}
-                >
-                  {allLabel}
-                </button>
-              )}
-              {days.map((d) => (
-                <button
-                  key={d.value} type="button"
-                  className={cx("scr-month-cal-all", d.value === value && "scr-month-cal-cell-on")}
-                  onClick={() => commit(d.value)}
-                >
-                  {d.label}
-                </button>
-              ))}
+              <button
+                type="button"
+                className={cx("scr-month-cal-all", value === allValue && "scr-month-cal-cell-on")}
+                onClick={() => commit(allValue)}
+              >
+                {allLabel}
+              </button>
             </div>
           )}
         </div>,

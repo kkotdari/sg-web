@@ -5,7 +5,7 @@ import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
-import { currentMonthValue, fmt, monthInputToRange, todayStr } from "../../utils/date";
+import { currentMonthValue, monthInputToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
@@ -41,15 +41,8 @@ type MapTab = (typeof MAP_TABS)[number]["value"];
 const MAP_DEFAULT: MapTab = "fastest";
 const mapTabOf = (v: string): MapTab => (MAP_TABS.some((t) => t.value === v) ? v as MapTab : MAP_DEFAULT);
 const PERIOD_ALL = "all";
-/* 하루 고르기 — 달력의 [전체 기간] 옆 [어제] [오늘](2026-10-21 요청). 값은 주소 period= 에 그대로 남는다. */
-const PERIOD_DAYS = [{ value: "yesterday", label: "어제" }, { value: "today", label: "오늘" }];
-const dayOfPeriod = (p: string): string | null => {
-  if (p === "today") return todayStr();
-  if (p !== "yesterday") return null;
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return fmt(d);
-};
+/* 기간은 달 단위뿐이다 — [어제] [오늘] 하루 고르기는 걷었다(2026-10-22, 요청: "아예 달 단위로 통일 · 오늘 어제 일자 조회 다 제거" — 마감한 달은
+   달별 합계만 남는다). 옛 주소의 period=today/yesterday 는 달 범위로 못 읽어 이번 달로 떨어진다(아래 qRange). */
 
 /** 정렬 자 이름 — 정렬 줄("정렬: 전체 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid · 2026-10-22, 요청: "정렬은 머리 터치로 변경" →
  *  "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개") — 옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
@@ -158,10 +151,9 @@ export default function ClanStatsScreen() {
       key: debouncedSignature,
       memberIds,
     };
-    const oneDay = dayOfPeriod(debouncedQuery.period);
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
-      : oneDay ? { from: oneDay, to: oneDay } : monthInputToRange(debouncedQuery.period);
+      : monthInputToRange(/^\d{4}-\d{2}$/.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue());
     if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [] }); return; }
     let cancelled = false;
     setError("");
@@ -259,7 +251,6 @@ export default function ClanStatsScreen() {
             value={period} onChange={setPeriod}
             maxMonth={currentMonthValue()}
             allValue={PERIOD_ALL}
-            days={PERIOD_DAYS}
             className="scr-v2-toolbar-month"
           />
           <button
