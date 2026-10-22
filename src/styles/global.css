@@ -74,6 +74,7 @@
   --pipe-dark: #651d1a;
 
   --line: rgba(255, 255, 255, 0.16);
+  --input-line: var(--line);   /* 입력 칸 테두리(.scr-input · 칩 입력 · 고르기 단추) — 라이트만 따로 연하게 */
   --scroll-thumb: rgba(255, 255, 255, 0.16);
   --scroll-thumb-hover: rgba(255, 255, 255, 0.34);
   --divider-soft: rgba(255, 255, 255, 0.32);
@@ -345,7 +346,7 @@ button, a, [role="button"], summary, label, select { touch-action: manipulation;
 .scr-datetime-locked { pointer-events: none; opacity: 0.72; }
 .scr-label { font-size: var(--fs-caption); line-height: 1; color: var(--muted); display: flex; align-items: center; gap: 5px; padding-left: 2px; }
 .scr-label-optional { color: var(--muted); opacity: 0.7; font-weight: 400; }
-.scr-input { background: var(--input-bg); border: 1px solid var(--line); color: var(--text); padding: 9px 10px; font-size: var(--fs-body); font-family: var(--font-ui); width: 100%; min-height: var(--field-h); box-sizing: border-box; border-radius: var(--radius-sm); border-color: var(--line); }
+.scr-input { background: var(--input-bg); border: 1px solid var(--input-line); color: var(--text); padding: 9px 10px; font-size: var(--fs-body); font-family: var(--font-ui); width: 100%; min-height: var(--field-h); box-sizing: border-box; border-radius: var(--radius-sm); }
 input[type="text"], input[type="password"], input[type="search"], input[type="email"],
 input[type="number"], input[type="tel"], input[type="url"], input:not([type]) {
   touch-action: none;
@@ -542,6 +543,7 @@ html.scr-light-theme {
   --panel-raised: #f0f0f0;
   --input-bg: #ffffff;
   --line: #000000;
+  --input-line: rgba(0, 0, 0, 0.3);   /* 라이트 입력 칸 테두리 검정 → 0.3(2026-10-22, 요청: "라이트 테마 모든 인풋창 테두리 좀 더 연하게") */
   --line-soft: #000000;
   --scroll-thumb: rgba(0, 0, 0, 0.20);
   --scroll-thumb-hover: rgba(0, 0, 0, 0.34);
@@ -2526,6 +2528,9 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 .scr-list-search-input {
   background: #ffffff;
   border-color: rgba(0,0,0,0.55);
+}
+.scr-light-theme .scr-list-search-input { border-color: var(--input-line); }
+.scr-list-search-input {
   box-shadow: inset 0 1px 1px rgba(0,0,0,0.04);
 }
 .scr-list-search-input .scr-search-chip-input {
@@ -3756,7 +3761,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-cselect { position: relative; width: 100%; }
 .scr-cselect-trigger {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  background: var(--input-bg); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--input-bg); border: 1px solid var(--input-line); border-radius: var(--radius-sm);
   color: var(--text); padding: 9px 10px; font-size: var(--fs-body); font-family: var(--font-ui); cursor: pointer;
   min-height: var(--field-h); box-sizing: border-box;
   transition: border-color .12s;
@@ -8231,7 +8236,8 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.scr-sg-comp .scr-sg-c { padding-top: 7px; padding-bottom: 7px; }
 
 /* ★★ 게임 목록 검색폼(GameSearchForm · 2026-10-20) — 접힌 머리 줄(조건 칩 요약) + 펼친 칸들. 칸은 PC 두 열 · 폰 한 열. */
-.scr-gs { margin: 0 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(var(--overlay-rgb), 0.02); }
+/* 테두리 걷음 — 바탕 칠 0.02 → 0.05 로 상자를 말한다(2026-10-22, 요청: "검색 조건 테두리 제거"). */
+.scr-gs { margin: 0 0 10px; border-radius: var(--radius-sm); background: rgba(var(--overlay-rgb), 0.05); }
 .scr-gs-bar { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 10px; }
 .scr-gs-toggle {
   flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 4px 6px; border: none; background: none; cursor: pointer;
@@ -8258,7 +8264,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-gs-ctl { min-width: 0; }
 .scr-gs-chips {
   position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 34px; padding: 3px 6px;
-  border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg, transparent); cursor: text;
+  border: 1px solid var(--input-line); border-radius: 8px; background: var(--input-bg, transparent); cursor: text;
 }
 .scr-gs-chips:focus-within { border-color: var(--lighting-accent, #5c9df5); }
 .scr-gs-input { flex: 1 1 80px; min-width: 60px; border: none; outline: none; background: transparent; color: var(--text); font: inherit; font-size: var(--fs-caption); padding: 3px 2px; }
