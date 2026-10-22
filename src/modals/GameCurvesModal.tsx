@@ -245,6 +245,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   onTechOnly: (v: boolean) => void;
 }) {
   const [hover, setHover] = useState<GameCurve["blds"][number] | null>(null);
+  /** 얹은 칩의 건물 종류 — 같은 종류 칩을 모두 임자색으로(아래 ★). 선에 얹으면 그 건물의 처음 종류. */
+  const [hoverKind, setHoverKind] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const AXIS_H = font.axis + 8 + AXIS_DROP;
   const END = maxX * 60;
@@ -257,7 +259,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     setHover(null);
     onAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (CW - PL - padR)) * maxX))));
   };
-  const scrub = useScrub(pick, () => { setHover(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
+  const scrub = useScrub(pick, () => { setHover(null); setHoverKind(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
   /* ★ 건물 한 채 = 칩 하나(2026-10-22, 요청: "너무 한눈에 안 들어와 — 모든 건물에 하나하나 칩을 만들어(아주 컴팩트하게) · 종류별로 모으지 않기 · 시간 순서로 배치 ·
      선이 겹쳐도 됨") — 옛 판은 종류마다 이름 한 줄 + 그 종류 건물마다 가는 선을 쌓아 칸이 길고 빽빽했다. 이제 사람 칸 안에서 건물을 **착공 차례**로 늘어놓아, 칩(이름)을
      착공 자리에 두고 수명 선(짓는 중 점선 · 산 동안 실선 · 사라지면 ✕)을 그 칩의 단 가운데로 끌고 간다. 칩끼리만 안 겹치게 위 단부터 빈자리에 넣는다(선은 뒤 칩·선과 겹쳐도 된다).
@@ -267,7 +269,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const JIGS = [0, -BL.jig, BL.jig] as const;
   const RIGHT = CW - padR;
   const chipW = (label: string): number => textW(label, BL.fs) + 2 * PX;
-  type Tag = { x: number; w: number; label: string; cut?: boolean; morph?: boolean };
+  /** kind — 그 칩이 말하는 건물 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류 · 취소 칩은 없음). 같은 종류 강조가 쓴다. */
+  type Tag = { x: number; w: number; label: string; kind?: number; cut?: boolean; morph?: boolean };
   let y0 = 4;
   const rows = lanes.map((l) => {
     const shown = l.blds
@@ -281,8 +284,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         const w = chipW(label) + (extra?.cut ? textW(" ✕", BL.fs) : 0);
         return { x: Math.min(x(at9), RIGHT - w), w, label, ...extra };
       };
-      const tags: Tag[] = [tag(b.s, BUILD_LABEL[b.t] ?? `#${b.t}`)];
-      for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, { morph: true }));
+      const tags: Tag[] = [tag(b.s, BUILD_LABEL[b.t] ?? `#${b.t}`, { kind: b.t })];
+      for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, { morph: true, kind: mt }));
       for (const [xs] of b.x ?? []) {
         const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
         tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, { morph: true, cut: true }));
@@ -307,7 +310,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const H = y0 + AXIS_H;
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">건설<TitleSwitch label="테크 건물만" on={techOnly} onChange={onTechOnly} /></figcaption>
+      <figcaption className="scr-rc-title">건설<TitleSwitch label="간단히 보기" on={techOnly} onChange={onTechOnly} /></figcaption>
       <div className="scr-rc-plot">
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
         {rows.map(({ l, items, top, h }) => (
@@ -331,26 +334,31 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
               }
               if (end > t9) segs.push([t9, end, false]);
               if (b.d === null && b.e !== null) cuts.push(b.e);
-              const show = (): void => { setHover(b); onAt((b.d ?? b.s) / 60); };
+              const show = (): void => { setHover(b); setHoverKind(b.t); onAt((b.d ?? b.s) / 60); };
               return (
                 <g
                   key={`${b.s}:${b.t}:${k}`} className={hover === b ? "scr-bl-hit is-hl" : "scr-bl-hit"}
                   onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
-                  onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
+                  onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(null); setHoverKind(null); } }}
                 >
                   {segs.map(([a, z, bld], si) => (
                     <line key={si} className={bld ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
                   ))}
                   {cuts.map((c) => <text key={`x${c}`} className="scr-bl-cut" x={x(c)} y={ly} textAnchor="middle" dominantBaseline="central">✕</text>)}
                   <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />
-                  {tags.map((t, ti) => (
-                    <g key={ti}>
-                      <rect className={t.morph ? "scr-bl-chip is-morph" : "scr-bl-chip"} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
-                      <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
+                  {tags.map((t, ti) => {
+                    /* ★ 얹은 건물과 **같은 종류**의 칩은 사람과 상관없이 모두 그 임자색으로 칠한다(2026-10-22, 요청: "마우스 오버 시 같은 건물들은 사람 관계없이 모두 강조 · 강조 시 임자색") —
+                       얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩 · 글자는 그 바탕 위 잉크(inkOn). */
+                    const hl9 = hoverKind !== null && t.kind === hoverKind;
+                    return (
+                    <g key={ti} onPointerEnter={(e) => { if (e.pointerType === "mouse") setHoverKind(t.kind ?? null); }}>
+                      <rect className={t.morph ? "scr-bl-chip is-morph" : "scr-bl-chip"} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} style={hl9 ? { fill: l.color, stroke: l.color } : undefined} />
+                      <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={hl9 ? { fontSize: BL.fs, fill: inkOn(l.color) } : { fontSize: BL.fs }}>
                         {t.label}{t.cut && <tspan className="scr-bl-cut"> ✕</tspan>}
                       </text>
                     </g>
-                  ))}
+                    );
+                  })}
                 </g>
               );
             })}
