@@ -127,9 +127,11 @@ export function GameResultTools({
     }
   };
 
-  const tool = (key: string, title: string, run: () => void, icon: ReactNode, danger = false) => (
+  /* extra = 폭이 모자라면 먼저 감추는 단추(리플레이 저장 · 숨김 · 삭제 — 2026-10-22, 요청: "게임 상세에 버튼이 너무 많네 모바일에선 폭이 모자라면
+     다운로드 숨기기 삭제 감추기"). 게임 상세 머리 줄(.scr-game-detail-bar 컨테이너)에서만 감춘다(global.css). */
+  const tool = (key: string, title: string, run: () => void, icon: ReactNode, danger = false, extra = false) => (
     <button
-      key={key} type="button" className={cx("scr-icon-btn scr-tools-btn", danger && "is-danger")} title={title} aria-label={title}
+      key={key} type="button" className={cx("scr-icon-btn scr-tools-btn", danger && "is-danger", extra && "is-extra")} title={title} aria-label={title}
       onClick={(e) => { e.stopPropagation(); run(); }}
     >
       {icon}
@@ -141,14 +143,14 @@ export function GameResultTools({
       <RecommendButton rec={rec} size={15} count className="scr-tools-btn" />
       {/* 데이터 창 보기(2026-10-22, 요청: "게임 상세 툴박스에 데이터창 보기 버튼 추가") — 목록 데이터 칸과 같은 창(GameCurvesModal). 유즈맵·숨긴 판은 없다. */}
       {!gameResult.ums && !isSecretGame(gameResult) && tool("graph", "데이터 그래프", () => { setGraphOpen(true); void api.pingGameAction("graph", gameResult); }, <ChartLine size={15} />)}
-      {gameResult.replay && tool("download", "리플레이 저장", () => void downloadReplay(gameResult), <Save size={15} />)}
+      {gameResult.replay && tool("download", "리플레이 저장", () => void downloadReplay(gameResult), <Save size={15} />, false, true)}
       {isAdmin && gameResult.result === "unknown" && tool("outcome", "결과 입력", () => setOutcomeOpen(true), <SquarePen size={15} />)}
       <KakaoShareButton
         className="scr-tools-btn" icon="share" label="공유"
         content={() => gameResultShareContent(gameResult, memberOf)}
       />
-      {canDelete && !gameResult.hidden && tool("hide", "숨김", () => setHideOpen(true), <EyeOff size={15} />)}
-      {canDelete && tool("delete", "삭제", () => onDelete(gameResult), <Trash2 size={15} />, true)}
+      {canDelete && !gameResult.hidden && tool("hide", "숨김", () => setHideOpen(true), <EyeOff size={15} />, false, true)}
+      {canDelete && tool("delete", "삭제", () => onDelete(gameResult), <Trash2 size={15} />, true, true)}
       {graphOpen && <GameCurvesModal game={gameResult} onClose={() => setGraphOpen(false)} />}
       {outcomeOpen && (
         <GameResultOutcomeDialog

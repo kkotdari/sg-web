@@ -2697,6 +2697,10 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
 .scr-tools .scr-tools-btn { width: auto; min-width: 30px; height: 30px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
 @media (hover: hover) { .scr-tools .scr-tools-btn:hover { color: var(--text); } }
 .scr-tools .scr-tools-btn.is-on { color: var(--lighting-accent, var(--point)); }
+/* 게임 상세 머리 줄이 좁으면(폰) 리플레이 저장·숨김·삭제를 감춘다(2026-10-22, 요청: "모바일에선 폭이 모자라면 다운로드 숨기기 삭제 감추기") —
+   줄 폭(컨테이너)으로 잰다: 뒤로 · 일시 · 등록자 · 단추 여섯(추천 · 데이터 · 저장 · 공유 · 숨김 · 삭제)이 다 드는 폭이 약 520px. */
+.scr-game-detail-bar { container: gamebar / inline-size; }
+@container gamebar (max-width: 520px) { .scr-tools .scr-tools-btn.is-extra { display: none; } }
 .scr-tools .scr-tools-btn.is-danger { color: var(--loss); }
 @media (hover: hover) { .scr-tools .scr-tools-btn.is-danger:hover { background: rgba(220, 70, 70, 0.14); } }
 .scr-activity-post-menu-drop { min-width: 128px; }

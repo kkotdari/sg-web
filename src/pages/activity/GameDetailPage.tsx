@@ -86,7 +86,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   );
   return (
     <div className="scr-activity-group-page">
-      <div className="scr-v2-toolbar scr-v2-toolbar-crumb">
+      <div className="scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar">
         <div className="scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle">
           <button type="button" className="scr-crumb-back" onClick={onBack}>
             <ArrowLeft size={14} />
