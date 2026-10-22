@@ -207,7 +207,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           {canHide && linkBtn("hide", "숨기기", () => onHide?.(), <EyeOff size={13} />)}
           {secret && <span className="scr-gtab-dim">-</span>}
         </span>
-        {/* 추천 단추는 도구 칸이 아니라 추천 칸에 수와 함께(2026-10-22, 요청: "추천 아이콘은 도구에서 추천 컬럼으로 이동") — 단추가 안 서는 판(손님 · 숨긴 판)은 수만. */}
+        {/* 추천 단추는 도구 칸이 아니라 추천 칸에 수와 함께(2026-10-22, 요청: "추천 아이콘은 도구에서 추천 컬럼으로 이동") — 단추가 안 서는 판(명예의 전당 · 손님)은 수만. */}
         <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : rec.shown ? <RecommendButton rec={rec} count className="scr-gtab-rec" /> : rec.n}</span>
       </div>
       {graphOpen && <GameCurvesModal game={game} onClose={() => setGraphOpen(false)} />}
