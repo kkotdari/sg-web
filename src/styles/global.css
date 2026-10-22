@@ -951,14 +951,21 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
     transform: translateX(calc(-100% - 2px));
     /* 부드럽게 — .22s ease → .38s 감속 곡선(2026-10-22, 요청: "레일 메뉴 부드럽게 나오게"). */
     transition: transform .38s cubic-bezier(.22, 1, .36, 1), box-shadow .38s ease;
+    /* 바탕 · 흐림은 닫혀 있을 때도 깐다(2026-10-22, 지적: "트랜지션이 아예 없었어") — 열림 클래스에만 있으면 닫을 때 바탕이 한 번에 사라져
+       글자만 빠져나가고, 열 때도 바탕이 툭 켜져 미끄러짐이 안 보였다. 닫힌 레일은 화면 밖이라 보이지 않는다. */
+  }
+  html .scr-app .scr-header, html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
+    background: color-mix(in srgb, var(--void) 90%, transparent);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   }
   html .scr-app .scr-header.scr-header-rail-open {
     transform: none;
-    background: color-mix(in srgb, var(--void) 90%, transparent);
-    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
     box-shadow: 12px 0 40px rgba(0, 0, 0, 0.45);
   }
-  @media (prefers-reduced-motion: reduce) { .scr-header { transition: none; } }
+  /* 움직임 줄이기(OS 애니메이션 끔)여도 레일 미끄러짐만은 남긴다 — 뿌리의 body * { transition: none !important } 를 이긴다(같은 지적). */
+  @media (prefers-reduced-motion: reduce) {
+    body .scr-app .scr-header { transition: transform .38s cubic-bezier(.22, 1, .36, 1), box-shadow .38s ease !important; }
+  }
   .scr-rail-hotzone {
     /* 폭 16 → 6(2026-10-09, 지적: "다른 버튼 누르려다가 자꾸 나옴") → 14(2026-10-10, 지적: "레일 메뉴 꺼내기가 너무 어려운 거 같아 다시 영역을 좀 넓혀주고 대신 윗부분은
        제외해줘(브래드크럼 부분)") — 위 72px(브레드크럼 줄 · 뒤로 단추)는 비운다. 여는 것은 그대로 140ms 머문 뒤다(useRail railEnterSoon). */
