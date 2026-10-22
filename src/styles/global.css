@@ -967,8 +967,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
      좀 많이 위로 옮겨 줘 · 세로로 메뉴라고 적어 줘"). */
   .scr-rail-hotzone::after {
     content: "메뉴"; position: absolute; left: 0; top: 64px;
-    writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px;
-    font-size: 11px; font-weight: 600; line-height: 1; padding: 9px 4px;
+    writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 4px;
+    font-size: 11px; font-weight: 600; line-height: 1; padding: 18px 4px 14px;   /* 위아래 길게(되요청 "탭 위아래 길이도 좀 더 길게" · 옛 9px · 글자 사이 2px) — 키 ≈ 46 → 62 */
     border-radius: 0 6px 6px 0; background: rgba(var(--overlay-rgb), 0.08); border: 1px solid rgba(var(--overlay-rgb), 0.14); border-left: 0;
     opacity: 0.6; transition: opacity .15s;
   }
