@@ -6,7 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { currentMonthValue, fmt, monthInputToRange, todayStr } from "../../utils/date";
-import StatGrid, { CompGrid, StatHelp } from "../stats/StatGrid";
+import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -51,15 +51,9 @@ const dayOfPeriod = (p: string): string | null => {
   return fmt(d);
 };
 
-/** 정렬 순서 — 검색창 밑의 작은 밑줄 탭(2026-10, 요청). 기본은 승률순 · 차례 승률·딜·APM·참여 · 앞 "정렬" 글은 걷었다
- *  (2026-10-20, 요청: "정렬 문구 제거 · 승률순 딜순 APM순 참여순 · 기본 승률순"). */
-const SORT_OPTS = [
-  { value: "rate", label: "승률순" },
-  { value: "dmg", label: "딜순" },
-  { value: "apm", label: "APM순" },
-  { value: "plays", label: "참여순" },
-] as const;
-type SortKey = (typeof SORT_OPTS)[number]["value"];
+/** 정렬 자 이름 — 정렬 줄("정렬: 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid onSort · 2026-10-22, 요청: "정렬은 머리 터치로 변경") —
+ *  옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
+const SORT_LABEL: Record<StatSortKey, string> = { rate: "승률", dmg: "데미지", apm: "APM", plays: "게임수" };
 
 const EMPTY_STATS: MemberStats = {
   plays: 0, wins: 0, losses: 0, draws: 0, winRate: 0, bests: 0,
@@ -97,10 +91,11 @@ export default function ClanStatsScreen() {
   const [teamBuilder, setTeamBuilder] = useState(false);
   /** "전부 펼치기" — 클랜 전체·개인 줄의 종족 덱을 한꺼번에 여닫는다(요청). 한 번 누른 뒤에도 줄마다 꺽쇠로 따로 여닫힌다. */
   const [expandAll, setExpandAll] = useState(false);
-  /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 탭을 누르면 끝에 붙고, 고른 탭을 누르면 빠진다(하나는 남는다).
-     고른 탭은 글자만 굵다(밑줄·색 없음 · 차례는 안 보인다 — 2026-10-22 되요청들: 한때 탭 옆 "승률순 × > 참여순 × 적용중" 줄 · 탭 앞 숫자 · 탭 위 숫자 → "정렬 순의 숫자 제거"). 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
-  const [sortKeys, setSortKeys] = useState<SortKey[]>(["rate"]);
-  const toggleSort = (k: SortKey): void => setSortKeys((prev) => (prev.includes(k)
+  /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 머리를 누르면 끝에 붙고, 고른 머리를 누르면 빠진다(하나는 남는다).
+     머리를 눌러 고르고(요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") 고른 차례는 정렬 줄 "정렬: 승률 › APM" 에 하나씩 붙고 빠진다(요청: "누르면 '정렬:' 옆에 하나씩 나오고 없어짐").
+     한때(같은 날): 정렬 탭 · 탭 옆 "승률순 × > 참여순 × 적용중" 줄 · 탭 앞/위 차례 숫자. 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
+  const [sortKeys, setSortKeys] = useState<StatSortKey[]>(["rate"]);
+  const toggleSort = (k: StatSortKey): void => setSortKeys((prev) => (prev.includes(k)
     ? (prev.length > 1 ? prev.filter((x) => x !== k) : prev)
     : [...prev, k]));
   const matchedMembers = useMemo(() => {
@@ -344,23 +339,8 @@ export default function ClanStatsScreen() {
       )}
 
       <div className="scr-stats-sort">
-        <span className="scr-stats-sort-label">정렬</span>
-        <div className="scr-line-tabs scr-stats-sort-tabs" role="tablist" aria-label="정렬 순서">
-          {SORT_OPTS.map((o) => {
-            const at = sortKeys.indexOf(o.value);
-            return (
-              <button
-                key={o.value} type="button" role="tab"
-                aria-selected={at >= 0}
-                className={cx("scr-line-tab-btn", at >= 0 && "is-on")}
-                data-label={o.label}
-                onClick={() => toggleSort(o.value)}
-              >
-                {o.label}
-              </button>
-            );
-          })}
-        </div>
+        <span className="scr-stats-sort-label">정렬:</span>
+        <span className="scr-stats-sort-chain">{sortKeys.map((k) => SORT_LABEL[k]).join(" › ")}</span>
         {/* 표 도움말 단추 — 정렬 줄 오른끝(옛 폰 "행을 눌러서 그래프 보기" 글 자리 · 2026-10-22, 요청: "도움말과 헤더 설명 다 제거하고 그 자리에 도움말 아이콘 단추" → "PC 에도 알아서"). */}
         <StatHelp mobile={isMobile} />
       </div>
@@ -383,6 +363,8 @@ export default function ClanStatsScreen() {
             rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace }))}
             openAll={expandAll}
             mobile={isMobile}
+            sortKeys={sortKeys}
+            onSort={toggleSort}
           />
         )}
       </div>

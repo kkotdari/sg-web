@@ -1250,24 +1250,11 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   font-size: 14px; margin-top: 4px;
 }
 
-/* 정렬 순서 — 검색창 바로 밑의 **작은** 밑줄 탭(2026-10, 요청: "크기 좀 작게"). 내전·공방 탭과 같은 모양을 한 치 줄여 쓴다. */
-/* 앞의 "정렬" 글은 걷었다(2026-10-20, 요청) — 탭 이름이 "승률순 · 딜순 · APM순 · 참여순"이라 뜻이 선다. */
-.scr-stats-sort { display: flex; align-items: flex-end; gap: 8px; margin: -2px 0 2px; flex-wrap: wrap; }
-/* 정렬 탭(2026-10-22) — 옆 9 → 6(요청: "탭 사이 간격 살짝 줄이고") · 고르면 **글자만 굵게**(요청: "선택 시 글자만 두껍게 하고 다른 효과 x" — 밑줄·색 바뀜 없음).
-   굵어져도 폭이 안 변하게 ::after 에 굵은 글자를 숨겨 폭을 미리 잡는다(밑줄 자리였던 ::after 를 쓴다). 차례 숫자는 걷었다(요청: "정렬 순의 숫자 제거"). */
-.scr-stats-sort-tabs > .scr-line-tab-btn {
-  display: inline-flex; flex-direction: column; align-items: center;
-  font-size: 13px; font-weight: 500; color: var(--text); padding: 0 6px 6px;   /* fs-11 → 13px(2026-10-22, 요청: "정렬 폰트 키우기") */
-}
-.scr-stats-sort-tabs > .scr-line-tab-btn.is-on { font-weight: 800; }
-.scr-stats-sort-tabs > .scr-line-tab-btn::after,
-.scr-stats-sort-tabs > .scr-line-tab-btn.is-on::after {
-  content: attr(data-label); position: static; height: 0; overflow: hidden; visibility: hidden;
-  font-weight: 800; background: none; box-shadow: none;
-}
-.scr-stats-sort-tabs > .scr-line-tab-btn:first-child { padding-left: 2px; }
-/* 정렬 탭 앞 이름표 "정렬"(2026-10-22, 요청: "정렬(복수선택) 라벨 추가" → "복수선택도 글자 제거"). */
-.scr-stats-sort-label { font-size: 12px; font-weight: 600; color: var(--muted); padding-bottom: 7px; white-space: nowrap; }   /* fs-9 → 12px(2026-10-22, 요청: "정렬 · 도움말 · 헤더 폰트 키우기") */
+/* 정렬 줄 "정렬: 승률 › APM"(2026-10-22) — 고르기는 표 머리를 눌러서(.scr-sg-sort · 요청: "정렬은 머리 터치로 변경") · 고른 차례가 하나씩 붙고 빠진다 · 오른끝 도움말 단추.
+   옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순 — 작은 밑줄 탭 → 글자만 굵게)은 걷었다. */
+.scr-stats-sort { display: flex; align-items: center; gap: 6px; margin: -2px 0 8px; flex-wrap: wrap; }
+.scr-stats-sort-label { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.scr-stats-sort-chain { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; }
 
 .scr-stat-cards { display: flex; flex-direction: column; }
 /* .scr-statcard 는 **클랜 전체의 두 장**(종족구성별 전적 · 클랜원 전체)이고, .scr-stat-person 은 개인 줄이다 — 개인 줄은 더는 카드로
@@ -8099,6 +8086,10 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   padding: 9px 8px; border-top: 2px solid var(--line-faint); white-space: nowrap;   /* 유저 사이 줄만 1 → 2px(2026-10-22, 요청: "유저 간 구분선만 좀 두껍게") */
 }
 .scr-sg-c + .scr-sg-c { border-left: 1px solid var(--line-hair, var(--line-faint)); }
+/* 머리 정렬 단추(StatGrid SortHead · 2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") — 머리 글자 그대로 · 고른 자는 본문색으로 진하게. */
+.scr-sg-sort { padding: 2px 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.scr-sg-sort.is-on { color: var(--text); font-weight: 800; }
+@media (hover: hover) { .scr-sg-sort:hover { color: var(--text); } }
 /* 몸은 바탕 그대로(흰색 · 2026-10-22, 요청: "통계 그리드 색 흰색으로" — 옛 클랜원 전체 줄 0.035 · 펼침 0.025 덧칠 걷음) · 머리만 게임 목록 머리와 같은 0.06(바깥 테두리를 걷어 표의 시작을 말한다). */
 .scr-sg-head > .scr-sg-c { border-top: none; padding: 7px 8px; background: rgba(var(--overlay-rgb), 0.06); font-size: var(--fs-11); font-weight: 700; color: var(--dim); }
 /* 머리 두 줄 — 앞 다섯 칸·끝 칸은 두 줄을 내리 쓰고, 종족 이름은 [전적 | 승률] 두 칸을 덮는다(아래 줄이 전적·승률). */
@@ -8111,7 +8102,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-avatar .scr-avatar { width: 28px !important; height: 28px !important; border-radius: 50% !important; }
 .scr-sg-name {
   min-width: 0; padding: 0; border: none; background: none; cursor: pointer; font: inherit;
-  font-size: var(--fs-body); font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--fs-body); font-weight: 700; color: var(--text); overflow: hidden; text-overflow: clip; white-space: nowrap;   /* 말줄임 없이 잘린다(2026-10-22, 요청: "말줄임표 x") */
 }
 .scr-sg-name-plain { cursor: default; }
 .scr-sg-v { display: inline-flex; align-items: baseline; gap: 2px; font-variant-numeric: tabular-nums; }
@@ -8183,7 +8174,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 
 /* 폰 — [유저 | APM | 데미지 | 전체 | 테란 | 프로토스 | 저그](2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 유저 칸 아래 한 줄
    "APM 230 1.4 0.8"(그 줄 폭을 유저 칸이 먼저 가졌다) · 그 전엔 [유저 | 전적] 세로 쌓기. APM 34 · 데미지 38 고정 · 전적 넷은 36px 부터(1fr) ·
-   유저 칸은 닉네임 다섯 글자 + 말줄임이 늘 보이는 폭(min-content — 이름 최소 6em · 아래 .scr-sg-name)부터 1.6fr 로 는다(요청: "최소 다섯 글자는 나와야 해 닉네임"). */
+   유저 칸은 닉네임 다섯 글자가 늘 보이는 폭(min-content — 이름 최소 5em · 아래 .scr-sg-name)부터 1.6fr 로 는다(요청: "최소 다섯 글자는 나와야 해 닉네임"). */
 .scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(min-content, 1.6fr) 34px 38px repeat(4, minmax(36px, 1fr)); font-size: var(--fs-11); }
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
@@ -8191,9 +8182,8 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 .scr-sg.is-m .scr-sg-who { justify-content: flex-start; gap: 4px; padding-left: 6px; padding-right: 2px; }
 .scr-sg.is-m .scr-sg-tap > .scr-sg-c.scr-sg-who { padding: 12px 4px 12px 6px; }
 /* 유저 칸 글자(2026-10-20, 요청: "유저 칸 글자 키우고" → "크기 적절히" → "아바타·닉네임 너무 큼") 19 → 17 → 15 → 14 → 13px · 아바타 24 → 20(2026-10-22 · 유저 칸이 좁아져서). */
-.scr-sg.is-m .scr-sg-name { font-size: 13px; min-width: 6em; flex: 1 1 0; contain: inline-size; }   /* 6em = 굵은 한글 다섯 + "…"(실측 78px) · 긴 이름이 칸을 넓히지 않게 제 폭은 0(contain) — 칸 최소 폭은 이 6em 이 정한다 */
+.scr-sg.is-m .scr-sg-name { font-size: 13px; min-width: 5em; flex: 1 1 0; contain: inline-size; }   /* 5em = 굵은 한글 다섯(실측 65px) · 긴 이름이 칸을 넓히지 않게 제 폭은 0(contain) — 칸 최소 폭은 이 5em 이 정한다 */
 .scr-sg.is-m .scr-sg-avatar .scr-avatar { width: 20px !important; height: 20px !important; }
-.scr-sg.is-m .scr-sg-name-plain { white-space: normal; word-break: keep-all; overflow: visible; line-height: 1.2; }   /* "클랜원 전체"는 좁은 칸에서 두 줄로(말줄임 대신) */
 /* APM · 데미지 칸 — 숫자만(12px · tabular) · 데미지는 초록 딜 위 · 빨강 피해 아래. */
 .scr-sg.is-m .scr-sg-mnum { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .scr-sg.is-m .scr-sg-mnum > .scr-sg-dmg { flex-direction: column; align-items: center; gap: 3px; }
@@ -8210,7 +8200,7 @@ html.scr-light-theme { --race-chart-terran: #2f7fd8; --race-chart-protoss: #b98a
 /* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름. 뜻 풀이는 도움말 말풍선(.scr-sg-help). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; }
 /* 폰 표 도움말(StatHelp · 2026-10-22) — 정렬 줄 오른끝 단추 · 말풍선에 한 줄짜리 표 그림(.scr-sg-help-mock)과 풀이 목록. */
-.scr-sg-help-btn { margin-left: auto; padding: 0 2px 7px; }
+.scr-sg-help-btn { margin-left: auto; padding: 0 2px; }
 .scr-infotip-bubble.scr-sg-help { max-width: min(300px, 88vw); padding: 10px 12px; white-space: normal; }
 .scr-sg-help-mock {
   display: grid; grid-template-columns: auto 36px 40px 36px; margin-bottom: 9px; font-size: 11px; line-height: 1.3;

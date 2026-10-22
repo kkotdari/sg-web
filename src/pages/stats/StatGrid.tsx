@@ -15,6 +15,18 @@ import type { BaseRace, Member, MemberStats } from "../../types";
    폰 피시 공통"). 옛 펼침(종족마다 유닛·스킬·공방업 글 · MixLines)과 폰의 '펼치기 없음'은 걷었다. 승률 막대(시안 C)도 걷었다. */
 
 const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
+/** 맨 윗줄 이름 — "클랜평균"(2026-10-22, 요청: "클랜원 전체 → 네 글자로 · 클랜평균으로 바꾸자" · 폰 닉네임 칸 다섯 글자 안에 든다). */
+const CLAN_LABEL = "클랜평균";
+/** 정렬 자 — 표 머리를 눌러 고른다(2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추"). PC: 경기 · 승률 · APM · 데미지 · 폰: APM · 데미지 · 전적(게임수) · 전체(승률). */
+export type StatSortKey = "rate" | "dmg" | "apm" | "plays";
+type SortProps = { sortKeys: readonly StatSortKey[]; onSort: (k: StatSortKey) => void };
+/** 머리 정렬 단추 — 고른 자는 머리 글자가 본문색으로 진해진다. */
+function SortHead({ k, sort, children }: { k: StatSortKey; sort: SortProps; children: React.ReactNode }) {
+  const on = sort.sortKeys.includes(k);
+  return (
+    <button type="button" className={cx("scr-sg-sort", on && "is-on")} aria-pressed={on} onClick={() => sort.onSort(k)}>{children}</button>
+  );
+}
 
 export interface StatGridRow {
   member: Member;
@@ -107,7 +119,7 @@ function PcRow({ row, clan, games, openAll, scale }: { row: StatGridRow; clan?: 
     <>
       <div className={cx("scr-sg-row", clan && "is-clan", open && "is-open")}>
         <span className="scr-sg-c scr-sg-who">
-          {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <Who member={row.member} />}
+          {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <Who member={row.member} />}
         </span>
         <span className="scr-sg-c">
           {clan
@@ -162,7 +174,7 @@ function MobileRow({ row, clan, games, openAll, scale }: { row: StatGridRow; cla
     <>
     <div className={cx("scr-sg-row scr-sg-tap", clan && "is-clan", open && "is-open")} onClick={onRow}>
       <span className="scr-sg-c scr-sg-who">
-        {clan ? <span className="scr-sg-name scr-sg-name-plain">클랜원 전체</span> : <WhoPlain member={row.member} />}
+        {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <WhoPlain member={row.member} />}
       </span>
       {/* APM · 데미지(초록 딜 위 · 빨강 피해 아래)는 제 칸(2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 닉네임 아래 한 줄 "APM 230 1.4 0.8".
           클랜원 전체는 데미지가 없다. */}
@@ -195,6 +207,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span>APM — 분당 행동 수 평균</span>
             <span>데미지 — <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
+            <span>머리(APM · 데미지 · 전적 · 전체)를 누르면 그 순서로 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
             <span>행을 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
           </span>
         </>
@@ -203,6 +216,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
           <span>종족 칸 — 그 종족으로 뛴 전적 · 승률</span>
           <span>APM — 분당 행동 수 평균</span>
+          <span>머리(경기 · 승률 · APM · 데미지)를 누르면 그 순서로 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
           <span>줄 끝 ▾ 를 누르면 종족별 인구 · 일꾼 수 그래프가 펼쳐져요</span>
         </span>
       )}
@@ -210,7 +224,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
   );
 }
 
-export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
+export default function StatGrid({ clan, clanGames, rows, openAll, mobile, sortKeys, onSort }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>> } | null;
   clanGames: number;
@@ -218,7 +232,8 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
   openAll: boolean;
   mobile: boolean;
 }) {
-  const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: "클랜원 전체" } as Member, stats: clan.stats, byRace: clan.byRace } : null;
+  const sort: SortProps = { sortKeys, onSort };
+  const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace } : null;
   /* 펼친 곡선은 모든 줄이 한 자(눈금)를 쓴다(2026-10-20, 요청: "일꾼 수 100 · 병력 가치 5K 로 세로 눈금 똑같이 · 가로도 똑같이" → 인구 0~100). */
   const scale = curveScale([clanRow, ...rows].map((r) => r?.byRace));
   if (mobile) {
@@ -227,10 +242,11 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
         {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 · 전적은 전체·종족 넷을 덮는다. 뜻 풀이는 정렬 줄의 도움말 단추(StatHelp)로 옮겼다(2026-10-22, 요청: "헤더 설명 다 제거 · 도움말 아이콘 툴팁에 표 모양과 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
-          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow">APM</span>
-          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow">데미지</span>
-          <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
-          {["전체", ...RACES].map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head">{r}</span>)}
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead k="apm" sort={sort}>APM</SortHead></span>
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead k="dmg" sort={sort}>데미지</SortHead></span>
+          <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4"><SortHead k="plays" sort={sort}>전적</SortHead></span>
+          <span className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead k="rate" sort={sort}>전체</SortHead></span>
+          {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head">{r}</span>)}
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} openAll={openAll} scale={scale} />}
         {rows.map((r) => <MobileRow key={r.member.id} row={r} openAll={openAll} scale={scale} />)}
@@ -241,7 +257,10 @@ export default function StatGrid({ clan, clanGames, rows, openAll, mobile }: {
     <div className="scr-sg" role="table" aria-label="통계">
       {/* 머리는 두 줄 — 종족 이름이 [전적 | 승률] 두 칸을 덮고, 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
-        {["유저", "경기", "승률", "APM", "데미지"].map((h, i) => <span key={h} className={cx("scr-sg-c", "scr-sg-h2", i === 0 && "scr-sg-who")}>{h}</span>)}
+        <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
+        {([["경기", "plays"], ["승률", "rate"], ["APM", "apm"], ["데미지", "dmg"]] as const).map(([h, k]) => (
+          <span key={h} className="scr-sg-c scr-sg-h2"><SortHead k={k} sort={sort}>{h}</SortHead></span>
+        ))}
         {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hgroup">{r}</span>)}
         <span className="scr-sg-c scr-sg-h2" />
         {RACES.map((r) => <Fragment key={r}><span className="scr-sg-c scr-sg-hsub">전적</span><span className="scr-sg-c scr-sg-hsub">승률</span></Fragment>)}
