@@ -54,14 +54,15 @@ function supAt(spt: [number, number][] | undefined, sec: number): number | null 
 }
 /** ★ 칩 팝오버(2026-10-22, 요청: "데이터 창 건물(테크)에서 칩 클릭 시 정확한 시각과 그 시각의 인구수" → "팝오버로") — 누른 칩 위 가운데에 뜬다(판 밖으로는 안 나간다).
  *  x·y·w 는 판 자(판은 잰 폭 1:1 이라 그대로 px) · 줄마다 [무엇 · 분:초 · 그때 인구]. */
-type ChipPopAt = { key: string; x: number; y: number; w: number; title: string; lines: { what: string; sec: number; sup: number | null }[] };
+/*  ★ 줄은 **착공 시각만**(2026-10-23, 요청: "착공 시간만 표시하고 번호 매기지 않기 · 착공이라는 표현도 필요 없고 시간만 나열") — 옛 [착공 · 완공 · 사라짐] 과 묶음의 "N번" 걷음. */
+/*  건물 이름(제목 줄)도 걷었다 — 칩에 이미 적혀 있다(같은 날 "팝오버에 건물명 반복 노노"). */
+type ChipPopAt = { key: string; x: number; y: number; w: number; lines: { sec: number; sup: number | null }[] };
 function ChipPop({ pop, width }: { pop: ChipPopAt; width: number }) {
   const left = Math.max(70, Math.min(width - 70, pop.x + pop.w / 2));
   return (
     <div className="scr-bl-pop" style={{ left, top: pop.y }} role="status">
-      <b>{pop.title}</b>
-      {pop.lines.map((l) => (
-        <span key={l.what}>{l.what} {clock(l.sec)}{l.sup !== null && <> · 인구 {l.sup}</>}</span>
+      {pop.lines.map((l, i) => (
+        <span key={i}>{clock(l.sec)}{l.sup !== null && <> · 인구 {l.sup}</>}</span>
       ))}
     </div>
   );
@@ -217,17 +218,15 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, mobile, f
               const hl = hover !== null && hover.tech.t === t.t && (!focus || focus === l.group);   /* 고른 사람이 있으면 그 줄만(요청: "테크도 다른 사람 건 하이라이트 제외") */
               const show = (): void => { setHover({ tech: t }); onAt(t.e / 60); };
               const popKey = `${l.key}:${t.t}`;
-              const openPop = (): void => setPop((p) => (p?.key === popKey ? null : {
-                key: popKey, x: cx0, y, w, title: label,
-                lines: [{ what: "착공", sec: t.s, sup: supAt(l.spt, t.s) }, { what: "완공", sec: t.e, sup: supAt(l.spt, t.e) }],
-              }));
+              const popAt: ChipPopAt = { key: popKey, x: cx0, y, w, lines: [{ sec: t.s, sup: supAt(l.spt, t.s) }] };
+              /* 마우스는 얹으면 팝오버도 뜨고 떼면 걷는다(2026-10-23, 요청: "PC 에서 마우스오버만으로도 팝오버 뜨게" — 좁은 창의 이 판도 PC 판 BuildLanes 와 같게) · 손가락은 탭. */
               return (
                 <g
                   key={t.t} className="scr-tl-hit"
-                  onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
-                  onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
+                  onPointerEnter={(e) => { if (e.pointerType === "mouse") { show(); setPop(popAt); } }}
+                  onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(null); setPop((p) => (p?.key === popKey ? null : p)); } }}
                   onPointerDown={(e) => { lastPtr.current = e.pointerType; }}
-                  onClick={() => { openPop(); if (lastPtr.current !== "mouse") { if (hover?.tech === t) { setHover(null); onAt(null); } else show(); } }}
+                  onClick={() => { if (lastPtr.current !== "mouse") { setPop((p) => (p?.key === popKey ? null : popAt)); if (hover?.tech === t) { setHover(null); onAt(null); } else show(); } }}
                 >
                   <rect className={`scr-tl-chip${hl ? " is-hl" : ""}`} x={cx0} y={y} width={w} height={CH} rx={RX} />
                   <text
@@ -316,26 +315,15 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
      ★★ **선은 걷었다**(2026-10-23, 요청: "선 제거 — 선은 애드온이나 변태에만 연결 · 선은 필요시 꺾을 수 있음") — 수명 선(짓는 중 점선 · 산 동안 실선)은 없고,
      한 채의 칩들(본 칩 → 변태 "→ 레어" · 애드온 "+머신샵" · 변태 취소)만 같은 단에서 **잇는 선**으로 엮는다. 뒤 칩이 앞 칩과 겹치면 오른쪽으로 밀고 그 사이를 잇는다.
      ★ **자세히 보기에서는 가까운 때의 같은 건물을 묶는다**(같은 날 "근처 시간대에 같은 건물 칩은 ×3 이렇게 묶기 · 팝업엔 각각 다") — 딸린 칩이 없는(변태·애드온·변태 취소 없는)
-     같은 종류를 앞 채 착공에서 GROUP_SEC 안이면 한 칩 "서플 ×3" 으로 · 팝업은 한 채씩 착공·완공·사라짐.
-     ★ **시간선 상태**(같은 날 "타임선 있을 때 — 그 시간에 존재 보이기 · 짓는 중 연하게 · 파괴됨 취소선 및 흐리게 · 아직 안 지음 점선") — 세로 시간선(at)이 서면 칩마다
-     그 때의 처지로: 있음 = 그대로 · 짓는 중(변태 중) = 연하게(is-build) · 사라짐(파괴·취소) = 흐리게 + 가운데 취소선(is-dead) · 아직 = 점선 테 빈 칩(is-pre). 묶음은 한 채라도
-     있으면 있음 → 짓는 중 → 아직 → 사라짐 차례로 고른다. 시간선이 없으면 종전대로(못 지은 것만 딤 is-cut). */
+     같은 종류를 앞 채 착공에서 GROUP_SEC 안이면 한 칩 "서플 ×3" 으로 · 팝업은 채마다 착공 시각(번호 없이).
+     (걷어냄) 시간선 처지(짓는 중 연하게 · 사라짐 취소선 · 아직 점선) — 2026-10-23, 요청: "시간축에 따른 효과 제거". 못 지은 것만 딤(is-cut). */
   const { h: CH, px: PX, r: RX } = chipBox(BL.fs);
   const STEP = CH + 2 * BL.tier;
   const RIGHT = CW - padR;
   const chipW = (label: string): number => textW(label, BL.fs) + 2 * PX;
-  const T9 = at === null ? null : at * 60;
   type Bld = GameCurve["blds"][number];
-  type St = "live" | "build" | "dead" | "pre";
-  /** 한 채의 그때 처지 — 착공 s · 완공 d(못 지었으면 null) · 사라짐 e(끝까지 있으면 null). */
-  const stOf = (b: Bld, T: number): St => {
-    if (T < b.s) return "pre";
-    if (b.e !== null && T >= b.e) return "dead";
-    if (b.d === null || T < b.d) return "build";
-    return "live";
-  };
-  /** kind — 그 칩이 말하는 건물 종류(같은 종류 강조) · at — 그 칩의 때(초) · what — 팝오버의 무엇 · st — 시간선 처지 · grp — 묶음(×N)의 채들. */
-  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; st: (T: number) => St; grp?: Bld[] };
+  /** kind — 그 칩이 말하는 건물 종류(같은 종류 강조) · at — 그 칩의 때(초) · what — 무엇(본 칩 착공 · 변태 · 붙음 · 변태 시작) · grp — 묶음(×N)의 채들. */
+  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; grp?: Bld[] };
   const GROUP_SEC = 45;
   let y0 = 4;
   const rows = lanes.map((l) => {
@@ -351,9 +339,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       .filter((b) => !(b.h && b.h.length > 0 && b.h.some(([hi9]) => !!l.blds[hi9])))
       .filter((b) => !techOnly || b.t in TECH_LABEL || b.m.some(([t]) => t in TECH_LABEL) || (b.s === 0 && MAIN_HALL.has(b.t)))
       .slice().sort((p, q) => p.s - q.s);
-    const tag = (at9: number, label: string, what: string, st: (T: number) => St, extra?: Partial<Tag>): Tag => {
+    const tag = (at9: number, label: string, what: string, extra?: Partial<Tag>): Tag => {
       const w = chipW(label);
-      return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, st, ...extra };
+      return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, ...extra };
     };
     /* 한 채(또는 묶음)의 칩들 — 때 차례 · 뒤 칩은 앞 칩 오른끝 + 잇는 몫 뒤로 민다(잇는 선이 설 자리). */
     const units: { bs: Bld[]; tags: Tag[] }[] = [];
@@ -371,16 +359,16 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
           continue;
         }
       }
-      const tags: Tag[] = [tag(b.s, name9, "착공", (T) => stOf(b, T), { kind: b.t })];
-      for (const [mt, ms, md] of b.m) {
-        tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, "변태", (T) => (T < ms ? "pre" : b.e !== null && T >= b.e ? "dead" : md === null || T < md ? "build" : "live"), { kind: mt }));
+      const tags: Tag[] = [tag(b.s, name9, "착공", { kind: b.t })];
+      for (const [mt, ms] of b.m) {
+        tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, "변태", { kind: mt }));
       }
       for (const { at: at9, a } of onHost9.get(b) ?? []) {
-        tags.push(tag(at9, `+${BUILD_LABEL[a.t] ?? `#${a.t}`}`, "붙음", (T) => (T < at9 ? "pre" : stOf(a, T)), { kind: a.t, cut: a.d === null && a.e !== null }));
+        tags.push(tag(at9, `+${BUILD_LABEL[a.t] ?? `#${a.t}`}`, "붙음", { kind: a.t, cut: a.d === null && a.e !== null }));
       }
       for (const [xs] of b.x ?? []) {
         const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
-        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, "변태 시작", (T) => (T < xs ? "pre" : "dead"), { cut: true }));
+        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, "변태 시작", { cut: true }));
       }
       tags.sort((p, q) => p.at - q.at);
       for (let ti = 1; ti < tags.length; ti += 1) {
@@ -412,16 +400,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const H = y0;
   const rowCls = (l: BuildLane): string => (focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row");
   const lyOf = (top: number, k: number): number => top + BL.pad + BL.tier + k * STEP + CH / 2;
-  /** 묶음의 처지 — 한 채라도 있으면 있음 · 그다음 짓는 중 · 아직 · 사라짐. */
-  const grpSt = (bs: Bld[], T: number): St => {
-    const ss = bs.map((b) => stOf(b, T));
-    return (["live", "build", "pre", "dead"] as St[]).find((v) => ss.includes(v)) ?? "live";
-  };
-  const stCls = (t: Tag): string | undefined => {
-    if (T9 === null) return t.cut ? "is-cut" : undefined;
-    const st = t.grp ? grpSt(t.grp, T9) : t.st(T9);
-    return st === "live" ? undefined : `is-${st}`;
-  };
+  /** 못 지은 것(짓다 사라짐 · 변태 취소 · 못 지은 애드온)만 딤(is-cut). 시간선 처지 표시는 걷었다(2026-10-23, 요청: "시간축에 따른 효과 제거"). */
+  const stCls = (t: Tag): string | undefined => (t.cut ? "is-cut" : undefined);
   /* ★ 같은 종류 강조 — 얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩은 사람과 상관없이 강조색(2026-10-22) · 애드온과 본 건물은 함께(ADDON_HOST9). */
   const tagHlOf = (t: Tag): boolean => hoverKind !== null && t.kind !== undefined
     && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
@@ -431,24 +411,13 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
         {t.label}
       </text>
-      <line className="scr-bl-strike" x1={t.x + PX * 0.6} x2={t.x + t.w - PX * 0.6} y1={ly} y2={ly} />
     </>
   );
-  /** 팝오버 — 한 채면 [무엇 · 분:초 · 그때 인구] + 본 칩은 완공·사라짐 · 묶음이면 한 채씩 다. */
-  const popOf = (l: BuildLane, u: { bs: Bld[]; tags: Tag[] }, t: Tag, ti: number, key: string, ly: number): ChipPopAt => {
-    const b = u.bs[0];
-    const life = (m: Bld, pre: string): ChipPopAt["lines"] => [
-      { what: `${pre}착공`, sec: m.s, sup: supAt(l.spt, m.s) },
-      ...(m.d !== null && m.d !== m.s ? [{ what: `${pre}완공`, sec: m.d, sup: supAt(l.spt, m.d) }] : []),
-      ...(m.e !== null ? [{ what: `${pre}${m.d === null ? "취소" : "사라짐"}`, sec: m.e, sup: supAt(l.spt, m.e) }] : []),
-    ];
-    return {
-      key, x: t.x, y: ly - CH / 2, w: t.w, title: t.label.replace(/^[→+] ?/, ""),
-      lines: t.grp ? t.grp.flatMap((m, mi) => life(m, `${mi + 1}번 `))
-        : ti === 0 && t.what === "착공" ? life(b, "")
-          : [{ what: t.what, sec: t.at, sup: supAt(l.spt, t.at) }],
-    };
-  };
+  /** 팝오버 — 그 칩의 시각(본 칩 = 착공 · 변태·애드온 칩 = 그 때) · 묶음이면 채마다 착공 시각을 나열(번호 없이). 줄마다 그때 인구. */
+  const popOf = (l: BuildLane, t: Tag, key: string, ly: number): ChipPopAt => ({
+    key, x: t.x, y: ly - CH / 2, w: t.w,
+    lines: (t.grp ? t.grp.map((m) => m.s) : [t.at]).map((sec) => ({ sec, sup: supAt(l.spt, sec) })),
+  });
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">테크<TitleSwitch label="간단히 보기" on={techOnly} onChange={onTechOnly} /></figcaption>
@@ -469,11 +438,11 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
               const b = u.bs[0];
               return (
                 <g key={`${b.s}:${b.t}:${k}`} className="scr-bl-hit">
-                  {/* 잇는 선 — 한 채의 앞 칩 오른끝 → 뒤 칩 왼끝(변태·애드온 · 같은 단이라 곧은 선). 뒤 칩의 처지(아직 = 점선)를 따른다. */}
+                  {/* 잇는 선 — 한 채의 앞 칩 오른끝 → 뒤 칩 왼끝(변태·애드온 · 같은 단이라 곧은 선). */}
                   {u.tags.slice(1).map((t, ti) => {
                     const pv = u.tags[ti];
                     if (t.x <= pv.x + pv.w + 0.5) return null;
-                    return <line key={`l${ti}`} className={cx("scr-bl-link", stCls(t))} x1={pv.x + pv.w} x2={t.x} y1={ly} y2={ly} />;
+                    return <line key={`l${ti}`} className="scr-bl-link" x1={pv.x + pv.w} x2={t.x} y1={ly} y2={ly} />;
                   })}
                   {u.tags.map((t, ti) => {
                     const hl9 = tagHlOf(t);
@@ -486,7 +455,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                         if (e.pointerType !== "mouse") return;
                         setHoverKind(t.kind ?? null);
                         setMe({ key: popKey, lane: l, x: t.x, y: ly - CH / 2, w: t.w, label: t.label });
-                        setPop(popOf(l, u, t, ti, popKey, ly));
+                        setPop(popOf(l, t, popKey, ly));
                       }}
                       onPointerLeave={(e) => {
                         if (e.pointerType !== "mouse") return;
@@ -495,7 +464,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                         setPop((p) => (p?.key === popKey ? null : p));
                       }}
                       onPointerDown={(e) => { lastPtr.current = e.pointerType; }}
-                      onClick={() => { if (lastPtr.current !== "mouse") setPop((p) => (p?.key === popKey ? null : popOf(l, u, t, ti, popKey, ly))); }}
+                      onClick={() => { if (lastPtr.current !== "mouse") setPop((p) => (p?.key === popKey ? null : popOf(l, t, popKey, ly))); }}
                     >
                       {chipOf(t, ly, hl9 ? "is-hl" : undefined)}
                     </g>
