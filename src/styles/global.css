@@ -5409,7 +5409,7 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-recommend-n { font-size: var(--fs-11); font-variant-numeric: tabular-nums; line-height: 1; }
 .scr-gtab-rec { width: auto; height: 26px; padding: 0 4px; gap: 4px; }
 .scr-gtab-rec .scr-recommend-n { font-size: inherit; }
-.scr-activity-row-rec { grid-column: 1; justify-self: start; width: auto; min-width: 32px; height: 32px; padding: 0 6px; margin-left: -6px; }
+.scr-activity-row-rec { grid-column: 1; justify-self: start; width: auto; min-width: 32px; height: 32px; padding: 0 6px; margin-left: 4px; }   /* 살짝 오른쪽(-6 → 4 · 2026-10-23 요청: "추천버튼 살짝 우측으로") */
 /* ★ 윗줄 = [재생 배지 왼끝 · 맵·시간 배지 **정가운데** · (NEW) 시각 오른끝](2026-10-19, 요청 위 ★★) — 맵 배지는 줄 몸의 가운데에 절대 자리(위 여백 7 = 줄 몸 위 패딩).
    리그 판 머리 줄(has-above)이 있는 줄은 그 아래라 자리를 모른다 — 양옆 auto 여백으로 가운데 어림. */
 /* 윗줄은 격자 [재생 1fr | 맵·시간 | (NEW) 시각 1fr] — 양옆이 같은 1fr 라 맵 배지가 늘 정가운데다(리그 판 머리 줄이 있어도 · 옛 flex 차례 order 1~4 를 덮는다).
