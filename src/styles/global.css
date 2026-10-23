@@ -7889,8 +7889,6 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-pl-tier-list .scr-pl-chip { font-weight: 700; }
 .scr-pl-tier-list .scr-pl-chip small { font-weight: 500; font-variant-numeric: tabular-nums; }
 .scr-pl-tier-empty { color: var(--dim); font-size: var(--fs-caption); }
-.scr-pl-waiting { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
-.scr-pl-waiting-label { margin-right: 4px; font-size: var(--fs-caption); color: var(--muted); }
 .scr-pl-rr-head { display: flex; align-items: baseline; gap: 10px; }
 .scr-pl-rr-head .scr-pl-note { margin: 0 0 8px; }
 .scr-pl-rr-scroll {

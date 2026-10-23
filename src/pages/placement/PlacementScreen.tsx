@@ -27,7 +27,6 @@ const recordOf = (p: PlacementPlayer): string => `${p.won}승 ${p.lost}패${p.dr
 
 function TierBoard({ round }: { round: PlacementRound }) {
   const placed = round.players.filter((p) => p.tier !== null);
-  const waiting = round.players.filter((p) => p.tier === null);
   return (
     <section className="scr-pl-tiers" aria-label="티어표">
       <h2 className="scr-pl-h2">티어표</h2>
@@ -54,14 +53,7 @@ function TierBoard({ round }: { round: PlacementRound }) {
           );
         })}
       </div>
-      {waiting.length > 0 && (
-        <div className="scr-pl-waiting">
-          <span className="scr-pl-waiting-label">미배치 {waiting.length}명</span>
-          {waiting.map((p) => (
-            <span key={p.memberId} className="scr-pl-chip">{p.nickname}<small>{p.won + p.lost + p.drawn}세트</small></span>
-          ))}
-        </div>
-      )}
+      {/* (걷음 · 2026-10-23, 요청: "미배치는 굳이 필요 없을 듯") 티어에 못 든 사람 칩 줄. */}
     </section>
   );
 }
