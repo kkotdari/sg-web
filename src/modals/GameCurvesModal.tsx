@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
@@ -273,7 +273,7 @@ const ADDON_HOST9: Record<number, number> = { 107: 106, 108: 106, 115: 114, 117:
 const MAIN_HALL = new Set([106, 131, 154]);
 /** PC 건설 줄 치수(px) — 건물 한 채마다 컴팩트 칩(fs 글자 · chipBox) · 칩 사이 gap · 단 사이 숨 tier · 사람 칸 위아래 숨 pad ·
  *  단 안에서 선을 비켜 놓는 높이 jig(가운데 · 위 · 아래 · 2026-10-22, 요청: "미묘하게 높이를 다양화해서 선이 최대한 안 겹치게"). */
-const BL = { fs: 10.5, gap: 3, tier: 2.5, pad: 6, link: 8 } as const;   // 칩 키움(2026-10-23, 요청: "칩 크기 살짝 키우기" · 9.5 → 10.5) · link = 변태·애드온 칩을 잇는 선의 최소 길이(옛 jig 걷음 — 수명 선이 없다)
+const BL = { fs: 10.5, gap: 3, tier: 2.5, pad: 6, link: 10 } as const;   // link 8 → 10(2026-10-23 — 선이 화살표가 되어 촉 5px 뒤에도 대가 보이게) · 칩 키움(2026-10-23, 요청: "칩 크기 살짝 키우기" · 9.5 → 10.5) · link = 변태·애드온 칩을 잇는 선의 최소 길이(옛 jig 걷음 — 수명 선이 없다)
 
 type BuildLane = { key: string; group: string; name: string; color: string; blds: GameCurve["blds"]; spt?: GameCurve["spt"] };
 
@@ -313,11 +313,13 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const scrub = useScrub(pick, () => { setHoverKind(null); setMe(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
   /* ★ 건물 한 채 = 칩 하나(2026-10-22) · 사람 칸 안에서 **착공 차례**로 늘어놓고 칩끼리만 안 겹치게 위 단부터 빈자리에 넣는다.
      ★★ **선은 걷었다**(2026-10-23, 요청: "선 제거 — 선은 애드온이나 변태에만 연결 · 선은 필요시 꺾을 수 있음") — 수명 선(짓는 중 점선 · 산 동안 실선)은 없고,
-     한 채의 칩들(본 칩 → 변태 "→ 레어" · 애드온 "+머신샵" · 변태 취소)만 같은 단에서 **잇는 선**으로 엮는다. 뒤 칩이 앞 칩과 겹치면 오른쪽으로 밀고 그 사이를 잇는다.
+     한 채의 칩들(본 칩 → 변태 "레어" · 애드온 "머신샵" · 변태 취소)만 같은 단에서 **잇는 선**으로 엮는다. 뒤 칩이 앞 칩과 겹치면 오른쪽으로 밀고 그 사이를 잇는다.
+     ★ 잇는 선이 **화살표**다(2026-10-23, 요청: "애드온 + 없애기 · 변태 화살표 없애고 선을 화살표로") — 칩 글자의 "→ " · "+" 머리는 걷고, 선 끝(뒤 칩 쪽)에 화살촉.
      ★ **자세히 보기에서는 가까운 때의 같은 건물을 묶는다**(같은 날 "근처 시간대에 같은 건물 칩은 ×3 이렇게 묶기 · 팝업엔 각각 다") — 딸린 칩이 없는(변태·애드온·변태 취소 없는)
      같은 종류를 앞 채 착공에서 GROUP_SEC 안이면 한 칩 "서플 ×3" 으로 · 팝업은 채마다 착공 시각(번호 없이).
      (걷어냄) 시간선 처지(짓는 중 연하게 · 사라짐 취소선 · 아직 점선) — 2026-10-23, 요청: "시간축에 따른 효과 제거". 못 지은 것만 딤(is-cut). */
   const { h: CH, px: PX, r: RX } = chipBox(BL.fs);
+  const arrowId = `scr-bl-arrow${useId().replace(/:/g, "")}`;   // 잇는 선의 화살촉(svg defs · 판마다 제 id)
   const STEP = CH + 2 * BL.tier;
   const RIGHT = CW - padR;
   const chipW = (label: string): number => textW(label, BL.fs) + 2 * PX;
@@ -361,14 +363,14 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       }
       const tags: Tag[] = [tag(b.s, name9, "착공", { kind: b.t })];
       for (const [mt, ms] of b.m) {
-        tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, "변태", { kind: mt }));
+        tags.push(tag(ms, BUILD_LABEL[mt] ?? `#${mt}`, "변태", { kind: mt }));
       }
       for (const { at: at9, a } of onHost9.get(b) ?? []) {
-        tags.push(tag(at9, `+${BUILD_LABEL[a.t] ?? `#${a.t}`}`, "붙음", { kind: a.t, cut: a.d === null && a.e !== null }));
+        tags.push(tag(at9, BUILD_LABEL[a.t] ?? `#${a.t}`, "붙음", { kind: a.t, cut: a.d === null && a.e !== null }));
       }
       for (const [xs] of b.x ?? []) {
         const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
-        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, "변태 시작", { cut: true }));
+        tags.push(tag(xs, MORPH_TO[base] ?? "변태", "변태 시작", { cut: true }));
       }
       tags.sort((p, q) => p.at - q.at);
       for (let ti = 1; ti < tags.length; ti += 1) {
@@ -423,6 +425,11 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       <figcaption className="scr-rc-title">테크<TitleSwitch label="간단히 보기" on={techOnly} onChange={onTechOnly} /></figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
+        <defs>
+          <marker id={arrowId} viewBox="0 0 6 6" refX="6" refY="3" markerWidth="5" markerHeight="5" markerUnits="userSpaceOnUse" orient="auto">
+            <path className="scr-bl-arrowhead" d="M0,0 L6,3 L0,6 z" />
+          </marker>
+        </defs>
         {rows.map(({ l, items, top, h }) => (
           <g key={l.key} className={rowCls(l)}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
@@ -442,7 +449,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                   {u.tags.slice(1).map((t, ti) => {
                     const pv = u.tags[ti];
                     if (t.x <= pv.x + pv.w + 0.5) return null;
-                    return <line key={`l${ti}`} className="scr-bl-link" x1={pv.x + pv.w} x2={t.x} y1={ly} y2={ly} />;
+                    return <line key={`l${ti}`} className="scr-bl-link" x1={pv.x + pv.w} x2={t.x - 1} y1={ly} y2={ly} markerEnd={`url(#${arrowId})`} />;
                   })}
                   {u.tags.map((t, ti) => {
                     const hl9 = tagHlOf(t);
