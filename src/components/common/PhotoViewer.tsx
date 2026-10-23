@@ -16,7 +16,7 @@ interface PhotoViewerProps {
   extra?: ReactNode;
   /** ★ 단추 줄 모드(일정 사진 목록·슬라이드 · 2026-10-23, 요청: "누르면 해당 위치에서 확대창이 뜨는데 닫기 버튼 등 모든 버튼과 인덱스랑 좌우 이동은
    *  사진 밖 아래에 사진 가리지 않음 · 동영상도 원래 비율대로 처음부터 창이 뜨고 버튼은 마찬가지 · 자동 반복 재생") — 단추(extra · 닫기)와 앞뒤 · n/n 을
-   *  사진 **밖 아래 한 줄**에 둔다. 창은 썸네일(thumb)로 비율을 먼저 알아 처음부터 제 크기로 서고(동영상도 · 원본이 오면 그 값으로 바로잡는다),
+   *  사진 **밖 아래 한 줄**에 둔다. 판(흐린 바탕)은 그림과 그 줄만 감싸고 나머지 화면은 그대로 보인다(같은 날 "불필요한 영역까지 패널 처리 안 하기"). 창은 썸네일(thumb)로 비율을 먼저 알아 처음부터 제 크기로 서고(동영상도 · 원본이 오면 그 값으로 바로잡는다),
    *  from 이 주는 자리(누른 칸)에서 커지며 열리고 닫을 때 그 자리로 줄어든다. 동영상은 반복 재생. */
   bar?: boolean;
   thumb?: string;
@@ -86,6 +86,8 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
   const imgRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
   /* 단추 줄 모드의 창 크기 — 비율(aspect)을 알면 무대(stage)에 맞춘 크기(fit). 원본 크기(natural)를 알면 그보다 키우지 않는다. */
   const aspect = useRef<number | null>(null);
   const natural = useRef<{ w: number; h: number } | null>(null);
@@ -112,10 +114,15 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
   const refit = (): void => {
     const a = aspect.current;
     const st = stageRef.current;
-    if (!bar || !a || !st) return;
+    const card = cardRef.current;
+    if (!bar || !a || !st || !card) return;
+    // 판(card)은 그림 + 단추 줄만 감싼다 — 그림 자리 = 화면(여백 뺀) − 판 안쪽 여백 − 단추 줄 − 그 사이.
+    const px = (v: string): number => parseFloat(v) || 0;
     const cs = getComputedStyle(st);
-    const W = st.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    const H = st.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const cc = getComputedStyle(card);
+    const W = st.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight) - px(cc.paddingLeft) - px(cc.paddingRight);
+    const H = st.clientHeight - px(cs.paddingTop) - px(cs.paddingBottom) - px(cc.paddingTop) - px(cc.paddingBottom)
+      - (barRef.current?.offsetHeight ?? 0) - px(cc.rowGap);
     let w = Math.min(W, H * a);
     if (natural.current) w = Math.min(w, natural.current.w);
     w = Math.max(1, Math.floor(w));
@@ -197,10 +204,10 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
       window.addEventListener("resize", reset);
       return () => { window.removeEventListener("resize", reset); unbake(); };
     }
-    // 단추 줄 모드 — 장이 바뀌면 비율을 새로 안다(썸네일이 먼저 · 대개 캐시에 있다). 알 때까지 그림은 숨긴다.
+    // 단추 줄 모드 — 장이 바뀌면 비율을 새로 안다(썸네일이 먼저 · 대개 캐시에 있다). 처음 열 때는 알 때까지 판을 숨기고,
+    // 넘길 때는 앞 장의 크기를 잠깐 쓴다(판이 깜빡이지 않게).
     aspect.current = null;
     natural.current = null;
-    setFit(null);
     let live = true;
     if (thumb) {
       const probe = new Image();
@@ -335,8 +342,8 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
   if (bar) {
     const hide = fit ? undefined : "hidden" as const;
     return createPortal(
-      <div className={cx("scr-pv", closing && "is-closing")}>
-        <div className="scr-pv-stage" ref={stageRef} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+      <div className={cx("scr-pv", closing && "is-closing")} ref={stageRef} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+        <div className="scr-pv-card" ref={cardRef} style={{ visibility: hide }}>
           <div
             className="scr-pv-frame" ref={frameRef}
             onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
@@ -345,7 +352,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
             {video ? (
               <video
                 key={src} ref={videoRef} src={imgSrc(src)} poster={thumb ? imgSrc(thumb) : undefined}
-                className="scr-pv-media scr-pv-video" style={{ width: fit?.w, height: fit?.h, visibility: hide }}
+                className="scr-pv-media scr-pv-video" style={{ width: fit?.w, height: fit?.h }}
                 controls autoPlay loop playsInline
                 onLoadedMetadata={(e) => learn(e.currentTarget.videoWidth, e.currentTarget.videoHeight, true)}
               />
@@ -353,32 +360,32 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
               <img
                 src={imgSrc(src)} alt={alt} className="scr-pv-media" ref={imgRef} draggable={false}
                 /* 원본이 오는 동안 썸네일을 깐다 — 창은 이미 제 크기다. */
-                style={{ visibility: hide, backgroundImage: thumb ? `url("${imgSrc(thumb)}")` : undefined }}
+                style={{ backgroundImage: thumb ? `url("${imgSrc(thumb)}")` : undefined }}
                 onLoad={(e) => learn(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight, true)}
               />
             )}
           </div>
-        </div>
-        <div className="scr-pv-bar">
-          <span className="scr-pv-navs">
-            {(onPrev || onNext) && (
-              <>
-                <button type="button" className="scr-sb-slide-nav" aria-label="이전" disabled={!onPrev} onClick={() => onPrev?.()}>
-                  <ChevronLeft size={16} />
-                </button>
-                {counter && <span className="scr-sb-slide-count" aria-live="polite">{counter}</span>}
-                <button type="button" className="scr-sb-slide-nav" aria-label="다음" disabled={!onNext} onClick={() => onNext?.()}>
-                  <ChevronRight size={16} />
-                </button>
-              </>
-            )}
-          </span>
-          <span className="scr-pv-tools">
-            {extra}
-            <button type="button" className="scr-icon-btn scr-photo-close" onClick={close} aria-label="닫기">
-              <X size={16} />
-            </button>
-          </span>
+          <div className="scr-pv-bar" ref={barRef}>
+            <span className="scr-pv-navs">
+              {(onPrev || onNext) && (
+                <>
+                  <button type="button" className="scr-sb-slide-nav" aria-label="이전" disabled={!onPrev} onClick={() => onPrev?.()}>
+                    <ChevronLeft size={16} />
+                  </button>
+                  {counter && <span className="scr-sb-slide-count" aria-live="polite">{counter}</span>}
+                  <button type="button" className="scr-sb-slide-nav" aria-label="다음" disabled={!onNext} onClick={() => onNext?.()}>
+                    <ChevronRight size={16} />
+                  </button>
+                </>
+              )}
+            </span>
+            <span className="scr-pv-tools">
+              {extra}
+              <button type="button" className="scr-icon-btn scr-photo-close" onClick={close} aria-label="닫기">
+                <X size={16} />
+              </button>
+            </span>
+          </div>
         </div>
       </div>,
       document.body,
