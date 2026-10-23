@@ -73,7 +73,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
     setGame(updated);
   };
 
-  /* 게임을 받는 동안도 페이지 꼴(머리 줄 · 판 자리)을 먼저 세우고 판 자리에 재생기 꼴의 로딩 판(PlayerLoadShell)을 둔다 — 옛 돌림표만 뜨던 빈 화면 대신. */
+  /* 게임을 받는 동안도 페이지 꼴(머리 줄 · 판 자리)을 먼저 세우고 판 자리에 자료를 기다리는 재생기(PlayerLoadShell)를 둔다 — 옛 돌림표만 뜨던 빈 화면 대신. */
   if (!game) {
     return (
       <div className="scr-activity-group-page">

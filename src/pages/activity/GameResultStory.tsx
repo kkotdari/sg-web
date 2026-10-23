@@ -257,7 +257,7 @@ export default function GameResultStory({
         {winBadge}
       </div>
     )}
-      {/* 게임 상세(soleView)는 재생기와 같은 꼴의 로딩 판(PlayerLoadShell) — 목록 카드는 옛 흐린 네모 그대로. */}
+      {/* 게임 상세(soleView)는 자료를 기다리는 재생기(PlayerLoadShell · scplay pending)를 먼저 세운다 — 목록 카드는 옛 흐린 네모 그대로. */}
       {(mapPending || playerWait) && (soleViewNow ? <PlayerLoadShell /> : <div className="scr-story-mapwait" aria-hidden />)}
       {!showRoster && playerReady && mapBlock}
       {showMapLine && (
