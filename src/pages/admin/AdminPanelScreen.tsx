@@ -154,21 +154,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
     }
   };
 
-  /* ★ 동영상 썸네일 다시 굽기(2026-10-23, 지적: "동영상 섬네일과 영상 방향이 안맞는건 왜그래") — 10-21 회전 고침 전에 구운
-     세로 동영상 썸네일이 누운 채 남았다. 일정의 모든 동영상을 원본에서 다시 굽는다(서버 · 일정의 고친 시각은 그대로). */
-  const [rebaking, setRebaking] = useState(false);
-  const rebakeVideoThumbs = async () => {
-    setRebaking(true);
-    try {
-      const r = await api.rebakeVideoThumbs();
-      showToast(`동영상 썸네일 ${r.made}개를 다시 구웠어요${r.failed ? ` · 원본을 못 읽은 것 ${r.failed}개` : ""}.`, { kind: "ok" });
-    } catch (e) {
-      showAlert(e instanceof Error ? e.message : "썸네일을 다시 굽지 못했어요.");
-    } finally {
-      setRebaking(false);
-    }
-  };
-
   /* ★ **데이터 관리**(2026-10-20, 요청: "재분석 참값 삭제 경기 삭제가 비슷한 모달창 사용 · 날짜칸이 제어판에 있지 않고 모달창에 · 버튼도 모두 대상선택 ·
      아니면 데이터관리 메뉴로 통합해서 모달창 열고 from to 입력칸 주고 버튼 3개 · 공방경기 체크박스도") — 옛 세 줄(경기 재분석 · 참값 지우기(날짜까지) · 모든 경기기록 삭제)을
      한 창(아래 pickerOpen)으로 모았다: 기간(from~to) · 공방 경기만 · 찾기로 대상을 고르고 [재분석 · 참값 삭제 · 경기 삭제] 중 하나를 **고른 판에만** 건다.
@@ -573,19 +558,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     onClick={downloadReplays} disabled={downloading}
                   >
                     {downloading ? <Spinner /> : "내려받기"}
-                  </button>
-                </div>
-
-                <div className="scr-adm-row">
-                  <div className="scr-adm-row-text">
-                    <span className="scr-adm-row-title">동영상 썸네일 다시 굽기</span>
-                    <span className="scr-adm-row-desc">일정 사진첩의 동영상 썸네일을 원본에서 다시 만들어요(방향이 어긋난 옛 썸네일 바로잡기).</span>
-                  </div>
-                  <button
-                    type="button" className="scr-rect-btn scr-adm-row-btn"
-                    onClick={() => { void rebakeVideoThumbs(); }} disabled={rebaking}
-                  >
-                    {rebaking ? <Spinner /> : "다시 굽기"}
                   </button>
                 </div>
 
