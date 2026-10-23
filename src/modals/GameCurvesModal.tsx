@@ -45,9 +45,43 @@ const TECH_LABEL: Record<number, string> = {
 /** 종족 글자(볼 사람 고르기의 색 동그라미 안). */
 const RACE_LETTER: Record<string, string> = { 테란: "T", 프로토스: "P", 저그: "Z", 랜덤: "R" };
 const clock = (sec: number): string => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
+/** 그 초의 인구(계단의 마지막 칸 · 없으면 null — 재분석 전 판). */
+function supAt(spt: [number, number][] | undefined, sec: number): number | null {
+  if (!spt || spt.length === 0) return null;
+  let lo = 0; let hi = spt.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (spt[m][0] <= sec) lo = m + 1; else hi = m; }
+  return lo ? spt[lo - 1][1] : 0;
+}
+/** ★ 칩 팝오버(2026-10-22, 요청: "데이터 창 건물(테크)에서 칩 클릭 시 정확한 시각과 그 시각의 인구수" → "팝오버로") — 누른 칩 위 가운데에 뜬다(판 밖으로는 안 나간다).
+ *  x·y·w 는 판 자(판은 잰 폭 1:1 이라 그대로 px) · 줄마다 [무엇 · 분:초 · 그때 인구]. */
+type ChipPopAt = { key: string; x: number; y: number; w: number; title: string; lines: { what: string; sec: number; sup: number | null }[] };
+function ChipPop({ pop, width }: { pop: ChipPopAt; width: number }) {
+  const left = Math.max(70, Math.min(width - 70, pop.x + pop.w / 2));
+  return (
+    <div className="scr-bl-pop" style={{ left, top: pop.y }} role="status">
+      <b>{pop.title}</b>
+      {pop.lines.map((l) => (
+        <span key={l.what}>{l.what} {clock(l.sec)}{l.sup !== null && <> · 인구 {l.sup}</>}</span>
+      ))}
+    </div>
+  );
+}
+/** 판 밖을 누르면 팝오버를 닫는다(칩을 누른 건 칩이 처리). */
+function useCloseOutside(open: boolean, plotRef: React.RefObject<HTMLDivElement | null>, hitSel: string, close: () => void): void {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (e: PointerEvent): void => {
+      const t = e.target as Element | null;
+      if (!t?.closest?.(hitSel) || !plotRef.current?.contains(t)) close();
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+}
 
 /** group — 고르기(focus) 단위: 평소 그 사람(key) · 팀 보기면 그 팀(두 곡선 판의 팀 줄 key). */
-type Lane = { key: string; group: string; name: string; color: string; techs: GameCurve["techs"] };
+type Lane = { key: string; group: string; name: string; color: string; techs: GameCurve["techs"]; spt?: GameCurve["spt"] };
 /** 테크 줄 치수(px · 2026-10-21, 요청: "테크트리 글자 굵기 줄이고 크기 한단만 낮춰줘" → "개인당 세 줄씩 확보해서 붙지 않게 · 총 세로 높이는 인원수에 비례" →
     "테크 행의 위아래 여백 살짝 증가" → "배율 대신 직접 값") — fs 테크 글자 · row 한 사람 칸 높이(세 단 + 위아래 숨) · tier 단 사이 · gap 같은 단 칩 사이.
     테크는 글자만 — 글자를 감싼 컴팩트 네모 칩 상자는 평소 보이지 않는 마우스 자리로 남아 겹침 가르기와 팝업 자리를 재고, 같은 종류 강조 때만 칠한다
@@ -104,6 +138,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, mobile, f
 }) {
   /* 칩에 마우스를 얹으면 그래프와 같은 꼴의 팝업(2026-10-21, 요청: "그래프처럼 팝업으로") — 칩 오른쪽(오른끝 가까이면 왼쪽)에 뜬다. */
   const [hover, setHover] = useState<{ tech: GameCurve["techs"][number] } | null>(null);
+  const [pop, setPop] = useState<ChipPopAt | null>(null);
   /* 한 사람 칸 = 세 단 높이(TL.row) · 판 높이는 사람 수에 비례. */
   const D = mobile ? TL.mobile : TL.pc;
   const AXIS_H = font.axis + 8 + AXIS_DROP;
@@ -114,6 +149,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, mobile, f
   const svgRef = useRef<SVGSVGElement | null>(null);
   /* 손가락은 탭(click)으로만 — 밀어 스크롤하면 click 이 오지 않는다(2026-10-21, 지적: "드래그를 터치로 인식해"). click 의 pointerType 대신 누른 순간의 종류. */
   const lastPtr = useRef("mouse");
+  useCloseOutside(pop !== null, plotRef, ".scr-tl-hit", () => setPop(null));
   useEffect(() => {
     if (hover === null) return undefined;
     const close = (e: PointerEvent): void => {
@@ -180,13 +216,18 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, mobile, f
                  보이지 않던 마우스 상자를 강조색으로 칠한다 · 글자색은 그대로(요청: "폰트색은 그대로"). */
               const hl = hover !== null && hover.tech.t === t.t && (!focus || focus === l.group);   /* 고른 사람이 있으면 그 줄만(요청: "테크도 다른 사람 건 하이라이트 제외") */
               const show = (): void => { setHover({ tech: t }); onAt(t.e / 60); };
+              const popKey = `${l.key}:${t.t}`;
+              const openPop = (): void => setPop((p) => (p?.key === popKey ? null : {
+                key: popKey, x: cx0, y, w, title: label,
+                lines: [{ what: "착공", sec: t.s, sup: supAt(l.spt, t.s) }, { what: "완공", sec: t.e, sup: supAt(l.spt, t.e) }],
+              }));
               return (
                 <g
                   key={t.t} className="scr-tl-hit"
                   onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
                   onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
                   onPointerDown={(e) => { lastPtr.current = e.pointerType; }}
-                  onClick={() => { if (lastPtr.current !== "mouse") { if (hover?.tech === t) { setHover(null); onAt(null); } else show(); } }}
+                  onClick={() => { openPop(); if (lastPtr.current !== "mouse") { if (hover?.tech === t) { setHover(null); onAt(null); } else show(); } }}
                 >
                   <rect className={`scr-tl-chip${hl ? " is-hl" : ""}`} x={cx0} y={y} width={w} height={CH} rx={RX} />
                   <text
@@ -212,6 +253,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, mobile, f
           </text>
         )}
       </svg>
+      {pop && <ChipPop pop={pop} width={CW} />}
       </div>
     </figure>
   );
@@ -234,7 +276,7 @@ const MAIN_HALL = new Set([106, 131, 154]);
  *  단 안에서 선을 비켜 놓는 높이 jig(가운데 · 위 · 아래 · 2026-10-22, 요청: "미묘하게 높이를 다양화해서 선이 최대한 안 겹치게"). */
 const BL = { fs: 9.5, gap: 3, tier: 2, pad: 6, jig: 3 } as const;
 
-type BuildLane = { key: string; group: string; name: string; color: string; blds: GameCurve["blds"] };
+type BuildLane = { key: string; group: string; name: string; color: string; blds: GameCurve["blds"]; spt?: GameCurve["spt"] };
 
 /** ★ PC 건설 줄(2026-10-21, 요청: "PC 에서만 테크 건물 → 건설로 바꾸고 모든 건물 건설 및 유지 기간 보여줘(파괴되기 전까지 선으로) · 테크 건물만 토글") —
  *  사람마다 칸 · 그 안에 건물 종류마다 작은 칸(처음 지은 차례) · 건물 한 채가 선 하나: 짓는 동안은 점선 · 다 지은 뒤 사라질 때까지 실선(끝까지 남으면 판 끝까지).
@@ -254,6 +296,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   /** 얹은 칩의 건물 종류 — 같은 종류 칩을 모두 임자색으로(아래 ★). 선에 얹으면 그 건물의 처음 종류. */
   const [hoverKind, setHoverKind] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [pop, setPop] = useState<ChipPopAt | null>(null);
+  useCloseOutside(pop !== null, plotRef, ".scr-bl-hit", () => setPop(null));
   const AXIS_H = font.axis + 8 + AXIS_DROP;
   const END = maxX * 60;
   const x = (sec: number): number => PL + Math.min(1, sec / END) * (CW - PL - padR);
@@ -276,7 +321,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const RIGHT = CW - padR;
   const chipW = (label: string): number => textW(label, BL.fs) + 2 * PX;
   /** kind — 그 칩이 말하는 건물 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류 · 취소 칩은 없음). 같은 종류 강조가 쓴다. */
-  type Tag = { x: number; w: number; label: string; kind?: number; cut?: boolean; morph?: boolean };
+  /** at — 그 칩의 때(초) · what — 팝오버의 무엇(착공 · 변태 · 붙음 · 변태 취소). */
+  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; morph?: boolean };
   let y0 = 4;
   const rows = lanes.map((l) => {
     /* ★ 애드온은 **본 건물의 선 위 칩**으로(2026-10-22, 요청: "애드온은 본 건물에" · "애드온 간 본 건물 변경이 가능") — 서버가 붙어 있던 구간마다 [본 건물 차례, 붙은 초](b.h)를 준다.
@@ -296,16 +342,16 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     /** 단마다 놓인 선 [높이 비킴, 왼끝, 오른끝]. */
     const lines: [number, number, number][][] = [];
     const items = shown.map((b) => {
-      const tag = (at9: number, label: string, extra?: Partial<Tag>): Tag => {
+      const tag = (at9: number, label: string, what: string, extra?: Partial<Tag>): Tag => {
         const w = chipW(label);
-        return { x: Math.min(x(at9), RIGHT - w), w, label, ...extra };
+        return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, ...extra };
       };
-      const tags: Tag[] = [tag(b.s, BUILD_LABEL[b.t] ?? `#${b.t}`, { kind: b.t })];
-      for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, { morph: true, kind: mt }));
-      for (const { at: at9, a } of onHost9.get(b) ?? []) tags.push(tag(at9, `+${BUILD_LABEL[a.t] ?? `#${a.t}`}`, { kind: a.t, cut: a.d === null && a.e !== null }));
+      const tags: Tag[] = [tag(b.s, BUILD_LABEL[b.t] ?? `#${b.t}`, "착공", { kind: b.t })];
+      for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, "변태", { morph: true, kind: mt }));
+      for (const { at: at9, a } of onHost9.get(b) ?? []) tags.push(tag(at9, `+${BUILD_LABEL[a.t] ?? `#${a.t}`}`, "붙음", { kind: a.t, cut: a.d === null && a.e !== null }));
       for (const [xs] of b.x ?? []) {
         const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
-        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, { morph: true, cut: true }));
+        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, "변태 시작", { morph: true, cut: true }));
       }
       const free = (k: number): boolean => tags.every((t) => used[k].every(([a9, z9]) => t.x + t.w + BL.gap <= a9 || t.x >= z9 + BL.gap));
       let k = 0;
@@ -328,7 +374,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">건설<TitleSwitch label="간단히 보기" on={techOnly} onChange={onTechOnly} /></figcaption>
-      <div className="scr-rc-plot">
+      <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
         {rows.map(({ l, items, top, h }) => (
           <g key={l.key} className={focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row"}>
@@ -368,8 +414,18 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                     /* 애드온과 본 건물은 함께(같은 날 "애드온과 본 건물은 같이 강조") — 팩토리에 얹으면 머신샵도 · 머신샵에 얹으면 팩토리도(ADDON_HOST9). */
                     const hl9 = hoverKind !== null && t.kind !== undefined
                       && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
+                    /* 누르면 팝오버 — [무엇 · 분:초 · 그때 인구] · 본 칩은 완공 · 파괴도(있으면). */
+                    const popKey = `${l.key}:${b.s}:${b.t}:${ti}`;
+                    const openPop = (): void => setPop((p) => (p?.key === popKey ? null : {
+                      key: popKey, x: t.x, y: ly - CH / 2, w: t.w, title: t.label.replace(/^[→+] ?/, ""),
+                      lines: [
+                        { what: t.what, sec: t.at, sup: supAt(l.spt, t.at) },
+                        ...(ti === 0 && b.d !== null && b.d !== b.s ? [{ what: "완공", sec: b.d, sup: supAt(l.spt, b.d) }] : []),
+                        ...(ti === 0 && b.e !== null ? [{ what: b.d === null ? "취소" : "사라짐", sec: b.e, sup: supAt(l.spt, b.e) }] : []),
+                      ],
+                    }));
                     return (
-                    <g key={ti} className={t.cut ? "is-cut" : undefined} onPointerEnter={(e) => { if (e.pointerType === "mouse") setHoverKind(t.kind ?? null); }}>
+                    <g key={ti} className={t.cut ? "is-cut" : undefined} onPointerEnter={(e) => { if (e.pointerType === "mouse") setHoverKind(t.kind ?? null); }} onClick={openPop}>
                       <rect className={cx("scr-bl-chip", t.morph && "is-morph", hl9 && "is-hl")} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
                       <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
                         {t.label}
@@ -385,6 +441,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         ))}
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
       </svg>
+      {pop && <ChipPop pop={pop} width={CW} />}
       </div>
     </figure>
   );
@@ -585,13 +642,13 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const lanesEl = mobile ? (
     <TechLanes
       maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
-      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), techs: p.techs }))}
+      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), techs: p.techs, spt: p.spt }))}
     />
   ) : (
     <BuildLanes
       maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
       techOnly={techOnly} onTechOnly={setTechOnly}
-      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds }))}
+      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds, spt: p.spt }))}
     />
   );
   const chartOf = (k: CurveKey, title: string, extra: { note?: string; titleExtra?: ReactNode } = {}): ReactNode => (
