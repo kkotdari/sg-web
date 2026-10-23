@@ -325,7 +325,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const chipW = (label: string): number => textW(label, BL.fs) + 2 * PX;
   /** kind — 그 칩이 말하는 건물 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류 · 취소 칩은 없음). 같은 종류 강조가 쓴다. */
   /** at — 그 칩의 때(초) · what — 팝오버의 무엇(착공 · 변태 · 붙음 · 변태 취소). */
-  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; morph?: boolean };
+  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean };
   let y0 = 4;
   const rows = lanes.map((l) => {
     /* ★ 애드온은 **본 건물의 선 위 칩**으로(2026-10-22, 요청: "애드온은 본 건물에" · "애드온 간 본 건물 변경이 가능") — 서버가 붙어 있던 구간마다 [본 건물 차례, 붙은 초](b.h)를 준다.
@@ -350,11 +350,11 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, ...extra };
       };
       const tags: Tag[] = [tag(b.s, BUILD_LABEL[b.t] ?? `#${b.t}`, "착공", { kind: b.t })];
-      for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, "변태", { morph: true, kind: mt }));
+      for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, "변태", { kind: mt }));
       for (const { at: at9, a } of onHost9.get(b) ?? []) tags.push(tag(at9, `+${BUILD_LABEL[a.t] ?? `#${a.t}`}`, "붙음", { kind: a.t, cut: a.d === null && a.e !== null }));
       for (const [xs] of b.x ?? []) {
         const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
-        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, "변태 시작", { morph: true, cut: true }));
+        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, "변태 시작", { cut: true }));
       }
       const free = (k: number): boolean => tags.every((t) => used[k].every(([a9, z9]) => t.x + t.w + BL.gap <= a9 || t.x >= z9 + BL.gap));
       let k = 0;
@@ -399,7 +399,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
   const chipOf = (t: Tag, ly: number, cls?: string): ReactElement => (
     <>
-      <rect className={cx("scr-bl-chip", t.morph && "is-morph", cls)} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
+      <rect className={cx("scr-bl-chip", cls)} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
       <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
         {t.label}
       </text>

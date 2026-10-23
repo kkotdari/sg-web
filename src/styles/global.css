@@ -3354,7 +3354,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-bl-pop > b { font-weight: 700; color: var(--text); }
 /* 건물 칩(2026-10-22, 요청: "모든 건물에 하나하나 칩 · 아주 컴팩트하게") — 수명 선 위 착공 자리 · 변태 칩은 옅게. 바탕을 칠해 뒤 선을 가린다. */
 .scr-bl-chip { fill: var(--panel-raised, var(--panel)); stroke: rgba(var(--overlay-rgb), 0.28); stroke-width: 0.75; }
-.scr-bl-chip.is-morph { fill: rgba(var(--overlay-rgb), 0.06); }   /* 테두리 실선(2026-10-22, 요청: "변태한 건물 점선 말고 실선으로" · 옛 점선) */
+/* (걷어냄 · 2026-10-23, 요청: "하이브 성큰 등 반투명으로 하지 마 — 건물칩") 변태 칩의 옅은 반투명 바탕(.is-morph) — 이제 여느 칩과 같은 바탕(위 .scr-bl-chip). */
 .scr-bl-hit.is-cut, .scr-bl-hit .is-cut { opacity: 0.38; }   /* 짓다 사라짐 · 변태 취소 · 못 지은 애드온 = 반투명 딤(같은 날 "취소는 x 대신 반투명 딤 처리" · 옛 ✕) */
 .scr-bl-hit.is-kind > .scr-bl-live, .scr-bl-hit.is-kind > .scr-bl-build { stroke: var(--lighting-accent, var(--point)); stroke-opacity: 1; stroke-width: 1; }   /* 같은 종류 강조 = 선도 강조색(2026-10-22) */
 /* 같은 종류 강조 = 강조색(폰 테크 칩 .scr-tl-chip.is-hl 과 같은 색 · 2026-10-22) — **불투명**(같은 날 "강조 시 뒤 안 보이게 불투명") — 반투명 강조색을 칩 바탕에 미리 섞어 칠한다. */
