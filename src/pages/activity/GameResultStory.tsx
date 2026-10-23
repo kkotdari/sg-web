@@ -13,6 +13,7 @@ import { useReplayMap } from "scplay";
 import { cleanMapName } from "../../utils/mapName";
 import { parseRoute } from "../../utils/route";
 import { cx } from "../../utils/format";
+import PlayerLoadShell from "./PlayerLoadShell";
 import { hasComputerSlot, truthMissing } from "../../utils/gamePlayable";
 import { normalizeSearchText } from "../../utils/memberSearch";
 import type { GameResult, GameResultSlot, Member } from "../../types";
@@ -256,7 +257,8 @@ export default function GameResultStory({
         {winBadge}
       </div>
     )}
-      {(mapPending || playerWait) && <div className="scr-story-mapwait" aria-hidden />}
+      {/* 게임 상세(soleView)는 재생기와 같은 꼴의 로딩 판(PlayerLoadShell) — 목록 카드는 옛 흐린 네모 그대로. */}
+      {(mapPending || playerWait) && (soleViewNow ? <PlayerLoadShell /> : <div className="scr-story-mapwait" aria-hidden />)}
       {!showRoster && playerReady && mapBlock}
       {showMapLine && (
         <div className="scr-game-result-trow-map-line scr-game-result-trow-map-meta">

@@ -1,6 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { LoadingMark } from "../../components/common/Feedback";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useAppStore } from "../../store/appStore";
 import { isAdminRole } from "../../constants/roles";
@@ -10,6 +9,7 @@ import type { GameResult } from "../../types";
 import ActivityComments from "./ActivityComments";
 import { GameResultTools } from "./GameResultCardBody";
 import GameResultStory from "./GameResultStory";
+import PlayerLoadShell from "./PlayerLoadShell";
 import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
 
 /* ★ 게임 상세는 **목록과 무관한 별도 페이지**다(2026-10-19, 요청: "너나와 리그 게임도 목록과 전혀무관하게 변경 · 별도 페이지임 그냥") —
@@ -73,7 +73,22 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
     setGame(updated);
   };
 
-  if (!game) return <div className="scr-activity-list"><LoadingMark /></div>;
+  /* 게임을 받는 동안도 페이지 꼴(머리 줄 · 판 자리)을 먼저 세우고 판 자리에 재생기 꼴의 로딩 판(PlayerLoadShell)을 둔다 — 옛 돌림표만 뜨던 빈 화면 대신. */
+  if (!game) {
+    return (
+      <div className="scr-activity-group-page">
+        <div className="scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar">
+          <div className="scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle">
+            <button type="button" className="scr-crumb-back" onClick={onBack}>
+              <ArrowLeft size={14} />
+              <span>게임</span>
+            </button>
+          </div>
+        </div>
+        <div className="scr-game-page-card"><PlayerLoadShell /></div>
+      </div>
+    );
+  }
   const menu = (
     <GameResultTools
       gameResult={game}
