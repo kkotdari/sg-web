@@ -6,7 +6,7 @@ import type { GameCurve,
   RatingHistoryResponse, RivalryPair,
   ReplayNameClassificationEntry, ReplayNameKind, ReplayNameMappingEntry, ReplayNameMappingKind,
   League, LeagueListItem, LeagueCreatePayload, LeagueUpdatePayload,
-  LeagueMatchSide, LeagueMatchSet, LeaguePoolKind, LeagueTeamCompositionEntry,
+  LeagueMatchSide, LeagueMatchSet, PlacementRound, PlacementRoundBrief, LeaguePoolKind, LeagueTeamCompositionEntry,
   Schedule, ScheduleWrite,
   ExtShareList, ExtShareAddResult,
   DeletedGameResult,
@@ -848,6 +848,34 @@ export const api = {
     const res = await request<{ items: LeagueListItem[] }>("/api/leagues");
     return res.items;
   },
+  async getPlacementRounds(): Promise<PlacementRoundBrief[]> {
+    return (await request<{ items: PlacementRoundBrief[] }>("/api/placement")).items;
+  },
+  async getPlacementRound(id: number): Promise<PlacementRound> {
+    return request<PlacementRound>(`/api/placement/${id}`);
+  },
+  async createPlacementRound(name: string): Promise<PlacementRound> {
+    return request<PlacementRound>("/api/placement", { method: "POST", body: JSON.stringify({ name }) });
+  },
+  async renamePlacementRound(id: number, name: string): Promise<PlacementRound> {
+    return request<PlacementRound>(`/api/placement/${id}`, { method: "PATCH", body: JSON.stringify({ name }) });
+  },
+  async deletePlacementRound(id: number): Promise<void> {
+    await request<void>(`/api/placement/${id}`, { method: "DELETE" });
+  },
+  async addPlacementPlayer(id: number, memberId: string): Promise<PlacementRound> {
+    return request<PlacementRound>(`/api/placement/${id}/players`, { method: "POST", body: JSON.stringify({ memberId }) });
+  },
+  async removePlacementPlayer(id: number, memberId: string): Promise<PlacementRound> {
+    return request<PlacementRound>(`/api/placement/${id}/players/${encodeURIComponent(memberId)}`, { method: "DELETE" });
+  },
+  /** 한 대진의 세트를 통째로 — 이긴 쪽(a · b)은 여기 적은 a · b 기준. */
+  async setPlacementSets(id: number, a: string, b: string, sets: LeagueMatchSet[]): Promise<PlacementRound> {
+    return request<PlacementRound>(`/api/placement/${id}/sets`, {
+      method: "PUT", body: JSON.stringify({ a, b, sets: sets.map((s) => ({ gameResultId: s.gameResultId, winner: s.winner, memo: s.memo ?? "" })) }),
+    });
+  },
+
   async getLeague(id: number): Promise<League> {
     return request<League>(`/api/leagues/${id}`);
   },

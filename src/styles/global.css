@@ -7834,3 +7834,85 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 @media (hover: hover) { .scr-ladder-board-row:hover { background: var(--lighting-hover-bg, rgba(var(--overlay-rgb), 0.06)); } }
 .scr-ladder-board-row.is-me { background: rgba(var(--overlay-rgb), 0.05); }
 .scr-ladder-board .scr-rating-rank { font-size: var(--fs-subhead, 18px); color: var(--text); }
+
+/* ★ 배치고사(2026-10-23, PlacementScreen) — 회차 탭 · 티어표(1~4 · 위) · 라운드 로빈 대진표(아래 · 첫 열과 머리 줄 고정). 티어 색은 금 · 은 · 동 · 회. */
+.scr-pl-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 14px; }
+.scr-pl-admin { display: flex; gap: 6px; margin-left: auto; }
+.scr-pl-players {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 14px; padding: 10px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+}
+.scr-pl-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel-raised, var(--panel)); font-size: var(--fs-caption); color: var(--text);
+}
+.scr-pl-chip small { color: var(--muted); font-size: var(--fs-11); }
+.scr-pl-chip .scr-icon-btn { width: 18px; height: 18px; }
+.scr-pl-h2 { margin: 0; font-size: var(--fs-body); font-weight: 800; color: var(--text); }
+.scr-pl-note { margin: 4px 0 10px; font-size: var(--fs-caption); color: var(--muted); }
+.scr-pl-tiers { margin-bottom: 24px; }
+.is-t1 { --tier-c: #d9a521; }
+.is-t2 { --tier-c: #9fb0c2; }
+.is-t3 { --tier-c: #c08a57; }
+.is-t4 { --tier-c: #8a8f96; }
+.scr-pl-tier-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.scr-pl-tier {
+  border: 1px solid var(--line); border-top: 3px solid var(--tier-c); border-radius: var(--radius);
+  background: var(--panel); overflow: hidden; min-width: 0;
+}
+.scr-pl-tier-head { display: flex; align-items: baseline; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line-soft); }
+.scr-pl-tier-head b { font-size: var(--fs-body); color: var(--text); }
+.scr-pl-tier-head span { font-size: var(--fs-caption); color: var(--muted); }
+.scr-pl-tier-head .scr-pl-tier-n { margin-left: auto; }
+.scr-pl-tier-list { list-style: none; margin: 0; padding: 4px 0; }
+.scr-pl-tier-list li {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline;
+  padding: 4px 10px; font-size: var(--fs-caption);
+}
+.scr-pl-nick { font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr-pl-rating { color: var(--text); font-variant-numeric: tabular-nums; }
+.scr-pl-rec { color: var(--muted); font-variant-numeric: tabular-nums; }
+.scr-pl-tier-empty { padding: 10px; color: var(--dim); font-size: var(--fs-caption); }
+.scr-pl-waiting { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+.scr-pl-waiting-label { margin-right: 4px; font-size: var(--fs-caption); color: var(--muted); }
+.scr-pl-rr-head { display: flex; align-items: baseline; gap: 10px; }
+.scr-pl-rr-head .scr-pl-note { margin: 0 0 8px; }
+.scr-pl-rr-scroll {
+  overflow: auto; width: fit-content; max-width: 100%; max-height: min(78vh, 960px);
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+}
+.scr-pl-table { border-collapse: separate; border-spacing: 0; font-size: var(--fs-caption); }
+.scr-pl-table th, .scr-pl-table td { padding: 0; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+.scr-pl-table thead th {
+  position: sticky; top: 0; z-index: 2; height: 92px; padding: 4px 0; vertical-align: bottom; background: var(--panel-solid);
+}
+.scr-pl-table thead th > span {
+  display: block; margin: 0 auto; height: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15;
+  writing-mode: vertical-rl; text-orientation: mixed; font-weight: 700; color: var(--text);   /* 한글은 바로 서서 위→아래 · 영문은 눕는다 */
+}
+.scr-pl-table tbody th {
+  position: sticky; left: 0; z-index: 1; padding: 0 8px; text-align: left; white-space: nowrap; background: var(--panel-solid);
+}
+.scr-pl-table thead th.scr-pl-corner { left: 0; z-index: 3; }
+.scr-pl-row-name { display: inline-block; max-width: 110px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; font-weight: 700; color: var(--text); }
+.scr-pl-tier-badge {
+  display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 6px; border-radius: 3px;
+  vertical-align: middle; font-size: var(--fs-11); font-weight: 800; color: #111; background: var(--tier-c);
+}
+.scr-pl-cell {
+  width: 40px; height: 32px; border: none; background: none; cursor: pointer;
+  font: inherit; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;
+}
+@media (hover: hover) { .scr-pl-cell:hover { background: rgba(var(--overlay-rgb), 0.08); } }
+.scr-pl-table td.is-win { background: color-mix(in srgb, var(--win) 30%, transparent); }
+.scr-pl-table td.is-loss { background: color-mix(in srgb, var(--loss) 22%, transparent); }
+.scr-pl-table td.is-draw { background: rgba(var(--overlay-rgb), 0.08); }
+.scr-pl-self { background: repeating-linear-gradient(45deg, rgba(var(--overlay-rgb), 0.07) 0 4px, transparent 4px 8px); }
+@media (max-width: 960px) {
+  .scr-pl-tier-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .scr-pl-admin { margin-left: 0; }
+  .scr-pl-cell { width: 34px; height: 30px; }
+  .scr-pl-table thead th { height: 72px; }
+  .scr-pl-table thead th > span { height: 64px; }
+  .scr-pl-row-name { max-width: 76px; }
+}

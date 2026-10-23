@@ -359,9 +359,9 @@ export interface TeamRankingResponse {
 }
 
 export type ScreenKey = "activity" | "ladder" | "clan" | "members" | "leagues" | "minimaps" | "control"
-  | "catalog" | "explore";
+  | "catalog" | "explore" | "placement";
 export const SCREEN_KEYS: ScreenKey[] = ["activity", "ladder", "clan", "members",
-  "leagues", "minimaps", "control", "catalog", "explore"];
+  "leagues", "minimaps", "control", "catalog", "explore", "placement"];
 
 export interface ExtShareList {
   id: number;
@@ -445,6 +445,43 @@ export interface LeagueMatchSet {
   winner: LeagueMatchSide | "draw" | null;
   /** 옛 서버면 없다. */
   memo?: string;
+}
+
+/* ★ 배치고사(2026-10-23) — 회차(1차 · 2차 …)마다 참가자 명단과 대진 세트가 따로다. 세트 꼴은 리그 세트와 같다(a = 대진의 앞사람). */
+export interface PlacementPlayer {
+  memberId: string;
+  nickname: string;
+  /** 세트 승패로 맞춘 점수(1500 기준 · 브래들리-테리). */
+  rating: number;
+  /** 1 ~ 4 · 세트를 placedMin 만큼 못 친 사람은 null(미배치). */
+  tier: number | null;
+  won: number;
+  lost: number;
+  drawn: number;
+  /** 한 세트라도 친 상대 수. */
+  met: number;
+}
+export interface PlacementPair {
+  /** 회원 pk 작은 쪽 — 세트의 a. */
+  a: string;
+  b: string;
+  sets: LeagueMatchSet[];
+}
+export interface PlacementRound {
+  id: number;
+  name: string;
+  createdAt: string;
+  /** 점수 높은 차례. */
+  players: PlacementPlayer[];
+  pairs: PlacementPair[];
+  placedMin: number;
+  tierCount: number;
+}
+export interface PlacementRoundBrief {
+  id: number;
+  name: string;
+  createdAt: string;
+  players: number;
 }
 
 export interface LeagueMatch {

@@ -11,7 +11,7 @@ const SEG_GROUP: Record<string, ActivityGroupKey> = Object.fromEntries(
 
 const SCREEN_SEG: Partial<Record<ScreenKey, string>> = {
   ladder: "ladder", clan: "stats", members: "members", leagues: "leagues",
-  minimaps: "minimaps", control: "control", catalog: "catalog", explore: "explore",
+  minimaps: "minimaps", control: "control", catalog: "catalog", explore: "explore", placement: "placement",
 };
 /* 통계 주소는 /stats(2026-10-21, 요청: "/clan 주소가 안 맞다 · 통계인데") — 화면 열쇠 clan 은 메뉴 권한 등에 그대로 두고 주소만 바꿨다.
    옛 주소 /clan 으로 들어오면 그 화면을 열고 주소창은 /stats 로 고친다(App · canonicalPathname). */

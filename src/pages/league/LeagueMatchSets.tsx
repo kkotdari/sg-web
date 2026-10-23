@@ -15,14 +15,18 @@ import type { GameResult, GameResultSlot, League, LeagueMatch, LeagueMatchSet, L
    세트마다 그 판의 게임 결과를 고를 수 있다 — 후보는 두 팀 선수(대타 포함)가 서로 맞선 게임 결과다.
    게임을 고르면 그 게임의 승패로 이긴 쪽이 채워진다(손으로 바꿀 수 있다). */
 
-type Side = { ids: Set<string>; names: Set<string>; nicks: string[] };
+export type Side = { ids: Set<string>; names: Set<string>; nicks: string[] };
 
 function sideOf(league: League, match: LeagueMatch, teamId: number | undefined): Side {
   const team = league.teams.find((t) => t.id === teamId);
-  const people = [
+  return sideOfPeople([
     ...(team?.roster ?? []).map((r) => ({ id: r.memberId, nick: r.nickname })),
     ...match.substitutions.filter((s) => s.teamId === teamId).map((s) => ({ id: s.substituteMemberId, nick: s.substituteNickname })),
-  ];
+  ]);
+}
+
+/** 한 편(사람들) — 게임 슬롯을 회원 id 나 이름으로 그 편에 맞춘다. 배치고사는 한 사람이 한 편이다. */
+export function sideOfPeople(people: { id: string; nick: string }[]): Side {
   return {
     ids: new Set(people.map((p) => p.id).filter(Boolean)),
     names: new Set(people.map((p) => p.nick.trim().toLowerCase()).filter(Boolean)),
@@ -32,20 +36,27 @@ function sideOf(league: League, match: LeagueMatch, teamId: number | undefined):
 
 const PICK_LIMIT = 60;
 
-export default function LeagueMatchSets({
-  league, match, sets, onChange, nameA, nameB, disabled, onOpenGame,
-}: {
-  league: League; match: LeagueMatch; sets: LeagueMatchSet[];
+type SetsProps = {
+  sets: LeagueMatchSet[];
   onChange: (next: LeagueMatchSet[]) => void;
   nameA: string; nameB: string; disabled: boolean;
   /** 이은 게임의 재생 단추를 누르면 그 게임 상세로 간다 — 그 전에 부르는 것(창 닫기). */
   onOpenGame?: () => void;
-}) {
+};
+
+export default function LeagueMatchSets({ league, match, ...rest }: SetsProps & { league: League; match: LeagueMatch }) {
+  const sideA = useMemo(() => sideOf(league, match, match.teamA?.id), [league, match]);
+  const sideB = useMemo(() => sideOf(league, match, match.teamB?.id), [league, match]);
+  return <MatchSets sideA={sideA} sideB={sideB} who="두 팀이" {...rest} />;
+}
+
+/** 세트 목록 — 두 편(sideA · sideB)이 맞선 게임을 세트마다 잇거나 손으로 적는다. 리그 경기 · 배치고사 대진이 같이 쓴다(2026-10-23). */
+export function MatchSets({
+  sideA, sideB, who, sets, onChange, nameA, nameB, disabled, onOpenGame,
+}: SetsProps & { sideA: Side; sideB: Side; /** 후보가 없을 때 글의 주어 — "두 팀이" · "두 사람이". */ who: string }) {
   const members = useAppStore((s) => s.members);
   const memberOf = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
   const nickOf = (sl: GameResultSlot): string => memberOf.get(sl.memberId)?.nickname ?? sl.rawName ?? sl.memberId;
-  const sideA = useMemo(() => sideOf(league, match, match.teamA?.id), [league, match]);
-  const sideB = useMemo(() => sideOf(league, match, match.teamB?.id), [league, match]);
   const isOf = (sl: GameResultSlot, side: Side): boolean =>
     (!!sl.memberId && side.ids.has(sl.memberId))
     || side.names.has((sl.rawName ?? "").trim().toLowerCase())
@@ -280,7 +291,7 @@ export default function LeagueMatchSets({
                     {games === null || candLoading ? (
                       <div className="scr-league-set-pick-empty"><Spinner size={14} /> 불러오는 중</div>
                     ) : games.length === 0 ? (
-                      <div className="scr-league-set-pick-empty">{loadErr || "이 기간에 두 팀이 맞선 게임 결과가 없어요."}</div>
+                      <div className="scr-league-set-pick-empty">{loadErr || `이 기간에 ${who} 맞선 게임 결과가 없어요.`}</div>
                     ) : (
                       /* 후보 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "리그의 경기결과 입력창의 게임연결창 … 모바일 화면의 게임목록처럼") — A 팀이 왼쪽. */
                       <div className="scr-activity-rows">

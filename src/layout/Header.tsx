@@ -14,7 +14,7 @@ import { swallowNextClick } from "../utils/bodyScrollLock";
 import { useEditableFocused } from "../hooks/useEditableFocused";
 import { isAdminRole } from "../constants/roles";
 import { useLightTheme } from "../utils/theme";
-import { NAV_MENU_ITEMS } from "../constants/menuVersions";
+import { NAV_MENU_ITEMS, RAIL_MENU_ITEMS } from "../constants/menuVersions";
 import { useRail } from "./useRail";
 import type { Member, ScreenKey } from "../types";
 
@@ -147,11 +147,15 @@ export default function Header({
   }, [profileMenuOpen]);
 
   const visibleItems = NAV_MENU_ITEMS;
+  const railOnlyItems = RAIL_MENU_ITEMS.map((item) => (
+    <NavTab key={item.key} label={item.label} active={screen === item.key} onClick={() => go(item.key)} />
+  ));
   const commonNavItems = (
     <>
       {visibleItems.map((item) => (
         <NavTab key={item.key} label={item.label} active={screen === item.key} onClick={() => go(item.key)} />
       ))}
+      {railOnlyItems}
     </>
   );
 
@@ -248,6 +252,7 @@ export default function Header({
               <div className="scr-drawer-user-name">{user.nickname}</div>
             </div>
             <nav className="scr-drawer-nav">
+              {railOnlyItems}
               {isAdmin && <AdminMenu screen={screen} onNavigate={go} variant="drawer" />}
             </nav>
 
