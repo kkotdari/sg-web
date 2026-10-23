@@ -585,6 +585,10 @@ export const api = {
   async archiveClosed(): Promise<{ archived: number; dropped: number }> {
     return request<{ archived: number; dropped: number }>("/api/game-results/admin/close/archive", { method: "POST" });
   },
+  /** 일정의 모든 동영상 썸네일을 원본에서 다시 굽는다(운영자) — made 구운 수 · failed 원본을 못 읽은 수. */
+  async rebakeVideoThumbs(): Promise<{ made: number; failed: number }> {
+    return request<{ made: number; failed: number }>("/api/schedules/admin/video-thumbs", { method: "POST" });
+  },
   /** 그 달("YYYY-MM")까지 마감 — 그날까지의 게임은 등록·삭제가 막히고 참값을 지운다(되돌릴 수 없다). */
   async closeGames(month: string): Promise<{ closedUntil: string; purged: number; famed: number }> {
     return request<{ closedUntil: string; purged: number; famed: number }>("/api/game-results/admin/close", { method: "POST", body: JSON.stringify({ month }) });
