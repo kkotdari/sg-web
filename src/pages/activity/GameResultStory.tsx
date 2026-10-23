@@ -195,6 +195,7 @@ export default function GameResultStory({
         onShare={shareScene}
         onDetailClose={detailClose ?? undefined}
         soleView={soleViewNow}
+        askMode={soleViewNow}   /* 게임 상세는 들어올 때 보기 모드(요약 · 풀)를 묻는다 — 재생기가 장면 링크면 안 묻는다(2026-10-23) */
         loadUnitTracks={() => api.getGameUnitTracks(gameResult.id)
           .catch(() => ({ motion: null }))}
         winnerTeam={gameResult.result === "team1" ? 1 : gameResult.result === "team2" ? 2 : undefined}
