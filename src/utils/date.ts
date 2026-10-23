@@ -145,7 +145,7 @@ export function formatWhen(
 
   if (withClock) {
     const diffMs = now.getTime() - ms;
-    if (diffMs >= 0 && diffMs < 24 * 60 * 60 * 1000) {
+    if (diffMs >= 0 && d.toDateString() === now.toDateString()) {   // 오늘만 '분·시간 전'(어제부터는 아래 공통 규칙)
       const mins = Math.floor(diffMs / 60000);
       if (mins < 1) return "방금 전";
       if (mins < 60) return `${mins}분 전`;
@@ -165,9 +165,8 @@ export function formatWhen(
     if (weekDiff === 1) return `다음주 ${DOW_FULL[d.getDay()]}${time}`;
   } else if (diffDays === -1) {
     return `어제${time}`;
-  } else if (diffDays === -2) {
-    return `그저께${time}`;
   } else if (diffDays > -7) {
+    // 지난 때의 공통 규칙(2026-10-23, 요청: "오늘 어제 빼고는 모두 요일(일주일 내) · 그 외는 날짜") — 옛 '그저께'도 요일.
     return `${DOW_FULL[d.getDay()]}${time}`;
   }
   return `${shortDate(fmt(d), now)}${time}`;
@@ -191,10 +190,9 @@ export function formatAgo(when: number | string | Date | null | undefined, now: 
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "방금 전";
   if (mins < 60) return `${mins}분 전`;
-  const hours = Math.floor(diff / 3_600_000);
-  if (hours < 24) return `${hours}시간 전`;
-  const days = Math.floor(diff / 86_400_000);
-  if (days <= 7) return `${days}일 전`;
+  // 오늘(같은 날)만 'N시간 전' — 어제 · 요일(일주일 내) · 날짜는 formatWhen 의 공통 규칙(2026-10-23, 요청: "타임스탬프 공통 규칙 수정 ·
+  // 오늘 어제 빼고는 모두 요일(일주일 내) 그 외는 날짜" · 옛 'N일 전'은 걷었다).
+  if (new Date(ms).toDateString() === now.toDateString()) return `${Math.floor(diff / 3_600_000)}시간 전`;
   return formatWhen(when, { now });
 }
 
