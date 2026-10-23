@@ -839,41 +839,33 @@ function SlideOrderModal({ photos, onReorder, onClose }: {
   );
 }
 
-type SlideAct = {
-  play: (id: string, i: number) => void; stop: () => void; view: (i: number) => void; remove: (p: SchedulePhoto) => void;
-};
+type SlideAct = { view: (i: number) => void; remove: (p: SchedulePhoto) => void };
 
-const PhotoSlide = memo(function PhotoSlide({ p, i, playing, canEdit, act }: {
-  p: SchedulePhoto; i: number; playing: boolean; canEdit: boolean; act: SlideAct;
+/* 동영상도 누르면 크게 보기 창에서 튼다(2026-10-23, 요청: "동영상도 원래 비율대로 처음부터 창이 뜨고 … 자동 반복 재생") — 옛 길은 슬라이드 안에서 틀었다. */
+const PhotoSlide = memo(function PhotoSlide({ p, i, canEdit, act }: {
+  p: SchedulePhoto; i: number; canEdit: boolean; act: SlideAct;
 }) {
   const video = isVideoItem(p);
   return (
     <div className="scr-sb-slide">
-      {playing ? (
-        <video
-          className="scr-sb-slide-video" src={imgSrc(p.url)} poster={p.thumbUrl ? imgSrc(p.thumbUrl) : undefined} controls autoPlay playsInline
-          onClick={(e) => e.stopPropagation()} onEnded={() => act.stop()}
-        />
-      ) : (
-        <button
-          type="button" className="scr-sb-slide-img"
-          /* 원본이 오는 동안 썸네일을 깔아 둔다(흐린 첫 그림 · 2026-10-19) — 원본이 그 위를 덮는다. */
-          style={p.thumbUrl ? { backgroundImage: `url("${imgSrc(p.thumbUrl)}")` } : undefined}
-          onClick={(e) => { e.stopPropagation(); if (video) act.play(p.id, i); else act.view(i); }}
-          aria-label={video ? `${p.name} 재생` : `${p.name} 크게 보기`}
-        >
-          {video ? (
-            <>
-              {p.thumbUrl
-                ? <img src={imgSrc(p.thumbUrl)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
-                : <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />}
-              <span className="scr-sb-slide-play" aria-hidden><Play size={22} /></span>
-            </>
-          ) : (
-            <img src={imgSrc(p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
-          )}
-        </button>
-      )}
+      <button
+        type="button" className="scr-sb-slide-img"
+        /* 원본이 오는 동안 썸네일을 깔아 둔다(흐린 첫 그림 · 2026-10-19) — 원본이 그 위를 덮는다. */
+        style={p.thumbUrl ? { backgroundImage: `url("${imgSrc(p.thumbUrl)}")` } : undefined}
+        onClick={(e) => { e.stopPropagation(); act.view(i); }}
+        aria-label={video ? `${p.name} 재생` : `${p.name} 크게 보기`}
+      >
+        {video ? (
+          <>
+            {p.thumbUrl
+              ? <img src={imgSrc(p.thumbUrl)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
+              : <video src={`${imgSrc(p.url)}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} />}
+            <span className="scr-sb-slide-play" aria-hidden><Play size={22} /></span>
+          </>
+        ) : (
+          <img src={imgSrc(p.url)} alt={p.name} loading="lazy" decoding="async" draggable={false} />
+        )}
+      </button>
       <SaveOneBtn photo={p} className="scr-sb-slide-save" />
       {canEdit && (
         <button
@@ -906,7 +898,7 @@ function PhotosBlock({
   const strip = useRef<HTMLDivElement | null>(null);
   const [at, setAt] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
-  const [playing, setPlaying] = useState<string | null>(null);
+  const root = useRef<HTMLDivElement | null>(null);
   const n = block.photos.length;
   const idx = Math.min(at, Math.max(0, n - 1));
   const go = (i: number, smooth = true): void => {
@@ -920,19 +912,21 @@ function PhotosBlock({
     if (!el || !el.clientWidth) return;
     const i = Math.round(el.scrollLeft / el.clientWidth);
     setAt(i);
-    if (playing && block.photos[i]?.id !== playing) setPlaying(null);
   };
   const shown = open === null ? null : block.photos[Math.min(open, n - 1)] ?? null;
-  const view = (i: number): void => { setPlaying(null); setOpen(i); go(i, false); };
+  const view = (i: number): void => { setOpen(i); go(i, false); };
+  /* 크게 보기가 커지며 열리고 줄며 닫히는 자리 — 슬라이드는 그 장, 사진 목록은 그 칸. */
+  const cellRect = (i: number): DOMRect | null => {
+    const el = slides ? strip.current?.children[i] : root.current?.querySelectorAll(".scr-sb-order-cell")[i];
+    return el ? el.getBoundingClientRect() : null;
+  };
   /* 슬라이드 하나하나는 memo(PhotoSlide) — 넘길 때(onScroll → at)·차례를 바꿀 때 바뀐 장만 다시 그린다(옛 길은 장 전부를 다시 그려
      200장에서 놓기 한 번이 0.35초였다 · CPU 4배 느림). 손잡이는 늘 같은 그릇(slideAct)으로 넘기고 그 속만 갈아 끼운다. */
-  const slideAct = useRef<SlideAct>({ play: () => {}, stop: () => {}, view: () => {}, remove: () => {} }).current;
-  slideAct.play = (id, i) => { setPlaying(id); setAt(i); };
-  slideAct.stop = () => setPlaying(null);
+  const slideAct = useRef<SlideAct>({ view: () => {}, remove: () => {} }).current;
   slideAct.view = view;
   slideAct.remove = (p) => ask(isVideoItem(p) ? "이 동영상을 지울까요?" : "이 사진을 지울까요?", () => onChange({ photos: block.photos.filter((x) => x.id !== p.id) }));
   return (
-    <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")}>
+    <div className={cx("scr-sb-block", canEdit && "scr-sb-block-edit")} ref={root}>
       {(canEdit || n > 0) && (
         <div className="scr-sb-photos-head">
           {block.title ? <div className="scr-sb-line scr-sb-list-title">{block.title}</div> : <span className="scr-sb-photos-gap" />}
@@ -969,7 +963,7 @@ function PhotosBlock({
             }}
           >
             {block.photos.map((p, i) => (
-              <PhotoSlide key={p.id} p={p} i={i} playing={playing === p.id} canEdit={canEdit} act={slideAct} />
+              <PhotoSlide key={p.id} p={p} i={i} canEdit={canEdit} act={slideAct} />
             ))}
           </div>
         </div>
@@ -1006,6 +1000,7 @@ function PhotosBlock({
       {shown && open !== null && (
         <PhotoViewer
           src={shown.url} alt={shown.name} video={isVideoItem(shown)} onClose={() => setOpen(null)}
+          bar thumb={shown.thumbUrl ?? undefined} from={() => cellRect(open)}
           onPrev={open > 0 ? () => view(open - 1) : undefined}
           onNext={open < n - 1 ? () => view(open + 1) : undefined}
           counter={n > 1 ? `${open + 1} / ${n}` : undefined}
