@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { CalendarPlus, Upload } from "lucide-react";
+import { CalendarPlus, PenLine, Upload } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import ReplayReviewModal from "../../modals/ReplayReviewModal";
 import ScheduleFormModal from "../../modals/ScheduleFormModal";
+import GameResultManualModal from "../../modals/GameResultManualModal";
 import { focusFirstLineOnOpen } from "./ScheduleCard";
 import { SCENE_LINK_KEYS9 } from "scplay";
 import { useAppStore } from "../../store/appStore";
@@ -240,10 +241,10 @@ function ActivityRouter() {
   const pendingNoticeRef = useRef<{ text: string; kind: "success" | "error" } | null>(null);
   const [scheduleFormOpen, setScheduleFormOpen] = useState(false);
   const [error, setError] = useState("");
+  /* 게임 목록의 등록은 메뉴(리플레이 등록 · 수기 입력 · 2026-10-23, 요청: "경기결과 수기 입력 폼 필요") — 옛: 곧바로 리플레이 고르기. */
   const directAdd: (() => void) | null =
-    groupKey === "gameResult" ? () => replayInputRef.current?.click()
-      : groupKey === "schedule" ? () => setScheduleFormOpen(true)
-        : null;
+    groupKey === "schedule" ? () => setScheduleFormOpen(true) : null;
+  const [manualOpen, setManualOpen] = useState(false);
 
   const handleReplayFilesChosen = async (e: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
@@ -417,7 +418,7 @@ function ActivityRouter() {
           refreshKey={groupRefreshKey}
         />
       )}
-      {listShown && (view.kind === "home" || directAdd) && (
+      {listShown && (view.kind === "home" || directAdd || groupKey === "gameResult") && (
       <div className={cx(
         "scr-activity-add-fab-wrap scr-activity-add-wrap",
         fabHidden && "scr-activity-add-fab-wrap-hidden",
@@ -441,7 +442,7 @@ function ActivityRouter() {
             {parsingReplays ? <Spinner size={18} /> : "등록"}
           </button>
         )}
-        {view.kind === "home" && addMenuOpen && !sel.mode && (
+        {(view.kind === "home" || groupKey === "gameResult") && addMenuOpen && !sel.mode && (
           <>
             <div className="scr-activity-add-backdrop" onClick={() => setAddMenuOpen(false)} aria-hidden />
             <div className="scr-activity-add-menu scr-activity-add-menu-up" role="menu">
@@ -453,10 +454,18 @@ function ActivityRouter() {
               </button>
               <button
                 type="button" role="menuitem"
-                onClick={() => { setAddMenuOpen(false); setScheduleFormOpen(true); }}
+                onClick={() => { setAddMenuOpen(false); setManualOpen(true); }}
               >
-                <CalendarPlus size={14} aria-hidden /> 일정 등록
+                <PenLine size={14} aria-hidden /> 게임결과 수기 입력
               </button>
+              {view.kind === "home" && (
+                <button
+                  type="button" role="menuitem"
+                  onClick={() => { setAddMenuOpen(false); setScheduleFormOpen(true); }}
+                >
+                  <CalendarPlus size={14} aria-hidden /> 일정 등록
+                </button>
+              )}
             </div>
           </>
         )}
@@ -495,6 +504,13 @@ function ActivityRouter() {
           error={bulkErr}
           onConfirm={() => { if (!bulkProgress) void runBulkHide(bulkHide); }}
           onCancel={() => { if (!bulkProgress) { setBulkHide(null); setBulkAll(null); setBulkErr(null); } }}
+        />
+      )}
+
+      {manualOpen && (
+        <GameResultManualModal
+          onClose={() => setManualOpen(false)}
+          onSaved={() => { setGroupRefreshKey((k) => k + 1); feed.reload(); showToast("게임결과를 등록했어요.", { kind: "ok" }); }}
         />
       )}
 

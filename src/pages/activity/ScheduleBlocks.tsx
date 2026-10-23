@@ -953,7 +953,22 @@ function PhotosBlock({
           onPrev={open > 0 ? () => view(open - 1) : undefined}
           onNext={open < n - 1 ? () => view(open + 1) : undefined}
           counter={n > 1 ? `${open + 1} / ${n}` : undefined}
-          extra={<SaveOneBtn photo={shown} className="scr-icon-btn scr-photo-save" />}
+          extra={(
+            <>
+              <SaveOneBtn photo={shown} className="scr-icon-btn scr-photo-save" />
+              {/* 한 장 지우기(2026-10-23, 요청: "사진 앨범에서 개별 삭제 기능이 없네") — 사진 목록 격자엔 칸마다 ✕가 없어(끌어 옮기기와 겹친다) 크게 보기에 둔다.
+                  확인 창은 크게 보기 밑에 깔리므로(겹 160 > 창 100) 크게 보기를 닫고 묻는다. */}
+              {canEdit && (
+                <button
+                  type="button" className="scr-icon-btn scr-photo-del" aria-label="이 사진 삭제" title="이 사진 삭제"
+                  onPointerDown={(e) => e.stopPropagation()}   /* 틀(확대·밀기)이 누르기를 가져가면 클릭이 안 온다 — 저장 단추와 같게 */
+                  onClick={(e) => { e.stopPropagation(); setOpen(null); slideAct.remove(shown); }}
+                >
+                  <Trash2 size={15} aria-hidden />
+                </button>
+              )}
+            </>
+          )}
         />
       )}
     </div>

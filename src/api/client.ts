@@ -491,6 +491,15 @@ export const api = {
     return res.changed;
   },
 
+  /** 게임결과 수기 입력(리플레이 없이 · 2026-10-23) — 리플레이 등록과 같은 길(POST /api/game-results). */
+  async createManualGameResult(body: {
+    date: string; matchType: GameType; result: "team1" | "team2" | "draw"; mapName?: string;
+    team1: { memberId: string; race: Race; playerName: string }[];
+    team2: { memberId: string; race: Race; playerName: string }[];
+  }): Promise<GameResult> {
+    return gameResultFromWire(await request<WireGameResult>("/api/game-results", { method: "POST", body: JSON.stringify(body) }));
+  },
+
   async createGameResult(
     gameResult: NewGameResult,
   ): Promise<{ game: GameResult; merged: boolean; deleted: boolean }> {

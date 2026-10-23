@@ -656,6 +656,14 @@ html.scr-light-theme { --header-bg: rgba(255, 255, 255, 0.9); }
   color: var(--muted);
 }
 .scr-photo-save.is-armed { color: var(--timeline-blue); }
+/* 크게 보기의 한 장 지우기(일정 사진 · 2026-10-23) — 저장 단추 왼쪽. */
+.scr-photo-del {
+  position: absolute; top: 10px; right: 94px; z-index: 1;
+  background: var(--panel-solid); border: none; border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.16), 0 0 0 1px rgba(255,255,255,0.05);
+  color: var(--muted);
+}
+@media (hover: hover) { .scr-photo-del:hover { background: color-mix(in srgb, var(--panel-solid) 86%, var(--text) 14%); color: var(--loss); } }
 @media (hover: hover) {
   .scr-photo-save:hover { background: color-mix(in srgb, var(--panel-solid) 86%, var(--text) 14%); color: var(--text); }
 }
@@ -3373,7 +3381,9 @@ html:not(.scr-light-theme) .scr-tl-chip.is-hl { fill-opacity: 0.85; }
 .scr-tl-name > text { font-weight: 600; }
 .scr-tl-name { cursor: pointer; outline: none; }
 .scr-tl-hit { cursor: default; }
-.scr-redo-pick { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
+/* 관리자 창(데이터 관리 · 재분석 실패 · 외부 공개 게임 고르기 · 삭제된 경기 · 숨김 해제 요청)은 **처음부터 최대 높이**(2026-10-23, 요청: "데이터 창 등 관리자 모달창 최대 크기로 열기 · 늘어나지 말고") —
+   옛 max-height 는 목록이 차면서 창이 자랐다. 목록 칸(flex 1)이 남는 높이를 채우고 안에서 내린다. */
+.scr-redo-pick { display: flex; flex-direction: column; height: min(78vh, 720px); }
 body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick { z-index: 300; }
 .scr-redo-pick-foot { flex: none; }
@@ -3382,7 +3392,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
     top: auto;
     bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px);
     transform: translate(-50%, 0);
-    max-height: calc(100dvh - var(--safe-top, 0px) - var(--mobile-footer-h, 69px) - 28px);
+    height: calc(100dvh - var(--safe-top, 0px) - var(--mobile-footer-h, 69px) - 28px);
   }
 }
 .scr-redo-pick-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
@@ -3445,13 +3455,13 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-redo-pick-foot { flex-wrap: wrap; }
 .scr-redo-pick-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
 
-.scr-trash { display: flex; flex-direction: column; max-height: min(78vh, 720px); }
+.scr-trash { display: flex; flex-direction: column; height: min(78vh, 720px); }   /* 처음부터 최대 높이(위 .scr-redo-pick 과 같다 · 2026-10-23) */
 @media (max-width: 960px) {
   .scr-trash {
     top: auto;
     bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px);
     transform: translate(-50%, 0);
-    max-height: calc(100dvh - var(--safe-top, 0px) - var(--mobile-footer-h, 69px) - 28px);
+    height: calc(100dvh - var(--safe-top, 0px) - var(--mobile-footer-h, 69px) - 28px);
   }
 }
 .scr-trash-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; padding-bottom: 14px; }
@@ -7923,3 +7933,20 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   .scr-pl-table thead th > span { height: 64px; }
   .scr-pl-row-name { max-width: 76px; }
 }
+
+/* ★ 게임결과 수기 입력(2026-10-23, GameResultManualModal) — 날짜 · 유형 한 줄 · 팀마다 [회원 · 종족 네 칸 · 빼기] 줄 · 결과 세 단추. */
+.scr-gm-manual-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.scr-gm-manual-row > .scr-field { flex: 1 1 140px; }
+.scr-gm-manual-team { gap: 6px; }
+.scr-gm-manual-team-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.scr-gm-manual-slot { display: flex; align-items: center; gap: 8px; }
+.scr-gm-manual-member { flex: 1 1 auto; min-width: 0; }
+.scr-gm-manual-races { display: inline-flex; flex: none; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.scr-gm-manual-race {
+  width: 28px; height: 28px; border: none; background: none; cursor: pointer;
+  font: inherit; font-size: var(--fs-caption); font-weight: 700; color: var(--muted);
+}
+.scr-gm-manual-race + .scr-gm-manual-race { border-left: 1px solid var(--line); }
+.scr-gm-manual-race.is-on { color: var(--btn-fill-text); background: var(--btn-fill-bg); }
+.scr-gm-manual-result { display: flex; gap: 6px; }
+.scr-gm-manual-result > button { flex: 1 1 0; justify-content: center; }
