@@ -21,7 +21,7 @@ export function FlatLine({ children }: { children: ReactNode }) {
   );
 }
 
-/** 데이터 단추(폰 게임 줄 윗줄 오른끝 · 2026-10-21, 요청: "모바일에서 재생버튼 살짝 왼쪽으로 밀고 그자리에 데이터 아이콘") — 누르면 데이터 모달(GameCurvesModal).
+/** 데이터 단추(폰 게임 줄 · 2026-10-21 요청 · 자리는 로스터 아래 줄 가운데 — 2026-10-23, 요청: "추천은 좌하단 · 데이터는 하단 중앙") — 누르면 데이터 모달(GameCurvesModal).
  *  모달은 포털이지만 React 이벤트는 이 줄로 거슬러 올라온다 — 줄의 누름(열기·길게 눌러 고르기)이 안 타게 감싸 막는다. */
 export function GameDataButton({ game, graph = true }: { game: GameResult; graph?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -29,7 +29,7 @@ export function GameDataButton({ game, graph = true }: { game: GameResult; graph
   const stop = (e: { stopPropagation: () => void }): void => e.stopPropagation();
   return (
     <span className="scr-activity-row-data-wrap" onPointerDown={stop} onPointerUp={stop} onClick={stop} onKeyDown={stop} onContextMenu={stop}>
-      {/* 추천(폰 · 데이터 옆 · 2026-10-22 요청) — 수와 함께. */}
+      {/* 추천(폰 · 2026-10-22 요청) — 수와 함께 · 로스터 아래 줄 왼끝(global.css). */}
       <RecommendButton rec={rec} size={14} count className="scr-activity-row-rec" />
       {graph && (
         <button
@@ -44,7 +44,7 @@ export function GameDataButton({ game, graph = true }: { game: GameResult; graph
   );
 }
 
-/** 맵·길이 배지 + (data) 윗줄 오른끝 데이터 단추(폰 · PC 는 숨는다 · global.css). 폰 게임 줄의 재생 배지는 걷었다(2026-10-21, 요청: "데이터랑 상관없이 재생배지 지우란 거였어")
+/** 맵·길이 배지 + (data) 추천·데이터 단추(폰 · 로스터 아래 줄 · PC 는 숨는다 · global.css). 폰 게임 줄의 재생 배지는 걷었다(2026-10-21, 요청: "데이터랑 상관없이 재생배지 지우란 거였어")
  *  → (play) 맵 배지 안 '분' 옆에 다시(같은 날 요청: "모바일 게임목록 재생 가능 배지를 맵 배지 안에 넣기 분 옆에"). */
 export function GameRowStatus({ game, data, play }: { game: GameResult; data?: boolean; play?: boolean }) {
   if (isSecretGame(game)) {

@@ -5395,9 +5395,13 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-status { order: 1; }
 /* ★ 재생 배지는 맵 배지 **바로 옆**(2026-10-19, 요청: "모바일 게임목록 재생배지를 맵 배지 옆으로 이동") — 같은 order 1 이라 DOM 차례대로 배지 뒤에 선다 ·
    옛 자리(이름 줄 끝)는 그 줄이 윗줄 배지를 가질 때만 숨긴다(배지를 안 넘기는 모달 목록은 그대로). */
-.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-data-wrap { display: flex; align-items: center; padding: 4px 4px 0 0; order: 0; }   /* 위·옆 여백 더(요청: "플레이, 데이터 아이콘 위 옆 여백좀 키우고") · 재생 배지는 걷었다(요청: "데이터랑 상관없이 재생배지 지우란 거였어") */
-/* 데이터 단추 — 윗줄 오른끝(2026-10-21, 요청: "모바일에서 … 그자리에 데이터 아이콘") · 줄 높이를 안 바꾼다. */
-.scr-activity-row-data { width: 24px; height: 24px; margin: -5px -5px -5px 0; color: var(--row-dim); }
+/* ★ 추천 · 데이터 단추는 **로스터 아래 제 줄**(2026-10-23, 요청: "버튼 위치 변경 · 추천은 좌하단 · 데이터는 하단 중앙 · 그래서 하단 공간을 많이 늘려야 함") —
+   [추천 왼끝 | 데이터 가운데 | 빈 칸] 격자. 옛 자리는 윗줄 오른끝(시각 줄)이었다. 줄 몸 격자의 마지막 차례(5) · 줄 폭 전체. */
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-data-wrap {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+  grid-column: 1 / -1; order: 5; justify-self: stretch; padding: 0 0 2px;
+}
+.scr-activity-row-data { grid-column: 2; width: 32px; height: 32px; color: var(--row-dim); }
 /* 추천 단추(Recommend.tsx · 2026-10-22) — 켜면 채운 엄지 · 강조색. 폰 줄은 데이터 옆에 수와 함께. */
 .scr-recommend-btn { color: var(--row-dim, var(--muted)); gap: 3px; }
 .scr-recommend-btn svg { flex-shrink: 0; }
@@ -5405,7 +5409,7 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-recommend-n { font-size: var(--fs-11); font-variant-numeric: tabular-nums; line-height: 1; }
 .scr-gtab-rec { width: auto; height: 26px; padding: 0 4px; gap: 4px; }
 .scr-gtab-rec .scr-recommend-n { font-size: inherit; }
-.scr-activity-row-rec { width: auto; min-width: 24px; height: 24px; padding: 0 4px; margin: -5px 4px -5px 0; }
+.scr-activity-row-rec { grid-column: 1; justify-self: start; width: auto; min-width: 32px; height: 32px; padding: 0 6px; margin-left: -6px; }
 /* ★ 윗줄 = [재생 배지 왼끝 · 맵·시간 배지 **정가운데** · (NEW) 시각 오른끝](2026-10-19, 요청 위 ★★) — 맵 배지는 줄 몸의 가운데에 절대 자리(위 여백 7 = 줄 몸 위 패딩).
    리그 판 머리 줄(has-above)이 있는 줄은 그 아래라 자리를 모른다 — 양옆 auto 여백으로 가운데 어림. */
 /* 윗줄은 격자 [재생 1fr | 맵·시간 | (NEW) 시각 1fr] — 양옆이 같은 1fr 라 맵 배지가 늘 정가운데다(리그 판 머리 줄이 있어도 · 옛 flex 차례 order 1~4 를 덮는다).
@@ -5419,8 +5423,6 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-activity-row-game.scr-gm .scr-activity-row-cols { row-gap: 4px; }
 .scr-activity-row-game.scr-gm .scr-activity-row-col-names { padding: 0 4px; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-above { grid-column: 1 / -1; order: 0; }
-/* 시각 ↔ 재생 자리 바꿈(2026-10-20, 요청: "모바일 게임목록 타임스탬프와 재생배지 위치 교환") — 시각 묶음이 왼끝(1칸) · 재생이 오른끝(3칸). */
-.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-data-wrap { grid-column: 3; justify-self: end; order: 3; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-status { grid-column: 2; order: 2; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-badges { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 5px;
   grid-column: 1; order: 1; margin-left: 0; min-width: 0; }
