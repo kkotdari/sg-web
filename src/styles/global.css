@@ -4654,6 +4654,10 @@ span.scr-league-set-game { cursor: default; }
   display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow-y: auto;
   padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel);
 }
+/* 게임 연결 팝업(2026-10-23, 지적: "왜 그 칸에서 조회되지 · 팝업 안 뜨고") — 경기 창(z 100) 위에 한 겹 더 · 안의 목록은 창 몸이 스크롤하므로 칸 틀(높이 상한 · 테)을 푼다. */
+.scr-modal.scr-league-set-pick-modal { z-index: 110; }
+.scr-league-set-pick-modal .scr-league-set-pick { max-height: none; overflow: visible; padding: 0 0 12px; border: none; background: none; }
+.scr-league-set-pick-modal .scr-league-set-pick-range { padding: 2px 0 8px; }
 .scr-league-set-pick-range { display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: var(--fs-micro); color: var(--muted); }
 .scr-league-set-pick-empty { display: flex; align-items: center; gap: 6px; padding: 8px; font-size: var(--fs-micro); color: var(--muted); }
 .scr-league-set-cand {

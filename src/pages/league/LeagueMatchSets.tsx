@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link2, Play, Plus, Unlink, X } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import { api } from "../../api/client";
@@ -270,55 +271,68 @@ export function MatchSets({
                     </button>
                   ))}
                 </div>}
-                {open === i && !linked && (
-                  <div className="scr-league-set-pick">
-                    <div className="scr-league-set-pick-range">
-                      <input
-                        type="date" className="scr-input scr-date-compact" aria-label="시작 날짜"
-                        value={range.from} max={range.to || todayStr()}
-                        onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))}
-                      />
-                      <span aria-hidden>~</span>
-                      <input
-                        type="date" className="scr-input scr-date-compact" aria-label="끝 날짜"
-                        value={range.to} min={range.from || undefined} max={todayStr()}
-                        onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
-                      />
-                      <button type="button" className="scr-compact-rect-btn" onClick={() => loadGames(range)} disabled={candLoading}>
-                        {candLoading ? <Spinner size={12} /> : "조회"}
-                      </button>
-                    </div>
-                    {games === null || candLoading ? (
-                      <div className="scr-league-set-pick-empty"><Spinner size={14} /> 불러오는 중</div>
-                    ) : games.length === 0 ? (
-                      <div className="scr-league-set-pick-empty">{loadErr || `이 기간에 ${who} 맞선 게임 결과가 없어요.`}</div>
-                    ) : (
-                      /* 후보 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "리그의 경기결과 입력창의 게임연결창 … 모바일 화면의 게임목록처럼") — A 팀이 왼쪽. */
-                      <div className="scr-activity-rows">
-                        {games.map((c) => {
-                          const taken = used.has(c.id);
-                          const oc = oriented(c);
-                          return (
-                            <ListRow
-                              key={c.id}
-                              className={cx("scr-activity-row-game scr-gm", taken && "is-in")}
-                              disabled={taken}
-                              onClick={() => pick(i, c)}
-                              status={<GameRowStatus game={oc} />}
-                              desc={<GameRowNames game={oc} memberOf={memberById} mobile playable={gamePlayable(c)} />}
-                              top={taken ? <span className="scr-extshare-add-in">다른 세트</span> : undefined}
-                              side={formatAgo(c.gameStartedAt ?? c.date)}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
               </li>
             );
           })}
         </ol>
+      )}
+      {/* ★ 게임 연결은 **팝업 창**(2026-10-23, 지적: "결과 입력에서 게임 연결 시 조회가 이상해 — 왜 그 칸에서 조회되지 · 팝업 안 뜨고") — 옛: 세트 줄 아래에 펼쳐지는 칸.
+          경기 창 위에 한 겹 더 뜬다(.scr-league-set-pick-modal · z 110) · 기간 · [조회] · 후보 목록은 그대로. 고르면 닫히고 그 세트에 이어진다. */}
+      {open !== null && sets[open] && sets[open].gameResultId === null && createPortal(
+        <div className="scr-modal-overlay">
+          <div className="scr-modal scr-league-set-pick-modal" role="dialog" aria-label={`${open + 1}세트 게임 연결`}>
+            <div className="scr-modal-head">
+              <span>{open + 1}세트 게임 연결</span>
+              <button type="button" className="scr-icon-btn" onClick={() => setOpen(null)} aria-label="닫기"><X size={14} /></button>
+            </div>
+            <div className="scr-modal-body">
+              <div className="scr-league-set-pick">
+                <div className="scr-league-set-pick-range">
+                  <input
+                    type="date" className="scr-input scr-date-compact" aria-label="시작 날짜"
+                    value={range.from} max={range.to || todayStr()}
+                    onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))}
+                  />
+                  <span aria-hidden>~</span>
+                  <input
+                    type="date" className="scr-input scr-date-compact" aria-label="끝 날짜"
+                    value={range.to} min={range.from || undefined} max={todayStr()}
+                    onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
+                  />
+                  <button type="button" className="scr-compact-rect-btn" onClick={() => loadGames(range)} disabled={candLoading}>
+                    {candLoading ? <Spinner size={12} /> : "조회"}
+                  </button>
+                </div>
+                {games === null || candLoading ? (
+                  <div className="scr-league-set-pick-empty"><Spinner size={14} /> 불러오는 중</div>
+                ) : games.length === 0 ? (
+                  <div className="scr-league-set-pick-empty">{loadErr || `이 기간에 ${who} 맞선 게임 결과가 없어요.`}</div>
+                ) : (
+                  /* 후보 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "리그의 경기결과 입력창의 게임연결창 … 모바일 화면의 게임목록처럼") — A 팀이 왼쪽. */
+                  <div className="scr-activity-rows">
+                    {games.map((c) => {
+                      const taken = used.has(c.id);
+                      const oc = oriented(c);
+                      return (
+                        <ListRow
+                          key={c.id}
+                          className={cx("scr-activity-row-game scr-gm", taken && "is-in")}
+                          disabled={taken}
+                          onClick={() => pick(open, c)}
+                          status={<GameRowStatus game={oc} />}
+                          desc={<GameRowNames game={oc} memberOf={memberById} mobile playable={gamePlayable(c)} />}
+                          top={taken ? <span className="scr-extshare-add-in">다른 세트</span> : undefined}
+                          side={formatAgo(c.gameStartedAt ?? c.date)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

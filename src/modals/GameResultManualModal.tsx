@@ -10,7 +10,7 @@ import { todayStr } from "../utils/date";
 import { cx } from "../utils/format";
 import type { GameResult, GameType, Race } from "../types";
 
-/* ★ 게임결과 수기 입력(2026-10-23, 요청: "경기결과 수기 입력 폼 필요(간단)") — 리플레이 없이 날짜 · 유형 · 회원과 종족 · 결과(· 맵)만 적는다.
+/* ★ 게임결과 수기 입력(2026-10-23, 요청: "경기결과 수기 입력 폼 필요(간단)") — 리플레이 없이 날짜(· 시간) · 유형 · 회원과 종족 · 결과(· 맵)만 적는다.
    서버는 리플레이 등록과 같은 길(POST /api/game-results)로 받는다 — 마감한 달은 서버가 막는다. 종족은 실제로 한 종족만(서버가 랜덤을 안 받는다).
    유형은 드롭다운(같은 날 "유형을 드롭다운으로 다양하게 · 유즈맵도") — 일대일 · 2:2 · 3:3 · 4:4 · 팀전(인원 자유) · 난투 · 유즈맵.
    난투는 참가자 한 줄에 승자를 고른다(승자 = 1팀 · 나머지 = 2팀 — 리플레이 난투와 같은 꼴) · 유즈맵은 리플레이의 게임 종류 값(10)을 실어 보내 기록만 남는다(통계 · 참값 굽기 밖). */
@@ -39,6 +39,8 @@ export default function GameResultManualModal({ onSaved, onClose }: {
   useLockBodyScroll();
   const members = useAppStore((s) => s.members);
   const [date, setDate] = useState(todayStr);
+  /** 시각(HH:MM · 선택 · 2026-10-23, 요청: "수기 등록에서 시간도 지정") — 비우면 날짜만. 적으면 그 날 그 시각(이 기기 시간대)을 경기 시작 시각으로 보낸다. */
+  const [time, setTime] = useState("");
   const [mode, setMode] = useState<Mode>("1v1");
   const [mapName, setMapName] = useState("");
   const [teams, setTeams] = useState<Record<Team, Slot[]>>({ team1: [empty()], team2: [empty()] });
@@ -85,6 +87,9 @@ export default function GameResultManualModal({ onSaved, onClose }: {
     setErr("");
     const all = [...teams.team1, ...teams.team2];
     if (!date) { setErr("날짜를 고르세요."); return; }
+    const startedAt = time ? new Date(`${date}T${time}:00`) : null;
+    if (startedAt && Number.isNaN(startedAt.getTime())) { setErr("시간을 다시 적으세요."); return; }
+    if (startedAt && startedAt.getTime() > Date.now()) { setErr("앞으로의 시간은 적을 수 없어요."); return; }
     if (all.some((s) => !s.memberId)) { setErr("모든 자리에 회원을 고르세요."); return; }
     if (ffa && all.length < 2) { setErr("난투는 두 사람 이상이에요."); return; }
     if (ffa ? !winner : result === null) { setErr(ffa ? "승자를 고르세요." : "결과를 고르세요."); return; }
@@ -100,6 +105,7 @@ export default function GameResultManualModal({ onSaved, onClose }: {
       const game = await api.createManualGameResult({
         date, matchType: typeOf(), result: ffa ? (winner === "draw" ? "draw" : "team1") : result!,
         mapName: mapName.trim() || undefined, team1: wire(t1), team2: wire(t2),
+        ...(startedAt ? { gameStartedAt: startedAt.toISOString() } : {}),
         ...(mode === "ums" ? { gameType: UMS_GAME_TYPE } : {}),
       });
       onSaved(game);
@@ -166,6 +172,10 @@ export default function GameResultManualModal({ onSaved, onClose }: {
             <label className="scr-field">
               <span className="scr-label">날짜</span>
               <input type="date" className="scr-input" value={date} max={todayStr()} onChange={(e) => setDate(e.target.value)} />
+            </label>
+            <label className="scr-field">
+              <span className="scr-label">시간 <span className="scr-label-optional">(선택)</span></span>
+              <input type="time" className="scr-input" value={time} disabled={busy} onChange={(e) => setTime(e.target.value)} />
             </label>
             <div className="scr-field">
               <span className="scr-label">유형</span>

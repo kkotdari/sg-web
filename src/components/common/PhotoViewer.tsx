@@ -281,7 +281,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [video]);
+  }, [video, src]);   // 그림 요소가 장마다 새것이라(아래 key) 휠이 쥔 img 도 장마다 다시 잡는다
 
   const closeRef = useRef(close);
   closeRef.current = close;
@@ -374,8 +374,10 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
               onLoadedMetadata={(e) => learn(e.currentTarget.videoWidth, e.currentTarget.videoHeight, true)}
             />
           ) : (
+            /* 장마다 새 요소(key)다(2026-10-23, 지적: "사진 팝업 좌우 이동 시 두 개가 동시에 겹쳐 있는 시간도 있고 깔끔하지 않은 듯") — 같은 요소에 src 만 바꾸면
+               새 원본이 올 때까지 앞 장이 그대로 남고, 그 뒤에 새 장 썸네일(바탕)이 깔려 두 장이 겹쳐 보였다. 이제 앞 장은 곧장 걷히고 새 장의 썸네일 → 원본 차례다. */
             <img
-              src={imgSrc(src)} alt={alt} className="scr-pv-media" ref={imgRef} draggable={false}
+              key={src} src={imgSrc(src)} alt={alt} className="scr-pv-media" ref={imgRef} draggable={false}
               /* 원본이 오는 동안 썸네일을 깐다 — 창은 이미 제 크기다. */
               style={{ backgroundImage: thumb ? `url("${imgSrc(thumb)}")` : undefined }}
               onLoad={(e) => learn(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight, true)}
