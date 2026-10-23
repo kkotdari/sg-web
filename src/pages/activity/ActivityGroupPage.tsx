@@ -1,6 +1,7 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import { ArrowLeft } from "lucide-react";
+import { LoadingMark } from "../../components/common/Feedback";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
 import { SelectionBar } from "../../components/common/Selection";
 import {
@@ -26,10 +27,11 @@ import {
    일정은 피드에서 제 묶음을 고르고, 게임은 서버 쪽수(아래)로 받는다. 줄은 memo(ActivityRow). */
 
 /* ★ 선택 막대 단추 = **숨김 · 삭제**(2026-10-14 컴팩트 네모 · 스크랩은 2026-10-22 기능째 걷었다 — 요청: "스크랩 기능 완전 제거"). 숨김은 게임만 골랐을 때 켜진다. */
-function SelectionActions({ picked, onDelete, onHide }: {
+function SelectionActions({ picked, all, onDelete, onHide }: {
   picked: DisplayItem[];
-  onDelete: (items: DisplayItem[]) => void;
-  onHide: (items: DisplayItem[]) => void;
+  all: GameBulkAll | null;
+  onDelete: (items: DisplayItem[], all?: GameBulkAll) => void;
+  onHide: (items: DisplayItem[], all?: GameBulkAll) => void;
 }) {
   const games = picked.filter((it) => it.kind === "gameResult");
   const onlyGames = picked.length > 0 && games.length === picked.length;
@@ -38,7 +40,7 @@ function SelectionActions({ picked, onDelete, onHide }: {
       <button
         type="button" className="scr-compact-rect-btn"
         disabled={!onlyGames}
-        onClick={() => onHide(games)}
+        onClick={() => onHide(games, all ?? undefined)}
         title={onlyGames ? "고른 게임을 숨겨요" : "게임만 골랐을 때 켜져요"}
       >
         숨김
@@ -46,7 +48,7 @@ function SelectionActions({ picked, onDelete, onHide }: {
       <button
         type="button" className="scr-compact-rect-btn"
         disabled={picked.length === 0}
-        onClick={() => onDelete(picked)}
+        onClick={() => onDelete(picked, all ?? undefined)}
         title={picked.length === 0 ? "고른 것이 없어요" : undefined}
       >
         삭제
@@ -54,6 +56,12 @@ function SelectionActions({ picked, onDelete, onHide }: {
     </>
   );
 }
+
+/** 게임 목록 '전체 선택' 명령 — 받아 둔 쪽만이 아니라 그 조건의 판 전부(서버가 filter 로 다시 찾고 exclude 를 뺀다 · count 는 확인 창 수). */
+export type GameBulkAll = { filter: ReturnType<typeof tabQuery> & { any?: string; linked?: string }; exclude: number[]; count: number };
+
+/** 게임 목록 한 쪽 — 무한 스크롤로 이만큼씩 더 받는다. */
+const GAME_PAGE9 = 50;
 
 /** 탭 → 서버 목록 조건 — 리그 판은 리그 탭에만(leagueOnly), 내전·공방은 리그 판을 뺀다(noLeague). 명예의 전당 판은 그 탭에만(fameOnly · 나머지 noFame). */
 export const tabQuery = (tab: GameTab) => (tab === "fame" ? { fameOnly: true } : {
@@ -75,8 +83,8 @@ export default memo(function ActivityGroupPage({
   act: RefObject<RowAct>;
   selection: Selection | null;
   canPick: (it: DisplayItem) => boolean;
-  onDeleteItems: (items: DisplayItem[]) => void;
-  onHideItems: (items: DisplayItem[]) => void;
+  onDeleteItems: (items: DisplayItem[], all?: GameBulkAll) => void;
+  onHideItems: (items: DisplayItem[], all?: GameBulkAll) => void;
   refreshKey: number;
   gameTab: GameTab;
   onGameTabChange: (next: GameTab) => void;
@@ -125,35 +133,41 @@ export default memo(function ActivityGroupPage({
     setFormRaw(encodeGameSearch(next));
   }, [onGames9, searchApplied]);
   const searchKey9 = onGames9 ? formRaw : searchApplied;
-  /* ★ 게임 목록은 **한 번에 다** 받는다(2026-10-22, 요청: "이제 길어야 한달정도만 나오니까 게임목록 무한스크롤 말고 한번에 다 조회로") — 마감이 지난 달을
-     지우니 목록은 한 달 남짓이다. 서버 한 쪽 상한(100)이라 커서를 끝까지 따라 모은 뒤 한 번에 그린다. 상세에서 뒤로 온 칸이면 적어 둔 스크롤 y
-     (route.ts takeListScroll — 읽는 즉시 칸에서 지운다)로, 그 밖의 목록은 바로 y 로. */
+  /* ★ 게임 목록은 **50개씩 무한 스크롤 · 전체 개수는 첫 쪽에서**(2026-10-23, 요청: "게임 목록 검색을 100개 무한스크롤로 복귀하고 대신 전체 개수는 가져오기" →
+     "100개도 많은듯 50개씩" · 한때 2026-10-22 한 번에 다 받기). 상세에서 뒤로 온 칸이면 적어 둔 스크롤 y(route.ts takeListScroll — 읽는 즉시 칸에서 지운다) —
+     새로 받아 그려 보고 페이지가 y 까지 내려갈 만큼 길어질 때까지 더 받은 뒤 y 로(더 받을 게 없으면 끝까지), 그 밖의 목록은 바로 y 로. */
   const [restoreY9] = useState(takeListScroll);
   const restore9 = useRef(restoreY9);
-  type GamesPage9 = { items: ActivityItem[]; total: number };
+  type GamesPage9 = { items: ActivityItem[]; total: number; cursor: string | null };
   const [serverGames, setServerGames] = useState<GamesPage9 | null>(null);
   const [serverBusy, setServerBusy] = useState(false);
+  const [moreBusy, setMoreBusy] = useState(false);
+  const listQuery9 = useMemo<GameBulkAll["filter"]>(() => {
+    const merged = formToServer(decodeGameSearch(formRaw));
+    return { any: merged.any, linked: merged.linked, ...tabQuery(gameTab) };
+  }, [formRaw, gameTab]);
   useEffect(() => {
-    const onGames = groupKey === "gameResult";
-    const merged = onGames ? formToServer(decodeGameSearch(formRaw))
-      : { any: undefined, linked: undefined };
-    if (!onGames) { setServerGames(null); setServerBusy(false); return undefined; }
+    if (groupKey !== "gameResult") { setServerGames(null); setServerBusy(false); return undefined; }
     const y9 = restore9.current;
     let dead = false;
     setServerGames(null);
     setServerBusy(true);
     (async () => {
-      const q9 = { any: merged.any, linked: merged.linked, limit: 100, sort: "latest" as const, ...tabQuery(gameTab) };
+      const q9 = { ...listQuery9, limit: GAME_PAGE9, sort: "latest" as const };
       let page = await api.getGameResultsPage(q9);
-      const total = page.total;
       const items = page.items.map((m) => gameResultItem(m));
-      while (page.nextCursor && !dead) {
-        page = await api.getGameResultsPage({ ...q9, cursor: page.nextCursor });
+      const total = page.total ?? items.length;   // 전체 개수는 첫 쪽(커서 없음)에만 온다
+      const show = () => flushSync(() => setServerGames({ items: [...items], total, cursor: page.nextCursor }));
+      if (dead) return;
+      show();
+      if (y9 === null) return;
+      // 더 받을 게 없거나(커서 없음) 받다 실패하면 그만 — 받은 만큼 둔 채 y 로(짧으면 브라우저가 끝으로 맞춘다).
+      while (document.documentElement.scrollHeight < y9 + window.innerHeight && page.nextCursor && !dead) {
+        try { page = await api.getGameResultsPage({ ...q9, cursor: page.nextCursor }); } catch { break; }
         items.push(...page.items.map((m) => gameResultItem(m)));
+        if (!dead) show();
       }
       if (dead) return;
-      flushSync(() => setServerGames({ items, total: total ?? items.length }));
-      if (y9 === null) return;
       restore9.current = null;
       window.scrollTo({ top: y9, behavior: "instant" });
     })()
@@ -161,6 +175,39 @@ export default memo(function ActivityGroupPage({
       .finally(() => { if (!dead) setServerBusy(false); });
     return () => { dead = true; };
   }, [groupKey, searchKey9, gameTab, refreshKey]);
+
+  /* ★ 전체 선택(게임 목록)은 **받은 쪽이 아니라 그 조건의 판 전부**(같은 날 요청: "전체 선택 후 어떤 명령을 내리면 전체라는 파라미터를 전달해서 서버에서 처리") —
+     켜진 동안 더 받은 쪽도 골라 두고, 받은 판 가운데 고르지 않은 것(풀었거나 못 고르는 것)을 exclude 로 넘긴다. 다 풀면 꺼진다. */
+  const [allPick, setAllPick] = useState(false);
+  const allPickRef = useRef(false);
+  allPickRef.current = allPick;
+  const loadMoreGames = useCallback(async () => {
+    const cursor = serverGames?.cursor;
+    if (!cursor || moreBusy || serverBusy) return;
+    setMoreBusy(true);
+    try {
+      const page = await api.getGameResultsPage({ ...listQuery9, limit: GAME_PAGE9, sort: "latest", cursor });
+      const more = page.items.map((m) => gameResultItem(m));
+      setServerGames((prev) => (prev && prev.cursor === cursor ? {
+        total: prev.total, items: [...prev.items, ...more], cursor: page.nextCursor,
+      } : prev));
+      if (allPickRef.current) selection?.setMany(more.filter(canPick).map(rowKeyOf), true);
+    } catch {
+    } finally {
+      setMoreBusy(false);
+    }
+  }, [serverGames?.cursor, moreBusy, serverBusy, listQuery9, selection, canPick]);
+
+  const moreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!el || !serverGames?.cursor) return undefined;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) void loadMoreGames();
+    }, { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [serverGames?.cursor, loadMoreGames]);
 
   const slotMatchesTerm = (slot: GameResultSlot, term: string): boolean => {
     const m = memberOf(slot.memberId);
@@ -197,6 +244,15 @@ export default memo(function ActivityGroupPage({
   );
   const keepOnly = selection?.keepOnly;
   useEffect(() => { keepOnly?.(selectable.map(rowKeyOf)); }, [keepOnly, selectable]);
+  useEffect(() => { if (allPick && !pickedSet?.size) setAllPick(false); }, [allPick, pickedSet]);
+  const bulkAll = useMemo<GameBulkAll | null>(() => {
+    if (!allPick || !serverGames) return null;
+    const exclude = serverGames.items.flatMap((it) => (
+      it.kind === "gameResult" && !pickedSet?.has(rowKeyOf(it)) ? [it.gameResult.id] : []));
+    return { filter: listQuery9, exclude, count: Math.max(0, serverGames.total - exclude.length) };
+  }, [allPick, serverGames, pickedSet, listQuery9]);
+  // 전체 선택 앞 수 — 서버 목록이면 아직 안 받은 판까지(받은 것 중 못 고르는 줄은 뺀다).
+  const pickTotal = serverGames ? Math.max(0, serverGames.total - (filtered.length - selectable.length)) : selectable.length;
 
   useLayoutEffect(() => {
     const y9 = groupKey !== "gameResult" ? restore9.current : null;
@@ -247,14 +303,17 @@ export default memo(function ActivityGroupPage({
       )}
       {selection && filtered.length > 0 && (
         <SelectionBar
-          total={selectable.length} count={pickedItems.length}
-          onSelectAll={() => selection.setMany(selectable.map(rowKeyOf), true)}
+          total={pickTotal} count={bulkAll ? bulkAll.count : pickedItems.length}
+          onSelectAll={() => {
+            if (serverGames) setAllPick(true);
+            selection.setMany(selectable.map(rowKeyOf), true);
+          }}
           onClear={selection.clear}
           /* 안내 줄(selectionNote)은 안 띄운다(2026-10-13, 요청: "안내 문구도 굳이 안 보여 주기") — 못 고르는 줄은 눌렀을 때의 풍선(disabledTitle)이 말한다. */
           mode={selection.mode} onExit={selection.exit}
         >
           <SelectionActions
-            picked={pickedItems} onDelete={onDeleteItems} onHide={onHideItems}
+            picked={pickedItems} all={bulkAll} onDelete={onDeleteItems} onHide={onHideItems}
           />
         </SelectionBar>
       )}
@@ -267,6 +326,11 @@ export default memo(function ActivityGroupPage({
             const { key, ...p } = rowPropsOf(item, { selecting: !!selection, canPick, picked: pickedSet ?? null });
             return <ActivityRow key={key} {...p} minute={minute} view={view} act={act} />;
           })
+        )}
+        {serverGames?.cursor && (
+          <div ref={moreRef} className="scr-activity-more-sentinel">
+            {moreBusy && <LoadingMark />}
+          </div>
         )}
       </div>
     </div>

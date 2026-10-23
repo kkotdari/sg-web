@@ -129,9 +129,10 @@ export function deletableOf(it: DisplayItem): boolean {
   return it.kind === "gameResult" || it.kind === "schedule";
 }
 
-export function bulkDeleteMessageOf(items: DisplayItem[]): string {
-  const games = items.filter((it) => it.kind === "gameResult").length;
-  const others = items.length - games;
+/** gameCount 는 게임 목록 '전체 선택'일 때 — 받은 줄이 아니라 서버 조건의 수. */
+export function bulkDeleteMessageOf(items: DisplayItem[], gameCount?: number): string {
+  const games = gameCount ?? items.filter((it) => it.kind === "gameResult").length;
+  const others = gameCount !== undefined ? 0 : items.length - games;
   const parts: string[] = [];
   if (games > 0) parts.push(`게임 ${games}개는 목록·통계에서 사라지고, 운영자가 제어판의 '삭제된 경기'에서 복원할 수 있어요.`);
   if (others > 0) parts.push(`일정 ${others}개는 되돌릴 수 없어요.`);

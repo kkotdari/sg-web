@@ -23,7 +23,7 @@ import { buildReplayDrafts, type ReplayDraft } from "../../utils/replayDraft";
 import { hasAppUpdatePreloadErrorOccurred } from "../../utils/appUpdate";
 import type { LeagueMatchActivity } from "../../types";
 import ActivityHome from "./ActivityHome";
-import ActivityGroupPage from "./ActivityGroupPage";
+import ActivityGroupPage, { type GameBulkAll } from "./ActivityGroupPage";
 import ActivityDetailPage from "./ActivityDetailPage";
 import GameDetailPage from "./GameDetailPage";
 import type { RowAct, RowView } from "./ActivityRow";
@@ -204,7 +204,7 @@ function ActivityRouter() {
     return it.kind === "gameResult" && canManageGame(it.gameResult, user);
   }, [isAdmin, user]);
   const selectionNote = isAdmin ? "리그 경기는 여기서 지울 수 없어요." : "내가 뛴 게임만 고를 수 있어요.";
-  const hideOne = useCallback((it: DisplayItem) => { setBulkErr(null); setBulkHide([it]); }, []);
+  const hideOne = useCallback((it: DisplayItem) => { setBulkErr(null); setBulkAll(null); setBulkHide([it]); }, []);
   const rowAct = useRef<RowAct>({ open: openItem, toggle: sel.toggle, setMany: sel.setMany, hide: hideOne });
   rowAct.current = { open: openItem, toggle: sel.toggle, setMany: sel.setMany, hide: hideOne };
 
@@ -292,12 +292,42 @@ function ActivityRouter() {
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const [bulkErr, setBulkErr] = useState<string | null>(null);
   const [groupRefreshKey, setGroupRefreshKey] = useState(0);
-  const askBulkDelete = useCallback((items: DisplayItem[]) => {
-    if (items.length === 0) return;
+  /* 게임 목록 '전체 선택' 뒤의 명령은 한 번에 서버로(api.bulkGames · all = 목록 조건 · exclude = 받은 판 중 안 고른 것 — ActivityGroupPage ★). */
+  const [bulkAll, setBulkAll] = useState<GameBulkAll | null>(null);
+  const runBulkAll = async (action: "delete" | "hide", all: GameBulkAll): Promise<boolean> => {
+    const verb = action === "delete" ? "삭제" : "";
+    const forms = action === "delete" ? undefined : HIDE_FORMS;
     setBulkErr(null);
+    setBulkProgress({ done: 0, total: all.count });
+    let r: { done: number; failed: number };
+    try {
+      r = await api.bulkGames({ action, all: all.filter, exclude: all.exclude });
+    } catch {
+      setBulkProgress(null);
+      setBulkErr(batchSummary(verb, 0, all.count, "개", forms));
+      return false;
+    }
+    if (r.done > 0) { setGroupRefreshKey((k) => k + 1); feed.reload(); }
+    setBulkProgress(null);
+    if (r.done === 0 && r.failed > 0) {
+      setBulkErr(batchSummary(verb, 0, r.failed, "개", forms));
+      return false;
+    }
+    selClear();
+    showToast(batchSummary(verb, r.done, r.failed, "개", forms), { kind: r.failed > 0 ? "warn" : "ok" });
+    return true;
+  };
+  const askBulkDelete = useCallback((items: DisplayItem[], all?: GameBulkAll) => {
+    if (items.length === 0 && !all) return;
+    setBulkErr(null);
+    setBulkAll(all ?? null);
     setBulkConfirm(items);
   }, []);
   const runBulkDelete = async (items: DisplayItem[]) => {
+    if (bulkAll) {
+      if (await runBulkAll("delete", bulkAll)) { setBulkConfirm(null); setBulkAll(null); }
+      return;
+    }
     setBulkErr(null);
     setBulkProgress({ done: 0, total: items.length });
     const { done, failed } = await runBatch(items, async (it) => {
@@ -327,12 +357,17 @@ function ActivityRouter() {
   };
 
   const [bulkHide, setBulkHide] = useState<DisplayItem[] | null>(null);
-  const askBulkHide = useCallback((items: DisplayItem[]) => {
-    if (items.length === 0) return;
+  const askBulkHide = useCallback((items: DisplayItem[], all?: GameBulkAll) => {
+    if (items.length === 0 && !all) return;
     setBulkErr(null);
+    setBulkAll(all ?? null);
     setBulkHide(items);
   }, []);
   const runBulkHide = async (items: DisplayItem[]) => {
+    if (bulkAll) {
+      if (await runBulkAll("hide", bulkAll)) { setBulkHide(null); setBulkAll(null); }
+      return;
+    }
     setBulkErr(null);
     setBulkProgress({ done: 0, total: items.length });
     const { done, failed } = await runBatch(items, async (it) => {
@@ -442,23 +477,24 @@ function ActivityRouter() {
 
       {bulkConfirm && (
         <ConfirmDialog
-          title={`선택한 ${bulkConfirm.length}개를 삭제할까요?`}
-          message={bulkDeleteMessageOf(bulkConfirm)}
-          confirmLabel={bulkProgress ? `삭제 중... ${bulkProgress.done}/${bulkProgress.total}` : "삭제"}
+          title={`선택한 ${bulkAll ? bulkAll.count : bulkConfirm.length}개를 삭제할까요?`}
+          message={bulkDeleteMessageOf(bulkConfirm, bulkAll?.count)}
+          confirmLabel={bulkProgress ? (bulkAll ? "삭제 중..." : `삭제 중... ${bulkProgress.done}/${bulkProgress.total}`) : "삭제"}
           error={bulkErr}
           onConfirm={() => { if (!bulkProgress) void runBulkDelete(bulkConfirm); }}
-          onCancel={() => { if (!bulkProgress) { setBulkConfirm(null); setBulkErr(null); } }}
+          onCancel={() => { if (!bulkProgress) { setBulkConfirm(null); setBulkAll(null); setBulkErr(null); } }}
         />
       )}
 
       {bulkHide && (
         <ConfirmDialog
-          title={bulkHide.length === 1 && !sel.picked.size ? "이 게임을 숨길까요?" : `선택한 게임 ${bulkHide.length}개를 숨길까요?`}
+          title={bulkAll ? `선택한 게임 ${bulkAll.count}개를 숨길까요?`
+            : bulkHide.length === 1 && !sel.picked.size ? "이 게임을 숨길까요?" : `선택한 게임 ${bulkHide.length}개를 숨길까요?`}
           message=""
-          confirmLabel={bulkProgress ? `숨기는 중... ${bulkProgress.done}/${bulkProgress.total}` : "숨김"}
+          confirmLabel={bulkProgress ? (bulkAll ? "숨기는 중..." : `숨기는 중... ${bulkProgress.done}/${bulkProgress.total}`) : "숨김"}
           error={bulkErr}
           onConfirm={() => { if (!bulkProgress) void runBulkHide(bulkHide); }}
-          onCancel={() => { if (!bulkProgress) { setBulkHide(null); setBulkErr(null); } }}
+          onCancel={() => { if (!bulkProgress) { setBulkHide(null); setBulkAll(null); setBulkErr(null); } }}
         />
       )}
 

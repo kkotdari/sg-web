@@ -509,6 +509,16 @@ export const api = {
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}/hide`, { method: "POST" }));
   },
 
+  /** 게임 일괄 명령(삭제·숨김) — all 이면 그 목록 조건에 드는 판 전부(exclude 는 뺀다) · 아니면 ids. 못 한 판은 서버가 건너뛰고 센다. */
+  async bulkGames(body: {
+    action: "delete" | "hide";
+    ids?: number[];
+    all?: Omit<GameResultListParams, "cursor" | "limit" | "sort" | "teamMemberIds">;
+    exclude?: number[];
+  }): Promise<{ done: number; failed: number }> {
+    return request<{ done: number; failed: number }>("/api/game-results/bulk", { method: "POST", body: JSON.stringify(body) });
+  },
+
   /** 숨긴 경기 해제 요청 — 숨김은 누구도 못 되돌리니 운영자에게 청한다(두 번 눌러도 하나 · 2026-10-19). */
   async requestUnhideGameResult(id: number): Promise<GameUnhideRequest> {
     return request<GameUnhideRequest>(`/api/game-results/${id}/unhide-request`, { method: "POST" });
