@@ -496,6 +496,8 @@ export const api = {
     date: string; matchType: GameType; result: "team1" | "team2" | "draw"; mapName?: string;
     team1: { memberId: string; race: Race; playerName: string }[];
     team2: { memberId: string; race: Race; playerName: string }[];
+    /** 리플레이의 게임 종류 값 — 10 이면 유즈맵(기록만). */
+    gameType?: number;
   }): Promise<GameResult> {
     return gameResultFromWire(await request<WireGameResult>("/api/game-results", { method: "POST", body: JSON.stringify(body) }));
   },
