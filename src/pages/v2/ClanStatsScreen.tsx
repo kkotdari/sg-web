@@ -5,7 +5,7 @@ import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
-import { currentMonthValue, monthInputToRange } from "../../utils/date";
+import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
@@ -151,7 +151,7 @@ export default function ClanStatsScreen() {
     };
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
-      : monthInputToRange(/^\d{4}-\d{2}$/.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue());
+      : monthPeriodToRange(MONTH_PERIOD_RE.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue());
     if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [] }); return; }
     let cancelled = false;
     setError("");
@@ -249,6 +249,7 @@ export default function ClanStatsScreen() {
             value={period} onChange={setPeriod}
             maxMonth={currentMonthValue()}
             allValue={PERIOD_ALL}
+            range
             className="scr-v2-toolbar-month"
           />
           <button

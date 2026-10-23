@@ -43,6 +43,13 @@ export function monthInputToRange(value: string): { from: string; to: string } {
   return { from: monthStart(y, m - 1), to: monthEnd(y, m - 1) };
 }
 
+/** 달 구간 "YYYY-MM~YYYY-MM"(앞 ≤ 뒤) 또는 한 달 "YYYY-MM" — 통계의 연속 달 고르기(2026-10-22, 요청: "통계에서 월을 연속적으로 선택 가능하게"). */
+export const MONTH_PERIOD_RE = /^\d{4}-\d{2}(~\d{4}-\d{2})?$/;
+export function monthPeriodToRange(value: string): { from: string; to: string } {
+  const [a, b = a] = value.split("~");
+  return { from: monthInputToRange(a).from, to: monthInputToRange(b).to };
+}
+
 export const currentMonthValue = (): string => todayStr().slice(0, 7);
 
 
@@ -53,6 +60,15 @@ export function shortYearPrefix(year: number, now: Date = gameNow()): string {
 export function monthLabel(month: string, now: Date = gameNow()): string {
   const [y, m] = month.split("-").map(Number);
   return `${shortYearPrefix(y, now)}${m}월`;
+}
+
+/** 달 구간 이름 — "8월~10월" · 올해가 아니면 해를 붙인다("25년 8월~10월") · 해를 넘으면 두 끝에("24년 12월~1월"은 뒤가 올해일 때). */
+export function monthPeriodLabel(value: string, now: Date = gameNow()): string {
+  const [a, b] = value.split("~");
+  if (!b || a === b) return monthLabel(a, now);
+  const mon = (s: string): number => Number(s.slice(5));
+  if (a.slice(0, 4) === b.slice(0, 4)) return `${monthLabel(a, now)}~${mon(b)}월`;
+  return `${a.slice(2, 4)}년 ${mon(a)}월~${monthLabel(b, now)}`;
 }
 
 export function shiftMonthValue(month: string, delta: number): string {

@@ -2446,6 +2446,10 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
   color: #10151a; background: var(--lighting-pill-bg); box-shadow: var(--lighting-pill-glow);
 }
 .scr-month-cal-extra { display: flex; gap: 6px; margin-top: 2px; }
+/* 연속 달 고르기(MonthCalendar range · 2026-10-22) — 두 끝 사이 달은 옅게 칠하고, 아래에 한 줄 안내. */
+.scr-month-cal-cell-in { background: rgba(255,255,255,0.18); }
+.scr-light-theme .scr-month-cal-cell-in { background: rgba(0,0,0,0.12); }
+.scr-month-cal-hint { margin: 0; font-size: var(--fs-micro, 11px); color: var(--muted); text-align: center; }
 .scr-month-cal-all { flex: 1 1 0; min-width: 0; }
 
 .scr-stat-upgrades-empty { align-content: center; }
