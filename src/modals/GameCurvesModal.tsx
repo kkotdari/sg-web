@@ -345,14 +345,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     /** 단마다 놓인 선 [높이 비킴, 왼끝, 오른끝]. */
     const lines: [number, number, number][][] = [];
     const items = shown.map((b) => {
-      /* 칩은 그 때 자리에서 시작 — 끝 가까이(칩 폭 두 배 안)는 칩을 그 때 왼쪽으로 차츰 밀어(맨 끝이면 칩 오른끝 = 그 때) 넘치지 않게 한다(2026-10-23, 지적:
-         "끝에 줄 맞춰 나오는 거 부자연스러운데" — 옛: 오른끝에 못 박아 끝 무렵 칩이 모두 한 세로줄로 섰다). 미는 양은 때를 따라 이어져 차례가 안 뒤집힌다. */
       const tag = (at9: number, label: string, what: string, extra?: Partial<Tag>): Tag => {
         const w = chipW(label);
-        const x9 = x(at9);
-        const zone = 2 * w;
-        const lean = Math.max(0, Math.min(1, (x9 - (RIGHT - zone)) / zone));
-        return { x: Math.max(PL, x9 - w * lean), w, label, at: at9, what, ...extra };
+        return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, ...extra };
       };
       const tags: Tag[] = [tag(b.s, BUILD_LABEL[b.t] ?? `#${b.t}`, "착공", { kind: b.t })];
       for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, "변태", { morph: true, kind: mt }));
