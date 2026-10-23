@@ -3356,6 +3356,9 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 같은 종류 강조 = 강조색(폰 테크 칩 .scr-tl-chip.is-hl 과 같은 색 · 2026-10-22) — **불투명**(같은 날 "강조 시 뒤 안 보이게 불투명") — 반투명 강조색을 칩 바탕에 미리 섞어 칠한다. */
 .scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 30%, var(--panel-raised, var(--panel))); fill-opacity: 1; stroke: var(--lighting-accent, var(--point)); }
 html:not(.scr-light-theme) .scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 85%, var(--panel-raised, var(--panel))); }
+/* 얹은 칩 하나(진짜 주인공 · 2026-10-23, 요청: "진짜 주인공(실제 선택)은 더 진하게") — 같은 종류 강조(30% · 다크 85%)보다 진하게 · 테두리 본문색. svg 끝에 한 벌 더 그려 맨 위. */
+.scr-bl-chip.is-me { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 62%, var(--panel-raised, var(--panel))); stroke: var(--text); stroke-width: 1; }
+html:not(.scr-light-theme) .scr-bl-chip.is-me { fill: var(--lighting-accent, var(--point)); }
 .scr-bl-hit { cursor: default; }
 .scr-bl-morph { fill: var(--dim); }
 .scr-bl-hit.is-hl > .scr-bl-live { stroke: var(--text); }

@@ -299,6 +299,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const plotRef = useRef<HTMLDivElement>(null);
   const [pop, setPop] = useState<ChipPopAt | null>(null);
   useCloseOutside(pop !== null, plotRef, ".scr-bl-hit", () => setPop(null));
+  /** 마우스를 얹은 칩 하나(진짜 주인공) — 같은 종류 강조보다 진하게 · 맨 위(svg 끝)에 한 번 더 그린다(아래 ★). */
+  const [me, setMe] = useState<{ key: string; x: number; y: number; w: number; label: string } | null>(null);
+  const lastPtr = useRef("mouse");
   const AXIS_H = font.axis + 8 + AXIS_DROP;
   const END = maxX * 60;
   const x = (sec: number): number => PL + Math.min(1, sec / END) * (CW - PL - padR);
@@ -310,7 +313,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     setHover(null);
     onAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (CW - PL - padR)) * maxX))));
   };
-  const scrub = useScrub(pick, () => { setHover(null); setHoverKind(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
+  const scrub = useScrub(pick, () => { setHover(null); setHoverKind(null); setMe(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
   /* ★ 건물 한 채 = 칩 하나(2026-10-22, 요청: "너무 한눈에 안 들어와 — 모든 건물에 하나하나 칩을 만들어(아주 컴팩트하게) · 종류별로 모으지 않기 · 시간 순서로 배치 ·
      선이 겹쳐도 됨") — 옛 판은 종류마다 이름 한 줄 + 그 종류 건물마다 가는 선을 쌓아 칸이 길고 빽빽했다. 이제 사람 칸 안에서 건물을 **착공 차례**로 늘어놓아, 칩(이름)을
      착공 자리에 두고 수명 선(짓는 중 점선 · 산 동안 실선 · 사라지면 ✕)을 그 칩의 단 가운데로 끌고 간다. 칩끼리만 안 겹치게 위 단부터 빈자리에 넣는다(선은 뒤 칩·선과 겹쳐도 된다).
@@ -414,18 +417,33 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                     /* 애드온과 본 건물은 함께(같은 날 "애드온과 본 건물은 같이 강조") — 팩토리에 얹으면 머신샵도 · 머신샵에 얹으면 팩토리도(ADDON_HOST9). */
                     const hl9 = hoverKind !== null && t.kind !== undefined
                       && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
-                    /* 누르면 팝오버 — [무엇 · 분:초 · 그때 인구] · 본 칩은 완공 · 파괴도(있으면). */
+                    /* 누르면 팝오버 — [무엇 · 분:초 · 그때 인구] · 본 칩은 완공 · 파괴도(있으면). PC(마우스)는 얹자마자 뜨고 떼면 걷는다(2026-10-23, 요청: "피시에서 건물칩 마우스오버 시에도 바로 팝업"). */
                     const popKey = `${l.key}:${b.s}:${b.t}:${ti}`;
-                    const openPop = (): void => setPop((p) => (p?.key === popKey ? null : {
+                    const popOf = (): ChipPopAt => ({
                       key: popKey, x: t.x, y: ly - CH / 2, w: t.w, title: t.label.replace(/^[→+] ?/, ""),
                       lines: [
                         { what: t.what, sec: t.at, sup: supAt(l.spt, t.at) },
                         ...(ti === 0 && b.d !== null && b.d !== b.s ? [{ what: "완공", sec: b.d, sup: supAt(l.spt, b.d) }] : []),
                         ...(ti === 0 && b.e !== null ? [{ what: b.d === null ? "취소" : "사라짐", sec: b.e, sup: supAt(l.spt, b.e) }] : []),
                       ],
-                    }));
+                    });
                     return (
-                    <g key={ti} className={t.cut ? "is-cut" : undefined} onPointerEnter={(e) => { if (e.pointerType === "mouse") setHoverKind(t.kind ?? null); }} onClick={openPop}>
+                    <g
+                      key={ti} className={t.cut ? "is-cut" : undefined}
+                      onPointerEnter={(e) => {
+                        if (e.pointerType !== "mouse") return;
+                        setHoverKind(t.kind ?? null);
+                        setMe({ key: popKey, x: t.x, y: ly - CH / 2, w: t.w, label: t.label });
+                        setPop(popOf());
+                      }}
+                      onPointerLeave={(e) => {
+                        if (e.pointerType !== "mouse") return;
+                        setMe((m) => (m?.key === popKey ? null : m));
+                        setPop((p) => (p?.key === popKey ? null : p));
+                      }}
+                      onPointerDown={(e) => { lastPtr.current = e.pointerType; }}
+                      onClick={() => { if (lastPtr.current !== "mouse") setPop((p) => (p?.key === popKey ? null : popOf())); }}
+                    >
                       <rect className={cx("scr-bl-chip", t.morph && "is-morph", hl9 && "is-hl")} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
                       <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
                         {t.label}
@@ -440,6 +458,14 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
           </g>
         ))}
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
+        {/* ★ 진짜 주인공(얹은 칩)은 같은 종류 강조보다 **진하게** · **맨 위**(2026-10-23, 요청: "건물 강조 효과 시 진짜 주인공(실제 선택)은 더 진하게 색칠" · "위치도 맨 위로 · z축") —
+            svg 는 그린 차례가 z 라 끝에 한 벌 더 그린다(마우스는 밑의 원 칩이 받는다 · 줄을 옮겨 그리면 얹음이 떨어졌다 붙었다 한다). */}
+        {me && (
+          <g className="scr-bl-me" pointerEvents="none">
+            <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CH} rx={RX} />
+            <text className="scr-tl-label" x={me.x + PX} y={me.y + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>
+          </g>
+        )}
       </svg>
       {pop && <ChipPop pop={pop} width={CW} />}
       </div>
