@@ -376,10 +376,12 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const H = y0;
   const rowCls = (l: BuildLane): string => (focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row");
   const lyOf = (top: number, k: number, jig: number): number => top + BL.pad + BL.jig + k * STEP + CH / 2 + jig;
-  /* 토막 — 처음 짓는 동안만 점선 · 그 뒤는 실선(변태 중·변태 취소도 실선 — 2026-10-22, 요청: "변태한 건물 점선 말고 실선으로"). */
+  /* 토막 — 처음 짓는 동안만 점선 · 그 뒤는 실선(변태 중·변태 취소도 실선 — 2026-10-22, 요청: "변태한 건물 점선 말고 실선으로").
+     ★ 선은 **끝나기 전에 사라진 건물만**(2026-10-23, 요청: "종료 전에 터진 건물에만 아주 연하고 얇게 표시 · 끝까지 있는 건 없어도 됨") — 끝까지 남은 건물은 칩만. */
   const segLines = (b: GameCurve["blds"][number], ly: number): ReactElement[] => {
-    const end = b.e ?? END;
-    const built9 = b.d ?? (b.e !== null ? b.e : end);
+    if (b.e === null) return [];
+    const end = b.e;
+    const built9 = b.d ?? end;
     const segs: [number, number, boolean][] = [[b.s, built9, true], ...(end > built9 ? [[built9, end, false] as [number, number, boolean]] : [])];
     return segs.map(([a, z, bld], si) => (
       <line key={si} className={bld ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
@@ -434,7 +436,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                   onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(null); setHoverKind(null); } }}
                 >
                   {segLines(b, ly)}
-                  <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />
+                  {b.e !== null && <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />}
                   {tags.map((t, ti) => {
                     const hl9 = tagHlOf(t);
                     /* 누르면 팝오버 — [무엇 · 분:초 · 그때 인구] · 본 칩은 완공 · 파괴도(있으면). PC(마우스)는 얹자마자 뜨고 떼면 걷는다(2026-10-23, 요청: "피시에서 건물칩 마우스오버 시에도 바로 팝업"). */
