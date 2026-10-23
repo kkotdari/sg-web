@@ -14,14 +14,27 @@ interface PhotoViewerProps {
   onNext?: () => void;
   counter?: string;
   extra?: ReactNode;
-  /** ★ 단추 줄 모드(일정 사진 목록·슬라이드 · 2026-10-23, 요청: "누르면 해당 위치에서 확대창이 뜨는데 닫기 버튼 등 모든 버튼과 인덱스랑 좌우 이동은
-   *  사진 밖 아래에 사진 가리지 않음 · 동영상도 원래 비율대로 처음부터 창이 뜨고 버튼은 마찬가지 · 자동 반복 재생") — 단추(extra · 닫기)와 앞뒤 · n/n 을
-   *  사진 **밖 아래 한 줄**에 둔다. 판(흐린 바탕)은 그림과 그 줄만 감싸고 나머지 화면은 그대로 보인다(같은 날 "불필요한 영역까지 패널 처리 안 하기"). 창은 썸네일(thumb)로 비율을 먼저 알아 처음부터 제 크기로 서고(동영상도 · 원본이 오면 그 값으로 바로잡는다),
-   *  from 이 주는 자리(누른 칸)에서 커지며 열리고 닫을 때 그 자리로 줄어든다. 동영상은 반복 재생. */
-  bar?: boolean;
+  /** 썸네일 — 비율을 먼저 알아 창이 처음부터 제 크기로 선다(원본이 오는 동안 깔린다). */
   thumb?: string;
+  /** 커지며 열리고 줄며 닫히는 자리(누른 칸) — 없으면 방금 누른 요소. */
   from?: () => DOMRect | null;
 }
+
+/* ★ 크게 보기는 이 한 꼴이다(2026-10-23, 요청: 일정 사진 "누르면 해당 위치에서 확대창이 뜨는데 닫기 버튼 등 모든 버튼과 인덱스랑 좌우 이동은
+   사진 밖 아래에 사진 가리지 않음 · 동영상도 원래 비율대로 처음부터 창이 뜨고 버튼은 마찬가지 · 자동 반복 재생" · 같은 날 "불필요한 영역까지 패널 처리
+   안 하기" · "다른 사진 확대창도 같은 거 쓰자 기존 거 없애고") — 판(흐린 바탕)이 그림과 그 밑 단추 줄(가운데 앞뒤 · n/n · 오른쪽 extra · 닫기)만
+   감싸고, 나머지 화면은 덮지 않는다(판 밖을 누르면 닫힌다). 창은 비율(썸네일 → 원본)을 안 뒤에 제 크기로 서고, 누른 자리에서 커지며 열리고 그 자리로
+   줄며 닫힌다. 동영상은 반복 재생. 옛 꼴(그림 위 닫기 · 화면 양옆 넘김 · 아래 n/n)은 걷었다. */
+
+/** 방금 누른 요소 — from 이 없을 때 커지는 자리(회원 사진 등 · 여는 쪽이 자리를 넘기지 않아도 된다). */
+let lastPress: { el: Element; t: number } | null = null;
+if (typeof document !== "undefined") {
+  document.addEventListener("pointerdown", (e) => {
+    const t = e.target instanceof Element ? e.target : null;
+    if (t && !t.closest(".scr-pv")) lastPress = { el: t.closest("button, a, img, [role=button]") ?? t, t: performance.now() };
+  }, true);
+}
+const PRESS_FRESH_MS = 1500;
 
 type Pt = { x: number; y: number };
 type Zoom = { s: number; tx: number; ty: number };
@@ -80,7 +93,7 @@ function zoomAt(c: Pt, z: Zoom, p: Pt, next: number): Zoom {
   return { s: next, tx: p.x - c.x - k * (p.x - c.x - z.tx), ty: p.y - c.y - k * (p.y - c.y - z.ty) };
 }
 
-export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, counter, extra, bar, thumb, from }: PhotoViewerProps) {
+export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, counter, extra, thumb, from }: PhotoViewerProps) {
   useLockBodyScroll();
   const frameRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -88,7 +101,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
-  /* 단추 줄 모드의 창 크기 — 비율(aspect)을 알면 무대(stage)에 맞춘 크기(fit). 원본 크기(natural)를 알면 그보다 키우지 않는다. */
+  /* 창 크기 — 비율(aspect)을 알면 화면에 맞춘 크기(fit). 원본 크기(natural)를 알면 그보다 키우지 않는다. */
   const aspect = useRef<number | null>(null);
   const natural = useRef<{ w: number; h: number } | null>(null);
   const [fit, setFit] = useState<{ w: number; h: number } | null>(null);
@@ -96,8 +109,16 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
   fitRef.current = fit;
   const grown = useRef(false);
   const [closing, setClosing] = useState(false);
+  const pressed = useRef<Element | null>(null);
+  if (pressed.current === null) {
+    const lp = lastPress;
+    pressed.current = lp && performance.now() - lp.t < PRESS_FRESH_MS ? lp.el : document.body;
+  }
   const fromRef = useRef(from);
-  fromRef.current = from;
+  fromRef.current = from ?? (() => {
+    const el = pressed.current;
+    return el && el !== document.body && el.isConnected ? el.getBoundingClientRect() : null;
+  });
   const z = useRef<Zoom>(HOME);
   const base = useRef({ w: 0, h: 0 });
   const baked = useRef(1);
@@ -115,7 +136,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     const a = aspect.current;
     const st = stageRef.current;
     const card = cardRef.current;
-    if (!bar || !a || !st || !card) return;
+    if (!a || !st || !card) return;
     // 판(card)은 그림 + 단추 줄만 감싼다 — 그림 자리 = 화면(여백 뺀) − 판 안쪽 여백 − 단추 줄 − 그 사이.
     const px = (v: string): number => parseFloat(v) || 0;
     const cs = getComputedStyle(st);
@@ -141,7 +162,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     const a = aspect.current;
     const b = a ? fromRef.current?.() : null;
     const dst = b && a ? fitIn(b, a) : null;
-    if (!bar || closing || !el || !dst || z.current.s !== 1) { onClose(); return; }
+    if (closing || !el || !dst || z.current.s !== 1) { onClose(); return; }
     setClosing(true);
     const anim = el.animate([{ transform: "none" }, { transform: toward(el.getBoundingClientRect(), dst) }], {
       duration: SHRINK_MS, easing: "cubic-bezier(.4,0,.8,.4)", fill: "forwards",
@@ -162,10 +183,11 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     img.style.transition = animate ? `transform ${SETTLE_MS}ms ease-out` : "none";
     img.style.transform = k === 1 && tx === 0 && ty === 0 ? "" : `translate(${tx}px, ${ty}px) scale(${k})`;
     img.style.cursor = s > 1 ? "grab" : "zoom-in";
-    const frame = frameRef.current;
-    if (frame) {
-      if (s > 1) frame.dataset.zoomed = "1";
-      else delete frame.dataset.zoomed;
+    // 키운 동안은 끌어 닫기(useModalDragDismiss)가 손을 뗀다 — 그 훅은 판(card)과 그림 틀(frame)을 본다.
+    for (const el of [frameRef.current, cardRef.current]) {
+      if (!el) continue;
+      if (s > 1) el.dataset.zoomed = "1";
+      else delete el.dataset.zoomed;
     }
   };
   const unbake = (): void => {
@@ -178,7 +200,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     if (!img || !frame) return;
     const { s } = z.current;
     if (s === 1) {
-      const f = bar ? fitRef.current : null;
+      const f = fitRef.current;
       img.style.width = f ? `${f.w}px` : ""; img.style.height = f ? `${f.h}px` : "";
       img.style.maxWidth = ""; img.style.maxHeight = "";
       frame.style.width = ""; frame.style.height = "";
@@ -200,11 +222,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
 
   useEffect(() => {
     reset();
-    if (!bar) {
-      window.addEventListener("resize", reset);
-      return () => { window.removeEventListener("resize", reset); unbake(); };
-    }
-    // 단추 줄 모드 — 장이 바뀌면 비율을 새로 안다(썸네일이 먼저 · 대개 캐시에 있다). 처음 열 때는 알 때까지 판을 숨기고,
+    // 장이 바뀌면 비율을 새로 안다(썸네일이 먼저 · 대개 캐시에 있다). 처음 열 때는 알 때까지 판을 숨기고,
     // 넘길 때는 앞 장의 크기를 잠깐 쓴다(판이 깜빡이지 않게).
     aspect.current = null;
     natural.current = null;
@@ -223,7 +241,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
 
   /* 창 크기가 서면 그 크기로 굽고, 처음 열 때 한 번 누른 칸에서 커진다(앞뒤로 넘길 때는 그냥 바꾼다). */
   useLayoutEffect(() => {
-    if (!bar || !fit) return;
+    if (!fit) return;
     reset();
     if (grown.current) return;
     grown.current = true;
@@ -241,7 +259,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === "ArrowLeft" && nav.current.onPrev) { e.preventDefault(); nav.current.onPrev(); }
       else if (e.key === "ArrowRight" && nav.current.onNext) { e.preventDefault(); nav.current.onNext(); }
-      else if (e.key === "Escape" && bar) { e.preventDefault(); closeRef.current(); }
+      else if (e.key === "Escape") { e.preventDefault(); closeRef.current(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -280,7 +298,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
-    if ((e.target as Element).closest(".scr-photo-close, .scr-photo-save, .scr-photo-nav, video")) return;
+    if ((e.target as Element).closest("video")) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     unbake();
@@ -339,90 +357,53 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     bakeLater(SETTLE_MS + 20);
   };
 
-  if (bar) {
-    const hide = fit ? undefined : "hidden" as const;
-    return createPortal(
-      <div className={cx("scr-pv", closing && "is-closing")} ref={stageRef} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
-        <div className="scr-pv-card" ref={cardRef} style={{ visibility: hide }}>
-          <div
-            className="scr-pv-frame" ref={frameRef}
-            onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
-            onPointerCancel={(e) => { moved.current = true; onPointerUp(e); }}
-          >
-            {video ? (
-              <video
-                key={src} ref={videoRef} src={imgSrc(src)} poster={thumb ? imgSrc(thumb) : undefined}
-                className="scr-pv-media scr-pv-video" style={{ width: fit?.w, height: fit?.h }}
-                controls autoPlay loop playsInline
-                onLoadedMetadata={(e) => learn(e.currentTarget.videoWidth, e.currentTarget.videoHeight, true)}
-              />
-            ) : (
-              <img
-                src={imgSrc(src)} alt={alt} className="scr-pv-media" ref={imgRef} draggable={false}
-                /* 원본이 오는 동안 썸네일을 깐다 — 창은 이미 제 크기다. */
-                style={{ backgroundImage: thumb ? `url("${imgSrc(thumb)}")` : undefined }}
-                onLoad={(e) => learn(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight, true)}
-              />
-            )}
-          </div>
-          <div className="scr-pv-bar" ref={barRef}>
-            <span className="scr-pv-navs">
-              {(onPrev || onNext) && (
-                <>
-                  <button type="button" className="scr-sb-slide-nav" aria-label="이전" disabled={!onPrev} onClick={() => onPrev?.()}>
-                    <ChevronLeft size={16} />
-                  </button>
-                  {counter && <span className="scr-sb-slide-count" aria-live="polite">{counter}</span>}
-                  <button type="button" className="scr-sb-slide-nav" aria-label="다음" disabled={!onNext} onClick={() => onNext?.()}>
-                    <ChevronRight size={16} />
-                  </button>
-                </>
-              )}
-            </span>
-            <span className="scr-pv-tools">
-              {extra}
-              <button type="button" className="scr-icon-btn scr-photo-close" onClick={close} aria-label="닫기">
-                <X size={16} />
-              </button>
-            </span>
-          </div>
-        </div>
-      </div>,
-      document.body,
-    );
-  }
-
+  const hide = fit ? undefined : "hidden" as const;
   return createPortal(
-    <div className="scr-photo-overlay">
-      <div
-        className="scr-photo-frame" ref={frameRef}
-        onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
-        onPointerCancel={(e) => { moved.current = true; onPointerUp(e); }}
-      >
-        <button
-          type="button" className="scr-icon-btn scr-photo-close"
-          onClick={(e) => { e.stopPropagation(); onClose(); }} aria-label="닫기"
+    <div className={cx("scr-pv", closing && "is-closing")} ref={stageRef} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+      <div className="scr-pv-card" ref={cardRef} style={{ visibility: hide }}>
+        <div
+          className="scr-pv-frame" ref={frameRef}
+          onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
+          onPointerCancel={(e) => { moved.current = true; onPointerUp(e); }}
         >
-          <X size={16} />
-        </button>
-        {extra}
-        {video ? (
-          <video key={src} src={imgSrc(src)} className="scr-photo-large scr-photo-video" controls autoPlay playsInline />
-        ) : (
-          <img src={imgSrc(src)} alt={alt} className="scr-photo-large" ref={imgRef} draggable={false} onLoad={measure} />
-        )}
+          {video ? (
+            <video
+              key={src} ref={videoRef} src={imgSrc(src)} poster={thumb ? imgSrc(thumb) : undefined}
+              className="scr-pv-media scr-pv-video" style={{ width: fit?.w, height: fit?.h }}
+              controls autoPlay loop playsInline
+              onLoadedMetadata={(e) => learn(e.currentTarget.videoWidth, e.currentTarget.videoHeight, true)}
+            />
+          ) : (
+            <img
+              src={imgSrc(src)} alt={alt} className="scr-pv-media" ref={imgRef} draggable={false}
+              /* 원본이 오는 동안 썸네일을 깐다 — 창은 이미 제 크기다. */
+              style={{ backgroundImage: thumb ? `url("${imgSrc(thumb)}")` : undefined }}
+              onLoad={(e) => learn(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight, true)}
+            />
+          )}
+        </div>
+        <div className="scr-pv-bar" ref={barRef}>
+          <span className="scr-pv-navs">
+            {(onPrev || onNext) && (
+              <>
+                <button type="button" className="scr-sb-slide-nav" aria-label="이전" disabled={!onPrev} onClick={() => onPrev?.()}>
+                  <ChevronLeft size={16} />
+                </button>
+                {counter && <span className="scr-sb-slide-count" aria-live="polite">{counter}</span>}
+                <button type="button" className="scr-sb-slide-nav" aria-label="다음" disabled={!onNext} onClick={() => onNext?.()}>
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            )}
+          </span>
+          <span className="scr-pv-tools">
+            {extra}
+            <button type="button" className="scr-icon-btn scr-photo-close" onClick={close} aria-label="닫기">
+              <X size={16} />
+            </button>
+          </span>
+        </div>
       </div>
-      {onPrev && (
-        <button type="button" className="scr-photo-nav scr-photo-prev" aria-label="이전" onClick={(e) => { e.stopPropagation(); onPrev(); }}>
-          <ChevronLeft size={22} />
-        </button>
-      )}
-      {onNext && (
-        <button type="button" className="scr-photo-nav scr-photo-next" aria-label="다음" onClick={(e) => { e.stopPropagation(); onNext(); }}>
-          <ChevronRight size={22} />
-        </button>
-      )}
-      {counter && <div className="scr-photo-counter" aria-hidden>{counter}</div>}
     </div>,
     document.body,
   );

@@ -1000,7 +1000,7 @@ function PhotosBlock({
       {shown && open !== null && (
         <PhotoViewer
           src={shown.url} alt={shown.name} video={isVideoItem(shown)} onClose={() => setOpen(null)}
-          bar thumb={shown.thumbUrl ?? undefined} from={() => cellRect(open)}
+          thumb={shown.thumbUrl ?? undefined} from={() => cellRect(open)}
           onPrev={open > 0 ? () => view(open - 1) : undefined}
           onNext={open < n - 1 ? () => view(open + 1) : undefined}
           counter={n > 1 ? `${open + 1} / ${n}` : undefined}

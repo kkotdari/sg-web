@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-const SHEET_SELECTOR = ".scr-modal, .scr-rivalry-overlay-body, .scr-photo-frame";
-const OVERLAY_SELECTOR = ".scr-modal-overlay, .scr-rivalry-overlay, .scr-photo-overlay";
+const SHEET_SELECTOR = ".scr-modal, .scr-rivalry-overlay-body, .scr-pv-card";
+const OVERLAY_SELECTOR = ".scr-modal-overlay, .scr-rivalry-overlay, .scr-pv";
 const DAMP = 0.85;
 const CLOSE_THRESHOLD = 60;
 const DECIDE_AT = 4;
@@ -17,7 +17,7 @@ function isMotionMap(el: Element | null): boolean {
 }
 
 function isZoomedPhoto(el: Element | null): boolean {
-  return el?.closest<HTMLElement>(".scr-photo-frame")?.dataset.zoomed === "1";
+  return el?.closest<HTMLElement>(".scr-pv-frame")?.dataset.zoomed === "1";
 }
 
 function findScroller(from: Element | null, stopAt: Element): HTMLElement | null {

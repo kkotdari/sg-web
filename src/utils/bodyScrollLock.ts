@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 let lockCount = 0;
 const outsideStack: Array<{ onOutside?: () => void }> = [];
 
-const INLINE_ALLOW = ".scr-modal, .scr-photo-overlay, .scr-drawer, .scr-inapp-notice, .scr-model-zoom-pop";
+const INLINE_ALLOW = ".scr-modal, .scr-pv, .scr-drawer, .scr-inapp-notice, .scr-model-zoom-pop";
 
 function isShieldedTarget(t: EventTarget | null): boolean {
   const el = t instanceof Element ? t : null;
