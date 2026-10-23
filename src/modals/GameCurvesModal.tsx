@@ -459,9 +459,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         ))}
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
         {/* ★ 진짜 주인공(얹은 칩)은 같은 종류 강조보다 **진하게** · **맨 위**(2026-10-23, 요청: "건물 강조 효과 시 진짜 주인공(실제 선택)은 더 진하게 색칠" · "위치도 맨 위로 · z축") —
-            svg 는 그린 차례가 z 라 끝에 한 벌 더 그린다(마우스는 밑의 원 칩이 받는다 · 줄을 옮겨 그리면 얹음이 떨어졌다 붙었다 한다). */}
+            살짝 키워(1.15배) svg 는 그린 차례가 z 라 끝에 한 벌 더 그린다(마우스는 밑의 원 칩이 받는다 · 줄을 옮겨 그리면 얹음이 떨어졌다 붙었다 한다). */}
         {me && (
-          <g className="scr-bl-me" pointerEvents="none">
+          <g className="scr-bl-me" pointerEvents="none" transform={`translate(${me.x + me.w / 2} ${me.y + CH / 2}) scale(1.15) translate(${-(me.x + me.w / 2)} ${-(me.y + CH / 2)})`}>
             <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CH} rx={RX} />
             <text className="scr-tl-label" x={me.x + PX} y={me.y + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>
           </g>
