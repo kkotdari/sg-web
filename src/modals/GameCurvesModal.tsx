@@ -585,8 +585,10 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   }, []);
   const toggleFull = (): void => {
     if (full) {
-      setFull(false);
-      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+      /* 브라우저 전체화면이면 **풀린 뒤에** 꼴을 걷는다(fullscreenchange · 2026-10-23, 지적: "데이터창 전체에서 줄일 때 잠깐 이상하게 보여") — 먼저 걷으면 풀리기까지 몇 프레임
+         창이 전체화면인 채 반투명 바탕(일반 창 꼴)으로 그려져 검은 전체화면 바탕이 비쳐 회색으로 덮였다. 막혀서 창만 채웠던 때는 바로. */
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => setFull(false));
+      else setFull(false);
     } else {
       setFull(true);
       void modalRef.current?.requestFullscreen?.().catch(() => {});
