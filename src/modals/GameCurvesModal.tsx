@@ -681,13 +681,19 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg"), cm: sum(ms, "cm"), cg: sum(ms, "cg"), dd: sum(ms, "dd"), dt: sum(ms, "dt") };
     });
   }, [shown, teamOn, dmgMin]);
+  /* 가로 끝 = 곡선 끝과 건물 · 테크 기록 끝 중 늦은 쪽(2026-10-23, 지적: "끝에 줄 맞춰 나오는 거 — 동시에 저렇게 많은 건물을 착공할 리가 없는데") —
+     옛 굽기는 분당 곡선을 40분에서 잘랐는데(서버 MAX_MINUTES · 이제 120) 건물 기록은 게임 끝까지라, 40분 뒤 착공이 모두 끝 자리에 눌려 한 세로줄로 섰다. */
+  const lastEventMin = useMemo(() => Math.ceil(Math.max(0, ...shown.flatMap((p) => [
+    ...p.blds.flatMap((b) => [b.s, b.d ?? 0, b.e ?? 0, ...b.m.map(([, ms]) => ms)]),
+    ...p.techs.map((t) => t.e),
+  ])) / 60), [shown]);
   const sc = useMemo(() => {
-    const x = Math.max(1, ...series.map((s) => Math.max(s.wk.length, s.sp.length) - 1));
+    const x = Math.max(1, lastEventMin, ...series.map((s) => Math.max(s.wk.length, s.sp.length) - 1));
     const ticks = (k: CurveKey): number[] => niceTicks(Math.max(0, ...series.flatMap((s) => s[k])));
     /* 준 · 입은 데미지는 한 자(둘 중 큰 쪽)를 같이 쓴다 — 두 판을 나란히 견준다. */
     const dmg = niceTicks(Math.max(0, ...series.flatMap((s) => [...s.dd, ...s.dt])));
     return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg"), cm: ticks("cm"), cg: ticks("cg"), dd: dmg, dt: dmg };
-  }, [series]);
+  }, [series, lastEventMin]);
   const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s) => (s[key].length < 2 ? [] : [s.p
     ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p), ys: s[key] }
     : { key: s.key, label: `${s.team}팀`, color: TEAM_COLOR[s.team], ys: s[key] }]));
