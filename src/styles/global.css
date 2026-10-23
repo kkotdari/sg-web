@@ -7833,6 +7833,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-ladder-board-row:last-child { border-bottom: none; }
 @media (hover: hover) { .scr-ladder-board-row:hover { background: var(--lighting-hover-bg, rgba(var(--overlay-rgb), 0.06)); } }
 .scr-ladder-board-row.is-me { background: rgba(var(--overlay-rgb), 0.05); }
+/* 래더 줄 글자 굵기(2026-10-23, 요청: "래더 닉네임이랑 레이팅 포인트 너무 두껍네 좀 얇게 · 특히 레이팅 포인트는 표준으로") — 닉네임 700 → 600 · 포인트 800 → 400(표준). 레이팅 표 창(.scr-rating-*)은 그대로. */
+.scr-ladder-board-row .scr-rating-name { font-weight: 600; }
+.scr-ladder-board-row .scr-rating-score { font-weight: 400; }
 .scr-ladder-board .scr-rating-rank { font-size: var(--fs-subhead, 18px); color: var(--text); }
 
 /* ★ 배치고사(2026-10-23, PlacementScreen) — 회차 탭 · 티어표(1~4 · 위) · 라운드 로빈 대진표(아래 · 첫 열과 머리 줄 고정). 티어 색은 금 · 은 · 동 · 회. */
