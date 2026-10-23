@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
@@ -374,13 +374,44 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     return row;
   });
   const H = y0;
+  const rowCls = (l: BuildLane): string => (focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row");
+  const lyOf = (top: number, k: number, jig: number): number => top + BL.pad + BL.jig + k * STEP + CH / 2 + jig;
+  /* 토막 — 처음 짓는 동안만 점선 · 그 뒤는 실선(변태 중·변태 취소도 실선 — 2026-10-22, 요청: "변태한 건물 점선 말고 실선으로"). */
+  const segLines = (b: GameCurve["blds"][number], ly: number): ReactElement[] => {
+    const end = b.e ?? END;
+    const built9 = b.d ?? (b.e !== null ? b.e : end);
+    const segs: [number, number, boolean][] = [[b.s, built9, true], ...(end > built9 ? [[built9, end, false] as [number, number, boolean]] : [])];
+    return segs.map(([a, z, bld], si) => (
+      <line key={si} className={bld ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
+    ));
+  };
+  /* 짓다가 사라짐(취소·파괴) = ✕ 대신 반투명 딤(2026-10-22, 요청: "취소는 x 대신 반투명 딤 처리") — 칩·선 통째로(.is-cut). */
+  const cutOf = (b: GameCurve["blds"][number]): boolean => b.d === null && b.e !== null;
+  /* 같은 종류 강조는 **선도**(2026-10-22, 요청: "강조 시 선도 강조") — 처음 종류·변태 종류가 얹은 종류이거나, 얹은 것이 이 건물에 붙는 애드온일 때. */
+  const kindHlOf = (b: GameCurve["blds"][number]): boolean =>
+    hoverKind !== null && (b.t === hoverKind || b.m.some(([mt]) => mt === hoverKind) || ADDON_HOST9[hoverKind] === b.t);
+  /* ★ 얹은 건물과 **같은 종류**의 칩은 사람과 상관없이 모두 강조색으로(2026-10-22, 요청: "마우스 오버 시 같은 건물들은 사람 관계없이 모두 강조" → "강조 시 임자색" →
+     "임자색 말고 강조색으로" — 폰 테크 칩 강조(.scr-tl-chip.is-hl)와 같은 색) · 얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩.
+     애드온과 본 건물은 함께(같은 날 "애드온과 본 건물은 같이 강조") — 팩토리에 얹으면 머신샵도 · 머신샵에 얹으면 팩토리도(ADDON_HOST9). */
+  const tagHlOf = (t: Tag): boolean => hoverKind !== null && t.kind !== undefined
+    && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
+  const chipOf = (t: Tag, ly: number, cls?: string): ReactElement => (
+    <>
+      <rect className={cx("scr-bl-chip", t.morph && "is-morph", cls)} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
+      <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
+        {t.label}
+      </text>
+    </>
+  );
+  const hoverAt = hover === null ? null
+    : rows.flatMap((r) => r.items.filter((it) => it.b === hover).map((it) => ({ l: r.l, ly: lyOf(r.top, it.k, it.jig) })))[0] ?? null;
   return (
     <figure className="scr-rc-chart">
       <figcaption className="scr-rc-title">건설<TitleSwitch label="간단히 보기" on={techOnly} onChange={onTechOnly} /></figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
         {rows.map(({ l, items, top, h }) => (
-          <g key={l.key} className={focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row"}>
+          <g key={l.key} className={rowCls(l)}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
             {/* ★ 가로축은 **사람마다**(2026-10-22, 요청: "PC 건설 그래프 사람별로 가로축 표시") — 칸이 길어 맨 아래 눈금 하나로는 읽히지 않았다. 칸 아래 띠(AXIS_H)에 분 눈금 · 세로선의 분. */}
             {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m * 60) - x(at * 60)) > 30)).map((m) => (
@@ -390,15 +421,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
               <text className="scr-rc-at" x={x(at * 60)} y={top + h + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{`${Math.round(at)}분`}</text>
             )}
             {items.map(({ b, k, tags, jig }) => {
-              const ly = top + BL.pad + BL.jig + k * STEP + CH / 2 + jig;
+              const ly = lyOf(top, k, jig);
               const end = b.e ?? END;
-              /* 토막 — 처음 짓는 동안만 점선 · 그 뒤는 실선(변태 중·변태 취소도 실선 — 2026-10-22, 요청: "변태한 건물 점선 말고 실선으로"). */
-              const built9 = b.d ?? (b.e !== null ? b.e : end);
-              const segs: [number, number, boolean][] = [[b.s, built9, true], ...(end > built9 ? [[built9, end, false] as [number, number, boolean]] : [])];
-              /* 짓다가 사라짐(취소·파괴) = ✕ 대신 반투명 딤(2026-10-22, 요청: "취소는 x 대신 반투명 딤 처리") — 칩·선 통째로(.is-cut). */
-              const cut9 = b.d === null && b.e !== null;
-              /* 같은 종류 강조는 **선도**(2026-10-22, 요청: "강조 시 선도 강조") — 처음 종류·변태 종류가 얹은 종류이거나, 얹은 것이 이 건물에 붙는 애드온일 때. */
-              const kindHl9 = hoverKind !== null && (b.t === hoverKind || b.m.some(([mt]) => mt === hoverKind) || ADDON_HOST9[hoverKind] === b.t);
+              const cut9 = cutOf(b);
+              const kindHl9 = kindHlOf(b);
               /* 얹어도 세로 시간축은 안 옮긴다(2026-10-22, 요청: "강조 시 자동으로 세로 시간축이 그 건물 처음으로 이동하지 않게" · 옛: 완공(못 지었으면 착공) 때로). */
               const show = (): void => { setHover(b); setHoverKind(b.t); };
               return (
@@ -407,16 +433,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                   onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
                   onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(null); setHoverKind(null); } }}
                 >
-                  {segs.map(([a, z, bld], si) => (
-                    <line key={si} className={bld ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
-                  ))}
+                  {segLines(b, ly)}
                   <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />
                   {tags.map((t, ti) => {
-                    /* ★ 얹은 건물과 **같은 종류**의 칩은 사람과 상관없이 모두 강조색으로(2026-10-22, 요청: "마우스 오버 시 같은 건물들은 사람 관계없이 모두 강조" → "강조 시 임자색" →
-                       "임자색 말고 강조색으로" — 폰 테크 칩 강조(.scr-tl-chip.is-hl)와 같은 색) · 얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩. */
-                    /* 애드온과 본 건물은 함께(같은 날 "애드온과 본 건물은 같이 강조") — 팩토리에 얹으면 머신샵도 · 머신샵에 얹으면 팩토리도(ADDON_HOST9). */
-                    const hl9 = hoverKind !== null && t.kind !== undefined
-                      && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
+                    const hl9 = tagHlOf(t);
                     /* 누르면 팝오버 — [무엇 · 분:초 · 그때 인구] · 본 칩은 완공 · 파괴도(있으면). PC(마우스)는 얹자마자 뜨고 떼면 걷는다(2026-10-23, 요청: "피시에서 건물칩 마우스오버 시에도 바로 팝업"). */
                     const popKey = `${l.key}:${b.s}:${b.t}:${ti}`;
                     const popOf = (): ChipPopAt => ({
@@ -444,10 +464,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                       onPointerDown={(e) => { lastPtr.current = e.pointerType; }}
                       onClick={() => { if (lastPtr.current !== "mouse") setPop((p) => (p?.key === popKey ? null : popOf())); }}
                     >
-                      <rect className={cx("scr-bl-chip", t.morph && "is-morph", hl9 && "is-hl")} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
-                      <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
-                        {t.label}
-                      </text>
+                      {chipOf(t, ly, hl9 ? "is-hl" : undefined)}
                     </g>
                     );
                   })}
@@ -458,12 +475,28 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
           </g>
         ))}
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
-        {/* ★ 진짜 주인공(얹은 칩)은 같은 종류 강조보다 **진하게** · **맨 위**(2026-10-23, 요청: "건물 강조 효과 시 진짜 주인공(실제 선택)은 더 진하게 색칠" · "위치도 맨 위로 · z축") —
-            살짝 키워(1.15배) svg 는 그린 차례가 z 라 끝에 한 벌 더 그린다(마우스는 밑의 원 칩이 받는다 · 줄을 옮겨 그리면 얹음이 떨어졌다 붙었다 한다). */}
-        {me && (
-          <g className="scr-bl-me" pointerEvents="none" transform={`translate(${me.x + me.w / 2} ${me.y + CH / 2}) scale(1.15) translate(${-(me.x + me.w / 2)} ${-(me.y + CH / 2)})`}>
-            <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CH} rx={RX} />
-            <text className="scr-tl-label" x={me.x + PX} y={me.y + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>
+        {/* ★ 강조는 **겹으로 위에**(2026-10-23, 요청: "강조된 선들이 다 위로 올라오는데(다른 일반 칩들보다도 더) 특히 얹은 건 맨 위") — svg 는 그린 차례가 z 라
+            일반 줄을 다 그린 뒤 ① 같은 종류의 선 → ② 같은 종류의 칩 → ③ 얹은 건물의 선 → ④ 얹은 칩을 한 벌 더 그린다. 마우스는 밑의 원 칩이 받는다(겹은 pointer-events 없음 ·
+            줄을 옮겨 그리면 얹음이 떨어졌다 붙었다 한다). 얹은 칩은 같은 종류 강조보다 **진하게** · 살짝 키워(1.15배)(같은 날 "진짜 주인공(실제 선택)은 더 진하게" · "칩도 살짝 확대"). */}
+        {hoverKind !== null && rows.map(({ l, items, top }) => (
+          <g key={l.key} className={rowCls(l)} pointerEvents="none">
+            {items.filter(({ b }) => kindHlOf(b)).map(({ b, k, jig }) => (
+              <g key={`${b.s}:${b.t}:${k}`} className={cx("scr-bl-hit is-kind", cutOf(b) && "is-cut")}>{segLines(b, lyOf(top, k, jig))}</g>
+            ))}
+            {items.flatMap(({ b, k, tags, jig }) => tags.map((t, ti) => (tagHlOf(t) ? (
+              <g key={`${b.s}:${b.t}:${k}:${ti}`} className={cx("scr-bl-hit", (cutOf(b) || t.cut) && "is-cut")}>{chipOf(t, lyOf(top, k, jig), "is-hl")}</g>
+            ) : null)))}
+          </g>
+        ))}
+        {hoverAt && (
+          <g className={rowCls(hoverAt.l)} pointerEvents="none">
+            <g className={cx("scr-bl-hit is-hl", hover && cutOf(hover) && "is-cut")}>{hover && segLines(hover, hoverAt.ly)}</g>
+            {me && (
+              <g className="scr-bl-me" transform={`translate(${me.x + me.w / 2} ${me.y + CH / 2}) scale(1.15) translate(${-(me.x + me.w / 2)} ${-(me.y + CH / 2)})`}>
+                <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CH} rx={RX} />
+                <text className="scr-tl-label" x={me.x + PX} y={me.y + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>
+              </g>
+            )}
           </g>
         )}
       </svg>
