@@ -7855,24 +7855,27 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .is-t2 { --tier-c: #9fb0c2; }
 .is-t3 { --tier-c: #c08a57; }
 .is-t4 { --tier-c: #8a8f96; }
-.scr-pl-tier-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.scr-pl-tier {
-  border: 1px solid var(--line); border-top: 3px solid var(--tier-c); border-radius: var(--radius);
-  background: var(--panel); overflow: hidden; min-width: 0;
+/* 티어표 = 1열 — 티어마다 한 줄 [티어 칸 | 닉네임 칩 가로 · 줄바꿈](2026-10-23 · 옛 4칸 나란히). */
+.scr-pl-tier-grid {
+  display: grid; grid-template-columns: max-content minmax(0, 1fr);
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden;
 }
-.scr-pl-tier-head { display: flex; align-items: baseline; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line-soft); }
+.scr-pl-tier { display: contents; }
+.scr-pl-tier-head {
+  display: flex; align-items: baseline; gap: 6px; padding: 10px 14px 10px 12px;
+  border-left: 3px solid var(--tier-c); border-bottom: 1px solid var(--line-soft); white-space: nowrap;
+}
 .scr-pl-tier-head b { font-size: var(--fs-body); color: var(--text); }
 .scr-pl-tier-head span { font-size: var(--fs-caption); color: var(--muted); }
-.scr-pl-tier-head .scr-pl-tier-n { margin-left: auto; }
-.scr-pl-tier-list { list-style: none; margin: 0; padding: 4px 0; }
-.scr-pl-tier-list li {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline;
-  padding: 4px 10px; font-size: var(--fs-caption);
+.scr-pl-tier-head .scr-pl-tier-n { margin-left: 6px; }
+.scr-pl-tier-list {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; min-width: 0;
+  border-bottom: 1px solid var(--line-soft);
 }
-.scr-pl-nick { font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scr-pl-rating { color: var(--text); font-variant-numeric: tabular-nums; }
-.scr-pl-rec { color: var(--muted); font-variant-numeric: tabular-nums; }
-.scr-pl-tier-empty { padding: 10px; color: var(--dim); font-size: var(--fs-caption); }
+.scr-pl-tier:last-child > .scr-pl-tier-head, .scr-pl-tier:last-child > .scr-pl-tier-list { border-bottom: none; }
+.scr-pl-tier-list .scr-pl-chip { font-weight: 700; }
+.scr-pl-tier-list .scr-pl-chip small { font-weight: 500; font-variant-numeric: tabular-nums; }
+.scr-pl-tier-empty { color: var(--dim); font-size: var(--fs-caption); }
 .scr-pl-waiting { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
 .scr-pl-waiting-label { margin-right: 4px; font-size: var(--fs-caption); color: var(--muted); }
 .scr-pl-rr-head { display: flex; align-items: baseline; gap: 10px; }
@@ -7888,7 +7891,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 }
 .scr-pl-table thead th > span {
   display: block; margin: 0 auto; height: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15;
-  writing-mode: vertical-rl; text-orientation: mixed; font-weight: 700; color: var(--text);   /* 한글은 바로 서서 위→아래 · 영문은 눕는다 */
+  writing-mode: vertical-rl; text-orientation: sideways; transform: rotate(180deg); font-weight: 700; color: var(--text);   /* 한글 · 영문 모두 옆으로 눕혀 아래→위(2026-10-23, 요청: "영어 한글 무관하게 모두 옆으로") */
 }
 .scr-pl-table tbody th {
   position: sticky; left: 0; z-index: 1; padding: 0 8px; text-align: left; white-space: nowrap; background: var(--panel-solid);
@@ -7909,7 +7912,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-pl-table td.is-draw { background: rgba(var(--overlay-rgb), 0.08); }
 .scr-pl-self { background: repeating-linear-gradient(45deg, rgba(var(--overlay-rgb), 0.07) 0 4px, transparent 4px 8px); }
 @media (max-width: 960px) {
-  .scr-pl-tier-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .scr-pl-tier-head { flex-direction: column; gap: 0; padding: 8px 10px; }
+  .scr-pl-tier-head .scr-pl-tier-n { margin-left: 0; }
   .scr-pl-admin { margin-left: 0; }
   .scr-pl-cell { width: 34px; height: 30px; }
   .scr-pl-table thead th { height: 72px; }

@@ -111,6 +111,7 @@ export default function LadderDetailModal({
     api.getGameResultsPage({
       teamMemberIds: [member.id], matchType: LADDER_TYPE, sort: "latest",
       dateFrom: range.from, dateTo: range.to, limit: HISTORY_LIMIT,
+      withArchived: true,   // 마감 보존한 판(결과만 남음)도 이력엔 남긴다(2026-10-23, 요청: "래더 상세에만")
     })
       .then((page) => { if (!cancelled) setHistory(page.items); })
       .catch((e) => {

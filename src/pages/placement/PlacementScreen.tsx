@@ -34,6 +34,7 @@ function TierBoard({ round }: { round: PlacementRound }) {
       <p className="scr-pl-note">
         세트 {round.placedMin}개 이상 친 사람을 점수가 몰린 묶음으로 나눠요 — 사람 수를 넷으로 자르지 않아 틈이 벌어진 곳에서 갈려요.
       </p>
+      {/* 티어마다 한 줄 — [티어 칸 | 같은 티어 닉네임을 가로로(점수 차례 · 좁으면 줄바꿈)](2026-10-23, 요청: "티어표는 1열로 그리드 형태로 · 같은 티어 닉네임을 가로로 늘어놓기 · 좁으면 줄바꿈"). */}
       <div className="scr-pl-tier-grid">
         {Array.from({ length: round.tierCount }, (_, i) => i + 1).map((t) => {
           const ps = placed.filter((p) => p.tier === t);
@@ -42,17 +43,13 @@ function TierBoard({ round }: { round: PlacementRound }) {
               <div className="scr-pl-tier-head">
                 <b>{t}티어</b><span>{TIER_NAME[t - 1] ?? ""}</span><span className="scr-pl-tier-n">{ps.length}명</span>
               </div>
-              {ps.length === 0 ? <div className="scr-pl-tier-empty">—</div> : (
-                <ol className="scr-pl-tier-list">
-                  {ps.map((p) => (
-                    <li key={p.memberId}>
-                      <span className="scr-pl-nick">{p.nickname}</span>
-                      <span className="scr-pl-rating">{p.rating}</span>
-                      <span className="scr-pl-rec">{recordOf(p)}</span>
-                    </li>
-                  ))}
-                </ol>
-              )}
+              <div className="scr-pl-tier-list">
+                {ps.length === 0 ? <span className="scr-pl-tier-empty">—</span> : ps.map((p) => (
+                  <span key={p.memberId} className="scr-pl-chip" title={recordOf(p)}>
+                    {p.nickname}<small>{p.rating}</small>
+                  </span>
+                ))}
+              </div>
             </div>
           );
         })}

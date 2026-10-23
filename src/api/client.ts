@@ -70,6 +70,8 @@ export interface GameResultListParams {
   noLeague?: boolean;
   fameOnly?: boolean;
   teamMemberIds?: string[];
+  /** 마감 보존한 판(결과만 남음)도 — 래더 상세 이력만 켠다. */
+  withArchived?: boolean;
 }
 
 export interface GameResultStatsParams {
@@ -276,6 +278,7 @@ export const api = {
       any: params.any,
       linked: params.linked,
       teamMemberIds: params.teamMemberIds?.length ? params.teamMemberIds.join(",") : undefined,
+      withArchived: params.withArchived,
     });
     const page = await request<Omit<GameResultPage, "items"> & { items: WireGameResult[] }>(`/api/game-results${qs}`);
     return { ...page, items: page.items.map(gameResultFromWire) };
@@ -552,8 +555,24 @@ export const api = {
     return (await request<{ items: { memberId: string; nickname: string; createdAt: string }[] }>(`/api/game-results/${id}/recommends`)).items;
   },
   /** 게임 자료 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
-  async getGamesClose(): Promise<{ closedUntil: string | null }> {
-    return request<{ closedUntil: string | null }>("/api/game-results/admin/close");
+  /** 마감 상태 — 마감한 마지막 날 · 보존 대기 판(pending) · 그중 리플레이 붙은 판(replays) · 보존 때 판째 지울 공방 · 지운 판(dropPending). */
+  async getGamesClose(): Promise<{ closedUntil: string | null; pending: number; dropPending: number; replays: number }> {
+    return request<{ closedUntil: string | null; pending: number; dropPending: number; replays: number }>("/api/game-results/admin/close");
+  },
+  /** 보존 대기 판의 리플레이 압축(경기일 폴더 YYYYMMDD) — 받은 뒤에 archiveClosed. */
+  async downloadCloseArchive(): Promise<Blob> {
+    const headers = new Headers();
+    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+    const res = await fetch(`${API_BASE}/api/game-results/admin/close/archive.zip`, { headers });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null) as { detail?: string } | null;
+      throw new Error(body?.detail ?? "압축 파일을 받지 못했어요.");
+    }
+    return res.blob();
+  },
+  /** 보존 처리 — 마감한 달까지의 공방 · 지운 판은 리플레이째 지우고 나머지는 래더 · 통계용 결과만 남긴다(되돌릴 수 없다). */
+  async archiveClosed(): Promise<{ archived: number; dropped: number }> {
+    return request<{ archived: number; dropped: number }>("/api/game-results/admin/close/archive", { method: "POST" });
   },
   /** 그 달("YYYY-MM")까지 마감 — 그날까지의 게임은 등록·삭제가 막히고 참값을 지운다(되돌릴 수 없다). */
   async closeGames(month: string): Promise<{ closedUntil: string; purged: number; famed: number }> {

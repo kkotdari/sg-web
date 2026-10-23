@@ -59,26 +59,75 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [closedUntil, setClosedUntil] = useState<string | null | undefined>(undefined);
   const [closeMonth, setCloseMonth] = useState(lastMonth);
   const [closing, setClosing] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    api.getGamesClose().then((r) => { if (alive) setClosedUntil(r.closedUntil); }).catch(() => {});
-    return () => { alive = false; };
-  }, []);
+  /* ★ 마감 보존(2026-10-23, 요청: "마감 처리 시 그 기간까지의 공방 경기 완전 삭제(리플레이까지) · 새로 마감된 경기들을 날짜별 폴더(YYYYMMDD)에 담아 압축해서 내려받음 ·
+     다운로드 후 래더 통계용 데이터로 보존 · 그 후 리플레이 및 경기 기록 삭제") — 마감하면 곧바로 압축을 받고, **받기에 성공한 뒤에만** [보존 처리]가 열린다.
+     대기(pending)는 마감한 날까지 아직 보존 안 한 판이라 이미 마감한 옛 달도 같은 두 걸음으로 정리된다. 보존한 판은 래더 상세 이력 · 래더 · 통계 셈에만 남는다. */
+  const [closeWait, setCloseWait] = useState({ pending: 0, dropPending: 0, replays: 0 });
+  const [zipDone, setZipDone] = useState(false);
+  const [zipBusy, setZipBusy] = useState(false);
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const loadClose = () => api.getGamesClose().then((r) => {
+    setClosedUntil(r.closedUntil);
+    setCloseWait({ pending: r.pending, dropPending: r.dropPending, replays: r.replays });
+    return r;
+  });
+  useEffect(() => { loadClose().catch(() => {}); }, []);
   const monthLabel = (ym: string) => `${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5, 7))}월`;
+  const downloadClosed = async (): Promise<boolean> => {
+    setZipBusy(true);
+    try {
+      const blob = await api.downloadCloseArchive();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `games_${(closedUntil ?? "").replaceAll("-", "")}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setZipDone(true);
+      return true;
+    } catch (e) {
+      showAlert(e instanceof Error ? e.message : "압축 파일을 받지 못했어요.");
+      return false;
+    } finally {
+      setZipBusy(false);
+    }
+  };
   const closeGames = async () => {
     const typed = window.prompt(
-      `${monthLabel(closeMonth)}까지 마감합니다. 그때까지의 게임은 등록(자동·수동)과 삭제가 막히고 외부 공개 목록에서 빠지고 참값(재생 자료)이 지워져요(리그 판은 남겨요). 추천 1 이상인 판은 명예의 전당으로 옮겨 남겨요. 되돌릴 수 없어요.\n마감하려면 "마감"을 입력하세요.`,
+      `${monthLabel(closeMonth)}까지 마감합니다. 그때까지의 게임은 등록(자동·수동)과 삭제가 막히고 외부 공개 목록에서 빠지고 참값(재생 자료)이 지워져요. 추천 3 이상인 판은 명예의 전당으로 옮겨 남겨요.\n` +
+      "이어서 리플레이를 날짜별 폴더로 압축해 내려받고, [보존 처리]를 누르면 공방 · 지운 판은 리플레이째 지우고 나머지는 래더 · 통계용 결과만 남겨요(리그 · 명예의 전당 판은 그대로). 되돌릴 수 없어요.\n" +
+      "마감하려면 \"마감\"을 입력하세요.",
     );
     if (typed !== "마감") return;
     setClosing(true);
     try {
       const r = await api.closeGames(closeMonth);
-      setClosedUntil(r.closedUntil);
+      setZipDone(false);
       showToast(`${monthLabel(r.closedUntil)}까지 마감했어요 — 참값 ${r.purged}판을 지우고 ${r.famed}판을 명예의 전당에 올렸어요.`, { kind: "ok" });
+      const st = await loadClose();
+      // 받을 리플레이가 있으면 먼저 받고(성공해야) · 없으면 바로 보존 처리를 묻는다.
+      if (st.replays > 0 ? await downloadClosed() : st.pending + st.dropPending > 0) setConfirmArchive(true);
     } catch (e) {
       showAlert(e instanceof Error ? e.message : "마감하지 못했어요.");
     } finally {
       setClosing(false);
+    }
+  };
+  const archiveClosed = async () => {
+    setConfirmArchive(false);
+    setArchiving(true);
+    try {
+      const r = await api.archiveClosed();
+      setZipDone(false);
+      await loadClose();
+      showToast(`보존했어요 — 결과만 남긴 판 ${r.archived} · 리플레이째 지운 판 ${r.dropped}.`, { kind: "ok" });
+    } catch (e) {
+      showAlert(e instanceof Error ? e.message : "보존하지 못했어요.");
+    } finally {
+      setArchiving(false);
     }
   };
   const [togglingNotice, setTogglingNotice] = useState(false);
@@ -476,6 +525,29 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   </button>
                 </div>
 
+                {(closeWait.pending > 0 || closeWait.dropPending > 0) && (
+                  <div className="scr-adm-row">
+                    <div className="scr-adm-row-text">
+                      <span className="scr-adm-row-title">마감 보존</span>
+                      <span className="scr-adm-row-desc">
+                        보존 대기 {closeWait.pending}판 · 리플레이째 지울 공방 · 지운 판 {closeWait.dropPending}판.
+                        {closeWait.replays > 0 ? ` 리플레이 ${closeWait.replays}개 압축을 받아야 보존 처리가 열려요.` : ""}
+                      </span>
+                    </div>
+                    {closeWait.replays > 0 && (
+                      <button type="button" className="scr-rect-btn is-secondary scr-adm-row-btn" onClick={() => { void downloadClosed(); }} disabled={zipBusy || archiving}>
+                        {zipBusy ? <Spinner /> : "압축 받기"}
+                      </button>
+                    )}
+                    <button
+                      type="button" className="scr-rect-btn scr-adm-row-btn" onClick={() => setConfirmArchive(true)}
+                      disabled={archiving || zipBusy || (closeWait.replays > 0 && !zipDone)}
+                    >
+                      {archiving ? <Spinner /> : "보존 처리"}
+                    </button>
+                  </div>
+                )}
+
                 <div className="scr-adm-row">
                   <div className="scr-adm-row-text">
                     <span className="scr-adm-row-title">리플레이 내려받기</span>
@@ -737,6 +809,16 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
           confirmLabel="다시 분석"
           onConfirm={() => { setConfirmRedo(false); void reanalyzeGames(pickedReplayIds); }}
           onCancel={() => setConfirmRedo(false)}
+        />
+      )}
+
+      {confirmArchive && (
+        <ConfirmDialog
+          title="마감한 게임을 보존 처리할까요?"
+          message={`${closeWait.replays > 0 ? "압축 파일을 저장했는지 먼저 확인하세요. " : ""}보존할 ${closeWait.pending}판은 리플레이 · 재생 자료 · 데이터를 지우고 결과만 남겨 래더 · 통계 셈과 래더 상세 이력에만 남아요(게임 목록 · 상세에선 빠져요). 공방 · 지운 판 ${closeWait.dropPending}판은 리플레이째 지워요. 되돌릴 수 없어요.`}
+          confirmLabel="보존 처리"
+          onConfirm={() => { void archiveClosed(); }}
+          onCancel={() => setConfirmArchive(false)}
         />
       )}
 
