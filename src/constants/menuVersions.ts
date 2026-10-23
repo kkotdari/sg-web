@@ -14,7 +14,7 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 
 /** PC 레일 · 폰 서랍에만 서는 메뉴(하단 탭엔 없다 — 2026-10-23, 요청: "배치고사 · 메뉴 위치는 레일/서랍 메뉴"). */
 export const RAIL_MENU_ITEMS: NavMenuItem[] = [
-  { key: "placement", label: "배치고사" },
+  { key: "placement", label: "배치" },
 ];
 
 export const HOME_SCREEN: ScreenKey = NAV_MENU_ITEMS[0].key;

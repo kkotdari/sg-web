@@ -166,7 +166,7 @@ export default function PlacementScreen() {
   useEffect(() => {
     api.getPlacementRounds()
       .then(setRounds)
-      .catch((e) => { setRounds([]); setError(e instanceof Error ? e.message : "배치고사를 불러오지 못했어요."); });
+      .catch((e) => { setRounds([]); setError(e instanceof Error ? e.message : "배치를 불러오지 못했어요."); });
   }, []);
   // 주소에 회차가 없으면 가장 최근 회차.
   const shownId = selectedId ?? rounds?.[0]?.id ?? null;
@@ -177,7 +177,7 @@ export default function PlacementScreen() {
     setError("");
     api.getPlacementRound(shownId)
       .then((r) => { if (alive) setRound(r); })
-      .catch((e) => { if (alive) { setRound(null); setError(e instanceof Error ? e.message : "배치고사를 불러오지 못했어요."); } })
+      .catch((e) => { if (alive) { setRound(null); setError(e instanceof Error ? e.message : "배치를 불러오지 못했어요."); } })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [shownId]);
@@ -195,7 +195,7 @@ export default function PlacementScreen() {
     setCreating(true);
     setError("");
     try {
-      const r = await api.createPlacementRound(`${(rounds?.length ?? 0) + 1}차 배치고사`);
+      const r = await api.createPlacementRound(`${(rounds?.length ?? 0) + 1}차 배치`);
       setRounds((list) => [{ id: r.id, name: r.name, createdAt: r.createdAt, players: r.players.length }, ...(list ?? [])]);
       setRound(r);
       open(r.id);
@@ -226,7 +226,7 @@ export default function PlacementScreen() {
     <div className="scr-screen scr-placement-screen">
       <div className="scr-v2-toolbar">
         <div className="scr-v2-toolbar-title-row">
-          <h1 className="scr-title scr-v2-toolbar-title">배치고사</h1>
+          <h1 className="scr-title scr-v2-toolbar-title">배치</h1>
         </div>
       </div>
 
@@ -267,7 +267,7 @@ export default function PlacementScreen() {
       {isAdmin && editPlayers && round && <PlayersEdit round={round} onSaved={saved} />}
 
       {rounds === null || (loading && !round) ? <LoadingMark /> : !round ? (
-        <div className="scr-empty">{isAdmin ? "아직 배치고사가 없어요. '새 회차'로 여세요." : "아직 배치고사가 없어요."}</div>
+        <div className="scr-empty">{isAdmin ? "아직 배치가 없어요. '새 회차'로 여세요." : "아직 배치가 없어요."}</div>
       ) : (
         <>
           <TierBoard round={round} />
