@@ -3340,9 +3340,6 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-tl-chip { fill: transparent; }
 .scr-tl-label { fill: var(--text); font-weight: 500; }
 /* PC 건설 줄(2026-10-21) — 짓는 동안 점선 · 다 지은 뒤 사라질 때까지 실선 · 위에 얹으면 진하게. 굵은 투명 선이 마우스 자리. */
-.scr-bl-build { stroke: var(--dim); stroke-opacity: 0.35; stroke-width: 0.4; stroke-dasharray: 2 2; }   /* 선 얇게(2026-10-22, 요청: "선도 얇게" → "칩의 테두리 정도로" → "더 얇게" · 1.5 → 1 → 0.75 → 0.5) */
-.scr-bl-live { stroke: rgba(var(--overlay-rgb), 0.18); stroke-width: 0.4; stroke-linecap: round; }   /* 같은 날 "선 굵기 더 얇아도 — 칩의 테두리 정도로" → "더 얇게" → "색도 더 연하게" · 2 → 1.1 → 0.7 → 0.75 → 0.5 · 색 0.55 → 0.45 → 0.3 · 점선 0.6 · 2026-10-23 "종료 전에 터진 건물에만 아주 연하고 얇게"(끝까지 남은 건물은 선 없음 · GameCurvesModal segLines) → 굵기 0.4 · 색 0.18 · 점선 0.35 */
-.scr-bl-pad { stroke: transparent; stroke-width: 6; }
 /* 칩 팝오버(GameCurvesModal ChipPop · 2026-10-22, 요청: "칩 클릭 시 정확한 시각과 그 시각의 인구수 · 팝오버로") — 누른 칩 위 가운데. */
 .scr-bl-hit, .scr-tl-hit { cursor: pointer; }
 .scr-bl-pop {
@@ -3355,8 +3352,20 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 건물 칩(2026-10-22, 요청: "모든 건물에 하나하나 칩 · 아주 컴팩트하게") — 수명 선 위 착공 자리 · 변태 칩은 옅게. 바탕을 칠해 뒤 선을 가린다. */
 .scr-bl-chip { fill: var(--panel-raised, var(--panel)); stroke: rgba(var(--overlay-rgb), 0.28); stroke-width: 0.75; }
 /* (걷어냄 · 2026-10-23, 요청: "하이브 성큰 등 반투명으로 하지 마 — 건물칩") 변태 칩의 옅은 반투명 바탕(.is-morph) — 이제 여느 칩과 같은 바탕(위 .scr-bl-chip). */
-.scr-bl-hit.is-cut, .scr-bl-hit .is-cut { opacity: 0.38; }   /* 짓다 사라짐 · 변태 취소 · 못 지은 애드온 = 반투명 딤(같은 날 "취소는 x 대신 반투명 딤 처리" · 옛 ✕) */
-.scr-bl-hit.is-kind > .scr-bl-live, .scr-bl-hit.is-kind > .scr-bl-build { stroke: var(--lighting-accent, var(--point)); stroke-opacity: 1; stroke-width: 1; }   /* 같은 종류 강조 = 선도 강조색(2026-10-22) */
+.scr-bl-hit.is-cut, .scr-bl-hit .is-cut { opacity: 0.38; }
+/* ★ 수명 선은 걷었다(2026-10-23, 요청: "선 제거 — 선은 애드온이나 변태에만 연결") — 옛 .scr-bl-build(짓는 중 점선) · .scr-bl-live(산 동안 실선) · .scr-bl-pad(선 마우스 자리)와
+   그 강조 규칙. 남은 선은 한 채의 칩들(본 → 변태 · 애드온)을 잇는 .scr-bl-link 하나다(칩 테와 같은 결 · 아직이면 점선). */
+.scr-bl-link { stroke: rgba(var(--overlay-rgb), 0.45); stroke-width: 1; }
+.scr-bl-link.is-pre { stroke-dasharray: 2 2; opacity: 0.6; }
+.scr-bl-link.is-build { opacity: 0.45; }
+.scr-bl-link.is-dead { opacity: 0.3; }
+/* 시간선 처지(같은 날 "그 시간에 존재 보이기 · 짓는 중 연하게 · 파괴됨 취소선 및 흐리게 · 아직 안 지음 점선") — 칩 겹(g)에 is-build · is-dead · is-pre. 취소선은 칩 가운데 한 줄(평소 숨김). */
+.scr-bl-strike { stroke: var(--text); stroke-width: 1; visibility: hidden; }
+.scr-bl-hit .is-build { opacity: 0.45; }
+.scr-bl-hit .is-dead { opacity: 0.4; }
+.scr-bl-hit .is-dead .scr-bl-strike { visibility: visible; }
+.scr-bl-hit .is-pre > .scr-bl-chip { fill: transparent; stroke-dasharray: 2.5 2; stroke: rgba(var(--overlay-rgb), 0.55); }
+.scr-bl-hit .is-pre > .scr-tl-label { opacity: 0.6; }   /* 짓다 사라짐 · 변태 취소 · 못 지은 애드온 = 반투명 딤(같은 날 "취소는 x 대신 반투명 딤 처리" · 옛 ✕) */
 /* 같은 종류 강조 = 강조색(폰 테크 칩 .scr-tl-chip.is-hl 과 같은 색 · 2026-10-22) — **불투명**(같은 날 "강조 시 뒤 안 보이게 불투명") — 반투명 강조색을 칩 바탕에 미리 섞어 칠한다. */
 .scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 30%, var(--panel-raised, var(--panel))); fill-opacity: 1; stroke: var(--lighting-accent, var(--point)); }
 html:not(.scr-light-theme) .scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 85%, var(--panel-raised, var(--panel))); }
@@ -3370,7 +3379,6 @@ html:not(.scr-light-theme) .scr-bl-chip.is-me { fill: color-mix(in srgb, var(--l
 html:not(.scr-light-theme) .scr-bl-me > .scr-tl-label { fill: #111; }
 .scr-bl-hit { cursor: default; }
 .scr-bl-morph { fill: var(--dim); }
-.scr-bl-hit.is-hl > .scr-bl-live, .scr-bl-hit.is-hl > .scr-bl-build { stroke: var(--lighting-accent, var(--point)); stroke-opacity: 1; stroke-width: 2; }   /* 얹은 건물 선은 같은 종류(1)보다 굵게(2026-10-23) */
 /* 마우스를 얹은 테크와 같은 종류(모든 사람)는 강조색 칩(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로") — 글자색은 그대로. */
 .scr-tl-chip.is-hl { fill: var(--lighting-accent, var(--point)); fill-opacity: 0.3; }   /* 연하게 — 글자(본문색)가 또렷이(요청: "잘 안보이네 좀 연해야겠다") */
 /* 어두운 테마는 30% 면 칙칙해 85% 로 밝게(2026-10-21, 지적: "다크 테마 테크트리 칩 강조색이 너무 칙칙 어둡"). */

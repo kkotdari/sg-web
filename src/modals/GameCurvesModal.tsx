@@ -88,7 +88,7 @@ type Lane = { key: string; group: string; name: string; color: string; techs: Ga
     (요청: "직사각형 음영" → "테크트리 음영제거" → "칩형태로 강조 · 컴팩트 네모칩"). 테크 판 높이 = 사람 수 × row + 눈금 띠. */
 const TL = {
   pc: { fs: 11, row: 64, tier: 1.65, gap: 4.4 },
-  mobile: { fs: 9.5, row: 55, tier: 1.4, gap: 3.8 },
+  mobile: { fs: 10.5, row: 59, tier: 1.4, gap: 3.8 },   // 칩 키움(2026-10-23, 요청: "PC·폰에서 칩 크기 살짝 키우기" · 9.5 → 10.5 · 칸 55 → 59)
 } as const;
 /** 가로축 눈금 숫자를 가로축에서 더 띄우는 몫(2026-10-21, 요청: "가로축 눈금 숫자를 가로축에서 좀 더 아래로 · 데이터 창만") — 세 판 모두. */
 const AXIS_DROP = 6;
@@ -201,7 +201,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, mobile, f
   });
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">테크 건물</figcaption>
+      <figcaption className="scr-rc-title">테크</figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때" {...scrub}>
         {rows.map(({ l, chips, top, h }) => {
@@ -274,7 +274,7 @@ const ADDON_HOST9: Record<number, number> = { 107: 106, 108: 106, 115: 114, 117:
 const MAIN_HALL = new Set([106, 131, 154]);
 /** PC 건설 줄 치수(px) — 건물 한 채마다 컴팩트 칩(fs 글자 · chipBox) · 칩 사이 gap · 단 사이 숨 tier · 사람 칸 위아래 숨 pad ·
  *  단 안에서 선을 비켜 놓는 높이 jig(가운데 · 위 · 아래 · 2026-10-22, 요청: "미묘하게 높이를 다양화해서 선이 최대한 안 겹치게"). */
-const BL = { fs: 9.5, gap: 3, tier: 2, pad: 6, jig: 3 } as const;
+const BL = { fs: 10.5, gap: 3, tier: 2.5, pad: 6, link: 8 } as const;   // 칩 키움(2026-10-23, 요청: "칩 크기 살짝 키우기" · 9.5 → 10.5) · link = 변태·애드온 칩을 잇는 선의 최소 길이(옛 jig 걷음 — 수명 선이 없다)
 
 type BuildLane = { key: string; group: string; name: string; color: string; blds: GameCurve["blds"]; spt?: GameCurve["spt"] };
 
@@ -292,15 +292,14 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   techOnly: boolean;
   onTechOnly: (v: boolean) => void;
 }) {
-  const [hover, setHover] = useState<GameCurve["blds"][number] | null>(null);
-  /** 얹은 칩의 건물 종류 — 같은 종류 칩을 모두 임자색으로(아래 ★). 선에 얹으면 그 건물의 처음 종류. */
+  /** 얹은 칩의 건물 종류 — 같은 종류 칩을 모두 강조색으로(아래 ★). */
   const [hoverKind, setHoverKind] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const plotRef = useRef<HTMLDivElement>(null);
   const [pop, setPop] = useState<ChipPopAt | null>(null);
   useCloseOutside(pop !== null, plotRef, ".scr-bl-hit", () => setPop(null));
   /** 마우스를 얹은 칩 하나(진짜 주인공) — 같은 종류 강조보다 진하게 · 맨 위(svg 끝)에 한 번 더 그린다(아래 ★). */
-  const [me, setMe] = useState<{ key: string; x: number; y: number; w: number; label: string } | null>(null);
+  const [me, setMe] = useState<{ key: string; lane: BuildLane; x: number; y: number; w: number; label: string } | null>(null);
   const lastPtr = useRef("mouse");
   const AXIS_H = font.axis + 8 + AXIS_DROP;
   const END = maxX * 60;
@@ -310,27 +309,38 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     if (!el) return;
     const r = el.getBoundingClientRect();
     const sx = ((clientX - r.left) / r.width) * CW;
-    setHover(null);
     onAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (CW - PL - padR)) * maxX))));
   };
-  const scrub = useScrub(pick, () => { setHover(null); setHoverKind(null); setMe(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
-  /* ★ 건물 한 채 = 칩 하나(2026-10-22, 요청: "너무 한눈에 안 들어와 — 모든 건물에 하나하나 칩을 만들어(아주 컴팩트하게) · 종류별로 모으지 않기 · 시간 순서로 배치 ·
-     선이 겹쳐도 됨") — 옛 판은 종류마다 이름 한 줄 + 그 종류 건물마다 가는 선을 쌓아 칸이 길고 빽빽했다. 이제 사람 칸 안에서 건물을 **착공 차례**로 늘어놓아, 칩(이름)을
-     착공 자리에 두고 수명 선(짓는 중 점선 · 산 동안 실선 · 사라지면 ✕)을 그 칩의 단 가운데로 끌고 간다. 칩끼리만 안 겹치게 위 단부터 빈자리에 넣는다(선은 뒤 칩·선과 겹쳐도 된다).
-     변태(레어 · 성큰 …)·변태 취소도 같은 단의 작은 칩("→ 레어" · "→ 레어 ✕")으로 그 때에. */
+  const scrub = useScrub(pick, () => { setHoverKind(null); setMe(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
+  /* ★ 건물 한 채 = 칩 하나(2026-10-22) · 사람 칸 안에서 **착공 차례**로 늘어놓고 칩끼리만 안 겹치게 위 단부터 빈자리에 넣는다.
+     ★★ **선은 걷었다**(2026-10-23, 요청: "선 제거 — 선은 애드온이나 변태에만 연결 · 선은 필요시 꺾을 수 있음") — 수명 선(짓는 중 점선 · 산 동안 실선)은 없고,
+     한 채의 칩들(본 칩 → 변태 "→ 레어" · 애드온 "+머신샵" · 변태 취소)만 같은 단에서 **잇는 선**으로 엮는다. 뒤 칩이 앞 칩과 겹치면 오른쪽으로 밀고 그 사이를 잇는다.
+     ★ **자세히 보기에서는 가까운 때의 같은 건물을 묶는다**(같은 날 "근처 시간대에 같은 건물 칩은 ×3 이렇게 묶기 · 팝업엔 각각 다") — 딸린 칩이 없는(변태·애드온·변태 취소 없는)
+     같은 종류를 앞 채 착공에서 GROUP_SEC 안이면 한 칩 "서플 ×3" 으로 · 팝업은 한 채씩 착공·완공·사라짐.
+     ★ **시간선 상태**(같은 날 "타임선 있을 때 — 그 시간에 존재 보이기 · 짓는 중 연하게 · 파괴됨 취소선 및 흐리게 · 아직 안 지음 점선") — 세로 시간선(at)이 서면 칩마다
+     그 때의 처지로: 있음 = 그대로 · 짓는 중(변태 중) = 연하게(is-build) · 사라짐(파괴·취소) = 흐리게 + 가운데 취소선(is-dead) · 아직 = 점선 테 빈 칩(is-pre). 묶음은 한 채라도
+     있으면 있음 → 짓는 중 → 아직 → 사라짐 차례로 고른다. 시간선이 없으면 종전대로(못 지은 것만 딤 is-cut). */
   const { h: CH, px: PX, r: RX } = chipBox(BL.fs);
-  const STEP = CH + BL.tier + 2 * BL.jig;
-  const JIGS = [0, -BL.jig, BL.jig] as const;
+  const STEP = CH + 2 * BL.tier;
   const RIGHT = CW - padR;
   const chipW = (label: string): number => textW(label, BL.fs) + 2 * PX;
-  /** kind — 그 칩이 말하는 건물 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류 · 취소 칩은 없음). 같은 종류 강조가 쓴다. */
-  /** at — 그 칩의 때(초) · what — 팝오버의 무엇(착공 · 변태 · 붙음 · 변태 취소). */
-  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean };
+  const T9 = at === null ? null : at * 60;
+  type Bld = GameCurve["blds"][number];
+  type St = "live" | "build" | "dead" | "pre";
+  /** 한 채의 그때 처지 — 착공 s · 완공 d(못 지었으면 null) · 사라짐 e(끝까지 있으면 null). */
+  const stOf = (b: Bld, T: number): St => {
+    if (T < b.s) return "pre";
+    if (b.e !== null && T >= b.e) return "dead";
+    if (b.d === null || T < b.d) return "build";
+    return "live";
+  };
+  /** kind — 그 칩이 말하는 건물 종류(같은 종류 강조) · at — 그 칩의 때(초) · what — 팝오버의 무엇 · st — 시간선 처지 · grp — 묶음(×N)의 채들. */
+  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; st: (T: number) => St; grp?: Bld[] };
+  const GROUP_SEC = 45;
   let y0 = 4;
   const rows = lanes.map((l) => {
-    /* ★ 애드온은 **본 건물의 선 위 칩**으로(2026-10-22, 요청: "애드온은 본 건물에" · "애드온 간 본 건물 변경이 가능") — 서버가 붙어 있던 구간마다 [본 건물 차례, 붙은 초](b.h)를 준다.
-       그 본 건물 줄에 그때 "+머신샵" 칩을 달고, 애드온은 제 줄을 안 갖는다. 다 짓지 못한 애드온은 딤(is-cut). b.h 가 없는 옛 굽기·본 건물을 못 찾은 것은 종전처럼 제 줄. */
-    const onHost9 = new Map<GameCurve["blds"][number], { at: number; a: GameCurve["blds"][number] }[]>();
+    /* ★ 애드온은 **본 건물의 칩 줄**에(2026-10-22) — 서버가 붙어 있던 구간마다 [본 건물 차례, 붙은 초](b.h)를 준다. 본 건물을 못 찾은 것은 제 칩. */
+    const onHost9 = new Map<Bld, { at: number; a: Bld }[]>();
     for (const a of l.blds) for (const [hi9, at9] of a.h ?? []) {
       const host9 = l.blds[hi9];
       if (!host9) continue;
@@ -341,32 +351,58 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       .filter((b) => !(b.h && b.h.length > 0 && b.h.some(([hi9]) => !!l.blds[hi9])))
       .filter((b) => !techOnly || b.t in TECH_LABEL || b.m.some(([t]) => t in TECH_LABEL) || (b.s === 0 && MAIN_HALL.has(b.t)))
       .slice().sort((p, q) => p.s - q.s);
-    const used: [number, number][][] = [];
-    /** 단마다 놓인 선 [높이 비킴, 왼끝, 오른끝]. */
-    const lines: [number, number, number][][] = [];
-    const items = shown.map((b) => {
-      const tag = (at9: number, label: string, what: string, extra?: Partial<Tag>): Tag => {
-        const w = chipW(label);
-        return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, ...extra };
-      };
-      const tags: Tag[] = [tag(b.s, BUILD_LABEL[b.t] ?? `#${b.t}`, "착공", { kind: b.t })];
-      for (const [mt, ms] of b.m) tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, "변태", { kind: mt }));
-      for (const { at: at9, a } of onHost9.get(b) ?? []) tags.push(tag(at9, `+${BUILD_LABEL[a.t] ?? `#${a.t}`}`, "붙음", { kind: a.t, cut: a.d === null && a.e !== null }));
+    const tag = (at9: number, label: string, what: string, st: (T: number) => St, extra?: Partial<Tag>): Tag => {
+      const w = chipW(label);
+      return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, st, ...extra };
+    };
+    /* 한 채(또는 묶음)의 칩들 — 때 차례 · 뒤 칩은 앞 칩 오른끝 + 잇는 몫 뒤로 민다(잇는 선이 설 자리). */
+    const units: { bs: Bld[]; tags: Tag[] }[] = [];
+    const open9 = new Map<number, { bs: Bld[]; tags: Tag[] }>();
+    for (const b of shown) {
+      const plain9 = b.m.length === 0 && !(onHost9.get(b)?.length) && !(b.x?.length);
+      const name9 = BUILD_LABEL[b.t] ?? `#${b.t}`;
+      if (!techOnly && plain9) {
+        const g9 = open9.get(b.t);
+        if (g9 && b.s - g9.bs[g9.bs.length - 1].s <= GROUP_SEC) {
+          g9.bs.push(b);
+          const t0 = g9.tags[0];
+          const lab9 = `${name9} ×${g9.bs.length}`;
+          g9.tags[0] = { ...t0, label: lab9, w: chipW(lab9), x: Math.min(x(t0.at), RIGHT - chipW(lab9)), grp: g9.bs, cut: g9.bs.every((m) => m.d === null && m.e !== null) };
+          continue;
+        }
+      }
+      const tags: Tag[] = [tag(b.s, name9, "착공", (T) => stOf(b, T), { kind: b.t })];
+      for (const [mt, ms, md] of b.m) {
+        tags.push(tag(ms, `→ ${BUILD_LABEL[mt] ?? `#${mt}`}`, "변태", (T) => (T < ms ? "pre" : b.e !== null && T >= b.e ? "dead" : md === null || T < md ? "build" : "live"), { kind: mt }));
+      }
+      for (const { at: at9, a } of onHost9.get(b) ?? []) {
+        tags.push(tag(at9, `+${BUILD_LABEL[a.t] ?? `#${a.t}`}`, "붙음", (T) => (T < at9 ? "pre" : stOf(a, T)), { kind: a.t, cut: a.d === null && a.e !== null }));
+      }
       for (const [xs] of b.x ?? []) {
         const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
-        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, "변태 시작", { cut: true }));
+        tags.push(tag(xs, `→ ${MORPH_TO[base] ?? "변태"}`, "변태 시작", (T) => (T < xs ? "pre" : "dead"), { cut: true }));
       }
-      const free = (k: number): boolean => tags.every((t) => used[k].every(([a9, z9]) => t.x + t.w + BL.gap <= a9 || t.x >= z9 + BL.gap));
+      tags.sort((p, q) => p.at - q.at);
+      for (let ti = 1; ti < tags.length; ti += 1) {
+        const pv = tags[ti - 1]; const t = tags[ti];
+        t.x = Math.min(Math.max(t.x, pv.x + pv.w + BL.link), RIGHT - t.w);
+      }
+      const u9 = { bs: [b], tags };
+      units.push(u9);
+      if (!techOnly && plain9) open9.set(b.t, u9); else open9.delete(b.t);
+    }
+    /* 자리는 칩만이 아니라 **잇는 선이 지나는 폭까지**다(같은 날 지적 — 해처리 → 레어 선이 같은 단의 스포닝풀·크립 밑을 지나갔다) — 딸린 칩이 있는 채는 첫 칩 왼끝부터 끝 칩 오른끝까지 한 덩이로 잡는다. */
+    const used: [number, number][][] = [];
+    const items = units.map((u) => {
+      const spans: [number, number][] = u.tags.length > 1
+        ? [[u.tags[0].x, Math.max(...u.tags.map((t) => t.x + t.w))]]
+        : u.tags.map((t) => [t.x, t.x + t.w] as [number, number]);
+      const free = (k: number): boolean => spans.every(([a0, z0]) => used[k].every(([a9, z9]) => z0 + BL.gap <= a9 || a0 >= z9 + BL.gap));
       let k = 0;
       while (k < used.length && !free(k)) k += 1;
-      if (k === used.length) { used.push([]); lines.push([]); }
-      for (const t of tags) used[k].push([t.x, t.x + t.w]);
-      /* 그 단에서 같은 높이의 선과 가장 덜 포개지는 비킴(같으면 가운데 → 위 → 아래). */
-      const a9 = x(b.s); const z9 = x(b.e ?? END);
-      const over = (j: number): number => lines[k].reduce((acc, [o, la, lz]) => acc + (o === j ? Math.max(0, Math.min(z9, lz) - Math.max(a9, la)) : 0), 0);
-      const jig = JIGS.reduce((best, j) => (over(j) < over(best) ? j : best), JIGS[0] as number);
-      lines[k].push([jig, a9, z9]);
-      return { b, k, tags, jig };
+      if (k === used.length) used.push([]);
+      for (const sp of spans) used[k].push(sp);
+      return { u, k };
     });
     const h = Math.max(used.length * STEP + 2 * BL.pad, 36);
     const row = { l, items, top: y0, h };
@@ -375,26 +411,18 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   });
   const H = y0;
   const rowCls = (l: BuildLane): string => (focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row");
-  const lyOf = (top: number, k: number, jig: number): number => top + BL.pad + BL.jig + k * STEP + CH / 2 + jig;
-  /* 토막 — 처음 짓는 동안만 점선 · 그 뒤는 실선(변태 중·변태 취소도 실선 — 2026-10-22, 요청: "변태한 건물 점선 말고 실선으로").
-     ★ 선은 **끝나기 전에 사라진 건물만**(2026-10-23, 요청: "종료 전에 터진 건물에만 아주 연하고 얇게 표시 · 끝까지 있는 건 없어도 됨") — 끝까지 남은 건물은 칩만. */
-  const segLines = (b: GameCurve["blds"][number], ly: number): ReactElement[] => {
-    if (b.e === null) return [];
-    const end = b.e;
-    const built9 = b.d ?? end;
-    const segs: [number, number, boolean][] = [[b.s, built9, true], ...(end > built9 ? [[built9, end, false] as [number, number, boolean]] : [])];
-    return segs.map(([a, z, bld], si) => (
-      <line key={si} className={bld ? "scr-bl-build" : "scr-bl-live"} x1={x(a)} x2={x(z)} y1={ly} y2={ly} />
-    ));
+  const lyOf = (top: number, k: number): number => top + BL.pad + BL.tier + k * STEP + CH / 2;
+  /** 묶음의 처지 — 한 채라도 있으면 있음 · 그다음 짓는 중 · 아직 · 사라짐. */
+  const grpSt = (bs: Bld[], T: number): St => {
+    const ss = bs.map((b) => stOf(b, T));
+    return (["live", "build", "pre", "dead"] as St[]).find((v) => ss.includes(v)) ?? "live";
   };
-  /* 짓다가 사라짐(취소·파괴) = ✕ 대신 반투명 딤(2026-10-22, 요청: "취소는 x 대신 반투명 딤 처리") — 칩·선 통째로(.is-cut). */
-  const cutOf = (b: GameCurve["blds"][number]): boolean => b.d === null && b.e !== null;
-  /* 같은 종류 강조는 **선도**(2026-10-22, 요청: "강조 시 선도 강조") — 처음 종류·변태 종류가 얹은 종류이거나, 얹은 것이 이 건물에 붙는 애드온일 때. */
-  const kindHlOf = (b: GameCurve["blds"][number]): boolean =>
-    hoverKind !== null && (b.t === hoverKind || b.m.some(([mt]) => mt === hoverKind) || ADDON_HOST9[hoverKind] === b.t);
-  /* ★ 얹은 건물과 **같은 종류**의 칩은 사람과 상관없이 모두 강조색으로(2026-10-22, 요청: "마우스 오버 시 같은 건물들은 사람 관계없이 모두 강조" → "강조 시 임자색" →
-     "임자색 말고 강조색으로" — 폰 테크 칩 강조(.scr-tl-chip.is-hl)와 같은 색) · 얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩.
-     애드온과 본 건물은 함께(같은 날 "애드온과 본 건물은 같이 강조") — 팩토리에 얹으면 머신샵도 · 머신샵에 얹으면 팩토리도(ADDON_HOST9). */
+  const stCls = (t: Tag): string | undefined => {
+    if (T9 === null) return t.cut ? "is-cut" : undefined;
+    const st = t.grp ? grpSt(t.grp, T9) : t.st(T9);
+    return st === "live" ? undefined : `is-${st}`;
+  };
+  /* ★ 같은 종류 강조 — 얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩은 사람과 상관없이 강조색(2026-10-22) · 애드온과 본 건물은 함께(ADDON_HOST9). */
   const tagHlOf = (t: Tag): boolean => hoverKind !== null && t.kind !== undefined
     && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
   const chipOf = (t: Tag, ly: number, cls?: string): ReactElement => (
@@ -403,68 +431,71 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
         {t.label}
       </text>
+      <line className="scr-bl-strike" x1={t.x + PX * 0.6} x2={t.x + t.w - PX * 0.6} y1={ly} y2={ly} />
     </>
   );
-  const hoverAt = hover === null ? null
-    : rows.flatMap((r) => r.items.filter((it) => it.b === hover).map((it) => ({ l: r.l, ly: lyOf(r.top, it.k, it.jig) })))[0] ?? null;
+  /** 팝오버 — 한 채면 [무엇 · 분:초 · 그때 인구] + 본 칩은 완공·사라짐 · 묶음이면 한 채씩 다. */
+  const popOf = (l: BuildLane, u: { bs: Bld[]; tags: Tag[] }, t: Tag, ti: number, key: string, ly: number): ChipPopAt => {
+    const b = u.bs[0];
+    const life = (m: Bld, pre: string): ChipPopAt["lines"] => [
+      { what: `${pre}착공`, sec: m.s, sup: supAt(l.spt, m.s) },
+      ...(m.d !== null && m.d !== m.s ? [{ what: `${pre}완공`, sec: m.d, sup: supAt(l.spt, m.d) }] : []),
+      ...(m.e !== null ? [{ what: `${pre}${m.d === null ? "취소" : "사라짐"}`, sec: m.e, sup: supAt(l.spt, m.e) }] : []),
+    ];
+    return {
+      key, x: t.x, y: ly - CH / 2, w: t.w, title: t.label.replace(/^[→+] ?/, ""),
+      lines: t.grp ? t.grp.flatMap((m, mi) => life(m, `${mi + 1}번 `))
+        : ti === 0 && t.what === "착공" ? life(b, "")
+          : [{ what: t.what, sec: t.at, sup: supAt(l.spt, t.at) }],
+    };
+  };
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">건설<TitleSwitch label="간단히 보기" on={techOnly} onChange={onTechOnly} /></figcaption>
+      <figcaption className="scr-rc-title">테크<TitleSwitch label="간단히 보기" on={techOnly} onChange={onTechOnly} /></figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
         {rows.map(({ l, items, top, h }) => (
           <g key={l.key} className={rowCls(l)}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
-            {/* ★ 가로축은 **사람마다**(2026-10-22, 요청: "PC 건설 그래프 사람별로 가로축 표시") — 칸이 길어 맨 아래 눈금 하나로는 읽히지 않았다. 칸 아래 띠(AXIS_H)에 분 눈금 · 세로선의 분. */}
+            {/* ★ 가로축은 **사람마다**(2026-10-22) — 칸 아래 띠(AXIS_H)에 분 눈금 · 세로선의 분. */}
             {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m * 60) - x(at * 60)) > 30)).map((m) => (
               <text key={m} className="scr-rc-axis" x={x(m * 60)} y={top + h + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{m}분</text>
             ))}
             {at !== null && (
               <text className="scr-rc-at" x={x(at * 60)} y={top + h + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{`${Math.round(at)}분`}</text>
             )}
-            {items.map(({ b, k, tags, jig }) => {
-              const ly = lyOf(top, k, jig);
-              const end = b.e ?? END;
-              const cut9 = cutOf(b);
-              const kindHl9 = kindHlOf(b);
-              /* 얹어도 세로 시간축은 안 옮긴다(2026-10-22, 요청: "강조 시 자동으로 세로 시간축이 그 건물 처음으로 이동하지 않게" · 옛: 완공(못 지었으면 착공) 때로). */
-              const show = (): void => { setHover(b); setHoverKind(b.t); };
+            {items.map(({ u, k }) => {
+              const ly = lyOf(top, k);
+              const b = u.bs[0];
               return (
-                <g
-                  key={`${b.s}:${b.t}:${k}`} className={cx("scr-bl-hit", hover === b && "is-hl", kindHl9 && "is-kind", cut9 && "is-cut")}
-                  onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
-                  onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHover(null); setHoverKind(null); } }}
-                >
-                  {segLines(b, ly)}
-                  {b.e !== null && <line className="scr-bl-pad" x1={x(b.s)} x2={x(end)} y1={ly} y2={ly} />}
-                  {tags.map((t, ti) => {
+                <g key={`${b.s}:${b.t}:${k}`} className="scr-bl-hit">
+                  {/* 잇는 선 — 한 채의 앞 칩 오른끝 → 뒤 칩 왼끝(변태·애드온 · 같은 단이라 곧은 선). 뒤 칩의 처지(아직 = 점선)를 따른다. */}
+                  {u.tags.slice(1).map((t, ti) => {
+                    const pv = u.tags[ti];
+                    if (t.x <= pv.x + pv.w + 0.5) return null;
+                    return <line key={`l${ti}`} className={cx("scr-bl-link", stCls(t))} x1={pv.x + pv.w} x2={t.x} y1={ly} y2={ly} />;
+                  })}
+                  {u.tags.map((t, ti) => {
                     const hl9 = tagHlOf(t);
-                    /* 누르면 팝오버 — [무엇 · 분:초 · 그때 인구] · 본 칩은 완공 · 파괴도(있으면). PC(마우스)는 얹자마자 뜨고 떼면 걷는다(2026-10-23, 요청: "피시에서 건물칩 마우스오버 시에도 바로 팝업"). */
+                    /* 누르면 팝오버 · PC(마우스)는 얹자마자 뜨고 떼면 걷는다(2026-10-23). */
                     const popKey = `${l.key}:${b.s}:${b.t}:${ti}`;
-                    const popOf = (): ChipPopAt => ({
-                      key: popKey, x: t.x, y: ly - CH / 2, w: t.w, title: t.label.replace(/^[→+] ?/, ""),
-                      lines: [
-                        { what: t.what, sec: t.at, sup: supAt(l.spt, t.at) },
-                        ...(ti === 0 && b.d !== null && b.d !== b.s ? [{ what: "완공", sec: b.d, sup: supAt(l.spt, b.d) }] : []),
-                        ...(ti === 0 && b.e !== null ? [{ what: b.d === null ? "취소" : "사라짐", sec: b.e, sup: supAt(l.spt, b.e) }] : []),
-                      ],
-                    });
                     return (
                     <g
-                      key={ti} className={t.cut ? "is-cut" : undefined}
+                      key={ti} className={stCls(t)}
                       onPointerEnter={(e) => {
                         if (e.pointerType !== "mouse") return;
                         setHoverKind(t.kind ?? null);
-                        setMe({ key: popKey, x: t.x, y: ly - CH / 2, w: t.w, label: t.label });
-                        setPop(popOf());
+                        setMe({ key: popKey, lane: l, x: t.x, y: ly - CH / 2, w: t.w, label: t.label });
+                        setPop(popOf(l, u, t, ti, popKey, ly));
                       }}
                       onPointerLeave={(e) => {
                         if (e.pointerType !== "mouse") return;
+                        setHoverKind(null);
                         setMe((m) => (m?.key === popKey ? null : m));
                         setPop((p) => (p?.key === popKey ? null : p));
                       }}
                       onPointerDown={(e) => { lastPtr.current = e.pointerType; }}
-                      onClick={() => { if (lastPtr.current !== "mouse") setPop((p) => (p?.key === popKey ? null : popOf())); }}
+                      onClick={() => { if (lastPtr.current !== "mouse") setPop((p) => (p?.key === popKey ? null : popOf(l, u, t, ti, popKey, ly))); }}
                     >
                       {chipOf(t, ly, hl9 ? "is-hl" : undefined)}
                     </g>
@@ -477,28 +508,21 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
           </g>
         ))}
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
-        {/* ★ 강조는 **겹으로 위에**(2026-10-23, 요청: "강조된 선들이 다 위로 올라오는데(다른 일반 칩들보다도 더) 특히 얹은 건 맨 위") — svg 는 그린 차례가 z 라
-            일반 줄을 다 그린 뒤 ① 같은 종류의 선 → ② 같은 종류의 칩 → ③ 얹은 건물의 선 → ④ 얹은 칩을 한 벌 더 그린다. 마우스는 밑의 원 칩이 받는다(겹은 pointer-events 없음 ·
-            줄을 옮겨 그리면 얹음이 떨어졌다 붙었다 한다). 얹은 칩은 같은 종류 강조보다 **진하게** · 살짝 키워(1.15배)(같은 날 "진짜 주인공(실제 선택)은 더 진하게" · "칩도 살짝 확대"). */}
+        {/* ★ 강조는 **겹으로 위에**(2026-10-23) — 일반 줄을 다 그린 뒤 같은 종류의 칩 → 얹은 칩을 한 벌 더 그린다(pointer-events 없음 · 마우스는 밑의 원 칩이 받는다).
+            얹은 칩은 같은 종류 강조보다 진하게 · 살짝 키워(1.15배). */}
         {hoverKind !== null && rows.map(({ l, items, top }) => (
           <g key={l.key} className={rowCls(l)} pointerEvents="none">
-            {items.filter(({ b }) => kindHlOf(b)).map(({ b, k, jig }) => (
-              <g key={`${b.s}:${b.t}:${k}`} className={cx("scr-bl-hit is-kind", cutOf(b) && "is-cut")}>{segLines(b, lyOf(top, k, jig))}</g>
-            ))}
-            {items.flatMap(({ b, k, tags, jig }) => tags.map((t, ti) => (tagHlOf(t) ? (
-              <g key={`${b.s}:${b.t}:${k}:${ti}`} className={cx("scr-bl-hit", (cutOf(b) || t.cut) && "is-cut")}>{chipOf(t, lyOf(top, k, jig), "is-hl")}</g>
+            {items.flatMap(({ u, k }) => u.tags.map((t, ti) => (tagHlOf(t) ? (
+              <g key={`${u.bs[0].s}:${u.bs[0].t}:${k}:${ti}`} className={cx("scr-bl-hit", stCls(t))}>{chipOf(t, lyOf(top, k), "is-hl")}</g>
             ) : null)))}
           </g>
         ))}
-        {hoverAt && (
-          <g className={rowCls(hoverAt.l)} pointerEvents="none">
-            <g className={cx("scr-bl-hit is-hl", hover && cutOf(hover) && "is-cut")}>{hover && segLines(hover, hoverAt.ly)}</g>
-            {me && (
-              <g className="scr-bl-me" transform={`translate(${me.x + me.w / 2} ${me.y + CH / 2}) scale(1.15) translate(${-(me.x + me.w / 2)} ${-(me.y + CH / 2)})`}>
-                <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CH} rx={RX} />
-                <text className="scr-tl-label" x={me.x + PX} y={me.y + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>
-              </g>
-            )}
+        {me && (
+          <g className={rowCls(me.lane)} pointerEvents="none">
+            <g className="scr-bl-me" transform={`translate(${me.x + me.w / 2} ${me.y + CH / 2}) scale(1.15) translate(${-(me.x + me.w / 2)} ${-(me.y + CH / 2)})`}>
+              <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CH} rx={RX} />
+              <text className="scr-tl-label" x={me.x + PX} y={me.y + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>
+            </g>
           </g>
         )}
       </svg>
