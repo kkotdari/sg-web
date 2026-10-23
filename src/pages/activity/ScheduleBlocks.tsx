@@ -654,6 +654,56 @@ const OrderCell = memo(function OrderCell({ p, i, on, sortable, act }: {
   );
 });
 
+/** ★ 터치로 끄는 동안 **화면 끝 자동 스크롤**(2026-10-23, 지적: "사진 목록 순서 변경 시 화면 위아래 옆 등에 갔을 때 스크롤이 안 돼") —
+ *  SortableJS 1.15 의 자동 스크롤 플러그인은 브라우저가 네이티브 끌기를 지원하면 dragover 에만 귀를 다는데, 폰의 터치 끌기는 Sortable 이
+ *  흉내 내는 끌기(fallback)라 dragover 가 안 와 **폰에서는 아예 안 돌았다**. 끄는 동안 손가락 자리(touchmove)를 보고, 가장 가까운 세로 스크롤 상자
+ *  (순서 변경 팝업 몸 · 없으면 창)의 위아래 끝 EDGE 안이면 깊이에 비례해 민다. 민 뒤엔 손가락이 멈춰 있어도 들어갈 자리를 다시 찾게
+ *  Sortable 의 터치 이동을 한 번 부른다(그 플러그인이 하는 부름과 같다). PC 마우스는 터치 이벤트가 없어 돌지 않는다(Sortable 자동 스크롤이 맡는다). */
+function edgeScroller9(root: HTMLElement): { start: () => void; stop: () => void } {
+  const EDGE = 96;
+  const MAX = 18;
+  let raf = 0;
+  let last: TouchEvent | null = null;
+  let box: HTMLElement | null = null;
+  const onMove = (e: TouchEvent): void => { last = e; };
+  const findBox = (): HTMLElement | null => {
+    for (let e = root.parentElement; e && e !== document.body; e = e.parentElement) {
+      const oy = getComputedStyle(e).overflowY;
+      if ((oy === "auto" || oy === "scroll") && e.scrollHeight > e.clientHeight) return e;
+    }
+    return null;
+  };
+  const tick = (): void => {
+    raf = requestAnimationFrame(tick);
+    const t = last?.touches[0];
+    if (!t) return;
+    const r = box ? box.getBoundingClientRect() : null;
+    const top = Math.max(r ? r.top : 0, 0);
+    const bottom = Math.min(r ? r.bottom : window.innerHeight, window.innerHeight);
+    const depth = t.clientY > bottom - EDGE ? (t.clientY - (bottom - EDGE)) / EDGE
+      : t.clientY < top + EDGE ? -(top + EDGE - t.clientY) / EDGE : 0;
+    if (depth === 0) return;
+    const dy = Math.sign(depth) * Math.max(1, Math.round(Math.min(1, Math.abs(depth)) * MAX));
+    // 즉시 민다 — html 의 scroll-behavior: smooth 가 매 프레임 미는 것을 부드럽게 늦춰 거의 안 움직였다.
+    if (box) box.scrollTo({ top: box.scrollTop + dy, behavior: "instant" });
+    else window.scrollTo({ top: window.scrollY + dy, behavior: "instant" });
+    (Sortable.active as unknown as { _onTouchMove?: (e: TouchEvent) => void } | null)?._onTouchMove?.(last!);
+  };
+  return {
+    start: () => {
+      box = findBox();
+      document.addEventListener("touchmove", onMove, { passive: true });
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(tick);
+    },
+    stop: () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("touchmove", onMove);
+      last = null;
+    },
+  };
+}
+
 function PhotoOrder({
   photos, at, onPick, onReorder, sortable, onAdd,
 }: {
@@ -693,6 +743,7 @@ function PhotoOrder({
        칸이 비켜 설 때마다 '다시 배치' 표시가 조상으로 올라가, 활동 목록처럼 형제가 많은 부모에서는 그때마다 목록 전체를 다시 훑었다.
        크기까지 가둔 상자(contain: strict)는 배치의 경계가 돼 그 안에서 끝난다. 크기는 끄는 동안 안 바뀌니 못 박아도 된다.
        (실측 · 큰 쪽 · CPU 4배: 10칸 밀기 끌기 중 배치 940ms → 아래 표) */
+    const edge = edgeScroller9(el);
     const sortableObj = Sortable.create(el, {
       /* 비켜 서는 애니메이션은 끈다(animation: 0) — Sortable 의 애니메이션은 칸마다 transform·강제 배치를 걸어 밀리는 칸 수만큼 그리기가
          늘었다(지적: "7~10개 바뀌기 시작하면 느려짐"). 실측(피드 꼴 쪽 · CPU 4배 · 10칸 밀기): 작업 2.7초 → 1.0초 · 그리기 전 단계 1.5초 → 0.27초.
@@ -708,14 +759,19 @@ function PhotoOrder({
       // Sortable 이 든 칸(dragEl)을 안 놓아, 한 번 쓸어 넘긴 뒤로는 아무리 길게 눌러도 안 들렸다(크롬 폰 · SortableJS 1.15).
       // 터치 이벤트 갈래는 touchend·touchcancel 로 깨끗이 놓는다.
       supportPointer: false,
+      /* ★ 끄는 중 화면 끝 자동 스크롤(2026-10-23, 지적: "사진 목록 순서 변경 시 화면 위아래 옆 등에 갔을 때 스크롤이 안 돼") — 기본 감지 폭(30px)은
+         손가락이 닿기 어렵고 폰은 아래에 탭 막대가 깔린다 → 96px · 속도 18. PC 크롬의 네이티브 끌기는 Sortable 이 스크롤을 브라우저에 맡기는데
+         크롬의 가장자리 폭이 아주 좁아 사실상 안 돌았다 → forceAutoScrollFallback 로 Sortable 이 직접 민다(창 · 순서 변경 팝업 몸 모두). */
+      scroll: true, scrollSensitivity: 96, scrollSpeed: 18, bubbleScroll: true, forceAutoScrollFallback: true,   // 폰(터치)은 아래 edge 가 민다(edgeScroller9)
       ghostClass: "scr-sb-order-ghost",
       chosenClass: "scr-sb-order-chosen",
       dragClass: "scr-sb-order-drag",
       onChoose: () => { navigator.vibrate?.(12); },
-      onStart: () => { sorting += 1; },
+      onStart: () => { sorting += 1; edge.start(); },
       onMove: (e) => !e.related.classList.contains("scr-sb-order-addcell"),
       onEnd: (e) => {
         sorting = Math.max(0, sorting - 1);
+        edge.stop();
         lastDrop.current = Date.now();
         const from = e.oldDraggableIndex ?? -1;
         const to = e.newDraggableIndex ?? -1;
@@ -737,7 +793,7 @@ function PhotoOrder({
         }, 30);
       },
     } as Sortable.Options);
-    return () => sortableObj.destroy();
+    return () => { edge.stop(); sortableObj.destroy(); };
   }, [sortable]);
 
   return (
