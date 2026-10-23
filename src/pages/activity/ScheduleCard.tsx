@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { CalendarDays, ExternalLink, Paperclip, Trash2 } from "lucide-react";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
@@ -49,6 +50,7 @@ function ScheduleHead({
   onDiscard: () => void;
 }) {
   const [whenOpen, setWhenOpen] = useState(false);
+  const mobile = useIsMobile();
   return (
     <>
       <div className="scr-schedule-title-row">
@@ -62,12 +64,13 @@ function ScheduleHead({
           <h3 className="scr-schedule-title scr-sb-line">{head.title}</h3>
         )}
         {/* ★ 저장은 단추로(2026-10-20, 요청: "수정 시 저장 버튼 눌러야 서버에 반영") — 고친 게 있으면 [취소 | 저장], 없으면 마지막 저장 시각.
-            취소는 저장 안 한 고침을 버리고 마지막 저장 판으로 돌아간다(옛 요청 "방금 전으로 되돌리기"의 몫). */}
-        {canEdit && editing && (saveState === "saved" ? (
+            취소는 저장 안 한 고침을 버리고 마지막 저장 판으로 돌아간다(옛 요청 "방금 전으로 되돌리기"의 몫).
+            폰은 마지막 저장 시각을 안 띄운다(2026-10-23, 요청: "모바일에서 일정 마지막 저장 표시 X"). */}
+        {canEdit && editing && (saveState === "saved" ? (mobile ? null : (
           <span className="scr-schedule-save-state" role="status" aria-live="polite">
             마지막 저장: {savedAtText(savedAt)}
           </span>
-        ) : (
+        )) : (
           <span className="scr-schedule-save-btns" role="group" aria-label="저장">
             {saveState === "failed" && <span className="scr-schedule-save-state scr-schedule-save-state-failed" role="status">저장 안 됨</span>}
             <button
