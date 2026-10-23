@@ -63,13 +63,12 @@ export type GameBulkAll = { filter: ReturnType<typeof tabQuery> & { any?: string
 /** 게임 목록 한 쪽 — 무한 스크롤로 이만큼씩 더 받는다. */
 const GAME_PAGE9 = 50;
 
-/** 탭 → 서버 목록 조건 — 리그 판은 리그 탭에만(leagueOnly), 내전·공방은 리그 판을 뺀다(noLeague). 명예의 전당 판은 그 탭에만(fameOnly · 나머지 noFame). */
+/** 탭 → 서버 목록 조건 — 리그 판은 리그 탭에만(leagueOnly), 내전·공방은 리그 판을 뺀다(noLeague). 명예의 전당 탭은 fameOnly(그 판은 제 탭에도 선다). */
 export const tabQuery = (tab: GameTab) => (tab === "fame" ? { fameOnly: true } : {
   membersOnly: tab === "clan" || undefined,
   pubOnly: tab === "pub" || undefined,
   leagueOnly: tab === "league" || undefined,
   noLeague: tab !== "league" || undefined,
-  noFame: true,
 });
 
 export default memo(function ActivityGroupPage({

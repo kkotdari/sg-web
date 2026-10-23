@@ -69,7 +69,6 @@ export interface GameResultListParams {
   leagueOnly?: boolean;
   noLeague?: boolean;
   fameOnly?: boolean;
-  noFame?: boolean;
   teamMemberIds?: string[];
 }
 
@@ -272,7 +271,6 @@ export const api = {
       leagueOnly: params.leagueOnly,
       noLeague: params.noLeague,
       fameOnly: params.fameOnly,
-      noFame: params.noFame,
       matchAllUsers: params.matchAllUsers,
       q: params.q,
       any: params.any,
