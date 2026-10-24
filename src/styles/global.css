@@ -3339,6 +3339,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 @media (min-width: 961px) { .scr-modal-graph .scr-rc-title > i { font-size: 12px; } }
 .scr-tl-chip { fill: var(--panel-raised, var(--panel)); stroke: rgba(var(--overlay-rgb), 0.28); stroke-width: 0.75; }   /* 폰 테크도 칩(2026-10-23, 요청: "테크 폰도 칩으로" — PC .scr-bl-chip 과 같은 꼴 · 옛 글자만(투명 상자)) */
 .scr-tl-label { fill: var(--text); font-weight: 500; }
+.scr-bl-cap { fill: var(--dim); font-weight: 500; font-variant-numeric: tabular-nums; }   /* PC 건설 칩 위 작은 글(착공 분:초 · 인구 · 2026-10-24 · GameCurvesModal caps) */
 /* PC 건설 줄(2026-10-21) — 짓는 동안 점선 · 다 지은 뒤 사라질 때까지 실선 · 위에 얹으면 진하게. 굵은 투명 선이 마우스 자리. */
 /* 칩 팝오버(GameCurvesModal ChipPop · 2026-10-22, 요청: "칩 클릭 시 정확한 시각과 그 시각의 인구수 · 팝오버로") — 누른 칩 위 가운데. */
 .scr-bl-hit, .scr-tl-hit { cursor: pointer; }
