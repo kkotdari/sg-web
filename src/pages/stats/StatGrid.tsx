@@ -236,7 +236,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span>APM — 분당 행동 수 평균</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
             <span>머리를 누르면 정렬 — 데미지 · APM 은 누를 때마다 켜고 끄고, 전체 · 종족 머리는 승률 → 게임수 → 끔. 여럿이면 누른 차례대로</span>
-            <span>값을 누르면 다섯 달 변화 그래프(달로 조회할 때)</span>
+            <span>값을 누르면 일곱 달 변화 그래프(달로 조회할 때)</span>
           </span>
         </>
       ) : (
@@ -245,7 +245,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span>APM — 분당 행동 수 평균</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
-          <span>값에 마우스를 얹으면 다섯 달 변화 그래프(달로 조회할 때)</span>
+          <span>값에 마우스를 얹으면 일곱 달 변화 그래프(달로 조회할 때)</span>
         </span>
       )}
     />
@@ -258,7 +258,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   clanGames: number;
   rows: StatGridRow[];
   mobile: boolean;
-  /** 다섯 달 변화 자료(StatTrend) — 달로 조회할 때만 · 없으면 칸에 손잡이가 없다. */
+  /** 일곱 달 변화 자료(StatTrend) — 달로 조회할 때만 · 없으면 칸에 손잡이가 없다. */
   trend: StatTrendData | null;
 }) {
   /* 변화 그래프 팝오버(위 TrendCtx ★) — PC 는 떠난 뒤 POP_LINGER 뒤 닫힘 · 폰은 밖 누름·스크롤에 닫힘. */

@@ -3,13 +3,14 @@ import { Spinner } from "../../components/common/Feedback";
 import { shiftMonthValue } from "../../utils/date";
 import type { BaseRace, Member, MemberStatsEntry } from "../../types";
 
-/* ★ 통계 칸의 **5개월 변화 그래프**(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로") ─────────────────────────
-   표의 값 칸(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률 · 폰 전적 칸)에 PC 는 마우스를 얹으면, 폰은 누르면 그 사람 · 그 값의 다섯 달
-   (조회한 달이 **맨 오른쪽** · 앞 네 달) 선 그래프가 팝오버로 뜬다. 자료는 화면(ClanStatsScreen)이 조회한 달의 통계를 받은 뒤 앞 네 달을 같은
+/* ★ 통계 칸의 **5개월 변화 그래프**(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" → "7개월로 통일하자") ─────────────────────────
+   표의 값 칸(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률 · 폰 전적 칸)에 PC 는 마우스를 얹으면, 폰은 누르면 그 사람 · 그 값의 일곱 달
+   (조회한 달이 **맨 오른쪽** · 앞 여섯 달) 선 그래프가 팝오버로 뜬다. 자료는 화면(ClanStatsScreen)이 조회한 달의 통계를 받은 뒤 앞 네 달을 같은
    조건으로 뒤따라 받아 둔다(StatTrendData · 없는 달은 점을 안 찍는다). 꼴은 래더 상세 그래프(.scr-rank-detail-*)와 같은 벌이고, 두 값이 한 칸에 사는
    데미지(딜 · 피해)·폰 전적(게임수 · 승률)은 선을 둘 그린다(각자 제 자로 눕히고 값은 점 위에 적는다). */
 
-export const TREND_MONTHS = 5;
+/** 일곱 달(2026-10-24, 요청: "7개월로 통일하자" — 처음엔 다섯 · 래더 그래프와 한 벌 · 조회한 달이 맨 오른쪽). */
+export const TREND_MONTHS = 7;
 export function statTrendMonths(period: string): string[] {
   const out: string[] = [];
   for (let i = TREND_MONTHS - 1; i >= 0; i -= 1) out.push(shiftMonthValue(period, -i));
@@ -78,7 +79,7 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "apm" | "rec", race:
 const PAD_X = 30;
 const PAD_BOTTOM = 30;
 
-/** 다섯 달 선 그래프 — 래더 상세와 같은 벌(.scr-rank-detail-*).
+/** 일곱 달 선 그래프 — 래더 상세와 같은 벌(.scr-rank-detail-*).
  *  single: 한 선 · shared(딜 · 피해): 같은 자에 두 선(첫 선 값은 점 위 · 둘째는 점 아래 — 아래 여백을 넓혀 달 이름과 안 겹치게) ·
  *  stacked(게임수 · 승률): 단위가 달라 **위아래 두 판**(각자 제 자 · 판 왼쪽 위에 이름) · 달 이름은 맨 아래 한 번. */
 export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: StatTrendData; member: Member; metric: StatMetric; chartW?: number }) {

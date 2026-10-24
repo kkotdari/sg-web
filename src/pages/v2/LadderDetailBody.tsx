@@ -15,10 +15,10 @@ export interface LadderDetailData {
   loading: boolean;
 }
 
-/* 그래프는 조회한 달이 **가운데**(앞 3 · 뒤 3 = 7칸 · 2026-10-24, 요청: "조회한달이 가운데로 오게 해서 7개월간의 변화 (없는 곳은 비움)").
-   없는 달(기록 전 · 다음 달들)은 칸만 두고 점을 찍지 않는다. */
-export const TREND_BEFORE = 3;
-export const TREND_AFTER = 3;
+/* 그래프는 조회한 달이 **맨 오른쪽**(앞 6 = 7칸 · 2026-10-24, 요청: "래더도 검색한달을 마지막으로 통일하자 · 7개월로 통일하자" — 통계 변화 그래프(StatTrend)와 한 벌).
+   같은 날 앞선 '조회한 달이 가운데(앞 3 · 뒤 3)'는 되물렸다. 없는 달(기록 전)은 칸만 두고 점을 찍지 않는다. */
+export const TREND_BEFORE = 6;
+export const TREND_AFTER = 0;
 export function trendMonths(period: string): string[] {
   const out: string[] = [];
   for (let i = -TREND_BEFORE; i <= TREND_AFTER; i += 1) out.push(shiftMonthValue(period, i));
