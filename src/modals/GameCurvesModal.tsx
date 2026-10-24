@@ -283,7 +283,8 @@ type BuildLane = { key: string; group: string; name: string; color: string; blds
 function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, caps = false }: {
   lanes: BuildLane[]; maxX: number; ticksX: number[]; w: number; padL: number; padR: number;
   font: { label: number; axis: number };
-  /** ★ 칩 위 작은 글(PC · 2026-10-24, 요청: "PC 에서는 건설 칩에 시간과 인구수도 작게 위에 표시 · 뭉친 것들은 시간·인구 한 줄씩") — 착공 분:초 · 그때 인구. 묶음(×N)은 채마다 한 줄. */
+  /** ★ 칩 **머릿말**(PC · 2026-10-24, 요청: "PC 에서는 건설 칩에 시간과 인구수도 작게 … 칩 안에 머릿말로 · 뭉친 칩엔 처음 것만, 나머지는 팝오버") — 칩이 두 줄이 된다:
+   *  위 작은 줄 "0:55 · 9"(착공 분:초 · 그때 인구) · 아래 이름. 묶음(×N)은 첫 채의 것만 머릿말로, 채마다의 시각은 팝오버(묶음 칩만 뜬다). */
   caps?: boolean;
   focus: string | null;
   onFocus: (key: string) => void;
@@ -297,7 +298,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const [pop, setPop] = useState<ChipPopAt | null>(null);
   useCloseOutside(pop !== null, plotRef, ".scr-bl-hit", () => setPop(null));
   /** 마우스를 얹은 칩 하나(진짜 주인공) — 같은 종류 강조보다 진하게 · 맨 위(svg 끝)에 한 번 더 그린다(아래 ★). */
-  const [me, setMe] = useState<{ key: string; lane: BuildLane; x: number; y: number; w: number; label: string } | null>(null);
+  const [me, setMe] = useState<{ key: string; lane: BuildLane; x: number; y: number; w: number; label: string; cap: string } | null>(null);
   const lastPtr = useRef("mouse");
   const AXIS_H = font.axis + 8 + AXIS_DROP;
   const END = maxX * 60;
@@ -319,20 +320,20 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
      (걷어냄) 시간선 처지(짓는 중 연하게 · 사라짐 취소선 · 아직 점선) — 2026-10-23, 요청: "시간축에 따른 효과 제거". 못 지은 것만 딤(is-cut). */
   const { h: CH, px: PX, r: RX } = chipBox(BL.fs);
   const arrowId = `scr-bl-arrow${useId().replace(/:/g, "")}`;   // 잇는 선의 화살촉(svg defs · 판마다 제 id)
-  const STEP = CH + 2 * BL.tier;
   const RIGHT = CW - padR;
   const chipW = (label: string): number => textW(label, BL.fs) + 2 * PX;
-  /** 칩 위 글(위 caps ★) — 글자 7 · 줄 7.5 · 칩과의 틈 1. */
-  const CAP_FS = 7; const CAP_LH = 7.5; const CAP_GAP = 1;
+  /** 머릿말(위 caps ★) — 글자 7 · 줄 8. 칩 키는 이름 줄(CH) + 머릿말 줄(CAPH). */
+  const CAP_FS = 7; const CAP_LH = 8;
+  const CAPH = caps ? CAP_LH : 0; const CHH = CH + CAPH;
+  const STEP = CHH + 2 * BL.tier;
   type Bld = GameCurve["blds"][number];
   /** kind — 그 칩이 말하는 건물 종류(같은 종류 강조) · at — 그 칩의 때(초) · what — 무엇(본 칩 착공 · 변태 · 붙음 · 변태 시작) · grp — 묶음(×N)의 채들. */
-  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; grp?: Bld[] };
+  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; grp?: Bld[]; /** 머릿말(caps ★ · 없으면 빈 글) */ cap: string };
   const GROUP_SEC = 45;
-  /** 칩 위 글의 줄들(위 caps ★) — 묶음이면 채마다 착공 · 아니면 그 칩의 때 하나. "3:10 · 12"(인구 없으면 시각만). */
-  const capLines = (l: BuildLane, t: Tag): string[] => (caps
-    ? (t.grp ? t.grp.map((m) => m.s) : [t.at]).map((sec) => { const sup = supAt(l.spt, sec); return sup === null ? clock(sec) : `${clock(sec)} · ${sup}`; })
-    : []);
-  const capW = (lines: string[]): number => (lines.length ? Math.max(...lines.map((ln) => textW(ln, CAP_FS))) : 0);
+  /** 머릿말 글(위 caps ★) — 그 칩의 때(묶음은 첫 채 = t.at) "3:10 · 12"(인구 없으면 시각만). 폰(caps 꺼짐)은 빈 글. */
+  const capOf = (l: BuildLane, sec: number): string => { if (!caps) return ""; const sup = supAt(l.spt, sec); return sup === null ? clock(sec) : `${clock(sec)} · ${sup}`; };
+  /** 칩 폭 — 이름 줄과 머릿말 줄 중 넓은 쪽. */
+  const chipW2 = (label: string, cap: string): number => Math.max(chipW(label), cap ? textW(cap, CAP_FS) + 2 * PX : 0);
   let y0 = 4;
   const rows = lanes.map((l) => {
     /* ★ 애드온은 **본 건물의 칩 줄**에(2026-10-22) — 서버가 붙어 있던 구간마다 [본 건물 차례, 붙은 초](b.h)를 준다. 본 건물을 못 찾은 것은 제 칩. */
@@ -347,8 +348,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       .filter((b) => !(b.h && b.h.length > 0 && b.h.some(([hi9]) => !!l.blds[hi9])))
       .slice().sort((p, q) => p.s - q.s);
     const tag = (at9: number, label: string, what: string, extra?: Partial<Tag>): Tag => {
-      const w = chipW(label);
-      return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, ...extra };
+      const cap = capOf(l, at9);
+      const w = chipW2(label, cap);
+      return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, cap, ...extra };
     };
     /* 한 채(또는 묶음)의 칩들 — 때 차례 · 뒤 칩은 앞 칩 오른끝 + 잇는 몫 뒤로 민다(잇는 선이 설 자리). */
     const units: { bs: Bld[]; tags: Tag[] }[] = [];
@@ -363,7 +365,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
           g9.bs.push(b);
           const t0 = g9.tags[0];
           const lab9 = `${name9} ×${g9.bs.length}`;
-          g9.tags[0] = { ...t0, label: lab9, w: chipW(lab9), x: Math.min(x(t0.at), RIGHT - chipW(lab9)), grp: g9.bs, cut: g9.bs.every((m) => m.d === null && m.e !== null) };
+          const w9 = chipW2(lab9, t0.cap);   // 머릿말은 첫 채의 것 그대로(t0.cap · caps ★)
+          g9.tags[0] = { ...t0, label: lab9, w: w9, x: Math.min(x(t0.at), RIGHT - w9), grp: g9.bs, cut: g9.bs.every((m) => m.d === null && m.e !== null) };
           continue;
         }
       }
@@ -389,13 +392,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     }
     /* 자리는 칩만이 아니라 **잇는 선이 지나는 폭까지**다(같은 날 지적 — 해처리 → 레어 선이 같은 단의 스포닝풀·크립 밑을 지나갔다) — 딸린 칩이 있는 채는 첫 칩 왼끝부터 끝 칩 오른끝까지 한 덩이로 잡는다. */
     const used: [number, number][][] = [];
-    /* 칩 위 글(caps ★)이 칩보다 넓으면 그 폭까지 자리다 — 이웃 칩의 글과 안 겹치게. 오른끝에 걸리면 글은 왼쪽으로 당겨지므로(아래 capX) 그 시작도 자리에 넣는다. */
-    const capX = (t: Tag, w: number): number => Math.min(t.x, RIGHT - w);
-    const spanOf = (t: Tag): [number, number] => { const w = capW(capLines(l, t)); return w > t.w ? [Math.min(t.x, capX(t, w)), Math.max(t.x + t.w, capX(t, w) + w)] : [t.x, t.x + t.w]; };
     const items = units.map((u) => {
       const spans: [number, number][] = u.tags.length > 1
-        ? [[Math.min(...u.tags.map((t) => spanOf(t)[0])), Math.max(...u.tags.map((t) => spanOf(t)[1]))]]
-        : u.tags.map(spanOf);
+        ? [[u.tags[0].x, Math.max(...u.tags.map((t) => t.x + t.w))]]
+        : u.tags.map((t) => [t.x, t.x + t.w] as [number, number]);
       const free = (k: number): boolean => spans.every(([a0, z0]) => used[k].every(([a9, z9]) => z0 + BL.gap <= a9 || a0 >= z9 + BL.gap));
       let k = 0;
       while (k < used.length && !free(k)) k += 1;
@@ -403,50 +403,33 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       for (const sp of spans) used[k].push(sp);
       return { u, k };
     });
-    /* 단마다 **그 단의 가장 긴 글 줄 수**만큼 위를 비운다(caps ★ · 묶음 ×N 은 N 줄) — 단의 칩 가운데 y 는 tierY[k] 로. */
-    const capK: number[] = used.map(() => 0);
-    if (caps) for (const { u, k } of items) for (const t of u.tags) capK[k] = Math.max(capK[k], capLines(l, t).length);
-    const tierY: number[] = [];
-    let yy = BL.pad;
-    for (let k = 0; k < used.length; k += 1) { if (capK[k] > 0) yy += capK[k] * CAP_LH + CAP_GAP; tierY.push(yy); yy += STEP; }
-    const h = Math.max(yy + BL.pad, 36);
-    const row = { l, items, top: y0, h, tierY };
+    const h = Math.max(used.length * STEP + 2 * BL.pad, 36);
+    const row = { l, items, top: y0, h };
     y0 += h + AXIS_H;   // 사람마다 제 가로축 띠(아래 ★)
     return row;
   });
   const H = y0;
   const rowCls = (l: BuildLane): string => (focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row");
-  const lyOf = (top: number, k: number, tierY: number[]): number => top + tierY[k] + BL.tier + CH / 2;
-  /** 칩 위 글(caps ★) — 칩 왼끝에 맞춰 위로 한 줄씩(맨 윗줄이 첫 채). 오른끝에 걸리면 왼쪽으로. */
-  const capsOf = (l: BuildLane, t: Tag, ly: number): ReactElement | null => {
-    const lines = capLines(l, t);
-    if (!lines.length) return null;
-    const w = capW(lines); const cx9 = Math.min(t.x, RIGHT - w);
-    const base = ly - CH / 2 - CAP_GAP - 1.5;
-    return (
-      <>
-        {lines.map((ln, i) => (
-          <text key={i} className="scr-bl-cap" x={cx9} y={base - (lines.length - 1 - i) * CAP_LH} style={{ fontSize: CAP_FS }}>{ln}</text>
-        ))}
-      </>
-    );
-  };
+  /** 칩 가운데 y(머릿말까지 든 칩 키 CHH 기준). */
+  const lyOf = (top: number, k: number): number => top + BL.pad + BL.tier + k * STEP + CHH / 2;
   /** 못 지은 것(짓다 사라짐 · 변태 취소 · 못 지은 애드온)만 딤(is-cut). 시간선 처지 표시는 걷었다(2026-10-23, 요청: "시간축에 따른 효과 제거"). */
   const stCls = (t: Tag): string | undefined => (t.cut ? "is-cut" : undefined);
   /* ★ 같은 종류 강조 — 얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩은 사람과 상관없이 강조색(2026-10-22) · 애드온과 본 건물은 함께(ADDON_HOST9). */
   const tagHlOf = (t: Tag): boolean => hoverKind !== null && t.kind !== undefined
     && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
+  /** 칩 — 머릿말이 있으면 두 줄(위 작은 머릿말 · 아래 이름 · caps ★). */
   const chipOf = (t: Tag, ly: number, cls?: string): ReactElement => (
     <>
-      <rect className={cx("scr-bl-chip", cls)} x={t.x} y={ly - CH / 2} width={t.w} height={CH} rx={RX} />
-      <text className="scr-tl-label" x={t.x + PX} y={ly} dominantBaseline="central" style={{ fontSize: BL.fs }}>
+      <rect className={cx("scr-bl-chip", cls)} x={t.x} y={ly - CHH / 2} width={t.w} height={CHH} rx={RX} />
+      {t.cap && <text className="scr-bl-cap" x={t.x + PX} y={ly - CHH / 2 + CAP_LH / 2 + 0.5} dominantBaseline="central" style={{ fontSize: CAP_FS }}>{t.cap}</text>}
+      <text className="scr-tl-label" x={t.x + PX} y={ly - CHH / 2 + CAPH + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>
         {t.label}
       </text>
     </>
   );
   /** 팝오버 — 그 칩의 시각(본 칩 = 착공 · 변태·애드온 칩 = 그 때) · 묶음이면 채마다 착공 시각을 나열(번호 없이). 줄마다 그때 인구. */
   const popOf = (l: BuildLane, t: Tag, key: string, ly: number): ChipPopAt => ({
-    key, x: t.x, y: ly - CH / 2, w: t.w,
+    key, x: t.x, y: ly - CHH / 2, w: t.w,
     lines: (t.grp ? t.grp.map((m) => m.s) : [t.at]).map((sec) => ({ sec, sup: supAt(l.spt, sec) })),
   });
   return (
@@ -460,7 +443,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
             <path className="scr-bl-arrowhead" d="M0,0 L6,3 L0,6 z" />
           </marker>
         </defs>
-        {rows.map(({ l, items, top, h, tierY }) => (
+        {rows.map(({ l, items, top, h }) => (
           <g key={l.key} className={rowCls(l)}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
             {/* ★ 가로축은 **사람마다**(2026-10-22) — 칸 아래 띠(AXIS_H)에 분 눈금 · 세로선의 분. */}
@@ -471,7 +454,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
               <text className="scr-rc-at" x={x(at * 60)} y={top + h + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{`${Math.round(at)}분`}</text>
             )}
             {items.map(({ u, k }) => {
-              const ly = lyOf(top, k, tierY);
+              const ly = lyOf(top, k);
               const b = u.bs[0];
               return (
                 <g key={`${b.s}:${b.t}:${k}`} className="scr-bl-hit">
@@ -493,7 +476,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                       onPointerEnter={(e) => {
                         if (e.pointerType !== "mouse") return;
                         setHoverKind(t.kind ?? null);
-                        setMe({ key: popKey, lane: l, x: t.x, y: ly - CH / 2, w: t.w, label: t.label });
+                        setMe({ key: popKey, lane: l, x: t.x, y: ly - CHH / 2, w: t.w, label: t.label, cap: t.cap });
                         if (t.grp) setPop(popOf(l, t, popKey, ly));   // 팝오버는 **묶음(×N)만**(2026-10-24, 요청: "팝오버는 뭉친 거만 나오게") — 홑 칩은 위 글(caps)이 말한다
                       }}
                       onPointerLeave={(e) => {
@@ -505,7 +488,6 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                       onPointerDown={(e) => { lastPtr.current = e.pointerType; }}
                       onClick={() => { if (lastPtr.current !== "mouse" && t.grp) setPop((p) => (p?.key === popKey ? null : popOf(l, t, popKey, ly))); }}
                     >
-                      {capsOf(l, t, ly)}
                       {chipOf(t, ly, hl9 ? "is-hl" : undefined)}
                     </g>
                     );
@@ -519,18 +501,19 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
         {/* ★ 강조는 **겹으로 위에**(2026-10-23) — 일반 줄을 다 그린 뒤 같은 종류의 칩 → 얹은 칩을 한 벌 더 그린다(pointer-events 없음 · 마우스는 밑의 원 칩이 받는다).
             얹은 칩은 같은 종류 강조보다 진하게 · 살짝 키워(1.15배). */}
-        {hoverKind !== null && rows.map(({ l, items, top, tierY }) => (
+        {hoverKind !== null && rows.map(({ l, items, top }) => (
           <g key={l.key} className={rowCls(l)} pointerEvents="none">
             {items.flatMap(({ u, k }) => u.tags.map((t, ti) => (tagHlOf(t) ? (
-              <g key={`${u.bs[0].s}:${u.bs[0].t}:${k}:${ti}`} className={cx("scr-bl-hit", stCls(t))}>{chipOf(t, lyOf(top, k, tierY), "is-hl")}</g>
+              <g key={`${u.bs[0].s}:${u.bs[0].t}:${k}:${ti}`} className={cx("scr-bl-hit", stCls(t))}>{chipOf(t, lyOf(top, k), "is-hl")}</g>
             ) : null)))}
           </g>
         ))}
         {me && (
           <g className={rowCls(me.lane)} pointerEvents="none">
-            <g className="scr-bl-me" transform={`translate(${me.x + me.w / 2} ${me.y + CH / 2}) scale(1.15) translate(${-(me.x + me.w / 2)} ${-(me.y + CH / 2)})`}>
-              <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CH} rx={RX} />
-              <text className="scr-tl-label" x={me.x + PX} y={me.y + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>
+            <g className="scr-bl-me" transform={`translate(${me.x + me.w / 2} ${me.y + CHH / 2}) scale(1.15) translate(${-(me.x + me.w / 2)} ${-(me.y + CHH / 2)})`}>
+              <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CHH} rx={RX} />
+              {me.cap && <text className="scr-bl-cap is-me" x={me.x + PX} y={me.y + CAP_LH / 2 + 0.5} dominantBaseline="central" style={{ fontSize: CAP_FS }}>{me.cap}</text>}
+              <text className="scr-tl-label" x={me.x + PX} y={me.y + CAPH + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>
             </g>
           </g>
         )}
