@@ -7628,8 +7628,15 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 @media (hover: hover) { .scr-sg-sort:hover { color: var(--text); } }
 /* PC 는 고른 머리를 칠한다(2026-10-22, 지적: "PC 정렬 기준 액티브 시 티가 잘 안 남" — 글자색만 진해지던 것) · 탭 켜짐(.scr-line-tab-btn.is-on)과 같은 칠.
    안 고른 머리도 같은 안 여백을 가져 켜고 꺼도 글자가 안 움직인다. 폰은 머리 칸이 좁아 글자색만(위). */
-.scr-sg:not(.is-m) .scr-sg-sort { padding: 2px 6px; border-radius: 4px; }
-.scr-sg:not(.is-m) .scr-sg-sort.is-on { color: var(--btn-fill-text); background: var(--btn-fill-bg); }
+/* (되물림 2026-10-24, 요청: "통계 정렬 아이콘으로 변경 · 피시") — PC 는 칠 대신 **정렬 아이콘**: 글자 옆 ↕(안 고름 · 옅게) / ↓(고름 · 본문색) 에 여럿이면 차례 숫자.
+   안 고른 머리도 아이콘 자리를 가져 켜고 꺼도 글자가 안 움직인다. */
+.scr-sg:not(.is-m) .scr-sg-sort { display: inline-flex; align-items: center; gap: 3px; padding: 2px 4px; border-radius: 4px; }
+.scr-sg-sort-ic { display: inline-flex; align-items: center; gap: 1px; color: var(--dim); }
+.scr-sg-sort.is-on .scr-sg-sort-ic { color: var(--text); }
+.scr-sg-sort-ic i { font-style: normal; font-size: 10px; font-weight: 800; line-height: 1; }
+/* 정렬 줄 초기화 단추(같은 요청) — 처음 값(전체 승률)과 다를 때만 선다 · 작은 글자 단추. */
+.scr-stats-sort-reset { padding: 2px 6px; gap: 4px; font-size: var(--fs-11); color: var(--muted); }
+@media (hover: hover) { .scr-stats-sort-reset:hover { color: var(--text); } }
 /* 몸은 바탕 그대로(흰색 · 2026-10-22, 요청: "통계 그리드 색 흰색으로" — 옛 클랜원 전체 줄 0.035 · 펼침 0.025 덧칠 걷음) · 머리만 게임 목록 머리와 같은 0.06(바깥 테두리를 걷어 표의 시작을 말한다). */
 .scr-sg-head > .scr-sg-c { border-top: none; padding: 7px 8px; background: rgba(var(--overlay-rgb), 0.06); font-size: var(--fs-11); font-weight: 700; color: var(--muted); }   /* 글자 --dim → --muted(2026-10-22, 요청: "통계 헤더 글자색 좀 더 진하게") */
 /* 머리 두 줄 — 앞 다섯 칸·끝 칸은 두 줄을 내리 쓰고, 종족 이름은 [전적 | 승률] 두 칸을 덮는다(아래 줄이 전적·승률). */

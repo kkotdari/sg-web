@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { RotateCcw } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -302,6 +303,12 @@ export default function ClanStatsScreen() {
       <div className="scr-stats-sort">
         <span className="scr-stats-sort-label">정렬:</span>
         <span className="scr-stats-sort-chain">{sortKeys.length > 0 ? sortKeys.map(sortLabel).join(" › ") : "기본"}</span>
+        {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(전체 승률 하나)과 다를 때만 선다 · PC 만. */}
+        {!isMobile && !(sortKeys.length === 1 && sortKeys[0] === "rate") && (
+          <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["rate"])} title="정렬을 처음 값(전체 승률)으로">
+            <RotateCcw size={12} aria-hidden /> 초기화
+          </button>
+        )}
         {/* 표 도움말 단추 — 정렬 줄 오른끝(옛 폰 "행을 눌러서 그래프 보기" 글 자리 · 2026-10-22, 요청: "도움말과 헤더 설명 다 제거하고 그 자리에 도움말 아이콘 단추" → "PC 에도 알아서"). */}
         <StatHelp mobile={isMobile} />
       </div>

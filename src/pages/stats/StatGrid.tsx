@@ -1,4 +1,5 @@
 import { Fragment, useState } from "react";
+import { ArrowDownWideNarrow, ArrowUpDown } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
@@ -26,11 +27,19 @@ const cycled = (keys: readonly StatSortKey[], rate: StatSortKey, plays: StatSort
   if (keys.includes(plays)) return keys.filter((x) => x !== plays);
   return [...keys, rate];
 };
-/** 머리 정렬 단추 — 고른 자는 머리 글자가 본문색으로 진해진다(폰 전적 머리 아래 "승률" · "게임수" 작은 글은 걷었다 · 2026-10-22, 요청: "굳이 헤더에 승률 전적 표시는 안 해도 돼"). */
-function SortHead({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+/** 머리 정렬 단추 — 고른 자는 머리 글자가 본문색으로 진해진다(폰 전적 머리 아래 "승률" · "게임수" 작은 글은 걷었다 · 2026-10-22, 요청: "굳이 헤더에 승률 전적 표시는 안 해도 돼").
+ *  ★ PC 는 **정렬 아이콘**(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 글자 옆에 표 정렬 아이콘: 안 고른 머리는 옅은 ↕(ArrowUpDown),
+ *  고른 머리는 본문색 ↓(ArrowDownWideNarrow) 에 여럿이면 차례 숫자. 옛 '고른 머리를 칠하기'(.is-on 바탕색)는 걷었다. 폰은 글자색만(그대로 · 아이콘 없음). */
+function SortHead({ on, order, onClick, children }: { on: boolean; order?: number; onClick: () => void; children: React.ReactNode }) {
   return (
     <button type="button" className={cx("scr-sg-sort", on && "is-on")} aria-pressed={on} onClick={onClick}>
       {children}
+      {order !== undefined && (
+        <span className="scr-sg-sort-ic" aria-hidden>
+          {on ? <ArrowDownWideNarrow size={13} /> : <ArrowUpDown size={13} />}
+          {on && order > 0 && <i>{order}</i>}
+        </span>
+      )}
     </button>
   );
 }
@@ -214,6 +223,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   mobile: boolean;
 }) {
   const toggle = (k: StatSortKey) => ({ on: sortKeys.includes(k), onClick: () => onSortKeys(toggled(sortKeys, k)) });
+  /** PC 머리 — 아이콘 차례(여럿일 때만 숫자 · 하나면 0 = 숫자 없음). 폰은 order 를 안 줘 아이콘이 없다. */
+  const pcToggle = (k: StatSortKey) => ({ ...toggle(k), order: sortKeys.length > 1 ? sortKeys.indexOf(k) + 1 : 0 });
   /** 폰 전적 머리(전체 · 종족) — 승률 → 게임수 → 끔. */
   const cycle = (rate: StatSortKey, plays: StatSortKey) => ({
     on: sortKeys.includes(rate) || sortKeys.includes(plays), onClick: () => onSortKeys(cycled(sortKeys, rate, plays)),
@@ -242,13 +253,13 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
         {([["게임수", "plays"], ["승률", "rate"], ["데미지", "dmg"], ["APM", "apm"]] as const).map(([h, k]) => (
-          <span key={h} className="scr-sg-c scr-sg-h2"><SortHead {...toggle(k)}>{h}</SortHead></span>
+          <span key={h} className="scr-sg-c scr-sg-h2"><SortHead {...pcToggle(k)}>{h}</SortHead></span>
         ))}
         {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hgroup">{r}</span>)}
         {RACES.map((r) => (
           <Fragment key={r}>
-            <span className="scr-sg-c scr-sg-hsub"><SortHead {...toggle(`${r}:plays`)}>게임수</SortHead></span>
-            <span className="scr-sg-c scr-sg-hsub"><SortHead {...toggle(`${r}:rate`)}>승률</SortHead></span>
+            <span className="scr-sg-c scr-sg-hsub"><SortHead {...pcToggle(`${r}:plays`)}>게임수</SortHead></span>
+            <span className="scr-sg-c scr-sg-hsub"><SortHead {...pcToggle(`${r}:rate`)}>승률</SortHead></span>
           </Fragment>
         ))}
       </div>
