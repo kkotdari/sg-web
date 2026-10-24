@@ -7893,7 +7893,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-ladder-pop {
   position: fixed; z-index: 60; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain;
   padding: 14px 16px 14px; border-radius: 12px; background: var(--panel-solid); border: 1px solid var(--line-soft);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); animation: scr-pop-in .14s ease;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); animation: scr-sg-pop-in .14s ease;   /* 폰 꼴의 scr-pop-in(translateX −50%)을 안 타게(아래 .scr-sg-trend-pop 의 ★) */
 }
 .scr-ladder-pop .scr-rank-detail-who { margin-bottom: 10px; }
 .scr-ladder-pop .scr-rank-detail-history { margin-top: 10px; padding-top: 8px; }
@@ -8015,9 +8015,12 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg.is-m .scr-sg-tcell { cursor: pointer; }
 @media (hover: hover) { .scr-sg:not(.is-m) .scr-sg-tcell:hover { background: rgba(var(--overlay-rgb), 0.06); } }
 .scr-sg-tcell.is-hot { background: rgba(var(--overlay-rgb), 0.06); }
+/* ★ 제 키프레임(2026-10-24, 지적: "모바일에서 통계 셀 클릭 시 팝업이 화면 밖으로 살짝 나가게 떴다가 자리를 찾는다") — 공용 scr-pop-in 은 폰(≤960px)에서
+   `translateX(-50%)` 가 든 꼴로 다시 정의돼(.scr-df-pop 가운데 띄우기 몫) 이 팝오버가 제 폭의 절반만큼 왼쪽에서 떠올랐다가 끝에 제자리로 튀었다. 크기만 자라는 벌을 따로 둔다. */
+@keyframes scr-sg-pop-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 .scr-sg-trend-pop {
   position: fixed; z-index: 60; padding: 10px 12px 10px; border-radius: 12px; background: var(--panel-solid); border: 1px solid var(--line-soft);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); animation: scr-pop-in .14s ease;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); animation: scr-sg-pop-in .14s ease;
 }
 /* PC 팝오버는 마우스를 안 받는다(2026-10-24, 지적: "아래 공간 없어서 셀 위쪽에 뜨는 경우 마우스를 위로 올리면 윗칸걸로 안바뀜") — 밑의 칸이 enter 를 받아 바로 갈아탄다. 폰은 그대로. */
 .scr-sg-trend-pop:not(.is-m) { pointer-events: none; }
