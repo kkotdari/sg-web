@@ -8,6 +8,7 @@ import { useLongPress } from "../../hooks/useLongPress";
 import { isSecretGame } from "../../utils/gameAccess";
 import { api } from "../../api/client";
 import GameCurvesModal from "../../modals/GameCurvesModal";
+import RaceBadge from "../../components/common/RaceBadge";
 import { RecommendButton, useRecommend } from "./Recommend";
 import type { GameResult, GameResultSlot, Member } from "../../types";
 
@@ -89,6 +90,14 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
 }) {
   const nameOf = (s: GameResultSlot, all: GameResultSlot[]): string =>
     (nameMask ? nameMask(resolveSlotName(s, all, memberOf), s) : resolveSlotName(s, all, memberOf));
+  /** 선수 하나 — **왼쪽 종족 글자 배지** + 이름(2026-10-24, 요청: "게임 목록과 그걸 쓰는 화면들(데이터 관리 · 게임 연결 …)에 각 선수 왼쪽 종족 배지") ·
+   *  이 한 벌(GameRowNames)을 게임 목록 · PC 표 · 운영자 재분석 · 삭제된 경기 · 외부 공유 · 리그 세트가 다 쓴다. 배지는 안 줄고 이름만 잘린다(global.css .scr-activity-row-person). */
+  const person = (s: GameResultSlot, all: GameResultSlot[], key: string): ReactNode => (
+    <span className="scr-activity-row-person" key={key}>
+      <RaceBadge race={s.race} size={13} circleLetter className="scr-activity-row-race" />
+      <span className="scr-activity-row-em">{nameOf(s, all)}</span>
+    </span>
+  );
   if (isSecretGame(game)) {
     return (
       <span className="scr-activity-row-names">
@@ -118,7 +127,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
             ...(i > 0 ? [<span className="scr-activity-row-arrow scr-activity-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 2 }} aria-hidden>vs</span>] : []),
             <span className="scr-activity-row-col-wl" key={`w${i}`} style={{ gridColumn: col, gridRow: 1 }}><OutcomeBadge text={sideOutcome(game.result, sd.side)} /></span>,
             <span className="scr-activity-row-col-names" key={`n${i}`} style={{ gridColumn: col, gridRow: 2 }}>
-              {sd.slots.map((s, k) => <span className="scr-activity-row-em" key={k}>{nameOf(s, melee ? all : sd.slots)}</span>)}
+              {sd.slots.map((s, k) => person(s, melee ? all : sd.slots, `p${k}`))}
             </span>,
           ];
         })}
@@ -128,7 +137,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   const sideNodes = (slots: GameResultSlot[]): ReactNode[] =>
     slots.flatMap((s, i) => [
       ...(i > 0 ? [<span className="scr-activity-row-slash" key={`s${i}`} aria-hidden>･</span>] : []),
-      <span className="scr-activity-row-em" key={`n${i}`}>{nameOf(s, slots)}</span>,
+      person(s, slots, `n${i}`),
     ]);
   if (isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 })) {
     const all = [...game.team1, ...game.team2];
@@ -142,7 +151,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
                   vs
                 </span>
               )] : []),
-              <span className="scr-activity-row-em" key={`n${i}`}>{nameOf(s, all)}</span>,
+              person(s, all, `n${i}`),
               <OutcomeBadge key={`w${i}`} text={sideOutcome(game.result, i < game.team1.length ? 1 : 2)} />,
             ])}
           </span>
