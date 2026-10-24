@@ -53,6 +53,13 @@ const sortLabel = (k: StatSortKey): string => {
   return `${who} ${what === "rate" ? "승률" : "게임수"}`;
 };
 
+/** 변화 그래프의 기준 달 — 한 달이면 그 달 · 여러 달(a~b)이면 **b** · 달이 아니면 이번 달. range 는 여러 달 조회였나(표 값이 기간 합이라 기준 달도 따로 받아야 한다). */
+const trendBase = (period: string): { last: string; range: boolean } => {
+  if (!MONTH_PERIOD_RE.test(period)) return { last: currentMonthValue(), range: false };
+  const [a, b] = period.split("~");
+  return b ? { last: b, range: true } : { last: a, range: false };
+};
+
 const EMPTY_STATS: MemberStats = {
   plays: 0, wins: 0, losses: 0, draws: 0, winRate: 0, bests: 0,
   avgApm: null, avgEapm: null, avgCmd: null, avgEcmd: null, avgBuild: null, truthMix: null, avgWorker5: null, mixPlays: null, mixSeconds: null, upPlays: null,
@@ -191,8 +198,10 @@ export default function ClanStatsScreen() {
   const [trendPrev, setTrendPrev] = useState<{ key: string; byMonth: Record<string, Record<string, MemberStatsEntry>>; loading: boolean } | null>(null);
   useEffect(() => {
     if (!view || view.key !== debouncedSignature || debouncedQuery.period === PERIOD_ALL || view.memberIds.length === 0) { setTrendPrev(null); return; }
-    const period = MONTH_PERIOD_RE.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue();
-    const months = statTrendMonths(period).filter((m) => m !== period);
+    /* 여러 달(YYYY-MM~YYYY-MM)을 조회했으면 **마지막 달**이 기준(2026-10-24, 요청: "통계 팝오버시 복수달 선택시 마지막달 기준으로") — 표의 값은 그 기간 합이라 마지막 달 몫이
+       아니므로 그때는 기준 달까지 일곱 달을 다 한 달씩 받는다. 한 달 조회면 그 달은 표(view.stats)가 곧 자료라 앞 여섯 달만. */
+    const { last: period, range } = trendBase(debouncedQuery.period);
+    const months = statTrendMonths(period).filter((m) => range || m !== period);
     let cancelled = false;
     setTrendPrev({ key: view.key, byMonth: {}, loading: true });
     (async () => {
@@ -219,9 +228,9 @@ export default function ClanStatsScreen() {
   }, [view, debouncedSignature, debouncedQuery]);
   const trend: StatTrendData | null = useMemo(() => {
     if (!view || view.key !== debouncedSignature || debouncedQuery.period === PERIOD_ALL) return null;
-    const period = MONTH_PERIOD_RE.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue();
+    const { last: period, range } = trendBase(debouncedQuery.period);
     const prev = trendPrev && trendPrev.key === view.key ? trendPrev : null;
-    return { period, byMonth: { ...(prev?.byMonth ?? {}), [period]: view.stats }, loading: !prev || prev.loading };
+    return { period, byMonth: range ? { ...(prev?.byMonth ?? {}) } : { ...(prev?.byMonth ?? {}), [period]: view.stats }, loading: !prev || prev.loading };
   }, [view, debouncedSignature, debouncedQuery.period, trendPrev]);
 
   const viewMembers = useMemo(() => {
