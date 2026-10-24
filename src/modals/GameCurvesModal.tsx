@@ -351,7 +351,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     for (const b of shown) {
       const plain9 = b.m.length === 0 && !(onHost9.get(b)?.length) && !(b.x?.length);
       const name9 = BUILD_LABEL[b.t] ?? `#${b.t}`;
-      if (!techOnly && plain9) {
+      /* ★ 묶기는 **간단히 보기에서도**(2026-10-24, 요청: "간단히 보기에서도 근처 칩 묶기 — 간단히 보기는 자세히 보기에서 필터만 건 것") — 옛 `!techOnly &&` 걷음. */
+      if (plain9) {
         const g9 = open9.get(b.t);
         if (g9 && b.s - g9.bs[g9.bs.length - 1].s <= GROUP_SEC) {
           g9.bs.push(b);
@@ -379,7 +380,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       }
       const u9 = { bs: [b], tags };
       units.push(u9);
-      if (!techOnly && plain9) open9.set(b.t, u9); else open9.delete(b.t);
+      if (plain9) open9.set(b.t, u9); else open9.delete(b.t);
     }
     /* 자리는 칩만이 아니라 **잇는 선이 지나는 폭까지**다(같은 날 지적 — 해처리 → 레어 선이 같은 단의 스포닝풀·크립 밑을 지나갔다) — 딸린 칩이 있는 채는 첫 칩 왼끝부터 끝 칩 오른끝까지 한 덩이로 잡는다. */
     const used: [number, number][][] = [];
@@ -422,7 +423,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   });
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">테크<TitleSwitch label="간단히 보기" on={techOnly} onChange={onTechOnly} /></figcaption>
+      {/* ★ 간단히 보기가 **기본** · 자세히 보기가 옵션(2026-10-24, 요청: "PC 간단히 보기를 기본으로 하고 자세히 보기를 옵션으로") — 스위치 켬 = 자세히(techOnly 꺼짐). */}
+      <figcaption className="scr-rc-title">테크<TitleSwitch label="자세히 보기" on={!techOnly} onChange={(v) => onTechOnly(!v)} /></figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
         <defs>
@@ -449,7 +451,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                   {u.tags.slice(1).map((t, ti) => {
                     const pv = u.tags[ti];
                     if (t.x <= pv.x + pv.w + 0.5) return null;
-                    return <line key={`l${ti}`} className="scr-bl-link" x1={pv.x + pv.w} x2={t.x - 1} y1={ly} y2={ly} markerEnd={`url(#${arrowId})`} />;
+                    /* ★ 애드온(붙음)은 **그냥 점선** · 변태(변태 · 변태 시작)는 **화살표 점선**(2026-10-24, 요청: "애드온 그냥 점선, 변태 화살표 점선으로 잇기 · 선 두께 반") — 옛 둘 다 실선 화살표. */
+                    const addon9 = t.what === "붙음";
+                    return <line key={`l${ti}`} className={cx("scr-bl-link", addon9 && "is-addon")} x1={pv.x + pv.w} x2={t.x - (addon9 ? 0 : 1)} y1={ly} y2={ly} markerEnd={addon9 ? undefined : `url(#${arrowId})`} />;
                   })}
                   {u.tags.map((t, ti) => {
                     const hl9 = tagHlOf(t);
@@ -629,7 +633,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 자원은 누적(캔 양) 이 기본 · '순간'이면 그때 쥔 양(2026-10-22, 요청: "자원은 누적 · 순간"). */
   const [rsNow, setRsNow] = useState(false);
   /* PC 건설 줄의 '테크 건물만'(2026-10-21, 요청: "테크 건물만 토글 넣고"). */
-  const [techOnly, setTechOnly] = useState(false);
+  const [techOnly, setTechOnly] = useState(true);   // 간단히 보기가 기본(2026-10-24 · 옛 false = 자세히)
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   /* 세 판이 한 세로선(분)을 같이 쓴다(요청: "세로선을 모든 테크 & 그래프 간 동기화"). */
@@ -708,12 +712,9 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const PL = mobile ? 30 : 13 + Math.max(0, ...names.map((n) => chipWOf(n, font.label)));
   const pickFocus = (k: string): void => setFocus((f) => (f === k ? null : k));
 
-  const lanesEl = mobile ? (
-    <TechLanes
-      maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} mobile={mobile} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
-      lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), techs: p.techs, spt: p.spt }))}
-    />
-  ) : (
+  /* ★ 폰도 **PC 건설 줄과 한 꼴**(2026-10-24, 요청: "모바일은 PC 의 간단히 보기 모드와 통일") — 옛 폰 전용 TechLanes(다 지은 때 칩)는 안 쓴다(코드는 남겨 둠 · 아래 void). */
+  void TechLanes;
+  const lanesEl = (
     <BuildLanes
       maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
       techOnly={techOnly} onTechOnly={setTechOnly}

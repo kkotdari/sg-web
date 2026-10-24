@@ -3355,7 +3355,8 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-bl-hit.is-cut, .scr-bl-hit .is-cut { opacity: 0.38; }   /* 짓다 사라짐 · 변태 취소 · 못 지은 애드온 = 반투명 딤(같은 날 "취소는 x 대신 반투명 딤 처리" · 옛 ✕) */
 /* ★ 수명 선은 걷었다(2026-10-23, 요청: "선 제거 — 선은 애드온이나 변태에만 연결") — 옛 .scr-bl-build(짓는 중 점선) · .scr-bl-live(산 동안 실선) · .scr-bl-pad(선 마우스 자리)와
    그 강조 규칙. 남은 선은 한 채의 칩들(본 → 변태 · 애드온)을 잇는 .scr-bl-link 하나다(칩 테와 같은 결). */
-.scr-bl-link { stroke: rgba(var(--overlay-rgb), 0.45); stroke-width: 1; }
+.scr-bl-link { stroke: rgba(var(--overlay-rgb), 0.45); stroke-width: 0.5; stroke-dasharray: 2 2; }   /* 두께 1 → 0.5 · 점선(2026-10-24, 요청: "애드온 그냥 점선 · 변태 화살표 점선 · 선 두께 반") */
+.scr-bl-link.is-addon { stroke-dasharray: 1.5 2; }   /* 애드온은 화살촉 없이 점선만 */
 .scr-bl-arrowhead { fill: rgba(var(--overlay-rgb), 0.55); }   /* 잇는 선 끝의 화살촉(2026-10-23, 요청: "변태 화살표 없애고 선을 화살표로") — 칩 글자의 → · + 머리는 걷었다 */
 /* (걷어냄 · 2026-10-23, 요청: "시간축에 따른 효과 제거") 시간선 처지 is-build · is-dead · is-pre · 취소선(.scr-bl-strike) · 잇는 선의 처지. */
 /* 같은 종류 강조 = 강조색(폰 테크 칩 .scr-tl-chip.is-hl 과 같은 색 · 2026-10-22) — **불투명**(같은 날 "강조 시 뒤 안 보이게 불투명") — 반투명 강조색을 칩 바탕에 미리 섞어 칠한다. */
