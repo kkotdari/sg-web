@@ -296,6 +296,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
 }) {
   /** 얹은 칩의 건물 종류 — 같은 종류 칩을 모두 강조색으로(아래 ★). */
   const [hoverKind, setHoverKind] = useState<number | null>(null);
+  /** 얹은(PC)·누른(폰) 칩의 때(초) — 그 시점에 아직 안 지은 칩은 숨기고 이미 사라진 채는 딤(2026-10-24, 요청) · stCls. */
+  const [hoverAt, setHoverAt] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const plotRef = useRef<HTMLDivElement>(null);
   const [pop, setPop] = useState<ChipPopAt | null>(null);
@@ -313,7 +315,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     const sx = ((clientX - r.left) / r.width) * CW;
     onAt(Math.max(0, Math.min(maxX, Math.round(((sx - PL) / (CW - PL - padR)) * maxX))));
   };
-  const scrub = useScrub(pick, () => { setHoverKind(null); setMe(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
+  const scrub = useScrub(pick, () => { setHoverKind(null); setHoverAt(null); setMe(null); onAt(null); }, (t) => !!(t as Element | null)?.closest?.(".scr-bl-hit, .scr-tl-name"));
   /* ★ 건물 한 채 = 칩 하나(2026-10-22) · 사람 칸 안에서 **착공 차례**로 늘어놓고 칩끼리만 안 겹치게 위 단부터 빈자리에 넣는다.
      ★★ **선은 걷었다**(2026-10-23, 요청: "선 제거 — 선은 애드온이나 변태에만 연결 · 선은 필요시 꺾을 수 있음") — 수명 선(짓는 중 점선 · 산 동안 실선)은 없고,
      한 채의 칩들(본 칩 → 변태 "레어" · 애드온 "머신샵" · 변태 취소)만 같은 단에서 **잇는 선**으로 엮는다. 뒤 칩이 앞 칩과 겹치면 오른쪽으로 밀고 그 사이를 잇는다.
@@ -415,8 +417,18 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const rowCls = (l: BuildLane): string => (focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row");
   /** 칩 가운데 y(머릿말까지 든 칩 키 CHH 기준). */
   const lyOf = (top: number, k: number): number => top + BL.pad + BL.tier + k * STEP + CHH / 2;
-  /** 못 지은 것(짓다 사라짐 · 변태 취소 · 못 지은 애드온)만 딤(is-cut). 시간선 처지 표시는 걷었다(2026-10-23, 요청: "시간축에 따른 효과 제거"). */
-  const stCls = (t: Tag): string | undefined => (t.cut ? "is-cut" : undefined);
+  /** 칩의 처지 — is-cut 못 지은 것(짓다 사라짐 · 변태 취소 · 못 지은 애드온 → **취소선** · 2026-10-24 요청 "취소는 딤 말고 취소선") ·
+   *  얹은/누른 칩의 때(hoverAt)가 있으면: 그때 아직 없는 칩(t.at > hoverAt) → is-after(숨김) · 그때 이미 사라진 채(모든 채 e ≤ hoverAt · 취소가 아닌 것) → is-gone(딤).
+   *  시간축(스크럽) 처지 표시는 걷은 채다(2026-10-23) — 이것은 얹은 칩 기준이다. */
+  const stCls = (t: Tag, bs: Bld[]): string | undefined => {
+    const c: string[] = [];
+    if (t.cut) c.push("is-cut");
+    if (hoverAt !== null) {
+      if (t.at > hoverAt + 0.5) c.push("is-after");
+      else if (!t.cut && bs.length > 0 && bs.every((b) => b.e !== null && b.e <= hoverAt)) c.push("is-gone");
+    }
+    return c.length ? c.join(" ") : undefined;
+  };
   /* ★ 같은 종류 강조 — 얹은 칩의 종류(본 칩 = 처음 종류 · 변태 칩 = 새 종류)와 같은 칩은 사람과 상관없이 강조색(2026-10-22) · 애드온과 본 건물은 함께(ADDON_HOST9). */
   const tagHlOf = (t: Tag): boolean => hoverKind !== null && t.kind !== undefined
     && (t.kind === hoverKind || ADDON_HOST9[t.kind] === hoverKind || ADDON_HOST9[hoverKind] === t.kind);
@@ -466,6 +478,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                   {u.tags.slice(1).map((t, ti) => {
                     const pv = u.tags[ti];
                     if (t.x <= pv.x + pv.w + 0.5) return null;
+                    if (hoverAt !== null && t.at > hoverAt + 0.5) return null;   // 그때 아직 없는 칩으로 가는 선도 함께 숨김(stCls is-after)
                     /* ★ 애드온(붙음)은 **그냥 점선** · 변태(변태 · 변태 시작)는 **화살표 점선**(2026-10-24, 요청: "애드온 그냥 점선, 변태 화살표 점선으로 잇기 · 선 두께 반") — 옛 둘 다 실선 화살표. */
                     const addon9 = t.what === "붙음";
                     return <line key={`l${ti}`} className={cx("scr-bl-link", addon9 && "is-addon")} x1={pv.x + pv.w} x2={t.x - (addon9 ? 0 : 1)} y1={ly} y2={ly} markerEnd={addon9 ? undefined : `url(#${arrowId})`} />;
@@ -476,21 +489,28 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                     const popKey = `${l.key}:${b.s}:${b.t}:${ti}`;
                     return (
                     <g
-                      key={ti} className={stCls(t)}
+                      key={ti} className={stCls(t, t.grp ?? u.bs)}
                       onPointerEnter={(e) => {
                         if (e.pointerType !== "mouse") return;
-                        setHoverKind(t.kind ?? null);
+                        setHoverKind(t.kind ?? null); setHoverAt(t.at);
                         setMe({ key: popKey, lane: l, x: t.x, y: ly - CHH / 2, w: t.w, label: t.label, cap: t.cap });
                         if (t.grp) setPop(popOf(l, t, popKey, ly));   // 팝오버는 **묶음(×N)만**(2026-10-24, 요청: "팝오버는 뭉친 거만 나오게") — 홑 칩은 위 글(caps)이 말한다
                       }}
                       onPointerLeave={(e) => {
                         if (e.pointerType !== "mouse") return;
-                        setHoverKind(null);
+                        setHoverKind(null); setHoverAt(null);
                         setMe((m) => (m?.key === popKey ? null : m));
                         setPop((p) => (p?.key === popKey ? null : p));
                       }}
                       onPointerDown={(e) => { lastPtr.current = e.pointerType; }}
-                      onClick={() => { if (lastPtr.current !== "mouse" && t.grp) setPop((p) => (p?.key === popKey ? null : popOf(l, t, popKey, ly))); }}
+                      onClick={() => {
+                        if (lastPtr.current === "mouse") return;
+                        /* 폰 — 누른 칩이 '그 시점'이다(2026-10-24 요청 "터치 시") · 같은 칩을 다시 누르면 푼다. 팝오버는 묶음만(종전). */
+                        const on9 = me?.key === popKey;
+                        setHoverKind(on9 ? null : (t.kind ?? null)); setHoverAt(on9 ? null : t.at);
+                        setMe(on9 ? null : { key: popKey, lane: l, x: t.x, y: ly - CHH / 2, w: t.w, label: t.label, cap: t.cap });
+                        if (t.grp) setPop((p) => (p?.key === popKey ? null : popOf(l, t, popKey, ly)));
+                      }}
                     >
                       {chipOf(t, ly, hl9 ? "is-hl" : undefined)}
                     </g>
@@ -504,17 +524,17 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         ))}
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
         {/* ★ 강조는 **겹으로 위에**(2026-10-23) — 일반 줄을 다 그린 뒤 같은 종류의 칩 → 얹은 칩을 한 벌 더 그린다(pointer-events 없음 · 마우스는 밑의 원 칩이 받는다).
-            얹은 칩은 같은 종류 강조보다 진하게 · 살짝 키워(1.15배). */}
+            얹은 칩은 강조 칩과 **같은 디자인**(글자색도 그대로)이고 대신 더 키운다(1.15 → 1.3배 · 2026-10-24 요청). */}
         {hoverKind !== null && rows.map(({ l, items, top }) => (
           <g key={l.key} className={rowCls(l)} pointerEvents="none">
             {items.flatMap(({ u, k }) => u.tags.map((t, ti) => (tagHlOf(t) ? (
-              <g key={`${u.bs[0].s}:${u.bs[0].t}:${k}:${ti}`} className={cx("scr-bl-hit", stCls(t))}>{chipOf(t, lyOf(top, k), "is-hl")}</g>
+              <g key={`${u.bs[0].s}:${u.bs[0].t}:${k}:${ti}`} className={cx("scr-bl-hit", stCls(t, t.grp ?? u.bs))}>{chipOf(t, lyOf(top, k), "is-hl")}</g>
             ) : null)))}
           </g>
         ))}
         {me && (
           <g className={rowCls(me.lane)} pointerEvents="none">
-            <g className="scr-bl-me" transform={`translate(${me.x + me.w / 2} ${me.y + CHH / 2}) scale(1.15) translate(${-(me.x + me.w / 2)} ${-(me.y + CHH / 2)})`}>
+            <g className="scr-bl-me" transform={`translate(${me.x + me.w / 2} ${me.y + CHH / 2}) scale(1.3) translate(${-(me.x + me.w / 2)} ${-(me.y + CHH / 2)})`}>
               <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CHH} rx={RX} />
               {me.cap && <text className="scr-bl-cap is-me" x={me.x + PX} y={me.y + CAP_LH / 2 + 0.5} dominantBaseline="central" style={{ fontSize: CAP_FS }}>{me.cap}</text>}
               <text className="scr-tl-label" x={me.x + PX} y={me.y + CAPH + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>

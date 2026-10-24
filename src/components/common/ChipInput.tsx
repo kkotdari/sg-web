@@ -14,12 +14,14 @@ const MAX_OPTS = 30;
 /** 칩 입력 — 엔터 · 탭 · 자동완성으로 값을 칩으로 담는다(칸 안 여러 값). 빈 칸에서 엔터면 onSubmit.
  *  쉼표·띄어쓰기로는 끊지 않는다(2026-10-20, 요청: "쉼표 사용 제거" → "칩 인풋은 띄어쓰기가 필요 없음") — 띄어쓰기는 글자 그대로라
  *  "Fighting " 처럼 치면 **띄어쓰기까지 맞는 후보만** 남는다. */
-export default function ChipInput({ values, onChange, options, placeholder, onSubmit, single }: {
+export default function ChipInput({ values, onChange, options, placeholder, onSubmit, single, submitOnAdd }: {
   values: string[];
   onChange: (next: string[]) => void;
   options: ChipOpt[];
   placeholder: string;
   onSubmit?: () => void;
+  /** 값을 칩으로 담는 그 엔터·탭에 **바로** onSubmit 도 부른다(2026-10-24, 요청: "한 사람 조건에서 엔터 쳐도 바로 검색되게") — 빈 칸 엔터를 한 번 더 안 쳐도 된다. */
+  submitOnAdd?: boolean;
   /** 하나만(한 사람 조건의 선수) — 새 값이 옛 값을 갈아 끼운다(입력 칸은 그대로 남는다). */
   single?: boolean;
 }) {
@@ -39,6 +41,7 @@ export default function ChipInput({ values, onChange, options, placeholder, onSu
     if (!t) return;
     if (!values.some((x) => normalizeSearchText(x) === normalizeSearchText(t))) onChange(single ? [t] : [...values, t]);
     setText(""); setOpen(false);
+    if (submitOnAdd) onSubmit?.();   // 담자마자 찾기(submitOnAdd ★) — 부르는 쪽의 초안 ref 는 onChange 에서 바로 갱신된다(GameSearchForm setDraft)
   };
   const onKey = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.nativeEvent.isComposing) return;

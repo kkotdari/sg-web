@@ -3344,9 +3344,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 @media (min-width: 961px) { .scr-modal-graph .scr-rc-title > i { font-size: 12px; } }
 .scr-tl-chip { fill: var(--panel-raised, var(--panel)); stroke: rgba(var(--overlay-rgb), 0.28); stroke-width: 0.75; }   /* 폰 테크도 칩(2026-10-23, 요청: "테크 폰도 칩으로" — PC .scr-bl-chip 과 같은 꼴 · 옛 글자만(투명 상자)) */
 .scr-tl-label { fill: var(--text); font-weight: 500; }
-.scr-bl-cap { fill: var(--dim); font-weight: 500; font-variant-numeric: tabular-nums; }   /* PC 건설 칩 머릿말(착공 분:초 · 인구 · 2026-10-24 · GameCurvesModal caps) */
-.scr-bl-me .scr-bl-cap { fill: rgba(255,255,255,0.8); }
-.scr-bl-chip.is-hl + .scr-bl-cap { fill: var(--text); opacity: 0.85; }   /* 강조 칩(같은 종류 · 다크 테마의 강조색 바탕)에선 흐린 머릿말이 안 보였다(2026-10-24 지적) — 본문색으로 */
+.scr-bl-cap { fill: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }   /* PC 건설 칩 머릿말(착공 분:초 · 인구 · 2026-10-24 · GameCurvesModal caps) — 글자색은 건물명(.scr-tl-label)과 같다(같은 날 요청 "시간 인구 글자색 건물명과 똑같이") · 옛 var(--dim) · 얹은/강조 칩 글자색 덮개도 걷음 */
 /* PC 건설 줄(2026-10-21) — 짓는 동안 점선 · 다 지은 뒤 사라질 때까지 실선 · 위에 얹으면 진하게. 굵은 투명 선이 마우스 자리. */
 /* 칩 팝오버(GameCurvesModal ChipPop · 2026-10-22, 요청: "칩 클릭 시 정확한 시각과 그 시각의 인구수 · 팝오버로") — 누른 칩 위 가운데. */
 .scr-bl-hit, .scr-tl-hit { cursor: pointer; }
@@ -3360,7 +3358,11 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 건물 칩(2026-10-22, 요청: "모든 건물에 하나하나 칩 · 아주 컴팩트하게") — 수명 선 위 착공 자리 · 변태 칩은 옅게. 바탕을 칠해 뒤 선을 가린다. */
 .scr-bl-chip { fill: var(--panel-raised, var(--panel)); stroke: rgba(var(--overlay-rgb), 0.28); stroke-width: 0.75; }
 /* (걷어냄 · 2026-10-23, 요청: "하이브 성큰 등 반투명으로 하지 마 — 건물칩") 변태 칩의 옅은 반투명 바탕(.is-morph) — 이제 여느 칩과 같은 바탕(위 .scr-bl-chip). */
-.scr-bl-hit.is-cut, .scr-bl-hit .is-cut { opacity: 0.38; }   /* 짓다 사라짐 · 변태 취소 · 못 지은 애드온 = 반투명 딤(같은 날 "취소는 x 대신 반투명 딤 처리" · 옛 ✕) */
+/* 못 지은 것(짓다 사라짐 · 변태 취소 · 못 지은 애드온)은 **취소선**(2026-10-24, 요청: "취소는 딤처리 말고 취소선으로" · 옛 0.38 딤 · 그 전 ✕). */
+.scr-bl-hit.is-cut .scr-tl-label, .scr-bl-hit .is-cut .scr-tl-label { text-decoration: line-through; }
+/* 얹은/누른 칩의 시점(GameCurvesModal hoverAt · 2026-10-24) — 그때 아직 안 지은 칩은 숨기고, 이미 사라진 채는 딤. */
+.scr-bl-hit.is-after, .scr-bl-hit .is-after { display: none; }
+.scr-bl-hit.is-gone, .scr-bl-hit .is-gone { opacity: 0.38; }
 /* ★ 수명 선은 걷었다(2026-10-23, 요청: "선 제거 — 선은 애드온이나 변태에만 연결") — 옛 .scr-bl-build(짓는 중 점선) · .scr-bl-live(산 동안 실선) · .scr-bl-pad(선 마우스 자리)와
    그 강조 규칙. 남은 선은 한 채의 칩들(본 → 변태 · 애드온)을 잇는 .scr-bl-link 하나다(칩 테와 같은 결). */
 .scr-bl-link { stroke: rgba(var(--overlay-rgb), 0.45); stroke-width: 0.5; stroke-dasharray: 2 2; }   /* 두께 1 → 0.5 · 점선(2026-10-24, 요청: "애드온 그냥 점선 · 변태 화살표 점선 · 선 두께 반") */
@@ -3375,10 +3377,8 @@ html:not(.scr-light-theme) .scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--l
    테두리·얹은 건물 선은 본문색(까만 선) 말고 강조색(같은 날 "얹은 칩 그림자? 이거 땜에 어두워 보이는 것도 · 까만 선이고").
    같은 종류 칩과 **반대쪽으로** 벌린다(같은 날 "눈에 더 안 띄지 왜 — 다른 애들보다" → "칩도 살짝 확대 · 선도 더 두껍게 · 테두리는 따로 안 주는 게 · 색 차이 더 두드러지게") —
    밝은 테마는 강조색보다 짙게 + 흰 글자(같은 종류는 옅은 30%) · 다크는 강조색보다 밝게 + 짙은 글자(같은 종류는 85% 섞음). 테두리 없음 · 1.15배(GameCurvesModal ★). */
-.scr-bl-chip.is-me { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 78%, #000); stroke: none; }
-html:not(.scr-light-theme) .scr-bl-chip.is-me { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 62%, #fff); }
-.scr-bl-me > .scr-tl-label { fill: #fff; font-weight: 600; }
-html:not(.scr-light-theme) .scr-bl-me > .scr-tl-label { fill: #111; }
+/* (걷어냄 · 2026-10-24, 요청: "얹은 칩과 강조 칩 디자인을 똑같이 · 글자색 바꾸지 않기 · 대신 얹은 칩은 더 크게") 얹은 칩(.is-me)의 진한 바탕·흰/검 글자 — 이제 강조 칩(.is-hl)
+   그대로이고 크기만 1.3배(GameCurvesModal scale). */
 .scr-bl-hit { cursor: default; }
 .scr-bl-morph { fill: var(--dim); }
 /* 마우스를 얹은 테크와 같은 종류(모든 사람)는 강조색 칩(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로") — 글자색은 그대로. */

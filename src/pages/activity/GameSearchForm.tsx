@@ -132,8 +132,9 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
             <div className="scr-gs-ctl scr-gs-link-list">
               {draft.links.map((l, i) => (
                 <div key={i} className="scr-gs-link">
-                  <ChipInput single values={l.name ? [l.name] : []} onChange={(v) => setLink(i, { name: v[0] ?? "" })} options={memberOpts} placeholder="선수" onSubmit={() => apply()} />
-                  <ChipInput values={l.items} onChange={(v) => setLink(i, { items: v })} options={itemOpts} placeholder="유닛·건물·스킬·전술" onSubmit={() => apply()} />
+                  {/* 한 사람 조건은 값을 담는 엔터에 **바로 찾는다**(2026-10-24, 요청) — ChipInput submitOnAdd. */}
+                  <ChipInput single values={l.name ? [l.name] : []} onChange={(v) => setLink(i, { name: v[0] ?? "" })} options={memberOpts} placeholder="선수" onSubmit={() => apply()} submitOnAdd />
+                  <ChipInput values={l.items} onChange={(v) => setLink(i, { items: v })} options={itemOpts} placeholder="유닛·건물·스킬·전술" onSubmit={() => apply()} submitOnAdd />
                   <button type="button" className="scr-icon-btn scr-gs-link-x" aria-label="이 조건 빼기" onClick={() => set("links", draft.links.filter((_, k) => k !== i))}><X size={13} /></button>
                 </div>
               ))}
