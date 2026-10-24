@@ -9,17 +9,29 @@ import type { BaseRace, Member, MemberStatsEntry } from "../../types";
    2026-10-24 "통계 요청 자체를 바꿔서 7달치를 한 응답에" — 옛 '앞 달들을 뒤따라 받기'는 걷었다 · 없는 달은 점을 안 찍는다). 꼴은 래더 상세 그래프(.scr-rank-detail-*)와 같은 벌이고, 두 값이 한 칸에 사는
    데미지(딜 · 피해)·폰 전적(게임수 · 승률)은 선을 둘 그린다(각자 제 자로 눕히고 값은 점 위에 적는다). */
 
-/** 일곱 달(2026-10-24, 요청: "7개월로 통일하자" — 처음엔 다섯 · 래더 그래프와 한 벌 · 조회한 달이 맨 오른쪽). */
+/** 일곱 달(2026-10-24, 요청: "7개월로 통일하자" — 처음엔 다섯 · 래더 그래프와 한 벌 · 조회한 달이 맨 오른쪽). 한 달 조회 때의 달 수다. */
 export const TREND_MONTHS = 7;
+/** 서버 trendMonths 상한(ge=1 · le=24) — 여러 달 조회가 그보다 길면 마지막 24달만. */
+export const TREND_MAX = 24;
+/** 그래프의 달들 — 한 달(YYYY-MM) 조회면 그 달을 끝으로 일곱 달 · 여러 달(a~b) 조회면 **그 기간**(a..b · 2026-10-24, 요청: "여러달 기준이면 그 기간동안의 그래프를 보여주기"). */
 export function statTrendMonths(period: string): string[] {
+  const [a, b] = period.split("~");
+  const last = b || a;
+  let n = TREND_MONTHS;
+  if (b) {
+    const [ya, ma] = a.split("-").map(Number); const [yb, mb] = b.split("-").map(Number);
+    n = Math.min(TREND_MAX, Math.max(1, (yb - ya) * 12 + (mb - ma) + 1));
+  }
   const out: string[] = [];
-  for (let i = TREND_MONTHS - 1; i >= 0; i -= 1) out.push(shiftMonthValue(period, -i));
+  for (let i = n - 1; i >= 0; i -= 1) out.push(shiftMonthValue(last, -i));
   return out;
 }
 
 export interface StatTrendData {
-  /** 조회한 달(YYYY-MM) — 그래프 맨 오른쪽. */
+  /** 조회한 달(YYYY-MM · 여러 달이면 마지막 달) — 그래프 맨 오른쪽. */
   period: string;
+  /** 그래프에 놓을 달들(왼 → 오른 · statTrendMonths). */
+  months: string[];
   /** 달 → 회원 → 그 달의 통계 줄. 조회한 달도 든다(화면이 받은 그것). 아직 안 온 달은 키가 없다. */
   byMonth: Record<string, Record<string, MemberStatsEntry> | undefined>;
   /** 앞 달들을 아직 받는 중. */
@@ -83,7 +95,10 @@ const PAD_BOTTOM = 30;
  *  single: 한 선 · shared(딜 · 피해): 같은 자에 두 선(첫 선 값은 점 위 · 둘째는 점 아래 — 아래 여백을 넓혀 달 이름과 안 겹치게) ·
  *  stacked(게임수 · 승률): 단위가 달라 **위아래 두 판**(각자 제 자 · 판 왼쪽 위에 이름) · 달 이름은 맨 아래 한 번. */
 export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: StatTrendData; member: Member; metric: StatMetric; chartW?: number }) {
-  const months = statTrendMonths(data.period);
+  const months = data.months;
+  /* 달이 많으면(여러 달 조회) 달 이름은 띄엄띄엄(겹침 방지 · 마지막 달은 늘) · 값 글자는 열 칸까지만. */
+  const labelEvery = months.length > 16 ? 3 : months.length > 8 ? 2 : 1;
+  const showVals = months.length <= 10;
   const xFor = (i: number) => PAD_X + (i * (chartW - PAD_X * 2)) / Math.max(1, months.length - 1);
   const mode = metric.mode;
   const H = mode === "stacked" ? 250 : mode === "shared" ? 168 : 150;   // 아래 판의 값이 달 이름과 안 닿게 stacked 는 여유를 더
@@ -121,17 +136,19 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
         {rows.map((r, ri) => r.segs.map((seg, si) => (
           <polyline key={`${ri}-${si}`} className={`scr-rank-detail-line scr-sg-trend-line ${r.s.cls}`} points={seg.map((p) => `${xFor(p.i)},${r.yFor(p.v)}`).join(" ")} />
         )))}
-        {months.map((m, i) => (
+        {months.map((m, i) => ((i === months.length - 1 || (months.length - 1 - i) % labelEvery === 0) ? (
           <text key={m} className={i === months.length - 1 ? "scr-rank-detail-axis-label is-center" : "scr-rank-detail-axis-label"} x={xFor(i)} y={H - 12}>
             {`${Number(m.slice(5))}월`}
           </text>
-        ))}
+        ) : null))}
         {rows.map((r, ri) => r.vals.map((v, i) => (v === null ? null : (
           <g key={`${ri}-p${i}`}>
             <circle className={`scr-rank-detail-dot scr-sg-trend-dot ${r.s.cls}`} cx={xFor(i)} cy={r.yFor(v)} r={3} />
-            <text className={`scr-rank-detail-value scr-sg-trend-val ${r.s.cls}`} x={xFor(i)} y={mode === "shared" && ri === 1 ? r.yFor(v) + 15 : r.yFor(v) - 8}>
-              {r.s.fmt(v)}
-            </text>
+            {showVals && (
+              <text className={`scr-rank-detail-value scr-sg-trend-val ${r.s.cls}`} x={xFor(i)} y={mode === "shared" && ri === 1 ? r.yFor(v) + 15 : r.yFor(v) - 8}>
+                {r.s.fmt(v)}
+              </text>
+            )}
           </g>
         ))))}
       </svg>
@@ -146,7 +163,8 @@ const POP_GAP = 10;
 const POP_MARGIN = 12;
 
 /** 팝오버 — PC·폰 다 **칸 아래 가운데**(모자라면 위)에 선다. 옆에 세우면 그 줄의 이웃 칸을 덮어 마우스를 옆으로 옮길 때 팝오버에 걸린다(래더 줄 팝오버와 다른 점 —
- *  거기는 줄 하나가 손잡이다). 아래로 두면 같은 줄을 따라 훑을 수 있고, 아래로 내려가면 팝오버에 들어가 머문다. 화면 안에 들게 자른다. */
+ *  거기는 줄 하나가 손잡이다). 아래로 두면 같은 줄을 따라 훑을 수 있다. PC 팝오버는 **마우스를 안 받는다**(CSS pointer-events none · 2026-10-24, 지적: "아래 공간이 없어 셀 위쪽에 뜨면 마우스를 위로 올려도
+ *  윗칸 걸로 안 바뀜" — 팝오버가 윗칸을 덮어 그 칸의 enter 가 안 왔다) — 안에 누를 것이 없으니 마우스는 밑의 칸으로 그대로 간다. 화면 안에 들게 자른다. */
 export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
   anchor: TrendAnchor; data: StatTrendData; mobile: boolean; onEnter?: () => void; onLeave?: () => void;
 }) {
@@ -164,7 +182,7 @@ export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
   return (
     <div
       ref={ref} className={mobile ? "scr-sg-trend-pop is-m" : "scr-sg-trend-pop"} role="dialog" aria-label={`${anchor.member.nickname} ${anchor.metric.label} 변화`}
-      style={{ left: pos.left, top: pos.top, width: w }} onPointerEnter={onEnter} onPointerLeave={onLeave}
+      style={{ left: pos.left, top: pos.top, width: w }} onPointerEnter={mobile ? onEnter : undefined} onPointerLeave={mobile ? onLeave : undefined}
     >
       <div className="scr-sg-trend-head">
         <b>{anchor.member.nickname}</b>

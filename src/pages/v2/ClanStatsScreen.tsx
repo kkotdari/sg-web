@@ -6,7 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
-import { TREND_MONTHS, type StatTrendData } from "../stats/StatTrend";
+import { statTrendMonths, type StatTrendData } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -53,11 +53,11 @@ const sortLabel = (k: StatSortKey): string => {
   return `${who} ${what === "rate" ? "승률" : "게임수"}`;
 };
 
-/** 변화 그래프의 기준 달 — 한 달이면 그 달 · 여러 달(a~b)이면 **b** · 달이 아니면 이번 달(서버도 dateTo 가 든 달을 마지막으로 센다). */
-const trendBase = (period: string): { last: string } => {
-  if (!MONTH_PERIOD_RE.test(period)) return { last: currentMonthValue() };
+/** 변화 그래프의 기준 — last: 마지막 달(한 달이면 그 달 · 여러 달 a~b 면 b · 달이 아니면 이번 달 — 서버도 dateTo 가 든 달을 마지막으로 센다) · period: 달 셈에 넣을 기간 글자. */
+const trendBase = (period: string): { last: string; period: string } => {
+  if (!MONTH_PERIOD_RE.test(period)) { const m = currentMonthValue(); return { last: m, period: m }; }
   const [a, b] = period.split("~");
-  return { last: b || a };
+  return { last: b || a, period };
 };
 
 const EMPTY_STATS: MemberStats = {
@@ -181,8 +181,9 @@ export default function ClanStatsScreen() {
       matchType: debouncedQuery.size === "1" ? SOLO_TYPE : CLAN_TYPE,
       teamSize: debouncedQuery.size === "team" ? undefined : Number(debouncedQuery.size),
       mapGroup: debouncedQuery.map === "all" ? undefined : debouncedQuery.map,
-      /* 변화 그래프 재료를 **같은 요청에**(2026-10-24, 요청: "통계 요청 자체를 바꿔서 7달치를 한 응답에") — 달로 조회할 때만 · dateTo 가 든 달이 마지막. */
-      trendMonths: debouncedQuery.period === PERIOD_ALL ? undefined : TREND_MONTHS,
+      /* 변화 그래프 재료를 **같은 요청에**(2026-10-24, 요청: "통계 요청 자체를 바꿔서 7달치를 한 응답에") — 달로 조회할 때만 · dateTo 가 든 달이 마지막 ·
+         달 수는 한 달 조회 7 · 여러 달 조회면 그 기간(statTrendMonths · 요청: "여러달 기준이면 그 기간동안의 그래프"). */
+      trendMonths: debouncedQuery.period === PERIOD_ALL ? undefined : statTrendMonths(trendBase(debouncedQuery.period).period).length,
     }).then((res) => {
       if (cancelled) return;
       const trendBy: Record<string, Record<string, MemberStatsEntry>> = {};
@@ -209,8 +210,8 @@ export default function ClanStatsScreen() {
      마지막달 기준으로") — 서버가 dateTo 가 든 달을 마지막으로 센다. 전체 기간 조회면 안 받는다. */
   const trend: StatTrendData | null = useMemo(() => {
     if (!view || view.key !== debouncedSignature || debouncedQuery.period === PERIOD_ALL || !view.trend) return null;
-    const { last: period } = trendBase(debouncedQuery.period);
-    return { period, byMonth: view.trend, loading: false };
+    const { last, period } = trendBase(debouncedQuery.period);
+    return { period: last, months: statTrendMonths(period), byMonth: view.trend, loading: false };
   }, [view, debouncedSignature, debouncedQuery.period]);
 
   const viewMembers = useMemo(() => {

@@ -8019,6 +8019,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   position: fixed; z-index: 60; padding: 10px 12px 10px; border-radius: 12px; background: var(--panel-solid); border: 1px solid var(--line-soft);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); animation: scr-pop-in .14s ease;
 }
+/* PC 팝오버는 마우스를 안 받는다(2026-10-24, 지적: "아래 공간 없어서 셀 위쪽에 뜨는 경우 마우스를 위로 올리면 윗칸걸로 안바뀜") — 밑의 칸이 enter 를 받아 바로 갈아탄다. 폰은 그대로. */
+.scr-sg-trend-pop:not(.is-m) { pointer-events: none; }
 .scr-sg-trend-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; font-size: var(--fs-11); color: var(--muted); }
 .scr-sg-trend-head b { font-size: var(--fs-caption); font-weight: 700; color: var(--text); }
 .scr-sg-trend-legend { margin-left: auto; display: inline-flex; gap: 8px; font-size: var(--fs-9); }
