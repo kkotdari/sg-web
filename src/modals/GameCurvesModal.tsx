@@ -202,7 +202,7 @@ function TechLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, mobile, f
   });
   return (
     <figure className="scr-rc-chart">
-      <figcaption className="scr-rc-title">테크</figcaption>
+      <figcaption className="scr-rc-title">건설</figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="테크 건물을 다 지은 때" {...scrub}>
         {rows.map(({ l, chips, top, h }) => {
@@ -269,8 +269,7 @@ const BUILD_LABEL: Record<number, string> = {
 const MORPH_TO: Record<number, string> = { 131: "레어", 132: "하이브", 141: "그레이터", 143: "변태" };   // 크립 변태 취소는 성큰·스포어를 못 가르니 그냥 "변태"(2026-10-23, 요청: "성큰 스포어 변태 중 취소한 거 그냥 변태라고 표시")
 /** 애드온 → 붙는 본 건물(서버 series.ADDON_HOSTS 와 짝) — 같이 강조. 컴샛·핵사일로 → 커맨드 · 컨트롤타워 → 스타포트 · 코버트·피직스 → 사이언스 · 머신샵 → 팩토리. */
 const ADDON_HOST9: Record<number, number> = { 107: 106, 108: 106, 115: 114, 117: 116, 118: 116, 120: 113 };
-/** 첫 본진(경기 시작부터 있던 커맨드 · 해처리 · 넥서스) — '테크 건물만'에서도 보인다(2026-10-21, 요청: "첫 스타팅 기지도 표현"). */
-const MAIN_HALL = new Set([106, 131, 154]);
+/* (걷음 2026-10-24) 첫 본진 집합(MAIN_HALL · '테크 건물만' 거르기에서 본진을 남기던 자) — 간단히 보기가 사라져 거르기 자체가 없다. */
 /** PC 건설 줄 치수(px) — 건물 한 채마다 컴팩트 칩(fs 글자 · chipBox) · 칩 사이 gap · 단 사이 숨 tier · 사람 칸 위아래 숨 pad ·
  *  단 안에서 선을 비켜 놓는 높이 jig(가운데 · 위 · 아래 · 2026-10-22, 요청: "미묘하게 높이를 다양화해서 선이 최대한 안 겹치게"). */
 const BL = { fs: 10.5, gap: 3, tier: 2.5, pad: 6, link: 10 } as const;   // link 8 → 10(2026-10-23 — 선이 화살표가 되어 촉 5px 뒤에도 대가 보이게) · 칩 키움(2026-10-23, 요청: "칩 크기 살짝 키우기" · 9.5 → 10.5) · link = 변태·애드온 칩을 잇는 선의 최소 길이(옛 jig 걷음 — 수명 선이 없다)
@@ -281,15 +280,13 @@ type BuildLane = { key: string; group: string; name: string; color: string; blds
  *  사람마다 칸 · 그 안에 건물 종류마다 작은 칸(처음 지은 차례) · 건물 한 채가 선 하나: 짓는 동안은 점선 · 다 지은 뒤 사라질 때까지 실선(끝까지 남으면 판 끝까지).
  *  같은 종류 여러 채는 겹치지 않게 줄을 나눈다. 변태(레어 · 성큰 …)는 같은 선에서 이어진다 — 변태하는 동안 점선 · 그 뒤 실선 · 그 줄의 첫 변태 시작 자리에 새 이름
  *  (요청: "레어 성큰같이 변태하는 건 라이프타임 선 중간에 변경되게"). 선에 마우스를 얹으면 세로선이 그 건물의 완공(못 지었으면 착공) 때로 · 가로축에 분:초. */
-function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, techOnly, onTechOnly }: {
+function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt }: {
   lanes: BuildLane[]; maxX: number; ticksX: number[]; w: number; padL: number; padR: number;
   font: { label: number; axis: number };
   focus: string | null;
   onFocus: (key: string) => void;
   at: number | null;
   onAt: (m: number | null) => void;
-  techOnly: boolean;
-  onTechOnly: (v: boolean) => void;
 }) {
   /** 얹은 칩의 건물 종류 — 같은 종류 칩을 모두 강조색으로(아래 ★). */
   const [hoverKind, setHoverKind] = useState<number | null>(null);
@@ -339,7 +336,6 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     }
     const shown = l.blds
       .filter((b) => !(b.h && b.h.length > 0 && b.h.some(([hi9]) => !!l.blds[hi9])))
-      .filter((b) => !techOnly || b.t in TECH_LABEL || b.m.some(([t]) => t in TECH_LABEL) || (b.s === 0 && MAIN_HALL.has(b.t)))
       .slice().sort((p, q) => p.s - q.s);
     const tag = (at9: number, label: string, what: string, extra?: Partial<Tag>): Tag => {
       const w = chipW(label);
@@ -423,8 +419,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   });
   return (
     <figure className="scr-rc-chart">
-      {/* ★ 자세히 보기가 **기본**(2026-10-24 되물림 · 한때 같은 날 "PC 간단히 보기를 기본으로" 였다) — 스위치 켬 = 자세히(techOnly 꺼짐). 폰도 이 판·이 스위치 그대로(요청: "모바일도 자세히 보기 도입"). */}
-      <figcaption className="scr-rc-title">테크<TitleSwitch label="자세히 보기" on={!techOnly} onChange={(v) => onTechOnly(!v)} /></figcaption>
+      {/* 간단히 보기(테크만 거르기)는 걷었다(2026-10-24, 요청: "테크 간단히 보기는 제거") — 늘 자세히(모든 건물) · 이름은 '건설'로 되돌림(같은 날 요청). 폰도 같은 판. */}
+      <figcaption className="scr-rc-title">건설</figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
         <defs>
@@ -633,7 +629,6 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 자원은 누적(캔 양) 이 기본 · '순간'이면 그때 쥔 양(2026-10-22, 요청: "자원은 누적 · 순간"). */
   const [rsNow, setRsNow] = useState(false);
   /* PC 건설 줄의 '테크 건물만'(2026-10-21, 요청: "테크 건물만 토글 넣고"). */
-  const [techOnly, setTechOnly] = useState(false);   // 자세히 보기가 기본(2026-10-24 되물림, 요청: "테크 표 기본을 자세히 보기로 다시" — 같은 날 아침 간단히 보기 기본으로 갔다가 되돌림 · 폰도 같은 스위치)
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   /* 세 판이 한 세로선(분)을 같이 쓴다(요청: "세로선을 모든 테크 & 그래프 간 동기화"). */
@@ -717,7 +712,6 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const lanesEl = (
     <BuildLanes
       maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt}
-      techOnly={techOnly} onTechOnly={setTechOnly}
       lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds, spt: p.spt }))}
     />
   );
