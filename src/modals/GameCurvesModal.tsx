@@ -423,7 +423,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   });
   return (
     <figure className="scr-rc-chart">
-      {/* ★ 간단히 보기가 **기본** · 자세히 보기가 옵션(2026-10-24, 요청: "PC 간단히 보기를 기본으로 하고 자세히 보기를 옵션으로") — 스위치 켬 = 자세히(techOnly 꺼짐). */}
+      {/* ★ 자세히 보기가 **기본**(2026-10-24 되물림 · 한때 같은 날 "PC 간단히 보기를 기본으로" 였다) — 스위치 켬 = 자세히(techOnly 꺼짐). 폰도 이 판·이 스위치 그대로(요청: "모바일도 자세히 보기 도입"). */}
       <figcaption className="scr-rc-title">테크<TitleSwitch label="자세히 보기" on={!techOnly} onChange={(v) => onTechOnly(!v)} /></figcaption>
       <div className="scr-rc-plot" ref={plotRef}>
       <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
@@ -633,7 +633,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 자원은 누적(캔 양) 이 기본 · '순간'이면 그때 쥔 양(2026-10-22, 요청: "자원은 누적 · 순간"). */
   const [rsNow, setRsNow] = useState(false);
   /* PC 건설 줄의 '테크 건물만'(2026-10-21, 요청: "테크 건물만 토글 넣고"). */
-  const [techOnly, setTechOnly] = useState(true);   // 간단히 보기가 기본(2026-10-24 · 옛 false = 자세히)
+  const [techOnly, setTechOnly] = useState(false);   // 자세히 보기가 기본(2026-10-24 되물림, 요청: "테크 표 기본을 자세히 보기로 다시" — 같은 날 아침 간단히 보기 기본으로 갔다가 되돌림 · 폰도 같은 스위치)
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   /* 세 판이 한 세로선(분)을 같이 쓴다(요청: "세로선을 모든 테크 & 그래프 간 동기화"). */
