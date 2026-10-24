@@ -7867,12 +7867,28 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   .scr-ladder-record > b { font-size: var(--fs-micro); }
 }
 
-/* 래더 기본 화면(2026-10-20) — 실력순위 창(.scr-rating-row)과 같은 줄 · 메달 없음 · 줄 누르면 자세히 · 내 줄은 옅은 바탕. */
+/* 래더 기본 화면(2026-10-20) — 실력순위 창(.scr-rating-row)과 같은 줄 · 메달 없음 · 줄 누르면(폰) 자세히 · PC 는 얹으면 팝오버.
+   내 줄 옅은 바탕(.is-me)은 걷었다(2026-10-24, 요청: "자기 강조 제거"). */
 .scr-ladder-board { display: flex; flex-direction: column; }
 .scr-ladder-board-row { cursor: pointer; padding-left: 6px; padding-right: 10px; }
 .scr-ladder-board-row:last-child { border-bottom: none; }
 @media (hover: hover) { .scr-ladder-board-row:hover { background: var(--lighting-hover-bg, rgba(var(--overlay-rgb), 0.06)); } }
-.scr-ladder-board-row.is-me { background: rgba(var(--overlay-rgb), 0.05); }
+.scr-ladder-board-row.is-pop { background: var(--lighting-hover-bg, rgba(var(--overlay-rgb), 0.06)); }   /* 팝오버가 붙은 줄은 얹은 때처럼 */
+/* 래더 상세 팝오버(PC · 2026-10-24, 요청: "마우스오버시 자동으로 팝오버로 변경하고 폭도 넓힘") — 창(480)보다 넓은 640 · 화면 밖이면 LadderPop 이 자른다.
+   이력은 조회한 달만 **타이트하게**(.scr-ladder-hist-tight · 줄 패딩 13 → 3). 그래프 가운데(조회한 달) 눈금은 또렷하게. */
+.scr-ladder-pop {
+  position: fixed; z-index: 60; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain;
+  padding: 14px 16px 14px; border-radius: 12px; background: var(--panel-solid); border: 1px solid var(--line-soft);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); animation: scr-pop-in .14s ease;
+}
+.scr-ladder-pop .scr-rank-detail-who { margin-bottom: 10px; }
+.scr-ladder-pop .scr-rank-detail-history { margin-top: 10px; padding-top: 8px; }
+.scr-ladder-hist-tight .scr-game-result-list-panel-v2 .scr-game-result-card { padding: 3px 8px; }
+.scr-ladder-hist-tight .scr-game-result-list-panel-v2 .scr-game-result-date-head-compact { padding: 4px 8px 1px; margin: 0 0 2px; }
+.scr-ladder-hist-tight .scr-game-result-list-panel-v2 .scr-game-result-date-group + .scr-game-result-date-group .scr-game-result-date-head { margin-top: 6px; padding-top: 4px; }
+.scr-ladder-hist-tight .scr-game-result-cards { padding: 0 0 4px; }
+.scr-ladder-hist-tight .scr-game-result-list-panel-v2 .scr-team-roster { padding: 2px 6px; }
+.scr-rank-detail-axis-label.is-center { fill: var(--text); font-weight: 700; }
 /* 래더 줄 글자 굵기(2026-10-23, 요청: "래더 닉네임이랑 레이팅 포인트 너무 두껍네 좀 얇게 · 특히 레이팅 포인트는 표준으로") — 닉네임 700 → 600 · 포인트 800 → 400(표준). 레이팅 표 창(.scr-rating-*)은 그대로. */
 .scr-ladder-board-row .scr-rating-name { font-weight: 600; }
 .scr-ladder-board-row .scr-rating-score { font-weight: 400; }
