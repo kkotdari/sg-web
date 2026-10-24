@@ -13,7 +13,8 @@ import type { BaseRace, Member, MemberStatsEntry } from "../../types";
 export const TREND_MONTHS = 7;
 /** 서버 trendMonths 상한(ge=1 · le=24) — 여러 달 조회가 그보다 길면 마지막 24달만. */
 export const TREND_MAX = 24;
-/** 그래프의 달들 — 한 달(YYYY-MM) 조회면 그 달을 끝으로 일곱 달 · 여러 달(a~b) 조회면 **그 기간**(a..b · 2026-10-24, 요청: "여러달 기준이면 그 기간동안의 그래프를 보여주기"). */
+/** 그래프의 달들 — 한 달(YYYY-MM) 조회면 그 달을 끝으로 일곱 달 · 여러 달(a~b) 조회면 **그 기간**(a..b · 2026-10-24, 요청: "여러달 기준이면 그 기간동안의 그래프를 보여주기") ·
+ *  전체 기간은 부르는 쪽이 이번 달을 넣어 최근 일곱 달(요청: "전체 기간은 최근으로"). */
 export function statTrendMonths(period: string): string[] {
   const [a, b] = period.split("~");
   const last = b || a;

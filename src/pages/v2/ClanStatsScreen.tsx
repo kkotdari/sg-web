@@ -181,9 +181,10 @@ export default function ClanStatsScreen() {
       matchType: debouncedQuery.size === "1" ? SOLO_TYPE : CLAN_TYPE,
       teamSize: debouncedQuery.size === "team" ? undefined : Number(debouncedQuery.size),
       mapGroup: debouncedQuery.map === "all" ? undefined : debouncedQuery.map,
-      /* 변화 그래프 재료를 **같은 요청에**(2026-10-24, 요청: "통계 요청 자체를 바꿔서 7달치를 한 응답에") — 달로 조회할 때만 · dateTo 가 든 달이 마지막 ·
-         달 수는 한 달 조회 7 · 여러 달 조회면 그 기간(statTrendMonths · 요청: "여러달 기준이면 그 기간동안의 그래프"). */
-      trendMonths: debouncedQuery.period === PERIOD_ALL ? undefined : statTrendMonths(trendBase(debouncedQuery.period).period).length,
+      /* 변화 그래프 재료를 **같은 요청에**(2026-10-24, 요청: "통계 요청 자체를 바꿔서 7달치를 한 응답에") — dateTo 가 든 달이 마지막 ·
+         달 수는 한 달 조회 7 · 여러 달 조회면 그 기간(statTrendMonths · 요청: "여러달 기준이면 그 기간동안의 그래프") · 전체 기간은 **이번 달까지 최근 일곱 달**
+         (요청: "전체 기간은 최근으로 보여주면 되지" — 서버는 dateTo 가 없으면 한국 시각 이번 달을 마지막으로 센다 · 화면도 currentMonthValue). */
+      trendMonths: statTrendMonths(trendBase(debouncedQuery.period).period).length,
     }).then((res) => {
       if (cancelled) return;
       const trendBy: Record<string, Record<string, MemberStatsEntry>> = {};
@@ -207,9 +208,9 @@ export default function ClanStatsScreen() {
 
   /* ★ 일곱 달 변화 자료(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" → "7개월로 통일하자" → "통계 요청 자체를 바꿔서 7달치를 한 응답에") —
      표 요청(trendMonths) 한 번에 응답 trend 로 같이 온다(옛 '앞 달들을 뒤따라 받기'는 걷었다). 여러 달(YYYY-MM~YYYY-MM)을 조회했으면 **마지막 달**이 기준(요청: "복수달 선택시
-     마지막달 기준으로") — 서버가 dateTo 가 든 달을 마지막으로 센다. 전체 기간 조회면 안 받는다. */
+     마지막달 기준으로") — 서버가 dateTo 가 든 달을 마지막으로 센다. 전체 기간 조회는 이번 달까지 최근 일곱 달. */
   const trend: StatTrendData | null = useMemo(() => {
-    if (!view || view.key !== debouncedSignature || debouncedQuery.period === PERIOD_ALL || !view.trend) return null;
+    if (!view || view.key !== debouncedSignature || !view.trend) return null;   // 전체 기간도 최근 일곱 달(위 trendMonths ★)
     const { last, period } = trendBase(debouncedQuery.period);
     return { period: last, months: statTrendMonths(period), byMonth: view.trend, loading: false };
   }, [view, debouncedSignature, debouncedQuery.period]);

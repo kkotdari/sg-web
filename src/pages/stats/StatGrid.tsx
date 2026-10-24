@@ -64,7 +64,7 @@ const Dash = () => <span className="scr-sg-dim">-</span>;
 
 /* ★ 값 칸의 변화 그래프 손잡이(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" · StatTrend.tsx) — 표가 문맥으로 내려 주고
    TCell 이 칸마다 단다: PC 는 마우스를 얹으면(enter · 떠나면 잠깐 뒤 닫힘 — 팝오버로 건너갈 틈) · 폰은 누르면(tap · 다시 누르거나 밖을 누르면 닫힘). 자료(trend)가
-   없으면(전체 기간 · 평균 줄) 손잡이가 없는 보통 칸이다. */
+   없으면(아직 안 옴 · 평균 줄) 손잡이가 없는 보통 칸이다. */
 interface TrendCtxValue {
   mobile: boolean;
   activeKey: string | null;
@@ -244,7 +244,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span>APM — 분당 행동 수 평균</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
             <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
-            <span>값을 누르면 일곱 달 변화 그래프(달로 조회할 때)</span>
+            <span>값을 누르면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
           </span>
         </>
       ) : (
@@ -253,7 +253,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span>APM — 분당 행동 수 평균</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
-          <span>값에 마우스를 얹으면 일곱 달 변화 그래프(달로 조회할 때)</span>
+          <span>값에 마우스를 얹으면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
         </span>
       )}
     />
@@ -266,7 +266,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   clanGames: number;
   rows: StatGridRow[];
   mobile: boolean;
-  /** 일곱 달 변화 자료(StatTrend) — 달로 조회할 때만 · 없으면 칸에 손잡이가 없다. */
+  /** 일곱 달 변화 자료(StatTrend) — 없으면 칸에 손잡이가 없다. */
   trend: StatTrendData | null;
 }) {
   /* 변화 그래프 팝오버(위 TrendCtx ★) — PC 는 떠난 뒤 POP_LINGER 뒤 닫힘 · 폰은 밖 누름·스크롤에 닫힘. */
