@@ -355,6 +355,8 @@ export interface GameResultStatsResponse {
   clanFormats: ClanBreakdownEntry[];
   clanComps?: ClanCompEntry[];
   clanCompVs?: ClanCompVsEntry[];
+  /** 달별 변화("YYYY-MM" → 사람 줄들) — trendMonths 를 줬을 때만(2026-10-24 · 통계 변화 그래프). */
+  trend?: Record<string, MemberStatsEntry[]> | null;
 }
 
 export interface TeamRankEntry {

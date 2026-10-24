@@ -85,6 +85,8 @@ export interface GameResultStatsParams {
   teamSize?: number;
   /** 맵 무리 — 그 대표맵(빨무 · 헌터 · 투혼)에 묶인 맵의 판만 · 2026-10-20. 없으면 모든 맵. */
   mapGroup?: "fastest" | "hunter" | "spirit";
+  /** 달별 변화 — dateTo 가 든 달을 마지막으로 N 달의 사람 줄을 응답 trend 에 함께(2026-10-24 · 요청 한 번). */
+  trendMonths?: number;
 }
 
 export interface TeamRankingParams {
@@ -337,6 +339,7 @@ export const api = {
       ratingScope: params.ratingScope,
       teamSize: params.teamSize,
       mapGroup: params.mapGroup,
+      trendMonths: params.trendMonths,
     });
     return request<GameResultStatsResponse>(`/api/game-results/stats${qs}`);
   },

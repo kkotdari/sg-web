@@ -6,7 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
-import { statTrendMonths, type StatTrendData } from "../stats/StatTrend";
+import { TREND_MONTHS, type StatTrendData } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -53,11 +53,11 @@ const sortLabel = (k: StatSortKey): string => {
   return `${who} ${what === "rate" ? "승률" : "게임수"}`;
 };
 
-/** 변화 그래프의 기준 달 — 한 달이면 그 달 · 여러 달(a~b)이면 **b** · 달이 아니면 이번 달. range 는 여러 달 조회였나(표 값이 기간 합이라 기준 달도 따로 받아야 한다). */
-const trendBase = (period: string): { last: string; range: boolean } => {
-  if (!MONTH_PERIOD_RE.test(period)) return { last: currentMonthValue(), range: false };
+/** 변화 그래프의 기준 달 — 한 달이면 그 달 · 여러 달(a~b)이면 **b** · 달이 아니면 이번 달(서버도 dateTo 가 든 달을 마지막으로 센다). */
+const trendBase = (period: string): { last: string } => {
+  if (!MONTH_PERIOD_RE.test(period)) return { last: currentMonthValue() };
   const [a, b] = period.split("~");
-  return b ? { last: b, range: true } : { last: a, range: false };
+  return { last: b || a };
 };
 
 const EMPTY_STATS: MemberStats = {
@@ -146,6 +146,8 @@ export default function ClanStatsScreen() {
     key: string;
     memberIds: string[];
     stats: Record<string, MemberStatsEntry>;
+    /** 달별 변화("YYYY-MM" → 회원 → 줄) — 응답 trend 를 회원별로 펼친 것 · 달로 조회할 때만. */
+    trend: Record<string, Record<string, MemberStatsEntry>> | null;
     clan: MemberStatsEntry | null;
     clanComps: ClanCompEntry[];
     /** 편성(4:4·3:3·2:2 …)별 경기 수 — 이 합이 **실제 경기 수**다(clan.overall.plays 는 사람이 뛴 횟수라 몇 배 크다). */
@@ -165,7 +167,7 @@ export default function ClanStatsScreen() {
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
       : monthPeriodToRange(MONTH_PERIOD_RE.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue());
-    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [] }); return; }
+    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null }); return; }
     let cancelled = false;
     setError("");
     const byId = (res: GameResultStatsResponse) => {
@@ -179,57 +181,37 @@ export default function ClanStatsScreen() {
       matchType: debouncedQuery.size === "1" ? SOLO_TYPE : CLAN_TYPE,
       teamSize: debouncedQuery.size === "team" ? undefined : Number(debouncedQuery.size),
       mapGroup: debouncedQuery.map === "all" ? undefined : debouncedQuery.map,
+      /* 변화 그래프 재료를 **같은 요청에**(2026-10-24, 요청: "통계 요청 자체를 바꿔서 7달치를 한 응답에") — 달로 조회할 때만 · dateTo 가 든 달이 마지막. */
+      trendMonths: debouncedQuery.period === PERIOD_ALL ? undefined : TREND_MONTHS,
     }).then((res) => {
       if (cancelled) return;
+      const trendBy: Record<string, Record<string, MemberStatsEntry>> = {};
+      for (const [month, list] of Object.entries(res.trend ?? {})) {
+        const map: Record<string, MemberStatsEntry> = {};
+        list.forEach((entry) => { map[entry.memberId] = entry; });
+        trendBy[month] = map;
+      }
       setView({
         ...blank, stats: byId(res), clan: res.clan ?? null,
         clanComps: res.clanComps ?? [], clanFormats: res.clanFormats ?? [],
+        trend: res.trend ? trendBy : null,
       });
     }).catch((e) => {
       if (cancelled) return;
       setError(e instanceof Error ? e.message : "통계를 불러오지 못했어요.");
-      setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [] });
+      setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null });
     });
     return () => { cancelled = true; };
   }, [debouncedQuery, debouncedSignature]);
 
-  /* ★ 일곱 달 변화 자료(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" → "7개월로 통일하자") — 조회한 달의 표가 온 뒤 **앞 여섯 달**을 같은 조건
-     (사람 · 종류 · 규모 · 지도)으로 뒤따라 받는다(여섯 달을 한꺼번에 · 달 수는 StatTrend TREND_MONTHS). 전체 기간 조회면 안 받는다(달이 없다). 조건이 바뀌면 처음부터. 받는 동안 팝오버는 바퀴를 보인다. */
-  const [trendPrev, setTrendPrev] = useState<{ key: string; byMonth: Record<string, Record<string, MemberStatsEntry>>; loading: boolean } | null>(null);
-  useEffect(() => {
-    if (!view || view.key !== debouncedSignature || debouncedQuery.period === PERIOD_ALL || view.memberIds.length === 0) { setTrendPrev(null); return; }
-    /* 여러 달(YYYY-MM~YYYY-MM)을 조회했으면 **마지막 달**이 기준(2026-10-24, 요청: "통계 팝오버시 복수달 선택시 마지막달 기준으로") — 표의 값은 그 기간 합이라 마지막 달 몫이
-       아니므로 그때는 기준 달까지 일곱 달을 다 한 달씩 받는다. 한 달 조회면 그 달은 표(view.stats)가 곧 자료라 앞 여섯 달만. */
-    const { last: period, range } = trendBase(debouncedQuery.period);
-    const months = statTrendMonths(period).filter((m) => range || m !== period);
-    let cancelled = false;
-    setTrendPrev({ key: view.key, byMonth: {}, loading: true });
-    /* 달들을 **한꺼번에**(나란히) 받아 한 번에 싣는다(2026-10-24, 요청: "한번에 다 받기" — 옛 '가까운 달부터 한 달씩 차례로 · 올 때마다 싣기'를 되물렸다). 못 받은 달은 빈 표. */
-    Promise.all(months.map(async (m): Promise<[string, Record<string, MemberStatsEntry>]> => {
-      const r = monthPeriodToRange(m);
-      const map: Record<string, MemberStatsEntry> = {};
-      try {
-        const res = await api.getGameResultStats({
-          memberIds: view.memberIds, dateFrom: r.from, dateTo: r.to, race: "all",
-          matchType: debouncedQuery.size === "1" ? SOLO_TYPE : CLAN_TYPE,
-          teamSize: debouncedQuery.size === "team" ? undefined : Number(debouncedQuery.size),
-          mapGroup: debouncedQuery.map === "all" ? undefined : debouncedQuery.map,
-        });
-        res.members.forEach((entry) => { map[entry.memberId] = entry; });
-      } catch { /* 빈 달로 */ }
-      return [m, map];
-    })).then((pairs) => {
-      if (cancelled) return;
-      setTrendPrev({ key: view.key, byMonth: Object.fromEntries(pairs), loading: false });
-    });
-    return () => { cancelled = true; };
-  }, [view, debouncedSignature, debouncedQuery]);
+  /* ★ 일곱 달 변화 자료(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" → "7개월로 통일하자" → "통계 요청 자체를 바꿔서 7달치를 한 응답에") —
+     표 요청(trendMonths) 한 번에 응답 trend 로 같이 온다(옛 '앞 달들을 뒤따라 받기'는 걷었다). 여러 달(YYYY-MM~YYYY-MM)을 조회했으면 **마지막 달**이 기준(요청: "복수달 선택시
+     마지막달 기준으로") — 서버가 dateTo 가 든 달을 마지막으로 센다. 전체 기간 조회면 안 받는다. */
   const trend: StatTrendData | null = useMemo(() => {
-    if (!view || view.key !== debouncedSignature || debouncedQuery.period === PERIOD_ALL) return null;
-    const { last: period, range } = trendBase(debouncedQuery.period);
-    const prev = trendPrev && trendPrev.key === view.key ? trendPrev : null;
-    return { period, byMonth: range ? { ...(prev?.byMonth ?? {}) } : { ...(prev?.byMonth ?? {}), [period]: view.stats }, loading: !prev || prev.loading };
-  }, [view, debouncedSignature, debouncedQuery.period, trendPrev]);
+    if (!view || view.key !== debouncedSignature || debouncedQuery.period === PERIOD_ALL || !view.trend) return null;
+    const { last: period } = trendBase(debouncedQuery.period);
+    return { period, byMonth: view.trend, loading: false };
+  }, [view, debouncedSignature, debouncedQuery.period]);
 
   const viewMembers = useMemo(() => {
     if (!view) return [];
