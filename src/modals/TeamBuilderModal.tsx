@@ -15,7 +15,7 @@ import { buildTeams } from "../utils/teamBalance";
 import { normalizeSearchText } from "../utils/memberSearch";
 import { cx } from "../utils/format";
 import type { BalanceSplit } from "../utils/teamBalance";
-import type { BaseRace, ClanCompEntry, GameType, Member, Race } from "../types";
+import type { BaseRace, ClanCompEntry, ClanCompVsEntry, GameType, Member, Race } from "../types";
 
 const CLAN_TYPE: GameType = "0102";
 
@@ -80,10 +80,30 @@ export function compRecordOf(ids: string[], otherCount: number, rows: Map<string
   const hit = comps.find((c) => c.format === `${lo}:${hi}` && c.label === label);
   return { label, winRate: hit && hit.plays >= COMP_MIN_PLAYS ? hit.winRate : null, plays: hit?.plays ?? 0 };
 }
-/** 팀 점수 = 사람 점수 평균 + 구성 승률 보정(COMP_K · (승률 − 50)). */
-const teamScoreOf = (ids: string[], otherCount: number, ratings: Map<string, number>, rows: Map<string, Row>, comps: ClanCompEntry[]): number => {
-  const rec = compRecordOf(ids, otherCount, rows, comps);
-  return avgRating(ids, ratings) + COMP_K * ((rec?.winRate ?? 50) - 50);
+/* ★ 구성 **맞대결** 전적(2026-10-24, 요청: "승률은 해당 팀 구성으로 했을 때 전적을 역으로 계산 — 종족 구성") — 1팀 구성 a 가 2팀 구성 b 를 실제로 만난 판(clanCompVs)의
+   a 쪽 승률로 승리 확률을 낸다. 표는 a ≤ b 로 한 줄이라 거꾸로 만난 판은 **뒤집어 읽는다**(b 쪽 승 = 우리 패). 결판난 판(승+패)이 COMP_MIN_PLAYS 미만이면 맞대결은 모름 →
+   구성별 승률(compRecordOf) 차로 어림하고, 그것도 없으면 보정 0. */
+export interface CompVsRecord { label: string; vsLabel: string; plays: number; wins: number; losses: number; draws: number; pA: number | null }
+export function compVsOf(idsA: string[], idsB: string[], rows: Map<string, Row>, vs: ClanCompVsEntry[]): CompVsRecord | null {
+  const la = compLabelOf(idsA.map((id) => rows.get(id)?.race ?? null));
+  const lb = compLabelOf(idsB.map((id) => rows.get(id)?.race ?? null));
+  if (!la || !lb) return null;
+  const [lo, hi] = idsA.length <= idsB.length ? [idsA.length, idsB.length] : [idsB.length, idsA.length];
+  const fmt = `${lo}:${hi}`;
+  const fwd = vs.find((e) => e.format === fmt && e.a === la && e.b === lb);
+  const rev = fwd ? undefined : vs.find((e) => e.format === fmt && e.a === lb && e.b === la);
+  const hit = fwd ?? rev;
+  if (!hit) return { label: la, vsLabel: lb, plays: 0, wins: 0, losses: 0, draws: 0, pA: null };
+  const wins = fwd ? hit.aWins : hit.bWins; const losses = fwd ? hit.bWins : hit.aWins;
+  const decided = wins + losses;
+  return { label: la, vsLabel: lb, plays: hit.plays, wins, losses, draws: hit.draws, pA: la !== lb && decided >= COMP_MIN_PLAYS ? wins / decided : null };
+}
+/** 두 팀 점수 차에 더하는 구성 보정(점) — 맞대결이 있으면 COMP_K · (pA − 0.5) · 200, 없으면 구성별 승률 차 · COMP_K. */
+const compEdgeOf = (sp: BalanceSplit, rows: Map<string, Row>, comps: ClanCompEntry[], vs: ClanCompVsEntry[]): number => {
+  const m = compVsOf(sp.teamA, sp.teamB, rows, vs);
+  if (m && m.pA !== null) return COMP_K * (m.pA - 0.5) * 200;
+  const ra = compRecordOf(sp.teamA, sp.teamB.length, rows, comps); const rb = compRecordOf(sp.teamB, sp.teamA.length, rows, comps);
+  return COMP_K * ((ra?.winRate ?? 50) - (rb?.winRate ?? 50));
 };
 
 const THIN_PLAYS = 5;
@@ -119,12 +139,12 @@ export function winProbA(avgA: number, avgB: number): number {
   return 1 / (1 + 10 ** (-(avgA - avgB) / 40));
 }
 const avgRating = (ids: string[], ratings: Map<string, number>): number => (ids.length ? ids.reduce((a, id) => a + (ratings.get(id) ?? 50), 0) / ids.length : 50);
-/** 조합의 1팀 승리 확률(사람 점수 + 종족 구성 보정). */
-const probOf = (sp: BalanceSplit, ratings: Map<string, number>, rows: Map<string, Row>, comps: ClanCompEntry[]): number =>
-  winProbA(teamScoreOf(sp.teamA, sp.teamB.length, ratings, rows, comps), teamScoreOf(sp.teamB, sp.teamA.length, ratings, rows, comps));
+/** 조합의 1팀 승리 확률(사람 점수 + 종족 구성 보정 — 맞대결 우선 · 위 compEdgeOf ★). */
+const probOf = (sp: BalanceSplit, ratings: Map<string, number>, rows: Map<string, Row>, comps: ClanCompEntry[], vs: ClanCompVsEntry[]): number =>
+  winProbA(avgRating(sp.teamA, ratings) + compEdgeOf(sp, rows, comps, vs), avgRating(sp.teamB, ratings));
 /** 조합의 승리 확률 차(%p · 반올림) — 같은 값이면 동률 조합이다. */
-const probGapOf = (sp: BalanceSplit, ratings: Map<string, number>, rows: Map<string, Row>, comps: ClanCompEntry[]): number => {
-  const pA = probOf(sp, ratings, rows, comps);
+const probGapOf = (sp: BalanceSplit, ratings: Map<string, number>, rows: Map<string, Row>, comps: ClanCompEntry[], vs: ClanCompVsEntry[]): number => {
+  const pA = probOf(sp, ratings, rows, comps, vs);
   return Math.abs(Math.round(pA * 100) - Math.round((1 - pA) * 100));
 };
 
@@ -154,6 +174,8 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   /** 내전 종족 구성 전적(통계 응답 · 위 compRecordOf ★). */
   const [comps, setComps] = useState<ClanCompEntry[]>([]);
+  /** 종족 구성 맞대결 전적(위 compVsOf ★). */
+  const [compVs, setCompVs] = useState<ClanCompVsEntry[]>([]);
   /** 고른 사람(누른 차례 — 맨 위로 올라간다). */
   const [picked, setPicked] = useState<string[]>([]);
   const [result, setResult] = useState<{ splits: BalanceSplit[]; ratings: Map<string, number>; rows: Map<string, Row>; switched: string[]; short: number; capped: boolean; at: number; exact: boolean } | null>(null);
@@ -182,6 +204,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
         list.sort((a, b) => b.plays - a.plays || a.member.nickname.localeCompare(b.member.nickname));
         setRows(list);
         setComps(res.clanComps ?? []);
+        setCompVs(res.clanCompVs ?? []);
       })
       .catch((e: Error) => { if (!dead) { setRows([]); showAlert(e.message || "내전 기록을 불러오지 못했어요."); } });
     return () => { dead = true; };
@@ -225,7 +248,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
     if (out.splits.length === 0) { out = buildTeams(players, 40); capped = false; }
     if (out.splits.length === 0) { showAlert("팀을 나누지 못했어요."); return; }
     /* ★ 다른 조합은 **승리 확률 차가 가장 작은 것과 동률인 것만**(요청: "최소 승리 확률 차 1개 또는 동률인 경우만 다른 조합 보여주기") — 그 밖(차가 더 큰 조합)은 버린다. */
-    const gaps = out.splits.map((sp) => probGapOf(sp, ratings, rowsMap, comps));
+    const gaps = out.splits.map((sp) => probGapOf(sp, ratings, rowsMap, comps, compVs));
     const best = Math.min(...gaps);
     const splits = out.splits.filter((_, i) => gaps[i] === best);
     setResult({ splits, ratings, rows: rowsMap, switched: cap.switched, short: cap.short, capped, at: 0, exact: out.exact });
@@ -253,10 +276,11 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
             <>
               {/* ★ 결과는 로스터식(요청) — 왼쪽 1팀 · 가운데 승리 확률 "54 : 46" · 오른쪽 2팀. 깍두기는 아래 한 줄. */}
               {((): ReactNode => {
-                const pA = probOf(split, result.ratings, resRows, comps);
+                const pA = probOf(split, result.ratings, resRows, comps, compVs);
                 const a = Math.round(pA * 100); const b = 100 - a;
                 const compA = compRecordOf(split.teamA, split.teamB.length, resRows, comps);
                 const compB = compRecordOf(split.teamB, split.teamA.length, resRows, comps);
+                const mv = compVsOf(split.teamA, split.teamB, resRows, compVs);
                 /* 종족 구성 한 줄(위 compRecordOf ★) — "2테 1저 · 58%(12판)" · 전적이 적으면 "(기록 n판)" · 종족을 모르는 사람이 있으면 안 쓴다. */
                 const compText = (c: CompRecord | null): ReactNode => c && (
                   <span className="scr-tb-match-comp">
@@ -273,6 +297,14 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
                       </span>
                       <span className="scr-tb-match-team scr-tb-team-b-txt">2팀{compText(compB)}</span>
                     </div>
+                    {/* 구성 맞대결 한 줄(위 compVsOf ★) — "맞대결 2테 1저 vs 1프 2저 · 7승 5패(12판)" · 결판난 판이 적으면 "(어림)". */}
+                    {mv && (
+                      <div className="scr-tb-match-vsrec">
+                        맞대결 <b>{mv.label}</b> vs <b>{mv.vsLabel}</b>
+                        {mv.plays > 0 ? ` · ${mv.wins}승 ${mv.losses}패${mv.draws ? ` ${mv.draws}무` : ""}(${mv.plays}판)` : " · 기록 없음"}
+                        {mv.pA === null && <i> 구성별 승률로 어림</i>}
+                      </div>
+                    )}
                     <div className="scr-roster-matchup scr-tb-roster">
                       <RosterTeam ids={split.teamA} rows={resRows} ratings={result.ratings} />
                       <span className="scr-tb-match-vs" aria-hidden>vs</span>

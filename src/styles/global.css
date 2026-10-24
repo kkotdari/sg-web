@@ -7134,6 +7134,9 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-tb-match-team { display: flex; flex-direction: column; gap: 2px; font-size: 13px; font-weight: 800; }
 .scr-tb-match-comp { font-size: 11px; font-weight: 500; color: var(--muted); }   /* 팀 종족 구성 전적 "2테 1저 · 58%(12판)"(2026-10-24 · TeamBuilderModal compRecordOf) */
 .scr-tb-match-comp > b { font-weight: 700; color: var(--text-dim); }
+.scr-tb-match-vsrec { text-align: center; font-size: 11.5px; color: var(--muted); }   /* 구성 맞대결 전적 한 줄(TeamBuilderModal compVsOf · 2026-10-24) */
+.scr-tb-match-vsrec > b { font-weight: 700; color: var(--text-dim); }
+.scr-tb-match-vsrec > i { font-style: normal; color: var(--dim); }
 .scr-tb-team-a-txt { color: var(--timeline-blue); }
 .scr-tb-team-b-txt { color: var(--loss); text-align: right; align-items: flex-end; }
 .scr-tb-match-prob { display: inline-flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }

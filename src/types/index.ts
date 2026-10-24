@@ -337,12 +337,24 @@ export interface ClanCompEntry {
   winRate: number;
 }
 
+/** 종족 구성 맞대결 전적(서버 ClanCompVsEntry · 2026-10-24) — 판 꼴(format)에서 구성 a 가 b 를 만난 판·a 승·b 승·무. a ≤ b 로 한 번만(거꾸로 만난 판은 뒤집어 읽는다). */
+export interface ClanCompVsEntry {
+  format: string;
+  a: string;
+  b: string;
+  plays: number;
+  aWins: number;
+  bWins: number;
+  draws: number;
+}
+
 export interface GameResultStatsResponse {
   members: MemberStatsEntry[];
   clan: MemberStatsEntry;
   clanMaps: ClanBreakdownEntry[];
   clanFormats: ClanBreakdownEntry[];
   clanComps?: ClanCompEntry[];
+  clanCompVs?: ClanCompVsEntry[];
 }
 
 export interface TeamRankEntry {
