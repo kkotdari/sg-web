@@ -3341,6 +3341,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-tl-label { fill: var(--text); font-weight: 500; }
 .scr-bl-cap { fill: var(--dim); font-weight: 500; font-variant-numeric: tabular-nums; }   /* PC 건설 칩 머릿말(착공 분:초 · 인구 · 2026-10-24 · GameCurvesModal caps) */
 .scr-bl-me .scr-bl-cap { fill: rgba(255,255,255,0.8); }
+.scr-bl-chip.is-hl + .scr-bl-cap { fill: var(--text); opacity: 0.85; }   /* 강조 칩(같은 종류 · 다크 테마의 강조색 바탕)에선 흐린 머릿말이 안 보였다(2026-10-24 지적) — 본문색으로 */
 /* PC 건설 줄(2026-10-21) — 짓는 동안 점선 · 다 지은 뒤 사라질 때까지 실선 · 위에 얹으면 진하게. 굵은 투명 선이 마우스 자리. */
 /* 칩 팝오버(GameCurvesModal ChipPop · 2026-10-22, 요청: "칩 클릭 시 정확한 시각과 그 시각의 인구수 · 팝오버로") — 누른 칩 위 가운데. */
 .scr-bl-hit, .scr-tl-hit { cursor: pointer; }
