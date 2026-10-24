@@ -7080,16 +7080,22 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 }
 .scr-tb-hint { cursor: default; }
 .scr-tb-pick-list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+/* ★ 고르기는 **칩 단추**(2026-10-24, 요청: "개인 칩 누르면 추가돼서 맨 위로 올라가고 색깔 변경 — 체크박스식 아님 · 맨 위에 이름 검색창") — 옛 체크박스 줄을 걷었다.
+   고른 칩은 강조색 바탕에 흰 글자로 위에 모인다. 검색칸은 칩 입력(scr-gs-chips)을 빌린다(담긴 값은 곧장 고름으로). */
+.scr-tb-search > .scr-gs-chips { min-height: 36px; padding: 3px 8px; margin-bottom: 8px; }
 .scr-tb-pick {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; font: inherit; color: var(--text);
   padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px;
   background: var(--panel); cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 .scr-tb-pick.is-on {
   border-color: var(--timeline-blue);
-  box-shadow: inset 0 0 0 1px var(--timeline-blue);
-  background: color-mix(in srgb, var(--timeline-blue) 10%, var(--panel));
+  background: color-mix(in srgb, var(--timeline-blue) 78%, var(--panel));
+  color: #fff;
 }
+.scr-tb-pick.is-on .scr-tb-pick-meta { color: rgba(255, 255, 255, 0.78); }
+.scr-tb-pick.is-on .scr-tb-thin { color: #ffd6d6; }
 .scr-tb-pick.is-off { opacity: 0.45; cursor: not-allowed; }
 .scr-tb-pick-name { flex: 1 1 auto; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scr-tb-pick-meta { flex: 0 0 auto; font-size: 11.5px; color: var(--text-dim); }

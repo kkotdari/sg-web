@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Users } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
-import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -86,7 +84,7 @@ export default function ClanStatsScreen() {
   const setUsers = (next: string[]): void => setUserRaw(next.length ? JSON.stringify(next) : "");
   const activeMembers = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended"), [members]);
   const userOpts = useMemo<ChipOpt[]>(() => activeMembers.map((m) => ({ value: m.nickname, member: m })), [activeMembers]);
-  const [teamBuilder, setTeamBuilder] = useState(false);
+  /* (옮김 2026-10-24) 팀 구성하기 단추·창은 배치 화면 상단으로(PlacementScreen · 요청: "팀 구성하기 위치: 배치 메뉴 상단으로 이동"). */
   /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 머리를 누르면 끝에 붙고, 고른 머리를 누르면 빠진다(하나는 남는다).
      머리를 눌러 고르고(요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") 고른 차례는 정렬 줄 "정렬: 전체 승률 › APM" 에 하나씩 붙고 빠진다(요청: "누르면 '정렬:' 옆에 하나씩 나오고 없어짐").
      다 빼면 기본 차례만(줄에 "기본"). 머리를 누르는 셈(켜고 끄기 · 폰 전적 머리의 승률 → 게임수 → 끔)은 StatGrid 가 한다.
@@ -252,13 +250,6 @@ export default function ClanStatsScreen() {
             range
             className="scr-v2-toolbar-month"
           />
-          <button
-            type="button" className="scr-compact-rect-btn"
-            onClick={() => setTeamBuilder(true)}
-          >
-            <Users size={13} /> 팀 구성하기
-            <span className="scr-tb-beta">beta</span>
-          </button>
         </div>
       </div>
 
@@ -338,7 +329,6 @@ export default function ClanStatsScreen() {
         )}
       </div>
 
-      {teamBuilder && <TeamBuilderModal onClose={() => setTeamBuilder(false)} />}
     </div>
   );
 }

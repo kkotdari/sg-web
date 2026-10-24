@@ -9,6 +9,7 @@ import { api } from "../../api/client";
 import { cx } from "../../utils/format";
 import { navigateTo, parseRoute, pathOf } from "../../utils/route";
 import PlacementPairModal, { setsFor } from "./PlacementPairModal";
+import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import type { PlacementPlayer, PlacementRound, PlacementRoundBrief } from "../../types";
 
 /* ★ 배치고사(2026-10-23, 요청: "배치고사 화면 제작 — 메뉴는 레일/서랍 · 회원 전원이 서로 라운드 로빈 · 각 칸에 세트 추가 및 결과 수기 입력 또는 경기 연결(리그 매치 결과 입력과 비슷) ·
@@ -157,6 +158,8 @@ export default function PlacementScreen() {
   const [editPlayers, setEditPlayers] = useState(false);
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  /* 팀 구성하기(2026-10-24, 요청: "위치: 배치 메뉴 상단으로 이동" — 옛 통계 화면 머리줄). */
+  const [teamBuilder, setTeamBuilder] = useState(false);
 
   useEffect(() => {
     const onPop = () => setSelectedId(idOfRoute());
@@ -227,8 +230,13 @@ export default function PlacementScreen() {
       <div className="scr-v2-toolbar">
         <div className="scr-v2-toolbar-title-row">
           <h1 className="scr-title scr-v2-toolbar-title">배치</h1>
+          <button type="button" className="scr-compact-rect-btn" onClick={() => setTeamBuilder(true)}>
+            <Users size={13} aria-hidden /> 팀 구성하기
+            <span className="scr-tb-beta">beta</span>
+          </button>
         </div>
       </div>
+      {teamBuilder && <TeamBuilderModal onClose={() => setTeamBuilder(false)} />}
 
       <div className="scr-pl-bar">
         {rounds && rounds.length > 0 && (
