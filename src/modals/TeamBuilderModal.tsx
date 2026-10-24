@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X, Shuffle, Users } from "lucide-react";
 import ModalHash from "../utils/modalHash";
 import Avatar from "../components/common/Avatar";
+import RaceBadge from "../components/common/RaceBadge";
 import ChipInput, { type ChipOpt } from "../components/common/ChipInput";
 import { Spinner } from "../components/common/Feedback";
 import { SelectAllToggle } from "../components/common/Selection";
@@ -14,7 +15,7 @@ import { buildTeams } from "../utils/teamBalance";
 import { normalizeSearchText } from "../utils/memberSearch";
 import { cx } from "../utils/format";
 import type { BalanceSplit } from "../utils/teamBalance";
-import type { GameType, Member } from "../types";
+import type { GameType, Member, Race } from "../types";
 
 const CLAN_TYPE: GameType = "0102";
 
@@ -25,6 +26,8 @@ interface Row {
   /** 평균 APM(없으면 null) · 준 데미지(경기 평균 대비 % · 100 = 평균 · 없으면 null). */
   apm: number | null;
   dmg: number | null;
+  /** 가장 많이 한 종족(없으면 null) — 결과 로스터의 종족 글자. */
+  race: Race | null;
   blocked: boolean;
 }
 
@@ -55,34 +58,34 @@ export function ratingsOf(rows: Row[]): Map<string, number> {
 
 const dmgText = (v: number | null): string => (v === null ? "-" : `${(v / 100).toFixed(1)}배`);
 
-function TeamCard({
-  title, ids, rows, ratings, joker, tone,
-}: {
-  title: string; ids: string[]; rows: Map<string, Row>; ratings: Map<string, number>; joker: Row | null;
-  tone: "a" | "b";
-}) {
+/* ★ 승리 확률(2026-10-24, 요청: "승리 확률 몇 대 몇으로 보여주기") — 두 팀 평균 점수 차를 로지스틱(10^(−차/40))으로 편다: 차 5점 ≈ 57:43 · 10점 ≈ 64:36 · 20점 ≈ 76:24.
+   점수는 고른 무리 안의 상대 자(ratingsOf · 50 ± 15·z)라 그 자에서만 뜻이 있다. */
+export function winProbA(avgA: number, avgB: number): number {
+  return 1 / (1 + 10 ** (-(avgA - avgB) / 40));
+}
+const avgRating = (ids: string[], ratings: Map<string, number>): number => (ids.length ? ids.reduce((a, id) => a + (ratings.get(id) ?? 50), 0) / ids.length : 50);
+/** 조합의 승리 확률 차(%p · 반올림) — 같은 값이면 동률 조합이다. */
+const probGapOf = (sp: BalanceSplit, ratings: Map<string, number>): number => {
+  const pA = winProbA(avgRating(sp.teamA, ratings), avgRating(sp.teamB, ratings));
+  return Math.abs(Math.round(pA * 100) - Math.round((1 - pA) * 100));
+};
+
+/** 결과의 한쪽 — 경기 결과의 로스터(GameResultSides)와 같은 꼴: 아바타 · 이름 · 종족 글자(요청: "결과는 로스터식으로"). */
+function RosterTeam({ ids, rows, ratings, right }: { ids: string[]; rows: Map<string, Row>; ratings: Map<string, number>; right?: boolean }) {
   const members = ids.map((id) => rows.get(id)).filter((r): r is Row => !!r);
-  const avgOf = (f: (r: Row) => number): number => (members.length > 0 ? members.reduce((a, r) => a + f(r), 0) / members.length : 0);
-  const player = (r: Row, extra?: ReactNode): ReactNode => (
-    <li key={r.member.id} className={cx("scr-tb-player", extra ? "scr-tb-player-joker" : undefined)}>
-      <Avatar member={r.member} size={24} />
-      <span className="scr-tb-player-name">{r.member.nickname}</span>
-      {extra}
-      <span className="scr-tb-player-rate" title={`승률 ${r.winRate.toFixed(1)}% · APM ${r.apm === null ? "-" : Math.round(r.apm)} · 데미지 ${dmgText(r.dmg)}`}>
-        {(ratings.get(r.member.id) ?? 50).toFixed(0)}점
-      </span>
-    </li>
-  );
   return (
-    <div className={cx("scr-tb-team", `scr-tb-team-${tone}`)}>
-      <div className="scr-tb-team-head">
-        <span className="scr-tb-team-title">{title}</span>
-        <span className="scr-tb-team-avg">평균 {avgOf((r) => ratings.get(r.member.id) ?? 50).toFixed(1)}점 · 승률 {avgOf((r) => r.winRate).toFixed(1)}%</span>
-      </div>
-      <ul className="scr-tb-team-list">
-        {members.map((r) => player(r))}
-        {joker && player(joker, <span className="scr-tb-joker-tag">깍두기</span>)}
-      </ul>
+    <div className={cx("scr-roster-side", right && "scr-roster-side-target", "scr-tb-roster-side", right && "is-right")}>
+      {members.map((r) => (
+        <div key={r.member.id} className="scr-roster-block">
+          <div className="scr-roster-row">
+            <span className="scr-roster-person" title={`점수 ${(ratings.get(r.member.id) ?? 50).toFixed(0)} · 승률 ${r.winRate.toFixed(1)}% · APM ${r.apm === null ? "-" : Math.round(r.apm)} · 데미지 ${dmgText(r.dmg)}`}>
+              <Avatar member={r.member} size={20} />
+              <span className="scr-roster-name">{r.member.nickname}</span>
+              <RaceBadge race={r.race ?? ""} size={13} circleLetter className="scr-team-name-race" />
+            </span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -106,7 +109,8 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
         const list: Row[] = active.map((m) => {
           const s = stats.get(m.id);
           const plays = s?.plays ?? 0;
-          return { member: m, plays, winRate: s?.winRate ?? 0, apm: s?.avgApm ?? null, dmg: s?.dmgDealtRel ?? null, blocked: plays === 0 };
+          const e = res.members.find((x) => x.memberId === m.id);
+          return { member: m, plays, winRate: s?.winRate ?? 0, apm: s?.avgApm ?? null, dmg: s?.dmgDealtRel ?? null, race: e?.mostPlayedRace ?? null, blocked: plays === 0 };
         });
         list.sort((a, b) => b.plays - a.plays || a.member.nickname.localeCompare(b.member.nickname));
         setRows(list);
@@ -143,7 +147,11 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
     const ratings = ratingsOf(chosen);
     const out = buildTeams(chosen.map((r) => ({ id: r.member.id, rating: ratings.get(r.member.id) ?? 50 })));
     if (out.splits.length === 0) { showAlert("팀을 나누지 못했어요."); return; }
-    setResult({ splits: out.splits, ratings, at: 0, exact: out.exact });
+    /* ★ 다른 조합은 **승리 확률 차가 가장 작은 것과 동률인 것만**(요청: "최소 승리 확률 차 1개 또는 동률인 경우만 다른 조합 보여주기") — 그 밖(차가 더 큰 조합)은 버린다. */
+    const gaps = out.splits.map((sp) => probGapOf(sp, ratings));
+    const best = Math.min(...gaps);
+    const splits = out.splits.filter((_, i) => gaps[i] === best);
+    setResult({ splits, ratings, at: 0, exact: out.exact });
   };
 
   const split = result ? result.splits[result.at] : null;
@@ -164,16 +172,33 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
         <div className="scr-modal-body">
           {rows === null ? <Spinner /> : split && result ? (
             <>
-              <div className="scr-tb-teams">
-                <TeamCard title="1팀" ids={split.teamA} rows={byId} ratings={result.ratings} joker={joker} tone="a" />
-                <TeamCard title="2팀" ids={split.teamB} rows={byId} ratings={result.ratings} joker={joker} tone="b" />
-              </div>
+              {/* ★ 결과는 로스터식(요청) — 왼쪽 1팀 · 가운데 승리 확률 "54 : 46" · 오른쪽 2팀. 깍두기는 아래 한 줄. */}
+              {((): ReactNode => {
+                const pA = winProbA(avgRating(split.teamA, result.ratings), avgRating(split.teamB, result.ratings));
+                const a = Math.round(pA * 100); const b = 100 - a;
+                return (
+                  <div className="scr-tb-match">
+                    <div className="scr-tb-match-head">
+                      <span className="scr-tb-match-team scr-tb-team-a-txt">1팀</span>
+                      <span className="scr-tb-match-prob" aria-label={`승리 확률 1팀 ${a} 대 2팀 ${b}`}>
+                        <span className="scr-tb-match-prob-label">승리 확률</span>
+                        <b className={cx(a > b && "is-up")}>{a}</b><i>:</i><b className={cx(b > a && "is-up")}>{b}</b>
+                      </span>
+                      <span className="scr-tb-match-team scr-tb-team-b-txt">2팀</span>
+                    </div>
+                    <div className="scr-roster-matchup scr-tb-roster">
+                      <RosterTeam ids={split.teamA} rows={byId} ratings={result.ratings} />
+                      <span className="scr-tb-match-vs" aria-hidden>vs</span>
+                      <RosterTeam ids={split.teamB} rows={byId} ratings={result.ratings} right />
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="scr-tb-gap">
-                <span className="scr-tb-gap-main">평균 점수 차이 {(split.gap / (split.teamA.length || 1)).toFixed(1)}점</span>
                 {!result.exact && <span className="scr-tb-gap-note">인원이 많아 어림으로 찾았어요</span>}
                 {result.splits.length > 1 && (
-                  <span className="scr-tb-gap-note">{result.at + 1}번째 / {result.splits.length}개 조합</span>
+                  <span className="scr-tb-gap-note">동률 조합 {result.splits.length}개 중 {result.at + 1}번째</span>
                 )}
               </div>
 
@@ -188,13 +213,14 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
                 <button type="button" className="scr-rect-btn" onClick={() => setResult(null)}>
                   다시 고르기
                 </button>
-                <button
-                  type="button" className="scr-rect-btn"
-                  disabled={result.splits.length <= 1}
-                  onClick={() => setResult((r) => (r ? { ...r, at: (r.at + 1) % r.splits.length } : r))}
-                >
-                  <Shuffle size={13} /> 다른 조합
-                </button>
+                {result.splits.length > 1 && (
+                  <button
+                    type="button" className="scr-rect-btn"
+                    onClick={() => setResult((r) => (r ? { ...r, at: (r.at + 1) % r.splits.length } : r))}
+                  >
+                    <Shuffle size={13} /> 다른 조합
+                  </button>
+                )}
               </div>
             </>
           ) : (
