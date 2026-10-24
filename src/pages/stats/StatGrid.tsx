@@ -1,5 +1,7 @@
-import { Fragment, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ArrowDownWideNarrow, ArrowUpDown } from "lucide-react";
+import { StatTrendPop, statMetric, type StatMetric, type StatTrendData, type TrendAnchor } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
@@ -51,6 +53,37 @@ export interface StatGridRow {
 }
 
 const Dash = () => <span className="scr-sg-dim">-</span>;
+
+/* ★ 값 칸의 변화 그래프 손잡이(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" · StatTrend.tsx) — 표가 문맥으로 내려 주고
+   TCell 이 칸마다 단다: PC 는 마우스를 얹으면(enter · 떠나면 잠깐 뒤 닫힘 — 팝오버로 건너갈 틈) · 폰은 누르면(tap · 다시 누르거나 밖을 누르면 닫힘). 자료(trend)가
+   없으면(전체 기간 · 평균 줄) 손잡이가 없는 보통 칸이다. */
+interface TrendCtxValue {
+  mobile: boolean;
+  activeKey: string | null;
+  enter: (member: Member, metric: StatMetric, el: HTMLElement) => void;
+  tap: (member: Member, metric: StatMetric, el: HTMLElement) => void;
+  leave: () => void;
+}
+const TrendCtx = createContext<TrendCtxValue | null>(null);
+const trendKey = (m: Member, k: StatMetric) => `${m.id}|${k.key}`;
+
+function TCell({ member, metric, className, children }: { member?: Member; metric: StatMetric; className?: string; children: ReactNode }) {
+  const ctx = useContext(TrendCtx);
+  if (!ctx || !member) return <span className={cx("scr-sg-c", className)}>{children}</span>;
+  const hot = ctx.activeKey === trendKey(member, metric);
+  return (
+    <span
+      className={cx("scr-sg-c scr-sg-tcell", className, hot && "is-hot")}
+      onPointerEnter={ctx.mobile ? undefined : (e) => { if (e.pointerType === "mouse") ctx.enter(member, metric, e.currentTarget); }}
+      onPointerLeave={ctx.mobile ? undefined : ctx.leave}
+      onClick={ctx.mobile ? (e) => ctx.tap(member, metric, e.currentTarget) : undefined}
+      role={ctx.mobile ? "button" : undefined} tabIndex={ctx.mobile ? 0 : undefined}
+      aria-label={ctx.mobile ? `${member.nickname} ${metric.label} 변화 보기` : undefined}
+    >
+      {children}
+    </span>
+  );
+}
 
 function Num({ v, unit }: { v: string | number | null | undefined; unit?: string }) {
   if (v === null || v === undefined || v === "") return <Dash />;
@@ -118,54 +151,56 @@ function WhoPlain({ member }: { member: Member }) {
 
 /** 종족 두 칸 — [게임수 "30"(단위 걷음 · 2026-10-22) | 승률] (2026-10-20, 요청: "각 종족 컬럼을 두 컬럼으로 나눠 전적/승률" → "전적 몇 회로 단순화").
  *  클랜원 전체 줄도 종족 승률은 쓴다(요청: "클랜원 전체 종족별 승률 넣기" — 그 종족으로 뛴 클랜원 판의 승률). 전체 승률만 안 쓴다(내전이라 늘 반반). */
-function RaceCells({ s }: { s?: MemberStats }) {
+function RaceCells({ s, race, member }: { s?: MemberStats; race: BaseRace; member?: Member }) {
   if (!s || s.plays === 0) return <><span className="scr-sg-c"><Dash /></span><span className="scr-sg-c"><Dash /></span></>;
   return (
     <>
-      <span className="scr-sg-c scr-sg-race"><Num v={s.plays.toLocaleString()} /></span>
-      <span className="scr-sg-c"><Rate s={s} /></span>
+      <TCell member={member} metric={statMetric("plays", race)} className="scr-sg-race"><Num v={s.plays.toLocaleString()} /></TCell>
+      <TCell member={member} metric={statMetric("rate", race)}><Rate s={s} /></TCell>
     </>
   );
 }
 
 function PcRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
   const s = row.stats;
+  const who = clan ? undefined : row.member;   // 평균 줄은 변화 그래프가 없다(TCell 이 보통 칸으로)
   return (
       <div className={cx("scr-sg-row", clan && "is-clan")}>
         <span className="scr-sg-c scr-sg-who">
           {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <Who member={row.member} />}
         </span>
-        <span className="scr-sg-c">
+        <TCell member={who} metric={statMetric("plays")}>
           {clan
             /* 평균 줄 = **경기 수만**(2026-10-22, 요청: "평균 게임수 괄호 없애고 게임수만 표시" · 옛 "1,180 (212경기)" — 사람 몫을 다 더한 전적 + 괄호 경기 수). */
             ? <Num v={(games ?? 0).toLocaleString()} />
             : <Num v={s.plays > 0 ? s.plays.toLocaleString() : null} />}
-        </span>
-        <span className="scr-sg-c">{clan ? <Dash /> : <Rate s={s} />}</span>
+        </TCell>
+        <TCell member={who} metric={statMetric("rate")}>{clan ? <Dash /> : <Rate s={s} />}</TCell>
         {/* 데미지 · APM 차례(2026-10-22, 요청: "APM 데미지 위치 교환" — 옛: APM · 데미지) */}
-        <span className="scr-sg-c">{clan ? <Dash /> : <Dmg s={s} />}</span>
-        <span className="scr-sg-c"><Num v={s.avgApm} /></span>
-        {RACES.map((r) => <RaceCells key={r} s={row.byRace?.[r]} />)}
+        <TCell member={who} metric={statMetric("dmg")}>{clan ? <Dash /> : <Dmg s={s} />}</TCell>
+        <TCell member={who} metric={statMetric("apm")}><Num v={s.avgApm} /></TCell>
+        {RACES.map((r) => <RaceCells key={r} s={row.byRace?.[r]} race={r} member={who} />)}
       </div>
   );
 }
 
 /** 폰 전적 칸 — 위 판수 "N" · 아래 작고 옅은 승률 "N"(2026-10-22, 요청: "모바일 통계 단위 제거하고 전적은 N / (N%) 승률이 좀 작게" → "%도 제거" → "괄호 제거하고 연하게" — 머리에 "전적 게임수(승률)" 설명이 선다).
  *  그 종족 판이 없으면 "-". 클랜원 전체의 전체 칸은 아래가 경기 수(내전이라 승률은 늘 반반). 옛: "N전" · 이름표 "승률" · "N%". */
-function MCell({ s, games, noRate }: { s?: MemberStats; games?: number; noRate?: boolean }) {
+function MCell({ s, games, noRate, member, race = null }: { s?: MemberStats; games?: number; noRate?: boolean; member?: Member; race?: BaseRace | null }) {
   if (!s || s.plays === 0) return <span className="scr-sg-c scr-sg-mrec"><Dash /></span>;
   return (
-    <span className="scr-sg-c scr-sg-mrec">
+    <TCell member={member} metric={statMetric("rec", race)} className="scr-sg-mrec">
       <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b></span>
       {games !== undefined
         ? <span className="scr-sg-mrate">{games.toLocaleString()}</span>
         : noRate ? <Dash /> : <span className="scr-sg-mrate">{s.winRate}</span>}
-    </span>
+    </TCell>
   );
 }
 
 function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
   const s = row.stats;
+  const who = clan ? undefined : row.member;
   return (
     <div className={cx("scr-sg-row", clan && "is-clan")}>
       <span className="scr-sg-c scr-sg-who">
@@ -173,10 +208,10 @@ function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; gam
       </span>
       {/* APM · 데미지(초록 딜 위 · 빨강 피해 아래)는 제 칸(2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 닉네임 아래 한 줄 "APM 230 1.4 0.8".
           클랜원 전체는 데미지가 없다. */}
-      <span className="scr-sg-c scr-sg-mnum">{clan ? <Dash /> : <Dmg s={s} compact />}</span>
-      <span className="scr-sg-c scr-sg-mnum">{s.avgApm ?? <Dash />}</span>
-      <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} />
-      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} />)}
+      <TCell member={who} metric={statMetric("dmg")} className="scr-sg-mnum">{clan ? <Dash /> : <Dmg s={s} compact />}</TCell>
+      <TCell member={who} metric={statMetric("apm")} className="scr-sg-mnum">{s.avgApm ?? <Dash />}</TCell>
+      <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} member={who} />
+      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} member={who} race={r} />)}
     </div>
   );
 }
@@ -201,6 +236,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span>APM — 분당 행동 수 평균</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
             <span>머리를 누르면 정렬 — 데미지 · APM 은 누를 때마다 켜고 끄고, 전체 · 종족 머리는 승률 → 게임수 → 끔. 여럿이면 누른 차례대로</span>
+            <span>값을 누르면 다섯 달 변화 그래프(달로 조회할 때)</span>
           </span>
         </>
       ) : (
@@ -209,19 +245,55 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span>APM — 분당 행동 수 평균</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
+          <span>값에 마우스를 얹으면 다섯 달 변화 그래프(달로 조회할 때)</span>
         </span>
       )}
     />
   );
 }
 
-export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys }: SortProps & {
+export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys, trend }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>> } | null;
   clanGames: number;
   rows: StatGridRow[];
   mobile: boolean;
+  /** 다섯 달 변화 자료(StatTrend) — 달로 조회할 때만 · 없으면 칸에 손잡이가 없다. */
+  trend: StatTrendData | null;
 }) {
+  /* 변화 그래프 팝오버(위 TrendCtx ★) — PC 는 떠난 뒤 POP_LINGER 뒤 닫힘 · 폰은 밖 누름·스크롤에 닫힘. */
+  const [pop, setPop] = useState<TrendAnchor | null>(null);
+  const popTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const popCancel = (): void => { if (popTimer.current) { clearTimeout(popTimer.current); popTimer.current = null; } };
+  const popLeave = (): void => { popCancel(); popTimer.current = setTimeout(() => { popTimer.current = null; setPop(null); }, 160); };
+  const rectOf = (el: HTMLElement) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height }; };
+  const ctx: TrendCtxValue | null = trend ? {
+    mobile,
+    activeKey: pop ? trendKey(pop.member, pop.metric) : null,
+    enter: (member, metric, el) => { popCancel(); setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? cur : { member, metric, rect: rectOf(el) })); },
+    tap: (member, metric, el) => { setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? null : { member, metric, rect: rectOf(el) })); },
+    leave: popLeave,
+  } : null;
+  useEffect(() => () => popCancel(), []);
+  useEffect(() => {
+    if (!pop) return undefined;
+    const off = (): void => setPop(null);
+    const onKey = (e: KeyboardEvent): void => { if (e.key === "Escape") setPop(null); };
+    const onDown = (e: PointerEvent): void => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.closest(".scr-sg-trend-pop") || t.closest(".scr-sg-tcell"))) return;
+      setPop(null);
+    };
+    window.addEventListener("scroll", off, { passive: true, capture: true });
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown, true);
+    return () => { window.removeEventListener("scroll", off, { capture: true }); window.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown, true); };
+  }, [pop]);
+  useEffect(() => { if (!trend) setPop(null); }, [trend]);
+  const popEl = pop && trend ? createPortal(
+    <StatTrendPop anchor={pop} data={trend} mobile={mobile} onEnter={mobile ? undefined : popCancel} onLeave={mobile ? undefined : popLeave} />,
+    document.body,
+  ) : null;
   const toggle = (k: StatSortKey) => ({ on: sortKeys.includes(k), onClick: () => onSortKeys(toggled(sortKeys, k)) });
   /** PC 머리 — 아이콘 차례(여럿일 때만 숫자 · 하나면 0 = 숫자 없음). 폰은 order 를 안 줘 아이콘이 없다. */
   const pcToggle = (k: StatSortKey) => ({ ...toggle(k), order: sortKeys.length > 1 ? sortKeys.indexOf(k) + 1 : 0 });
@@ -232,6 +304,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace } : null;
   if (mobile) {
     return (
+      <TrendCtx.Provider value={ctx}>
       <div className="scr-sg is-m" role="table" aria-label="통계">
         {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 · 전적은 전체·종족 넷을 덮는다. 뜻 풀이는 정렬 줄의 도움말 단추(StatHelp)로 옮겼다(2026-10-22, 요청: "헤더 설명 다 제거 · 도움말 아이콘 툴팁에 표 모양과 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
@@ -245,9 +318,12 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} />}
         {rows.map((r) => <MobileRow key={r.member.id} row={r} />)}
       </div>
+      {popEl}
+      </TrendCtx.Provider>
     );
   }
   return (
+    <TrendCtx.Provider value={ctx}>
     <div className="scr-sg" role="table" aria-label="통계">
       {/* 머리는 두 줄 — 종족 이름이 [게임수 | 승률] 두 칸을 덮고(PC 머리 "경기"·"전적" → "게임수" · 2026-10-22), 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
@@ -266,6 +342,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
       {clanRow && <PcRow row={clanRow} clan games={clanGames} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} />)}
     </div>
+    {popEl}
+    </TrendCtx.Provider>
   );
 }
 

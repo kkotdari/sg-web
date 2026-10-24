@@ -6,6 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
+import { statTrendMonths, type StatTrendData } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -179,6 +180,44 @@ export default function ClanStatsScreen() {
     return () => { cancelled = true; };
   }, [debouncedQuery, debouncedSignature]);
 
+  /* ★ 다섯 달 변화 자료(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로") — 조회한 달의 표가 온 뒤 **앞 네 달**을 같은 조건
+     (사람 · 종류 · 규모 · 지도)으로 뒤따라 받는다(한 달씩 · 넷). 전체 기간 조회면 안 받는다(달이 없다). 조건이 바뀌면 처음부터. 받는 동안 팝오버는 바퀴를 보인다. */
+  const [trendPrev, setTrendPrev] = useState<{ key: string; byMonth: Record<string, Record<string, MemberStatsEntry>>; loading: boolean } | null>(null);
+  useEffect(() => {
+    if (!view || view.key !== debouncedSignature || debouncedQuery.period === PERIOD_ALL || view.memberIds.length === 0) { setTrendPrev(null); return; }
+    const period = MONTH_PERIOD_RE.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue();
+    const months = statTrendMonths(period).filter((m) => m !== period);
+    let cancelled = false;
+    setTrendPrev({ key: view.key, byMonth: {}, loading: true });
+    (async () => {
+      const got: Record<string, Record<string, MemberStatsEntry>> = {};
+      for (const m of [...months].reverse()) {   // 가까운 달부터
+        const r = monthPeriodToRange(m);
+        try {
+          const res = await api.getGameResultStats({
+            memberIds: view.memberIds, dateFrom: r.from, dateTo: r.to, race: "all",
+            matchType: debouncedQuery.size === "1" ? SOLO_TYPE : CLAN_TYPE,
+            teamSize: debouncedQuery.size === "team" ? undefined : Number(debouncedQuery.size),
+            mapGroup: debouncedQuery.map === "all" ? undefined : debouncedQuery.map,
+          });
+          if (cancelled) return;
+          const map: Record<string, MemberStatsEntry> = {};
+          res.members.forEach((entry) => { map[entry.memberId] = entry; });
+          got[m] = map;
+        } catch { if (cancelled) return; got[m] = {}; }
+        setTrendPrev({ key: view.key, byMonth: { ...got }, loading: true });
+      }
+      if (!cancelled) setTrendPrev({ key: view.key, byMonth: got, loading: false });
+    })();
+    return () => { cancelled = true; };
+  }, [view, debouncedSignature, debouncedQuery]);
+  const trend: StatTrendData | null = useMemo(() => {
+    if (!view || view.key !== debouncedSignature || debouncedQuery.period === PERIOD_ALL) return null;
+    const period = MONTH_PERIOD_RE.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue();
+    const prev = trendPrev && trendPrev.key === view.key ? trendPrev : null;
+    return { period, byMonth: { ...(prev?.byMonth ?? {}), [period]: view.stats }, loading: !prev || prev.loading };
+  }, [view, debouncedSignature, debouncedQuery.period, trendPrev]);
+
   const viewMembers = useMemo(() => {
     if (!view) return [];
     const byId = new Map(members.map((m) => [m.id, m]));
@@ -332,6 +371,7 @@ export default function ClanStatsScreen() {
             mobile={isMobile}
             sortKeys={sortKeys}
             onSortKeys={setSortKeys}
+            trend={trend}
           />
         )}
       </div>

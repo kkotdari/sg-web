@@ -8001,3 +8001,28 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-gm-manual-race.is-on { color: var(--btn-fill-text); background: var(--btn-fill-bg); }
 .scr-gm-manual-result { display: flex; gap: 6px; }
 .scr-gm-manual-result > button { flex: 1 1 0; justify-content: center; }
+
+/* ★ 통계 값 칸의 다섯 달 변화 팝오버(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" · StatTrend.tsx) — 래더 팝오버(.scr-ladder-pop)와
+   같은 판 · 폭 340. 손잡이 칸(.scr-sg-tcell)은 PC 에서 얹으면 옅게 칠하고 팝오버가 붙은 칸(.is-hot)도 같은 칠. 선이 둘이면 딜 초록 · 피해 빨강 · 둘째 값(승률)은 옅게. */
+.scr-sg-tcell { cursor: default; }
+.scr-sg.is-m .scr-sg-tcell { cursor: pointer; }
+@media (hover: hover) { .scr-sg:not(.is-m) .scr-sg-tcell:hover { background: rgba(var(--overlay-rgb), 0.06); } }
+.scr-sg-tcell.is-hot { background: rgba(var(--overlay-rgb), 0.06); }
+.scr-sg-trend-pop {
+  position: fixed; z-index: 60; padding: 10px 12px 10px; border-radius: 12px; background: var(--panel-solid); border: 1px solid var(--line-soft);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); animation: scr-pop-in .14s ease;
+}
+.scr-sg-trend-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; font-size: var(--fs-11); color: var(--muted); }
+.scr-sg-trend-head b { font-size: var(--fs-caption); font-weight: 700; color: var(--text); }
+.scr-sg-trend-legend { margin-left: auto; display: inline-flex; gap: 8px; font-size: var(--fs-9); }
+.scr-sg-trend-legend i { font-style: normal; font-weight: 700; color: var(--text); }
+.scr-sg-trend-legend i.is-dealt, .scr-sg-trend-line.is-dealt, .scr-sg-trend-dot.is-dealt, .scr-sg-trend-val.is-dealt { color: var(--win, #16a34a); stroke: var(--win, #16a34a); }
+.scr-sg-trend-legend i.is-taken, .scr-sg-trend-line.is-taken, .scr-sg-trend-dot.is-taken, .scr-sg-trend-val.is-taken { color: var(--loss, #dc2626); stroke: var(--loss, #dc2626); }
+.scr-sg-trend-dot.is-dealt, .scr-sg-trend-val.is-dealt { fill: var(--win, #16a34a); stroke: none; }
+.scr-sg-trend-dot.is-taken, .scr-sg-trend-val.is-taken { fill: var(--loss, #dc2626); stroke: none; }
+.scr-sg-trend-legend i.is-sub, .scr-sg-trend-val.is-sub { color: var(--muted); fill: var(--muted); }
+.scr-sg-trend-line.is-sub { stroke: var(--muted); stroke-dasharray: 3 3; }
+.scr-sg-trend-dot.is-sub { fill: var(--muted); }
+.scr-sg-trend-area { aspect-ratio: 320 / 150; }   /* 실제 비는 StatTrendChart 가 꼴(single · shared · stacked)마다 inline 으로 */
+.scr-sg-trend-band { font-size: var(--fs-9); font-weight: 700; fill: var(--text); text-anchor: start; }
+.scr-sg-trend-band.is-sub { fill: var(--muted); }
