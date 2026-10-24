@@ -280,12 +280,15 @@ type BuildLane = { key: string; group: string; name: string; color: string; blds
  *  사람마다 칸 · 그 안에 건물 종류마다 작은 칸(처음 지은 차례) · 건물 한 채가 선 하나: 짓는 동안은 점선 · 다 지은 뒤 사라질 때까지 실선(끝까지 남으면 판 끝까지).
  *  같은 종류 여러 채는 겹치지 않게 줄을 나눈다. 변태(레어 · 성큰 …)는 같은 선에서 이어진다 — 변태하는 동안 점선 · 그 뒤 실선 · 그 줄의 첫 변태 시작 자리에 새 이름
  *  (요청: "레어 성큰같이 변태하는 건 라이프타임 선 중간에 변경되게"). 선에 마우스를 얹으면 세로선이 그 건물의 완공(못 지었으면 착공) 때로 · 가로축에 분:초. */
-function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, caps = false }: {
+function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, caps = false, hscroll = false }: {
   lanes: BuildLane[]; maxX: number; ticksX: number[]; w: number; padL: number; padR: number;
   font: { label: number; axis: number };
   /** ★ 칩 **머릿말**(PC · 2026-10-24, 요청: "PC 에서는 건설 칩에 시간과 인구수도 작게 … 칩 안에 머릿말로 · 뭉친 칩엔 처음 것만, 나머지는 팝오버") — 칩이 두 줄이 된다:
    *  위 작은 줄 "0:55 · 9"(착공 분:초 · 그때 인구) · 아래 이름. 묶음(×N)은 첫 채의 것만 머릿말로, 채마다의 시각은 팝오버(묶음 칩만 뜬다). */
   caps?: boolean;
+  /** ★ 폰 — 판을 넓게 펴고 **가로 스크롤**(2026-10-24, 요청: "모바일 가로 스크롤 허용하고 폭 충분히 활용 · 대신 시간축 이동은 드래그로 불가능") — 손가락 좌우 밀기는
+   *  스크롤이 가져가므로 세로선 끌기(useScrub)는 안 붙인다. 폭(w)은 부모가 분당 px 로 넓혀 준다(LANE_PX_MIN). */
+  hscroll?: boolean;
   focus: string | null;
   onFocus: (key: string) => void;
   at: number | null;
@@ -436,8 +439,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     <figure className="scr-rc-chart">
       {/* 간단히 보기(테크만 거르기)는 걷었다(2026-10-24, 요청: "테크 간단히 보기는 제거") — 늘 자세히(모든 건물) · 이름은 '건설'로 되돌림(같은 날 요청). 폰도 같은 판. */}
       <figcaption className="scr-rc-title">건설</figcaption>
-      <div className="scr-rc-plot" ref={plotRef}>
-      <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때" {...scrub}>
+      <div className={cx("scr-rc-plot", hscroll && "is-hscroll")} ref={plotRef}>
+      <svg ref={svgRef} viewBox={`0 0 ${CW} ${H}`} className="scr-rc-svg scr-tl-svg" role="img" aria-label="건물을 짓고 잃은 때"
+        style={hscroll ? { width: CW, height: H, touchAction: "pan-x pan-y" } : undefined} {...(hscroll ? {} : scrub)}>
         <defs>
           <marker id={arrowId} viewBox="0 0 6 6" refX="6" refY="3" markerWidth="5" markerHeight="5" markerUnits="userSpaceOnUse" orient="auto">
             <path className="scr-bl-arrowhead" d="M0,0 L6,3 L0,6 z" />
@@ -525,6 +529,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
 }
 
 const teamNo = (team: string): 1 | 2 => (team === "team2" ? 2 : 1);
+/** 폰 건설 판의 분당 px(위 laneW · 가로 스크롤) — PC 판(폭 ~900 · 20분)과 비슷한 밀도. */
+const LANE_PX_MIN = 44;
 
 /** 0 부터 v 를 덮는 둥근 눈금(간격 1 · 2 · 2.5 · 5 × 10ⁿ · 칸 수 ≤ n) — 끝 눈금이 판의 세로 끝이다. */
 function niceTicks(v: number, n = 5): number[] {
@@ -725,9 +731,11 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
 
   /* ★ 폰도 **PC 건설 줄과 한 꼴**(2026-10-24, 요청: "모바일은 PC 의 간단히 보기 모드와 통일") — 옛 폰 전용 TechLanes(다 지은 때 칩)는 안 쓴다(코드는 남겨 둠 · 아래 void). */
   void TechLanes;
+  /* 폰 건설 판 폭(BuildLanes hscroll ★) — 분당 LANE_PX_MIN px 로 펴고 가로 스크롤 · PC 는 판 폭 그대로. */
+  const laneW = mobile ? Math.max(box.w, PL + padR + sc.x * LANE_PX_MIN) : box.w;
   const lanesEl = (
     <BuildLanes
-      maxX={sc.x} ticksX={sc.xt} w={box.w} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps={!mobile}
+      maxX={sc.x} ticksX={sc.xt} w={laneW} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps={!mobile} hscroll={mobile}
       lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds, spt: p.spt }))}
     />
   );

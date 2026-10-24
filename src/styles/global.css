@@ -7664,6 +7664,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-rc-switch .scr-notice-switch-knob { top: 1px; left: 1px; width: 14px; height: 14px; }
 .scr-rc-switch .scr-notice-switch-on .scr-notice-switch-knob { transform: translateX(14px); }
 .scr-rc-plot { position: relative; }
+.scr-rc-plot.is-hscroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }   /* 폰 건설 판 가로 스크롤(2026-10-24 · GameCurvesModal BuildLanes hscroll) */
+.scr-rc-plot.is-hscroll > .scr-rc-svg { width: auto; max-width: none; }
 .scr-rc-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; cursor: crosshair; }   /* 세로로 밀면 스크롤 · 좌우로 밀면 세로선이 따라간다(요청: "모바일 터치 좌우로 이동") */
 .scr-rc-grid { stroke: rgba(var(--overlay-rgb), 0.1); stroke-width: 1; shape-rendering: crispEdges; }
 /* 눈금 글자 크기는 그 자리에 px 로 적는다(GRAPH_FS · RaceCurves). */
