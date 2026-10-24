@@ -985,6 +985,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
     transition: opacity .15s;   /* 불투명(같은 날 "레일 메뉴 탭 불투명하게" — 옛 0.85 · 얹으면 1) */
   }
   .scr-rail-hotzone-open::after, .scr-rail-hotzone-open:hover::after { opacity: 0; }
+  /* 데이터 창이 떠 있으면 레일 띠를 걷는다(2026-10-24, 지적: "데이터창 뜬상태에서 레일메뉴 접근되는 문제") — 창 덮개가 display: contents 라 왼쪽 띠가 창 밖에
+     살아 있었고 오른쪽 칸(dock)은 덮개조차 없다. 창이 body.scr-gc-open 을 단다(GameCurvesModal). */
+  body.scr-gc-open .scr-rail-hotzone { display: none; }
 }
 @media (min-width: 961px) and (hover: hover) {
   .scr-nav-desktop .scr-nav-tab:hover,
@@ -3273,6 +3276,9 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 게임 그래프(GameCurvesModal · 2026-10-21 · PC 만) — 화면 폭을 거의 다(요청: "그래프를 최대한 크게") · 범례는 위 한 줄 · 테크 줄과 두 판이 세로로. */
 /* 게임 목록 폭 안쪽의 90%(2026-10-21, 요청: "목록 폭 안짝으로" → "25프로 더 줄이기" → 글자 1.2 배와 함께 "모달폭 늘리고" 0.75 → 0.9) — 1400 이하(2026-10-21, 요청: "PC 에서 데이터 창 폭 넓혀야 할 듯" 936 → 1400) · 창이 좁으면 양옆 60px · 높이는 화면 − 48 고정(넘치면 창 안에서 내린다). */
 .scr-modal-graph { max-width: 1400px; width: calc(100vw - 120px); height: calc(100vh - 48px); display: flex; flex-direction: column; }
+/* 데이터 창 판은 어느 꼴이든 불투명(2026-10-24, 지적: "scr-gc-top에 배경색이 있는 문제") — PC 가운데 창만 반투명 유리(.scr-modal::before 0.66 + 흐림)라
+   위에 붙는 고르기 띠(.scr-gc-top · 판 색으로 뒤를 가림)가 네모로 드러났다. 폰·가득·오른쪽 칸은 이미 판 색이었다 — 한 줄로 모은다. */
+.scr-modal.scr-modal-graph::before { background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
 .scr-modal-graph > .scr-modal-body { flex: 1 1 auto; padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
 /* 제목은 "데이터" · 그 뒤 "게임번호: 번호"는 작고 연하게(2026-10-21, 요청: "데이터 좀 작고 연하게 게임번호: 번호" → "데이터가 진하고 큰거야"). */
 .scr-gc-sub { margin-left: 8px; font-style: normal; font-size: 0.8em; font-weight: 600; color: var(--dim); }
@@ -3284,7 +3290,6 @@ body *::-webkit-scrollbar-corner { background: transparent; }
   /* 화면 가득은 폰 모달 공통 규칙(.scr-modal:not(…):not(…) · 뒤쪽)이 한다 — 여기선 좌우 여백만 좁게(2026-10-21, 요청: "왼쪽 패딩 줄이고 · 오른쪽도 패딩 줄여").
      공통 규칙보다 세게 쓴다. 아래 여백은 창 몸(아래)이 갖는다. */
   .scr-modal.scr-modal.scr-modal-graph:not(.scr-modal-confirm):not(.scr-modal-fit) { padding-left: 10px; padding-right: 10px; padding-bottom: 0; }
-  .scr-modal.scr-modal-graph::before { background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
   /* 아래 여백 넉넉히(요청) — 폰 모달 공통 몸 규칙(.scr-modal:not(…):not(…) > .scr-modal-body · 뒤쪽)이 패딩을 0 16 으로 덮어 그보다 세게 쓴다. */
   .scr-modal.scr-modal-graph:not(.scr-modal-confirm):not(.scr-modal-fit) > .scr-modal-body {
     margin: 0 -10px; padding: 4px 10px calc(56px + env(safe-area-inset-bottom, 0px));
@@ -3297,7 +3302,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 전체화면(PC · 2026-10-21) — 창이 화면 가득 · 바탕 불투명 · 폭이 되면 건설 줄은 온 폭 · 그 아래 탭의 두 판을 반씩 나란히(2026-10-22). */
 .scr-gc-headbtns { display: flex; align-items: center; gap: 4px; }
 .scr-modal.scr-modal-graph.is-full { max-width: none; width: 100vw; height: 100vh; border-radius: 0; }
-.scr-modal.scr-modal-graph.is-full::before { border-radius: 0; background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.scr-modal.scr-modal-graph.is-full::before { border-radius: 0; }
 .scr-gc-cols { display: flex; gap: 40px; align-items: flex-start; }
 .scr-gc-col { flex: none; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .scr-rc-mode { display: flex; gap: 4px; }
@@ -3333,7 +3338,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
     width: var(--gc-dock-w); max-width: none; height: auto; max-height: none; border-radius: 0; box-shadow: none;
     border-left: 1px solid var(--line-faint);
   }
-  .scr-modal.scr-modal-graph.scr-gc-dock:not(.is-full)::before { border-radius: 0; background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .scr-modal.scr-modal-graph.scr-gc-dock:not(.is-full)::before { border-radius: 0; }
 }
 /* PC 데이터 창 제목 옆 설명은 작게(2026-10-21, 요청: "살아 있는 전투 유닛의 미네랄+가스 합 글자 크기 축소" 15 → 12). */
 @media (min-width: 961px) { .scr-modal-graph .scr-rc-title > i { font-size: 12px; } }

@@ -559,6 +559,11 @@ function useDockWide(): boolean {
 export default function GameCurvesModal({ game, onClose, dock = false }: { game: GameResult; onClose: () => void; dock?: boolean }) {
   const docked = useDockWide() && dock;
   useLockBodyScroll(!docked);
+  /* body.scr-gc-open — 창이 떠 있는 동안(어느 꼴이든) 레일 띠를 걷는다(global.css .scr-rail-hotzone · 2026-10-24). */
+  useEffect(() => {
+    document.body.classList.add("scr-gc-open");
+    return () => document.body.classList.remove("scr-gc-open");
+  }, []);
   useEffect(() => {
     if (!docked) return undefined;
     document.body.classList.add("scr-gc-docked");
