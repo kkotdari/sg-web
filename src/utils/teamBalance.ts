@@ -46,7 +46,10 @@ const better = (a: { gap: number; boardGap: number }, b: { gap: number; boardGap
 
 interface RawSplit { a: number[]; b: number[]; gap: number; boardGap: number }
 
-function exhaustive(values: number[], limit: number): RawSplit[] {
+/** 조합 제약(2026-10-24 · 팀 구성하기의 '프로토스는 팀당 2명까지') — 거짓이면 그 조합은 안 센다. 값 배열의 자리(index)로 받는다. */
+export type SplitOk = (a: number[], b: number[]) => boolean;
+
+function exhaustive(values: number[], limit: number, ok?: SplitOk): RawSplit[] {
   const n = values.length;
   const half = n / 2;
   const best: RawSplit[] = [];
@@ -66,10 +69,12 @@ function exhaustive(values: number[], limit: number): RawSplit[] {
     const inA = new Set(a);
     const b: number[] = [];
     for (let i = 0; i < n; i += 1) if (!inA.has(i)) b.push(i);
-    const av = a.map((i) => values[i]);
-    const bv = b.map((i) => values[i]);
-    const sum = (xs: number[]) => xs.reduce((p, q) => p + q, 0);
-    push({ a, b, gap: Math.abs(sum(av) - sum(bv)), boardGap: boardGapOf(av, bv) });
+    if (!ok || ok(a, b)) {
+      const av = a.map((i) => values[i]);
+      const bv = b.map((i) => values[i]);
+      const sum = (xs: number[]) => xs.reduce((p, q) => p + q, 0);
+      push({ a, b, gap: Math.abs(sum(av) - sum(bv)), boardGap: boardGapOf(av, bv) });
+    }
 
     let k = pick - 1;
     while (k >= 0 && idx[k] === pool - pick + k) k -= 1;
@@ -80,7 +85,7 @@ function exhaustive(values: number[], limit: number): RawSplit[] {
   return best;
 }
 
-function heuristic(values: number[], limit: number): RawSplit[] {
+function heuristic(values: number[], limit: number, ok?: SplitOk): RawSplit[] {
   const n = values.length;
   const half = n / 2;
   const found: RawSplit[] = [];
@@ -117,12 +122,14 @@ function heuristic(values: number[], limit: number): RawSplit[] {
           const na = [...cur.a];
           const nb = [...cur.b];
           [na[i], nb[j]] = [nb[j], na[i]];
+          if (ok && !ok(na, nb)) continue;   // 제약을 깨는 맞바꿈은 안 간다
           const next = evaluate(na, nb);
-          if (better(next, cur) < 0) { cur = next; moved = true; }
+          if (better(next, cur) < 0 || (ok && !ok(cur.a, cur.b))) { cur = next; moved = true; }   // 출발이 제약 밖이면 안으로 드는 걸음은 받는다
         }
       }
       if (!moved) break;
     }
+    if (ok && !ok(cur.a, cur.b)) continue;   // 끝내 제약 안으로 못 들어온 판은 버린다
     const key = [...cur.a].sort((p, q) => p - q).join(",");
     if (seen.has(key)) continue;
     seen.add(key);
@@ -132,17 +139,21 @@ function heuristic(values: number[], limit: number): RawSplit[] {
   return found.slice(0, limit);
 }
 
-const splitAll = (values: number[], limit: number, exact: boolean): RawSplit[] =>
-  (exact ? exhaustive(values, limit) : heuristic(values, limit));
+const splitAll = (values: number[], limit: number, exact: boolean, ok?: SplitOk): RawSplit[] =>
+  (exact ? exhaustive(values, limit, ok) : heuristic(values, limit, ok));
 
-export function buildTeams(players: BalancePlayer[], limit = 12): BalanceResult {
+/** @param ok 조합 제약(선수 id 로) — 깍두기는 양 팀에 다 선 것으로 넘긴다. */
+export function buildTeams(players: BalancePlayer[], limit = 12, ok?: (a: string[], b: string[]) => boolean): BalanceResult {
   if (players.length < 2) return { splits: [], exact: true };
   const vals = players.map((p) => scaled(p.rating));
   const odd = players.length % 2 === 1;
   const exact = canBeExact(players.length);
 
+  const okOf = (ps: BalancePlayer[], joker: BalancePlayer | null): SplitOk | undefined => (ok
+    ? (a, b) => ok([...a.map((i) => ps[i].id), ...(joker ? [joker.id] : [])], [...b.map((i) => ps[i].id), ...(joker ? [joker.id] : [])])
+    : undefined);
   if (!odd) {
-    const raws = splitAll(vals, limit, exact);
+    const raws = splitAll(vals, limit, exact, okOf(players, null));
     return {
       exact,
       splits: raws.map((r) => ({
@@ -160,7 +171,7 @@ export function buildTeams(players: BalancePlayer[], limit = 12): BalanceResult 
   let jokerScore: { gap: number; boardGap: number } | null = null;
   for (let k = 0; k < players.length; k += 1) {
     const rest = vals.filter((_, i) => i !== k);
-    const one = splitAll(rest, 1, exact)[0];
+    const one = splitAll(rest, 1, exact, okOf(players.filter((_, i) => i !== k), players[k]))[0];
     if (!one) continue;
     const score = { gap: one.gap, boardGap: one.boardGap };
     const cmp = jokerScore === null ? -1 : better(score, jokerScore);
@@ -172,7 +183,7 @@ export function buildTeams(players: BalancePlayer[], limit = 12): BalanceResult 
 
   const restPlayers = players.filter((_, i) => i !== jokerAt);
   const restVals = restPlayers.map((p) => scaled(p.rating));
-  const raws = splitAll(restVals, limit, exact);
+  const raws = splitAll(restVals, limit, exact, okOf(restPlayers, players[jokerAt]));
   return {
     exact,
     splits: raws.map((r) => ({

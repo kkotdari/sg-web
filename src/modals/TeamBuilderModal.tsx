@@ -30,6 +30,28 @@ interface Row {
    *  주종족이 랜덤이거나 종족별 기록이 없으면 전체 기록으로 뗀다. 결과 로스터의 종족 글자이자 팀 종족 구성의 재료. */
   race: Race | null;
   blocked: boolean;
+  /** 부종(두 번째로 많이 한 종족)의 기록 — 프로토스 상한에 걸려 부종으로 설 때 쓴다(아래 PROTOSS_CAP ★). 기록이 없으면 null. */
+  alt: { race: BaseRace; plays: number; winRate: number; apm: number | null; dmg: number | null } | null;
+}
+
+/* ★ 프로토스는 **팀당 2명까지**(2026-10-24, 요청: "종족은 프 2까지만 가능 · 프 주종이 4명을 넘으면 한 명은 부종으로 — 가장 부종이 높은 사람이") —
+   고른 사람 중 프 주종이 팀 수 × 2(= 4)를 넘으면 넘친 수만큼 **부종 기록(승률 · 판 수)이 가장 좋은 사람**부터 부종으로 세운다(기록·종족 글자·종족 구성 모두 부종으로).
+   부종 기록이 없는 사람은 못 바꾼다 — 그래도 넘치면 상한을 못 지킨 채 짠다(결과에 적는다). 팀 가름(buildTeams)에는 '양 팀 다 프 ≤ 2' 제약을 건다(깍두기는 양 팀 몫). */
+const PROTOSS_CAP = 2;
+const RACE_ORDER: BaseRace[] = ["테란", "프로토스", "저그"];
+const protossOk = (rows: Map<string, Row>) => (a: string[], b: string[]): boolean =>
+  [a, b].every((ids) => ids.filter((id) => rows.get(id)?.race === "프로토스").length <= PROTOSS_CAP);
+/** 상한에 맞춰 부종으로 세운 뒤의 줄 — 바뀐 사람 id 목록과 함께. */
+function applyProtossCap(chosen: Row[]): { rows: Row[]; switched: string[]; short: number } {
+  const over = chosen.filter((r) => r.race === "프로토스").length - PROTOSS_CAP * 2;
+  if (over <= 0) return { rows: chosen, switched: [], short: 0 };
+  const cands = chosen.filter((r) => r.race === "프로토스" && r.alt)
+    .sort((a, b) => (b.alt!.winRate - a.alt!.winRate) || (b.alt!.plays - a.alt!.plays));
+  const pick = new Set(cands.slice(0, over).map((r) => r.member.id));
+  const rows = chosen.map((r) => (pick.has(r.member.id) && r.alt
+    ? { ...r, race: r.alt.race, plays: r.alt.plays, winRate: r.alt.winRate, apm: r.alt.apm, dmg: r.alt.dmg }
+    : r));
+  return { rows, switched: [...pick], short: Math.max(0, over - pick.size) };
 }
 
 /* ★ 팀 종족 구성(2026-10-24, 요청: "그걸로 따진 종족 구성에 따라 승패 확률도 적용") — 통계의 '종족 구성 전적'(clanComps · 서버 _clan_comps)과 **같은 이름표**를 짓는다:
@@ -134,7 +156,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
   const [comps, setComps] = useState<ClanCompEntry[]>([]);
   /** 고른 사람(누른 차례 — 맨 위로 올라간다). */
   const [picked, setPicked] = useState<string[]>([]);
-  const [result, setResult] = useState<{ splits: BalanceSplit[]; ratings: Map<string, number>; at: number; exact: boolean } | null>(null);
+  const [result, setResult] = useState<{ splits: BalanceSplit[]; ratings: Map<string, number>; rows: Map<string, Row>; switched: string[]; short: number; capped: boolean; at: number; exact: boolean } | null>(null);
 
   useEffect(() => {
     const active = members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended");
@@ -151,7 +173,11 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
           const byRace = race && e ? e.byRace[race as BaseRace] : undefined;
           const s = byRace && byRace.plays > 0 ? byRace : e?.overall;
           const plays = s?.plays ?? 0;
-          return { member: m, plays, winRate: s?.winRate ?? 0, apm: s?.avgApm ?? null, dmg: s?.dmgDealtRel ?? null, race, blocked: plays === 0 };
+          /* 부종 = 주종족 말고 가장 많이 한 종족(판이 있어야) — 위 Row.alt ★. */
+          const altRace = e ? RACE_ORDER.filter((r) => r !== race && (e.byRace[r]?.plays ?? 0) > 0).sort((x, y) => e.byRace[y].plays - e.byRace[x].plays)[0] : undefined;
+          const a = altRace && e ? e.byRace[altRace] : undefined;
+          const alt = altRace && a ? { race: altRace, plays: a.plays, winRate: a.winRate, apm: a.avgApm ?? null, dmg: a.dmgDealtRel ?? null } : null;
+          return { member: m, plays, winRate: s?.winRate ?? 0, apm: s?.avgApm ?? null, dmg: s?.dmgDealtRel ?? null, race, blocked: plays === 0, alt };
         });
         list.sort((a, b) => b.plays - a.plays || a.member.nickname.localeCompare(b.member.nickname));
         setRows(list);
@@ -184,21 +210,31 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
   const toggle = (id: string): void => setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev]));
 
   const build = (): void => {
-    const chosen = pickable.filter((r) => pickedSet.has(r.member.id));
-    if (chosen.length < 2) { showAlert("두 명 이상 골라 주세요."); return; }
+    const picked0 = pickable.filter((r) => pickedSet.has(r.member.id));
+    if (picked0.length < 2) { showAlert("두 명 이상 골라 주세요."); return; }
+    /* 프로토스 상한(위 PROTOSS_CAP ★) — 넘치면 부종으로 세운 줄로 점수를 매긴다. */
+    const cap = applyProtossCap(picked0);
+    const chosen = cap.rows;
+    const rowsMap = new Map(chosen.map((r) => [r.member.id, r]));
     const ratings = ratingsOf(chosen);
-    /* 후보는 넉넉히(40) 받는다 — 사람 점수로 고른 뒤 **종족 구성 보정까지 넣은 승리 확률**로 다시 줄 세우므로(위 probGapOf ★) 점수 차 2위가 구성 덕에 1위가 될 수 있다. */
-    const out = buildTeams(chosen.map((r) => ({ id: r.member.id, rating: ratings.get(r.member.id) ?? 50 })), 40);
+    const players = chosen.map((r) => ({ id: r.member.id, rating: ratings.get(r.member.id) ?? 50 }));
+    /* 후보는 넉넉히(40) 받는다 — 사람 점수로 고른 뒤 **종족 구성 보정까지 넣은 승리 확률**로 다시 줄 세우므로(위 probGapOf ★) 점수 차 2위가 구성 덕에 1위가 될 수 있다.
+       '양 팀 다 프 ≤ 2' 제약으로 먼저 짜고, 그 제약으로 한 조합도 안 나오면(부종 기록이 모자람) 제약 없이 짠다(capped 거짓 · 결과에 적는다). */
+    let out = buildTeams(players, 40, protossOk(rowsMap));
+    let capped = true;
+    if (out.splits.length === 0) { out = buildTeams(players, 40); capped = false; }
     if (out.splits.length === 0) { showAlert("팀을 나누지 못했어요."); return; }
     /* ★ 다른 조합은 **승리 확률 차가 가장 작은 것과 동률인 것만**(요청: "최소 승리 확률 차 1개 또는 동률인 경우만 다른 조합 보여주기") — 그 밖(차가 더 큰 조합)은 버린다. */
-    const gaps = out.splits.map((sp) => probGapOf(sp, ratings, byId, comps));
+    const gaps = out.splits.map((sp) => probGapOf(sp, ratings, rowsMap, comps));
     const best = Math.min(...gaps);
     const splits = out.splits.filter((_, i) => gaps[i] === best);
-    setResult({ splits, ratings, at: 0, exact: out.exact });
+    setResult({ splits, ratings, rows: rowsMap, switched: cap.switched, short: cap.short, capped, at: 0, exact: out.exact });
   };
 
   const split = result ? result.splits[result.at] : null;
   const joker = split?.joker ? byId.get(split.joker) ?? null : null;
+  /** 결과가 보는 줄 — 부종으로 세운 사람은 그 종족·기록이다(위 applyProtossCap ★). */
+  const resRows = result?.rows ?? byId;
 
   return createPortal(
     <div className="scr-modal-overlay">
@@ -217,10 +253,10 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
             <>
               {/* ★ 결과는 로스터식(요청) — 왼쪽 1팀 · 가운데 승리 확률 "54 : 46" · 오른쪽 2팀. 깍두기는 아래 한 줄. */}
               {((): ReactNode => {
-                const pA = probOf(split, result.ratings, byId, comps);
+                const pA = probOf(split, result.ratings, resRows, comps);
                 const a = Math.round(pA * 100); const b = 100 - a;
-                const compA = compRecordOf(split.teamA, split.teamB.length, byId, comps);
-                const compB = compRecordOf(split.teamB, split.teamA.length, byId, comps);
+                const compA = compRecordOf(split.teamA, split.teamB.length, resRows, comps);
+                const compB = compRecordOf(split.teamB, split.teamA.length, resRows, comps);
                 /* 종족 구성 한 줄(위 compRecordOf ★) — "2테 1저 · 58%(12판)" · 전적이 적으면 "(기록 n판)" · 종족을 모르는 사람이 있으면 안 쓴다. */
                 const compText = (c: CompRecord | null): ReactNode => c && (
                   <span className="scr-tb-match-comp">
@@ -238,9 +274,9 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
                       <span className="scr-tb-match-team scr-tb-team-b-txt">2팀{compText(compB)}</span>
                     </div>
                     <div className="scr-roster-matchup scr-tb-roster">
-                      <RosterTeam ids={split.teamA} rows={byId} ratings={result.ratings} />
+                      <RosterTeam ids={split.teamA} rows={resRows} ratings={result.ratings} />
                       <span className="scr-tb-match-vs" aria-hidden>vs</span>
-                      <RosterTeam ids={split.teamB} rows={byId} ratings={result.ratings} right />
+                      <RosterTeam ids={split.teamB} rows={resRows} ratings={result.ratings} right />
                     </div>
                   </div>
                 );
@@ -252,6 +288,17 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
                   <span className="scr-tb-gap-note">동률 조합 {result.splits.length}개 중 {result.at + 1}번째</span>
                 )}
               </div>
+
+              {(result.switched.length > 0 || result.short > 0 || !result.capped) && (
+                <p className="scr-tb-note">
+                  프로토스는 팀당 {PROTOSS_CAP}명까지예요.
+                  {result.switched.length > 0 && (
+                    <> {result.switched.map((id, i) => <span key={id}>{i > 0 && ", "}<b>{byId.get(id)?.member.nickname}</b> 님은 부종({resRows.get(id)?.race})으로</span>)} 세웠어요(부종 기록이 가장 좋은 분부터).</>
+                  )}
+                  {result.short > 0 && <> 부종 기록이 있는 분이 모자라 {result.short}명은 그대로 두었어요.</>}
+                  {!result.capped && <> 이 인원으로는 상한을 지키는 조합이 없어 상한 없이 짰어요.</>}
+                </p>
+              )}
 
               {joker && (
                 <p className="scr-tb-note">
