@@ -40,3 +40,4 @@ coverage/
 *.pem
 .vercel
 .env*
+*.tsbuildinfo
