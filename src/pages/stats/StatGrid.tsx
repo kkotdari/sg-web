@@ -20,11 +20,19 @@ const CLAN_LABEL = "평균";
 /** 정렬 자 — 표 머리를 눌러 고른다(2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추" → "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개").
  *  APM · 데미지 · 전체(rate · plays) · 종족별("테란:rate" · "테란:plays" …). */
 export type StatSortKey = "rate" | "plays" | "dmg" | "apm" | `${BaseRace}:rate` | `${BaseRace}:plays`;
-type SortProps = { sortKeys: readonly StatSortKey[]; onSortKeys: (next: StatSortKey[]) => void };
-/** 켜고 끄기 — 없으면 끝에 붙이고 있으면 뺀다. */
-const toggled = (keys: readonly StatSortKey[], k: StatSortKey): StatSortKey[] => (keys.includes(k) ? keys.filter((x) => x !== k) : [...keys, k]);
-/** 폰 전적 머리 — 누를 때마다 승률 → 게임수 → 끔(요청: "모바일은 한 번 누르면 승률 다음 플레이 수 다음 없앰") · 승률이 게임수로 바뀔 땐 제 차례 자리를 지킨다. */
-const cycled = (keys: readonly StatSortKey[], rate: StatSortKey, plays: StatSortKey): StatSortKey[] => {
+type SortProps = {
+  sortKeys: readonly StatSortKey[]; onSortKeys: (next: StatSortKey[]) => void;
+  /** 복수 기준 정렬(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 꺼져 있으면(기본) 머리를 누른 자 **하나**로 갈아탄다. */
+  multi: boolean;
+};
+/** 켜고 끄기 — 복수: 없으면 끝에 붙이고 있으면 뺀다 · 하나: 그 자 하나로(같은 자를 다시 누르면 끔 = 기본 차례). */
+const toggled = (keys: readonly StatSortKey[], k: StatSortKey, multi: boolean): StatSortKey[] => {
+  if (!multi) return keys.includes(k) && keys.length === 1 ? [] : [k];
+  return keys.includes(k) ? keys.filter((x) => x !== k) : [...keys, k];
+};
+/** 폰 전적 머리 — 누를 때마다 승률 → 게임수 → 끔(요청: "모바일은 한 번 누르면 승률 다음 플레이 수 다음 없앰") · 승률이 게임수로 바뀔 땐 제 차례 자리를 지킨다(복수) · 하나면 그 자만. */
+const cycled = (keys: readonly StatSortKey[], rate: StatSortKey, plays: StatSortKey, multi: boolean): StatSortKey[] => {
+  if (!multi) return keys.includes(rate) ? [plays] : keys.includes(plays) ? [] : [rate];
   if (keys.includes(rate)) return keys.map((x) => (x === rate ? plays : x));
   if (keys.includes(plays)) return keys.filter((x) => x !== plays);
   return [...keys, rate];
@@ -235,7 +243,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span>데미지 — <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
             <span>APM — 분당 행동 수 평균</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
-            <span>머리를 누르면 정렬 — 데미지 · APM 은 누를 때마다 켜고 끄고, 전체 · 종족 머리는 승률 → 게임수 → 끔. 여럿이면 누른 차례대로</span>
+            <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
             <span>값을 누르면 일곱 달 변화 그래프(달로 조회할 때)</span>
           </span>
         </>
@@ -244,7 +252,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
           <span>APM — 분당 행동 수 평균</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
-          <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 정렬 — 여럿이면 누른 차례대로, 다시 누르면 빠져요</span>
+          <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
           <span>값에 마우스를 얹으면 일곱 달 변화 그래프(달로 조회할 때)</span>
         </span>
       )}
@@ -252,7 +260,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
   );
 }
 
-export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys, trend }: SortProps & {
+export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys, multi, trend }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>> } | null;
   clanGames: number;
@@ -294,12 +302,12 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
     <StatTrendPop anchor={pop} data={trend} mobile={mobile} onEnter={mobile ? undefined : popCancel} onLeave={mobile ? undefined : popLeave} />,
     document.body,
   ) : null;
-  const toggle = (k: StatSortKey) => ({ on: sortKeys.includes(k), onClick: () => onSortKeys(toggled(sortKeys, k)) });
+  const toggle = (k: StatSortKey) => ({ on: sortKeys.includes(k), onClick: () => onSortKeys(toggled(sortKeys, k, multi)) });
   /** PC 머리 — 아이콘 차례(여럿일 때만 숫자 · 하나면 0 = 숫자 없음). 폰은 order 를 안 줘 아이콘이 없다. */
   const pcToggle = (k: StatSortKey) => ({ ...toggle(k), order: sortKeys.length > 1 ? sortKeys.indexOf(k) + 1 : 0 });
   /** 폰 전적 머리(전체 · 종족) — 승률 → 게임수 → 끔. */
   const cycle = (rate: StatSortKey, plays: StatSortKey) => ({
-    on: sortKeys.includes(rate) || sortKeys.includes(plays), onClick: () => onSortKeys(cycled(sortKeys, rate, plays)),
+    on: sortKeys.includes(rate) || sortKeys.includes(plays), onClick: () => onSortKeys(cycled(sortKeys, rate, plays, multi)),
   });
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace } : null;
   if (mobile) {

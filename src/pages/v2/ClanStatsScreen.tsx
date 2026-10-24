@@ -92,6 +92,12 @@ export default function ClanStatsScreen() {
      다 빼면 기본 차례만(줄에 "기본"). 머리를 누르는 셈(켜고 끄기 · 폰 전적 머리의 승률 → 게임수 → 끔)은 StatGrid 가 한다.
      한때(같은 날): 정렬 탭 · 탭 옆 "승률순 × > 참여순 × 적용중" 줄 · 탭 앞/위 차례 숫자. 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
   const [sortKeys, setSortKeys] = useState<StatSortKey[]>(["rate"]);
+  /* 복수 기준 토글(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 기본은 하나(머리를 누르면 그 자로 갈아탐).
+     끄는 순간 여럿이 쌓여 있었으면 첫 자(맨 먼저 누른 것)만 남긴다. */
+  const [multiSort, setMultiSort] = useState(false);
+  const toggleMulti = (): void => {
+    setMultiSort((on) => { if (on && sortKeys.length > 1) setSortKeys([sortKeys[0]]); return !on; });
+  };
   const matchedMembers = useMemo(() => {
     const terms = users.map((u) => normalizeSearchText(u).trim()).filter(Boolean);
     return activeMembers.filter((m) => terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t)));
@@ -342,6 +348,11 @@ export default function ClanStatsScreen() {
       <div className="scr-stats-sort">
         <span className="scr-stats-sort-label">정렬:</span>
         <span className="scr-stats-sort-chain">{sortKeys.length > 0 ? sortKeys.map(sortLabel).join(" › ") : "기본"}</span>
+        {/* 복수 기준 토글(위 multiSort ★) — 켜지면 머리를 누른 차례대로 기준이 쌓인다. PC·폰 둘 다. */}
+        <button type="button" role="switch" aria-checked={multiSort} className={cx("scr-stats-sort-multi", multiSort && "is-on")} onClick={toggleMulti}
+          title={multiSort ? "복수 기준 정렬 끄기 — 머리를 누르면 그 기준 하나로" : "복수 기준 정렬 켜기 — 머리를 누른 차례대로 기준이 쌓여요"}>
+          복수 기준
+        </button>
         {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(전체 승률 하나)과 다를 때만 선다 · PC 만. */}
         {!isMobile && !(sortKeys.length === 1 && sortKeys[0] === "rate") && (
           <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["rate"])} title="정렬을 처음 값(전체 승률)으로">
@@ -371,6 +382,7 @@ export default function ClanStatsScreen() {
             mobile={isMobile}
             sortKeys={sortKeys}
             onSortKeys={setSortKeys}
+            multi={multiSort}
             trend={trend}
           />
         )}

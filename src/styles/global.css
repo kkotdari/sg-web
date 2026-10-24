@@ -7634,6 +7634,13 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-sort-ic { display: inline-flex; align-items: center; gap: 1px; color: var(--dim); }
 .scr-sg-sort.is-on .scr-sg-sort-ic { color: var(--text); }
 .scr-sg-sort-ic i { font-style: normal; font-size: 10px; font-weight: 800; line-height: 1; }
+/* 정렬 줄 복수 기준 토글(2026-10-24, 요청: "기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글") — 탭 알약과 같은 꼴(.scr-line-tab-btn 켜짐 칠). */
+.scr-stats-sort-multi {
+  margin-left: 4px; padding: 2px 8px; border: 1px solid var(--line-soft); border-radius: 999px; background: transparent; cursor: pointer; font: inherit;
+  font-size: var(--fs-9); font-weight: 600; color: var(--muted); white-space: nowrap; -webkit-tap-highlight-color: transparent;
+}
+.scr-stats-sort-multi.is-on { color: var(--btn-fill-text); background: var(--btn-fill-bg); border-color: transparent; }
+@media (hover: hover) { .scr-stats-sort-multi:hover:not(.is-on) { color: var(--text); } }
 /* 정렬 줄 초기화 단추(같은 요청) — 처음 값(전체 승률)과 다를 때만 선다 · 작은 글자 단추. */
 .scr-stats-sort-reset { padding: 2px 6px; gap: 4px; font-size: var(--fs-11); color: var(--muted); }
 @media (hover: hover) { .scr-stats-sort-reset:hover { color: var(--text); } }
