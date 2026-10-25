@@ -27,8 +27,8 @@ type ViewMode = "player" | "teamColor" | "teamSum";
 type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "cm" | "cg" | "dd" | "dt";
 /** 인구 · 데미지 · 자원 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환" → "인구 데미지 자원 세 개구나 탭이"). */
 type GroupTab = "bl" | "sp" | "dmg" | "rs";
-/** 탭 — bl(테크 = 건설 줄)은 **한 종류만 보이기**(폰 · PC 창모드)에서만 탭이다(2026-10-25 · 아래 oneKind9 ★). PC 전체화면은 건설 줄이 늘 위에 · 탭은 셋. */
-const GROUP_TABS: [GroupTab, string][] = [["bl", "테크"], ["sp", "인구"], ["dmg", "데미지"], ["rs", "자원"]];
+/** 탭 — bl(건설 줄 · 2026-10-25 "테크가 아니라 건설")은 **한 종류만 보이기**(폰 · PC 창모드)에서만 탭이다(2026-10-25 · 아래 oneKind9 ★). PC 전체화면은 건설 줄이 늘 위에 · 탭은 셋. */
+const GROUP_TABS: [GroupTab, string][] = [["bl", "건설"], ["sp", "인구"], ["dmg", "데미지"], ["rs", "자원"]];
 const cumsum = (a: readonly number[]): number[] => { let s = 0; return a.map((v) => (s += v)); };
 const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
 
@@ -782,7 +782,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       : hasGather ? [chartOf("cm", "미네랄", { titleExtra: rsModeEl }), chartOf("cg", "가스")] : null)
     : hasDmg ? [chartOf("dd", "준 데미지", { titleExtra: miniTabs(dmgMin, setDmgMin, "누적", "분당") }), chartOf("dt", "입은 데미지")] : null;
   const tabsEl = (
-    <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label={oneKind9 ? "테크 · 인구 · 데미지 · 자원" : "인구 · 데미지 · 자원"}>
+    <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label={oneKind9 ? "건설 · 인구 · 데미지 · 자원" : "인구 · 데미지 · 자원"}>
       {GROUP_TABS.filter(([k]) => oneKind9 || k !== "bl").map(([k, label]) => (
         <button key={k} type="button" role="tab" aria-selected={tab === k} className={cx("scr-line-tab-btn", tab === k && "is-on")} onClick={() => setTab(k)}>{label}</button>
       ))}
