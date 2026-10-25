@@ -3319,7 +3319,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc-users { display: flex; flex-direction: column; gap: 6px; }
 .scr-gc-uall { display: flex; align-items: center; gap: 6px; }
 .scr-gc-uall > .scr-compact-rect-btn { padding: 2px 5px; font-size: 11px; border-radius: 5px; }   /* 모두 선택·해제 작게(2026-10-22, 요청: "두 버튼 크기 축소" · 옛 4px 6px · 12px) */
-.scr-gc-top .scr-rc-mode { align-items: center; }
+.scr-gc-mode { align-items: center; margin-top: 4px; }   /* 개인/팀별 — 그래프 탭 아래(2026-10-25 · 옛 맨 위 고르기 안 .scr-gc-top .scr-rc-mode) */
 .scr-gc-flabel { flex: none; margin-right: 2px; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }   /* 고르기 줄 앞 라벨(2026-10-22) */
 .scr-gc-uteams { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 36px; }
 .scr-gc-ugroup { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
@@ -3328,8 +3328,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc-udot { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; font-style: normal; font-size: 9.5px; font-weight: 800; line-height: 1; }   /* 8px 점 → 15px 동그라미 + 종족 글자(2026-10-22) */
 /* 볼 사람(팀 줄) ↔ 개인/팀별 보기 사이 10 → 16px(같은 날 "보기랑 개별 팀 사이 좀 갭 주기"). */
 /* 맨 위 고르기 고정(2026-10-22) — 창 몸(.scr-modal-body)이 스크롤하는 동안 위에 붙는다. 몸의 위 숨(4px)만큼 끌어올리고 판 색으로 뒤를 가린다. */
-.scr-gc-top { position: sticky; top: -4px; z-index: 3; display: flex; flex-direction: column; gap: 16px; margin: -4px 0 0; padding: 8px 0 10px; background: var(--panel-solid);  transition: transform .22s ease; }
-.scr-gc-top.is-hidden { transform: translateY(calc(-100% - 8px)); pointer-events: none; }   /* 내리면 숨김(2026-10-22 · GameCurvesModal topHidden) */
+.scr-gc-top { position: sticky; top: -4px; z-index: 3; display: flex; flex-direction: column; gap: 16px; margin: -4px 0 0; padding: 8px 0 10px; background: var(--panel-solid); }   /* 늘 붙어 있다(2026-10-25, 요청: "유저 필터는 항시 스티키" — 옛 내리면 숨김 .is-hidden 걷음) */
 /* 오른쪽 칸 데이터 창(GameCurvesModal dock · 2026-10-22, 요청: "상세에서 데이터 창 열면 PC 에서는 일정 폭 이상 시 재생기를 줄이고 화면 우측에 나타내기") —
    1280 이상에서 게임 상세가 연 창은 덮개 없이 화면 오른쪽 위아래 가득 붙는다. 상세 본문은 칸 폭만큼 오른쪽 여백을 받아 재생기가 줄어든다(위로 띄운 맨 위 단추도 칸 밖으로). */
 @media (min-width: 1280px) {

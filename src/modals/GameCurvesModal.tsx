@@ -304,6 +304,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   useCloseOutside(pop !== null, plotRef, ".scr-bl-hit", () => setPop(null));
   /** 마우스를 얹은 칩 하나(진짜 주인공) — 같은 종류 강조보다 진하게 · 맨 위(svg 끝)에 한 번 더 그린다(아래 ★). */
   const [me, setMe] = useState<{ key: string; lane: BuildLane; x: number; y: number; w: number; label: string; cap: string } | null>(null);
+  /* 폰 — 누른 칩 강조(같은 종류 · 그 시점)도 **다른 곳을 누르면 푼다**(2026-10-25, 요청: "강조(테크나 그래프) 시 다른 곳 터치하면 취소되게" → "다른 곳 터치 시 강조 해제는 테크에만" · 곡선 판의 칩 강조는 그대로). PC 는 얹기·떼기라 그대로. */
+  const meOn9 = me !== null;
+  useCloseOutside(hscroll && meOn9, plotRef, ".scr-bl-hit", () => { setHoverKind(null); setHoverAt(null); setMe(null); });
   const lastPtr = useRef("mouse");
   const AXIS_H = font.axis + 8 + AXIS_DROP;
   const END = maxX * 60;
@@ -603,27 +606,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
      창 자체를 브라우저 전체화면으로 · Esc 로 나오면 원래 창. 막혀도 창은 화면을 채운다. */
   const modalRef = useRef<HTMLDivElement>(null);
   const [full, setFull] = useState(false);
-  /* ★ 맨 위 고르기는 **내리면 숨고 올리면 나온다**(2026-10-22, 요청: "데이터 창 필터링부를 완전 스티키 말고 아래로 스크롤하면 숨기고 위로 스크롤 좀 하면 나오는 식") —
-     창 몸의 스크롤 방향을 본다: 고르기 키(TOP_HIDE_AT)를 지나 아래로 TOP_STEP 넘게 내리면 숨기고, 위로 TOP_STEP 넘게 올리거나 맨 위 근처면 다시 보인다. 숨김은 위로 밀어 올림(.is-hidden). */
+  /* (걷음 2026-10-25, 요청: "유저 필터는 항시 스티키로 변경") 맨 위 고르기의 '내리면 숨고 올리면 나온다'(2026-10-22 · topHidden) — 이제 늘 위에 붙어 있다(.scr-gc-top sticky). */
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [topHidden, setTopHidden] = useState(false);
-  useEffect(() => {
-    const el = bodyRef.current;
-    if (!el) return undefined;
-    let last = el.scrollTop;
-    const TOP_HIDE_AT = 140;
-    const TOP_STEP = 8;
-    const onScroll = (): void => {
-      const y = el.scrollTop;
-      const d = y - last;
-      if (y < TOP_HIDE_AT) { setTopHidden(false); last = y; return; }
-      if (Math.abs(d) < TOP_STEP) return;
-      setTopHidden(d > 0);
-      last = y;
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
   useEffect(() => {
     const onChange = (): void => { if (!document.fullscreenElement) setFull(false); };
     document.addEventListener("fullscreenchange", onChange);
@@ -801,9 +785,26 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   );
   /* ★ PC 전체화면(2열 폭)은 건설 줄이 온 폭 · 그 아래 탭의 두 판이 반씩 나란히(2026-10-22, 요청: "위쪽은 건물 판이 전체 폭 다 쓰고 그 아래 각 탭은 그래프가 반반씩 폭 쓰기 ·
      전체화면만") — 옛 2열(왼쪽 건설 · 오른쪽 판 넷)을 갈았다. 아니면 두 판이 위아래. */
+  /* ★ 개인/팀별(색 · 팀별 합산)은 **그래프 탭 아래**(2026-10-25, 요청: "색깔과 팀별합산을 그래프 탭 아래로 옮기고") — 옛 자리는 맨 위 고르기(.scr-gc-top) 안. */
+  const modeEl = teamGame ? (
+    <div className="scr-rc-mode scr-gc-mode">
+      <span className="scr-gc-flabel" aria-hidden>개인/팀별:</span>
+      {/* 탭 꼴(2026-10-22, 요청: "여기에 탭 디자인 적용") — 게임 목록 · 통계 탭과 같은 .scr-line-tabs. */}
+      <div className="scr-line-tabs" role="tablist" aria-label="개인/팀별">
+        {VIEW_MODES.map(([m, label]) => (
+          <button
+            key={m} type="button" role="tab" aria-selected={mode === m}
+            className={cx("scr-line-tab-btn", mode === m && "is-on")}
+            onClick={() => { setView(m); setFocus(null); }}
+          >{label}</button>
+        ))}
+      </div>
+    </div>
+  ) : null;
   const groupEls = (
     <>
       {tabsEl}
+      {modeEl}
       {pair === null ? (
         <div className="scr-rc-empty scr-gc-nodmg">
           {tab === "rs" && <>{rsModeEl}<br /></>}
@@ -823,7 +824,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const topEl = (
     <>
       {/* 맨 위 고르기(볼 사람 · 보기)는 창 위에 붙어 있는다(2026-10-22, 요청: "맨 위 필터는 고정되면 좋을 듯"). */}
-      <div className={cx("scr-gc-top", topHidden && "is-hidden")}>
+      <div className="scr-gc-top">
       <div className="scr-gc-users" aria-label="볼 사람">
         <div className="scr-gc-uall">
           {/* 고르기 줄 앞 라벨(2026-10-22, 요청: "필터에 라벨 추가 — 표시: 모두 선택 모두 해제 · 개인/팀별:") */}
@@ -849,21 +850,6 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
         ))}
         </div>
       </div>
-      {teamGame && (
-        <div className="scr-rc-mode">
-          <span className="scr-gc-flabel" aria-hidden>개인/팀별:</span>
-          {/* 탭 꼴(2026-10-22, 요청: "여기에 탭 디자인 적용") — 게임 목록 · 통계 탭과 같은 .scr-line-tabs. */}
-          <div className="scr-line-tabs" role="tablist" aria-label="개인/팀별">
-            {VIEW_MODES.map(([m, label]) => (
-              <button
-                key={m} type="button" role="tab" aria-selected={mode === m}
-                className={cx("scr-line-tab-btn", mode === m && "is-on")}
-                onClick={() => { setView(m); setFocus(null); }}
-              >{label}</button>
-            ))}
-          </div>
-        </div>
-      )}
       </div>
     </>
   );
