@@ -343,7 +343,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   /** kind — 그 칩이 말하는 건물 종류(같은 종류 강조) · at — 그 칩의 때(초) · what — 무엇(본 칩 착공 · 변태 · 붙음 · 변태 시작) · grp — 묶음(×N)의 채들. */
   type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; grp?: Bld[]; /** 머릿말(caps ★ · 없으면 빈 글) */ cap: string;
     /** 묶음(×N)의 채마다 때(팝오버 · 아래 묶음 나무 ★) · 놓인 단(사람 칸 안 · 0 = 맨 위) · 잇는 선의 앞 칩(이 채 tags 안 차례 · −1 = 없음). */
-    times?: number[]; r: number; par: number };
+    times?: number[]; r: number; par: number;
+    /** 종류별 줄(byKind ★)만 — 그 칩 뒤 개수(0 이면 줄 안 선을 안 긋는다) · 다른 줄에서 이 칩으로 오는 선의 앞 칩(변태 전 종류 · 애드온은 본 건물 줄). */
+    n?: number; src?: { x: number; w: number; r: number; addon: boolean } };
   const GROUP_SEC = 45;
   /** 단을 건너는 잇는 선의 **S자 곡선 폭**(2026-10-25, 요청: "선을 직각으로 꺾지 말고 부드럽게") — 앞 칩 오른끝에서 이만큼 가며 단을 옮기고 남은 길은 곧게(화살촉 자리 6 남김) · 8~22. */
   const curveL9 = (pv: Tag, t: Tag): number => Math.min(22, Math.max(8, t.x - (pv.x + pv.w) - 6));
@@ -414,11 +416,11 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
        그 뒤는 개수만(머릿말 = 그때 시각 · 인구). 칩끼리 닿으면 앞 칩에 합쳐 개수만 새로(팝오버 = 그 때들). 줄 차례는 본 건물의 처음 착공 차례 · 변태·애드온 줄은 그 본 건물 줄 바로 아래
        (처음 나온 차례 · 본 건물 = 처음 종류 · 애드온은 붙은 본 건물의 처음 종류). */
     const kindUnits9 = (): { bs: Bld[]; tags: Tag[] }[] => {
-      type Row9 = { kind: number; parent: number | null; first: number; ev: [number, number][]; bs: Bld[] };
+      type Row9 = { kind: number; parent: number | null; from: number | null; addon: boolean; first: number; ev: [number, number][]; bs: Bld[] };
       const rowsK9 = new Map<number, Row9>();
-      const rowOf9 = (kind: number, parent: number | null, at9: number): Row9 => {
+      const rowOf9 = (kind: number, parent: number | null, at9: number, from: number | null = null, addon = false): Row9 => {
         let r9 = rowsK9.get(kind);
-        if (!r9) { r9 = { kind, parent, first: at9, ev: [], bs: [] }; rowsK9.set(kind, r9); }
+        if (!r9) { r9 = { kind, parent, from, addon, first: at9, ev: [], bs: [] }; rowsK9.set(kind, r9); }
         r9.first = Math.min(r9.first, at9);
         return r9;
       };
@@ -428,12 +430,12 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       };
       for (const b of l.blds) {
         const host9 = b.h && b.h.length > 0 ? l.blds[b.h[0][0]] : undefined;
-        if (host9) { span9(rowOf9(b.t, host9.t, b.s), b, b.s, b.e); continue; }
+        if (host9) { span9(rowOf9(b.t, host9.t, b.s, host9.t, true), b, b.s, b.e); continue; }
         const cuts9 = b.m.map(([mt, ms]) => [mt, ms] as [number, number]).sort((p, q) => p[1] - q[1]);
         const kinds9: [number, number][] = [[b.t, b.s], ...cuts9];
         kinds9.forEach(([k9, a9], i9) => {
           const z9 = i9 + 1 < kinds9.length ? kinds9[i9 + 1][1] : b.e;
-          span9(rowOf9(k9, i9 === 0 ? null : b.t, a9), b, a9, z9);
+          span9(rowOf9(k9, i9 === 0 ? null : b.t, a9, i9 === 0 ? null : kinds9[i9 - 1][0]), b, a9, z9);
         });
       }
       /* 줄 차례 — 본 건물 줄(parent 없음)을 처음 때 차례로, 각 줄 밑에 그 줄을 본으로 둔 줄들(처음 때 차례). 본이 따로 줄이 없는(낯선) 줄은 맨 끝. */
@@ -446,7 +448,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         for (const d9 of all9.filter((r9) => r9.parent === bz.kind && r9 !== bz).sort((p, q) => p.first - q.first)) if (!order9.includes(d9)) order9.push(d9);
       }
       for (const r9 of all9) if (!order9.includes(r9)) order9.push(r9);
-      return order9.map((rw, ri) => {
+      const out9 = order9.map((rw, ri) => {
         const name9 = BUILD_LABEL[rw.kind] ?? `#${rw.kind}`;
         const ev9 = rw.ev.slice().sort((p, q) => p[0] - q[0] || q[1] - p[1]);
         const tags: Tag[] = [];
@@ -456,20 +458,31 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
           while (i9 < ev9.length && ev9[i9][0] === at9) { n9 += ev9[i9][1]; i9 += 1; }
           const lab9 = tags.length === 0 ? `${name9}\u2002${n9}` : String(n9);
           const pv = tags[tags.length - 1];
-          const t = tag(at9, lab9, "개수", { kind: rw.kind, r: ri, par: -1 });
+          /* 줄 안 선(2026-10-25, 요청: "선도 있어야 할 듯") — 앞 칩 → 이 칩(par) · 앞 칩 뒤 개수가 0 이면 렌더가 안 긋는다. */
+          const t = tag(at9, lab9, "개수", { kind: rw.kind, r: ri, par: tags.length - 1, n: n9 });
           if (pv && t.x < pv.x + pv.w + BL.gap) {
             /* 앞 칩에 닿는다 — 합쳐 개수만 새로(첫 칩이면 이름은 그대로) · 팝오버는 그 때들 */
             const lab2 = tags.length === 1 ? `${name9}\u2002${n9}` : String(n9);
             const w2 = chipW2(lab2, pv.cap);
-            tags[tags.length - 1] = { ...pv, label: lab2, w: w2, x: Math.min(pv.x, RIGHT - w2), times: [...(pv.times ?? [pv.at]), at9], grp: [] };
+            tags[tags.length - 1] = { ...pv, label: lab2, w: w2, x: Math.min(pv.x, RIGHT - w2), times: [...(pv.times ?? [pv.at]), at9], grp: [], n: n9 };
             continue;
           }
           tags.push(t);
         }
         for (const t of tags) take9(ri, t.x, t.x + t.w);
         if (tags.length === 0) take9(ri, 0, 0);
-        return { bs: rw.bs.length ? rw.bs : [l.blds[0]], tags };
+        return { bs: rw.bs.length ? rw.bs : [l.blds[0]], tags, rw };
       });
+      /* 줄 사이 선 — 변태·애드온 줄의 첫 칩은 앞 종류 줄(변태 = 바로 전 종류 · 애드온 = 본 건물)에서 그 때 앞에 끝나는 마지막 칩에서 온다(S자 · 변태는 화살촉). */
+      for (const u9 of out9) {
+        const f9 = u9.rw.from;
+        const t0 = u9.tags[0];
+        if (f9 === null || !t0) continue;
+        const src9 = out9.find((o9) => o9.rw.kind === f9);
+        const pv9 = src9?.tags.filter((q9) => q9.x + q9.w + 8 <= t0.x).pop();
+        if (pv9) t0.src = { x: pv9.x, w: pv9.w, r: pv9.r, addon: u9.rw.addon };
+      }
+      return out9.map(({ bs, tags }) => ({ bs, tags }));
     };
     const units: { bs: Bld[]; tags: Tag[] }[] = byKind ? kindUnits9() : roots9.map((root9) => {
       const tags: Tag[] = [];
@@ -578,13 +591,23 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
               return (
                 <g key={`${b.s}:${b.t}:${k}:${u.tags[0]?.r ?? 0}`} className="scr-bl-hit">
                   {/* 잇는 선 — 앞 칩 오른끝 → 뒤 칩 왼끝(변태·애드온) · 같은 단은 곧은 선, 다른 단(위아래 빈 곳)은 **꺾은 선**(위 묶음 나무 ★). */}
+                  {/* 종류별 줄의 줄 사이 선(t.src · 위 kindUnits9 ★) — 앞 종류 줄의 칩 오른끝 → 이 줄 첫 칩(S자). */}
+                  {u.tags.map((t, ti) => {
+                    const sr9 = t.src;
+                    if (!sr9 || (hoverAt !== null && t.at > hoverAt + 0.5)) return null;
+                    /* 앞 종류 줄을 따라가다 **그 때 바로 앞에서** 내려간다(사이 줄의 칩을 덜 가로지르게 · 그 줄의 줄 안 선과 겹쳐 '거기서 갈라짐'으로 읽힌다). */
+                    const p09 = sr9.x + sr9.w; const lyP9 = lyOf(top, k + sr9.r); const lyT9 = lyOf(top, k + t.r); const x29 = t.x - (sr9.addon ? 0 : 1);
+                    const cl9 = Math.min(22, Math.max(8, x29 - p09 - 4)); const c19 = Math.max(p09, x29 - cl9 - 4);
+                    return <path key={`s${ti}`} className={cx("scr-bl-link", sr9.addon && "is-addon")} d={`M${p09},${lyP9} L${c19},${lyP9} C${c19 + cl9 / 2},${lyP9} ${c19 + cl9 / 2},${lyT9} ${c19 + cl9},${lyT9} L${x29},${lyT9}`} markerEnd={sr9.addon ? undefined : `url(#${arrowId})`} />;
+                  })}
                   {u.tags.map((t, ti) => {
                     if (t.par < 0) return null;
                     const pv = u.tags[t.par];
                     if (t.r === pv.r && t.x <= pv.x + pv.w + 0.5) return null;
+                    if (t.what === "개수" && pv.n === 0) return null;   // 종류별 줄 — 다 사라진 뒤로는 줄 안 선이 없다
                     if (hoverAt !== null && t.at > hoverAt + 0.5) return null;   // 그때 아직 없는 칩으로 가는 선도 함께 숨김(stCls is-after)
                     /* ★ 애드온(붙음)은 **그냥 점선** · 변태(변태 · 변태 시작)는 **화살표 점선**(2026-10-24, 요청: "애드온 그냥 점선, 변태 화살표 점선으로 잇기 · 선 두께 반") — 옛 둘 다 실선 화살표. */
-                    const addon9 = t.what === "붙음";
+                    const addon9 = t.what === "붙음" || t.what === "개수";   // 종류별 줄 안 선도 촉 없는 점선
                     const lyP9 = lyOf(top, k + pv.r); const lyT9 = lyOf(top, k + t.r);
                     const x29 = t.x - (addon9 ? 0 : 1);
                     if (t.r === pv.r) return <line key={`l${ti}`} className={cx("scr-bl-link", addon9 && "is-addon")} x1={pv.x + pv.w} x2={x29} y1={lyT9} y2={lyT9} markerEnd={addon9 ? undefined : `url(#${arrowId})`} />;
