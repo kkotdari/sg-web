@@ -26,8 +26,9 @@ const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703
 type ViewMode = "player" | "teamColor" | "teamSum";
 type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "cm" | "cg" | "dd" | "dt";
 /** 인구 · 데미지 · 자원 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환" → "인구 데미지 자원 세 개구나 탭이"). */
-type GroupTab = "sp" | "dmg" | "rs";
-const GROUP_TABS: [GroupTab, string][] = [["sp", "인구"], ["dmg", "데미지"], ["rs", "자원"]];
+type GroupTab = "bl" | "sp" | "dmg" | "rs";
+/** 탭 — bl(테크 = 건설 줄)은 **한 종류만 보이기**(폰 · PC 창모드)에서만 탭이다(2026-10-25 · 아래 oneKind9 ★). PC 전체화면은 건설 줄이 늘 위에 · 탭은 셋. */
+const GROUP_TABS: [GroupTab, string][] = [["bl", "테크"], ["sp", "인구"], ["dmg", "데미지"], ["rs", "자원"]];
 const cumsum = (a: readonly number[]): number[] => { let s = 0; return a.map((v) => (s += v)); };
 const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
 
@@ -654,7 +655,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 인구 그래프의 '일꾼 제외'(2026-10-21, 요청: "인구 그래프 타이틀 옆에 일꾼 제외 라벨드 토글") — 켜면 일꾼 뺀 인구(sx). */
   const [noWorker, setNoWorker] = useState(false);
   const spKey: CurveKey = noWorker ? "sx" : "sp";
-  const [tab, setTab] = useState<GroupTab>("sp");
+  const [tabRaw, setTab] = useState<GroupTab>("bl");
   /* 데미지는 누적이 기본 · '분당'을 켜면 그 앞 1분 동안의 몫(2026-10-22, 요청: "누적을 기본 · 분당으로 전환 가능"). */
   const [dmgMin, setDmgMin] = useState(false);
   /* 자원은 누적(캔 양) 이 기본 · '순간'이면 그때 쥔 양(2026-10-22, 요청: "자원은 누적 · 순간"). */
@@ -772,13 +773,17 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 캔 자원은 재분석한 판만 있다(series rs.cm · cg). */
   const hasGather = (players ?? []).some((p) => (p.cm?.length ?? 0) > 1);
   const rsModeEl = miniTabs(rsNow, setRsNow, "누적", "순간");
+  /* ★ **한 종류만 보이기**(2026-10-25, 요청: "모바일 및 PC 창모드 그래프 탭을 테크 인구 데미지 자원으로 통합해서 한 종류만 보이게 · 스티키 내에 순서 그래프 · 유저 · 색깔") —
+     폰·PC 창모드는 탭 넷(테크 = 건설 줄)에서 고른 하나만 그리고, 탭 · 볼 사람 · 개인/팀별이 그 차례로 맨 위에 붙는다(.scr-gc-top). PC 전체화면은 종전(건설 줄 온 폭 + 탭 셋의 두 판 반반). */
+  const oneKind9 = !full;
+  const tab: GroupTab = !oneKind9 && tabRaw === "bl" ? "sp" : tabRaw;
   const pair: [ReactNode, ReactNode] | null = tab === "sp" ? [spEl, wkEl]
     : tab === "rs" ? (rsNow ? [chartOf("rm", "미네랄", { titleExtra: rsModeEl }), rgEl]
       : hasGather ? [chartOf("cm", "미네랄", { titleExtra: rsModeEl }), chartOf("cg", "가스")] : null)
     : hasDmg ? [chartOf("dd", "준 데미지", { titleExtra: miniTabs(dmgMin, setDmgMin, "누적", "분당") }), chartOf("dt", "입은 데미지")] : null;
   const tabsEl = (
-    <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label="인구 · 데미지 · 자원">
-      {GROUP_TABS.map(([k, label]) => (
+    <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label={oneKind9 ? "테크 · 인구 · 데미지 · 자원" : "인구 · 데미지 · 자원"}>
+      {GROUP_TABS.filter(([k]) => oneKind9 || k !== "bl").map(([k, label]) => (
         <button key={k} type="button" role="tab" aria-selected={tab === k} className={cx("scr-line-tab-btn", tab === k && "is-on")} onClick={() => setTab(k)}>{label}</button>
       ))}
     </div>
@@ -803,9 +808,9 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   ) : null;
   const groupEls = (
     <>
-      {tabsEl}
-      {modeEl}
-      {pair === null ? (
+      {!oneKind9 && tabsEl}
+      {!oneKind9 && modeEl}
+      {oneKind9 && tab === "bl" ? lanesEl : pair === null ? (
         <div className="scr-rc-empty scr-gc-nodmg">
           {tab === "rs" && <>{rsModeEl}<br /></>}
           {tab === "rs" ? "캔 자원" : "데미지"} 데이터가 아직 없어요 — 재분석하면 생겨요
@@ -825,6 +830,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
     <>
       {/* 맨 위 고르기(볼 사람 · 보기)는 창 위에 붙어 있는다(2026-10-22, 요청: "맨 위 필터는 고정되면 좋을 듯"). */}
       <div className="scr-gc-top">
+      {oneKind9 && tabsEl}
       <div className="scr-gc-users" aria-label="볼 사람">
         <div className="scr-gc-uall">
           {/* 고르기 줄 앞 라벨(2026-10-22, 요청: "필터에 라벨 추가 — 표시: 모두 선택 모두 해제 · 개인/팀별:") */}
@@ -850,6 +856,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
         ))}
         </div>
       </div>
+      {oneKind9 && modeEl}
       </div>
     </>
   );
@@ -874,7 +881,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
           ) : (
             <div className="scr-gc" ref={boxRef}>
               {topEl}
-              {box.w > 0 && <>{lanesEl}{groupEls}</>}
+              {box.w > 0 && <>{!oneKind9 && lanesEl}{groupEls}</>}
             </div>
           )}
         </div>

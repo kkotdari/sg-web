@@ -3319,7 +3319,11 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc-users { display: flex; flex-direction: column; gap: 6px; }
 .scr-gc-uall { display: flex; align-items: center; gap: 6px; }
 .scr-gc-uall > .scr-compact-rect-btn { padding: 2px 5px; font-size: 11px; border-radius: 5px; }   /* 모두 선택·해제 작게(2026-10-22, 요청: "두 버튼 크기 축소" · 옛 4px 6px · 12px) */
-.scr-gc-mode { align-items: center; margin-top: 4px; }   /* 개인/팀별 — 그래프 탭 아래(2026-10-25 · 옛 맨 위 고르기 안 .scr-gc-top .scr-rc-mode) */
+.scr-gc-mode { align-items: center; margin-top: 4px; }
+/* 한 종류만 보이기(2026-10-25 · GameCurvesModal oneKind9) — 탭이 맨 위 고르기(.scr-gc-top) 첫 줄 · 그 아래 첫 판은 위 줄·여백 없이. */
+.scr-gc-top > .scr-gc-tabs { align-self: flex-start; }
+.scr-gc-top > .scr-gc-mode { margin-top: 0; }
+.scr-gc-top + .scr-rc-chart, .scr-gc-top + .scr-rc-empty { border-top: 0; padding-top: 0; }   /* 개인/팀별 — 그래프 탭 아래(2026-10-25 · 옛 맨 위 고르기 안 .scr-gc-top .scr-rc-mode) */
 .scr-gc-flabel { flex: none; margin-right: 2px; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }   /* 고르기 줄 앞 라벨(2026-10-22) */
 .scr-gc-uteams { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 36px; }
 .scr-gc-ugroup { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
