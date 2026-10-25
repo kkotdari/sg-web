@@ -8033,7 +8033,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-trend-dot.is-dealt, .scr-sg-trend-val.is-dealt { fill: var(--win, #16a34a); stroke: none; }
 .scr-sg-trend-dot.is-taken, .scr-sg-trend-val.is-taken { fill: var(--loss, #dc2626); stroke: none; }
 .scr-sg-trend-legend i.is-sub, .scr-sg-trend-val.is-sub { color: var(--muted); fill: var(--muted); }
-.scr-sg-trend-line.is-sub { stroke: var(--muted); stroke-dasharray: 3 3; }
+.scr-sg-trend-line.is-sub { stroke: var(--muted); }   /* 실선(2026-10-25, 요청: "경기수 승률도 실선으로" — 옛 점선 3 3) */
 .scr-sg-trend-dot.is-sub { fill: var(--muted); }
 .scr-sg-trend-area { aspect-ratio: 320 / 150; }   /* 실제 비는 StatTrendChart 가 꼴(single · shared · stacked)마다 inline 으로 */
 .scr-sg-trend-band { font-size: var(--fs-9); font-weight: 700; fill: var(--text); text-anchor: start; }

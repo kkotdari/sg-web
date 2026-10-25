@@ -75,7 +75,8 @@ const x100 = (v: number) => (v / 100).toFixed(1);
 export function statMetric(kind: "plays" | "rate" | "dmg" | "apm" | "rec" | "games" | "crec", race: BaseRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
-  const gamesOf = (e: TrendEntry) => n(e.games);
+  /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
+  const gamesOf = (e: TrendEntry) => { const g = n(e.games); return g !== null && g > 0 ? g : null; };
   if (kind === "games") return { key: "games", label: "경기 수", series: [{ label: "경기 수", cls: "", pick: gamesOf, fmt: int }], mode: "single" };
   if (kind === "crec") {
     return {
