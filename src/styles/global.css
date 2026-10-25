@@ -2703,6 +2703,9 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
 /* 게임 상세 머리 줄이 좁으면(폰) 리플레이 저장·숨김·삭제를 감춘다(2026-10-22, 요청: "모바일에선 폭이 모자라면 다운로드 숨기기 삭제 감추기") —
    줄 폭(컨테이너)으로 잰다: 뒤로 · 일시 · 등록자 · 단추 여섯(추천 · 데이터 · 저장 · 공유 · 숨김 · 삭제)이 다 드는 폭이 약 520px. */
 .scr-game-detail-bar { container: gamebar / inline-size; }
+/* 받는 동안에도 단추 줄 키(30)를 미리 잡는다(2026-10-25, 지적: "이부분 아이콘 로딩되며 높이가 늘어남") — 게임을 받기 전엔 '← 게임'(26)만 있어
+   단추 줄(.scr-tools-btn 30)이 붙는 순간 머리 줄이 4px 늘며 아래 재생기를 밀었다. .scr-v2-toolbar-crumb 의 min-height 0 보다 뒤·세게. */
+.scr-v2-toolbar-crumb.scr-game-detail-bar { min-height: 30px; }
 @container gamebar (max-width: 520px) { .scr-tools .scr-tools-btn.is-extra { display: none; } }
 .scr-tools .scr-tools-btn.is-danger { color: var(--loss); }
 @media (hover: hover) { .scr-tools .scr-tools-btn.is-danger:hover { background: rgba(220, 70, 70, 0.14); } }
