@@ -273,7 +273,9 @@ const ADDON_HOST9: Record<number, number> = { 107: 106, 108: 106, 115: 114, 117:
 /* (걷음 2026-10-24) 첫 본진 집합(MAIN_HALL · '테크 건물만' 거르기에서 본진을 남기던 자) — 간단히 보기가 사라져 거르기 자체가 없다. */
 /** PC 건설 줄 치수(px) — 건물 한 채마다 컴팩트 칩(fs 글자 · chipBox) · 칩 사이 gap · 단 사이 숨 tier · 사람 칸 위아래 숨 pad ·
  *  단 안에서 선을 비켜 놓는 높이 jig(가운데 · 위 · 아래 · 2026-10-22, 요청: "미묘하게 높이를 다양화해서 선이 최대한 안 겹치게"). */
-const BL = { fs: 10.5, gap: 3, tier: 2.5, pad: 6, link: 10 } as const;   // link 8 → 10(2026-10-23 — 선이 화살표가 되어 촉 5px 뒤에도 대가 보이게) · 칩 키움(2026-10-23, 요청: "칩 크기 살짝 키우기" · 9.5 → 10.5) · link = 변태·애드온 칩을 잇는 선의 최소 길이(옛 jig 걷음 — 수명 선이 없다)
+const BL = { fs: 10.5, gap: 3, tier: 2.5, pad: 6, link: 10 } as const;
+/** 건설 줄 사람 사이 숨(px · 2026-10-25 — 가로축을 맨 아래 한 번만 그리며 옛 사람마다의 축 띠 대신). */
+const LANE_GAP9 = 6;   // link 8 → 10(2026-10-23 — 선이 화살표가 되어 촉 5px 뒤에도 대가 보이게) · 칩 키움(2026-10-23, 요청: "칩 크기 살짝 키우기" · 9.5 → 10.5) · link = 변태·애드온 칩을 잇는 선의 최소 길이(옛 jig 걷음 — 수명 선이 없다)
 
 type BuildLane = { key: string; group: string; name: string; color: string; blds: GameCurve["blds"]; spt?: GameCurve["spt"] };
 
@@ -358,7 +360,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   /** 칩 폭 — 이름 줄과 머릿말 줄 중 넓은 쪽. */
   const chipW2 = (label: string, cap: string): number => Math.max(chipW(label), cap ? textW(cap, CAP_FS) + 2 * PX : 0);
   let y0 = 4;
-  const rows = lanes.map((l) => {
+  const rows = lanes.map((l, li9) => {
     /* ★ 애드온은 **본 건물의 칩 줄**에(2026-10-22) — 서버가 붙어 있던 구간마다 [본 건물 차례, 붙은 초](b.h)를 준다. 본 건물을 못 찾은 것은 제 칩. */
     const onHost9 = new Map<Bld, { at: number; a: Bld }[]>();
     for (const a of l.blds) for (const [hi9, at9] of a.h ?? []) {
@@ -531,11 +533,14 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     });
     const items = units.map((u) => ({ u, k: 0 }));   // 단은 칩마다(t.r) — k 는 옛 묶음 단 자리(늘 0)
     const h = Math.max(used.length * STEP + 2 * BL.pad, 36);
-    const row = { l, items, top: y0, h };
-    y0 += h + AXIS_H;   // 사람마다 제 가로축 띠(아래 ★)
+    const last9 = li9 === lanes.length - 1;
+    const row = { l, items, top: y0, h, last: last9 };
+    /* 가로축은 **맨 아래 한 번**(2026-10-25, 요청: "사람별로 x축 반복 안 하기") — 사람 사이는 가는 줄 + 숨(LANE_GAP9)만 · 옛 사람마다 제 가로축 띠(2026-10-22). */
+    y0 += h + (last9 ? AXIS_H : LANE_GAP9);
     return row;
   });
   const H = y0;
+  const AXIS_TOP9 = rows.length ? rows[rows.length - 1].top + rows[rows.length - 1].h : 0;   // 맨 아래 가로축 띠의 위끝
   const rowCls = (l: BuildLane): string => (focus === l.group ? "scr-tl-row is-focus" : focus ? "scr-tl-row is-dim" : "scr-tl-row");
   /** 칩 가운데 y(머릿말까지 든 칩 키 CHH 기준). */
   const lyOf = (top: number, k: number): number => top + BL.pad + BL.tier + k * STEP + CHH / 2;
@@ -581,16 +586,16 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
             <path className="scr-bl-arrowhead" d="M0,0 L6,3 L0,6 z" />
           </marker>
         </defs>
+        {/* ★ 가로축은 **맨 아래 한 번**(위 LANE_GAP9 ★ · 옛 사람마다 칸 아래 띠) — 분 눈금 · 세로선의 분. */}
+        {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m * 60) - x(at * 60)) > 30)).map((m) => (
+          <text key={`ax${m}`} className="scr-rc-axis" x={x(m * 60)} y={AXIS_TOP9 + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{m}분</text>
+        ))}
+        {at !== null && (
+          <text className="scr-rc-at" x={x(at * 60)} y={AXIS_TOP9 + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{`${Math.round(at)}분`}</text>
+        )}
         {rows.map(({ l, items, top, h }) => (
           <g key={l.key} className={rowCls(l)}>
             <line className="scr-rc-grid" x1={PL} x2={CW - padR} y1={top + h} y2={top + h} />
-            {/* ★ 가로축은 **사람마다**(2026-10-22) — 칸 아래 띠(AXIS_H)에 분 눈금 · 세로선의 분. */}
-            {ticksX.filter((m) => m !== 0 && (at === null || Math.abs(x(m * 60) - x(at * 60)) > 30)).map((m) => (
-              <text key={m} className="scr-rc-axis" x={x(m * 60)} y={top + h + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{m}분</text>
-            ))}
-            {at !== null && (
-              <text className="scr-rc-at" x={x(at * 60)} y={top + h + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{`${Math.round(at)}분`}</text>
-            )}
             {items.map(({ u, k }) => {
               const b = u.bs[0];
               return (
