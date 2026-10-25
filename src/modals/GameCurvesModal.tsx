@@ -341,8 +341,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     /** 묶음(×N)의 채마다 때(팝오버 · 아래 묶음 나무 ★) · 놓인 단(사람 칸 안 · 0 = 맨 위) · 잇는 선의 앞 칩(이 채 tags 안 차례 · −1 = 없음). */
     times?: number[]; r: number; par: number };
   const GROUP_SEC = 45;
-  /** 꺾은 선의 꺾음 자리 — 앞 칩 오른끝에서 잇는 몫의 반(아래 묶음 나무 ★). */
-  const bendOf9 = (pv: Tag): number => pv.x + pv.w + BL.link / 2;
+  /** 단을 건너는 잇는 선의 **S자 곡선 폭**(2026-10-25, 요청: "선을 직각으로 꺾지 말고 부드럽게") — 앞 칩 오른끝에서 이만큼 가며 단을 옮기고 남은 길은 곧게(화살촉 자리 6 남김) · 8~22. */
+  const curveL9 = (pv: Tag, t: Tag): number => Math.min(22, Math.max(8, t.x - (pv.x + pv.w) - 6));
   /** 머릿말 글(위 caps ★) — 그 칩의 때(묶음은 첫 채 = t.at) "3:10 · 12"(인구 없으면 시각만). caps 가 꺼지면 빈 글(폰도 켠다 · 2026-10-25). */
   const capOf = (l: BuildLane, sec: number): string => { if (!caps) return ""; const sup = supAt(l.spt, sec); return sup === null ? clock(sec) : `${clock(sec)} · ${sup}`; };
   /** 칩 폭 — 이름 줄과 머릿말 줄 중 넓은 쪽. */
@@ -419,23 +419,23 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         } else {
           const pv = tags[par];
           t.x = Math.min(Math.max(t.x, pv.x + pv.w + BL.link), RIGHT - t.w);
-          const bx9 = bendOf9(pv);
+          const p09 = pv.x + pv.w; const cl9 = curveL9(pv, t);   // 곡선은 p09 ~ p09 + cl9 를 지난다(사이 단은 그 폭 · 부모 단은 앞 반 · 자식 단은 뒤 반부터)
           const between9 = (k: number): boolean => {
-            for (let r9 = Math.min(k, pv.r) + 1; r9 < Math.max(k, pv.r); r9 += 1) if (!freeAt9(r9, bx9 - 1, bx9 + 1)) return false;
+            for (let r9 = Math.min(k, pv.r) + 1; r9 < Math.max(k, pv.r); r9 += 1) if (!freeAt9(r9, p09, p09 + cl9)) return false;
             return true;
           };
           let k = -1;
           if (freeAt9(pv.r, pv.x + pv.w + BL.gap + 0.01, t.x + t.w)) k = pv.r;   // 부모 칩 자신은 막힘이 아니다(그 오른끝부터 잰다)
           for (let d9 = 1; k < 0 && d9 <= used.length; d9 += 1) {
-            for (const c9 of [pv.r - d9, pv.r + d9]) if (k < 0 && c9 >= 0 && c9 < used.length && freeAt9(c9, bx9, t.x + t.w) && between9(c9)) k = c9;
+            for (const c9 of [pv.r - d9, pv.r + d9]) if (k < 0 && c9 >= 0 && c9 < used.length && freeAt9(c9, p09 + cl9 / 2, t.x + t.w) && between9(c9)) k = c9;
           }
           if (k < 0) k = used.length;   // 빈 데가 없다 — 맨 아래에 새 단
           t.r = k;
           if (k === pv.r) take9(k, pv.x + pv.w, t.x + t.w);
           else {
-            take9(pv.r, pv.x + pv.w, bx9);
-            for (let r9 = Math.min(k, pv.r) + 1; r9 < Math.max(k, pv.r); r9 += 1) take9(r9, bx9 - 1, bx9 + 1);
-            take9(k, bx9, t.x + t.w);
+            take9(pv.r, p09, p09 + cl9 / 2);
+            for (let r9 = Math.min(k, pv.r) + 1; r9 < Math.max(k, pv.r); r9 += 1) take9(r9, p09, p09 + cl9);
+            take9(k, p09 + cl9 / 2, t.x + t.w);
           }
         }
         const me9 = tags.length;
@@ -522,8 +522,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                     const lyP9 = lyOf(top, k + pv.r); const lyT9 = lyOf(top, k + t.r);
                     const x29 = t.x - (addon9 ? 0 : 1);
                     if (t.r === pv.r) return <line key={`l${ti}`} className={cx("scr-bl-link", addon9 && "is-addon")} x1={pv.x + pv.w} x2={x29} y1={lyT9} y2={lyT9} markerEnd={addon9 ? undefined : `url(#${arrowId})`} />;
-                    const bx9 = bendOf9(pv);
-                    return <polyline key={`l${ti}`} className={cx("scr-bl-link", addon9 && "is-addon")} points={`${pv.x + pv.w},${lyP9} ${bx9},${lyP9} ${bx9},${lyT9} ${x29},${lyT9}`} markerEnd={addon9 ? undefined : `url(#${arrowId})`} />;
+                    /* 단을 건너는 선은 **S자 곡선**(2026-10-25, 요청: "선을 직각으로 꺾지 말고 부드럽게") — 앞 칩 오른끝에서 curveL9 만큼 가며 단을 옮기고 그 뒤는 곧게. */
+                    const p09 = pv.x + pv.w; const cl9 = curveL9(pv, t);
+                    const d9 = `M${p09},${lyP9} C${p09 + cl9 / 2},${lyP9} ${p09 + cl9 / 2},${lyT9} ${p09 + cl9},${lyT9} L${x29},${lyT9}`;
+                    return <path key={`l${ti}`} className={cx("scr-bl-link", addon9 && "is-addon")} d={d9} markerEnd={addon9 ? undefined : `url(#${arrowId})`} />;
                   })}
                   {u.tags.map((t, ti) => {
                     const ly = lyOf(top, k + t.r);
