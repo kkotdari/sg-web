@@ -14,7 +14,7 @@ import { api } from "./api/client";
 setReplayMapFetcher((hashes: string[]) => api.getReplayMaps(hashes));
 setReplayChrome({ Avatar, toast: (text, opts) => { showToast(text, opts as never); } });
 setReplayBgm(BGM_TRACKS);
-/* 재생기 서버 아틀라스(미리 구운 모델 그림 · public/spr — scplay scripts/spr-atlas.mjs 가 굽는다 · 2026-10-25) — 경기에 나오는 종류만 받아 쓴다. */
+/* 재생기 서버 아틀라스(미리 구운 모델 그림 · 2026-10-25) — 원본은 scplay 의 spr/ · npm 설치 뒤 postinstall 이 public/spr 로 베낀다(package.json "spr"). 경기에 나오는 종류만 받아 쓴다. */
 setReplaySpriteAtlas({ base: "/spr" });
 
 let preloadErrorShown = false;

@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "share-thumbs": "node scripts/make-share-thumbs.cjs",
-    "scplay": "npm uninstall scplay --no-audit --no-fund && npm install github:kkotdari/scplay#dist --no-audit --no-fund"
+    "scplay": "npm uninstall scplay --no-audit --no-fund && npm install github:kkotdari/scplay#dist --no-audit --no-fund && npm run spr",
+    "spr": "node node_modules/scplay/bin/spr-copy.mjs public/spr",
+    "postinstall": "npm run spr"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.6.13",
