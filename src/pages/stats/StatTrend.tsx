@@ -180,6 +180,9 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
 export interface TrendAnchor { member: Member; metric: StatMetric; rect: { left: number; top: number; width: number; height: number } }
 
 const POP_W = 340;
+/** PC 팝오버 폭(2026-10-25, 요청: "통계 팝오버 그래프창 크기 키우고 글자들 요소들도 다 키우기") — 그래프는 옛 자(CHART_VB_W)로 그려 폭만 늘어나므로 선·점·글자가 함께 커진다. */
+const PC_POP_W = 480;
+const CHART_VB_W = POP_W - 24;
 const POP_GAP = 10;
 const POP_MARGIN = 12;
 
@@ -191,7 +194,7 @@ export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const vw = window.innerWidth; const vh = window.innerHeight;
-  const w = Math.min(POP_W, vw - POP_MARGIN * 2);
+  const w = Math.min(mobile ? POP_W : PC_POP_W, vw - POP_MARGIN * 2);
   const [pos, setPos] = useState<{ left: number; top: number }>(() => first(anchor, w, mobile, vw, 200));
   useLayoutEffect(() => {
     const el = ref.current; if (!el) return;
@@ -212,7 +215,7 @@ export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
           <span className="scr-sg-trend-legend">{anchor.metric.series.map((s) => <i key={s.label} className={s.cls}>{s.label}</i>)}</span>
         )}
       </div>
-      <StatTrendChart data={data} member={anchor.member} metric={anchor.metric} chartW={w - 24} />
+      <StatTrendChart data={data} member={anchor.member} metric={anchor.metric} chartW={mobile ? w - 24 : CHART_VB_W} />
     </div>
   );
 }
