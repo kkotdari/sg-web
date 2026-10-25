@@ -283,7 +283,7 @@ type BuildLane = { key: string; group: string; name: string; color: string; blds
 function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, caps = false, hscroll = false }: {
   lanes: BuildLane[]; maxX: number; ticksX: number[]; w: number; padL: number; padR: number;
   font: { label: number; axis: number };
-  /** ★ 칩 **머릿말**(PC · 2026-10-24, 요청: "PC 에서는 건설 칩에 시간과 인구수도 작게 … 칩 안에 머릿말로 · 뭉친 칩엔 처음 것만, 나머지는 팝오버") — 칩이 두 줄이 된다:
+  /** ★ 칩 **머릿말**(PC · 2026-10-24, 요청: "PC 에서는 건설 칩에 시간과 인구수도 작게 … 칩 안에 머릿말로 · 뭉친 칩엔 처음 것만, 나머지는 팝오버" · 폰도 2026-10-25 "모바일 테크칩에도 시간 인구 표시") — 칩이 두 줄이 된다:
    *  위 작은 줄 "0:55 · 9"(착공 분:초 · 그때 인구) · 아래 이름. 묶음(×N)은 첫 채의 것만 머릿말로, 채마다의 시각은 팝오버(묶음 칩만 뜬다). */
   caps?: boolean;
   /** ★ 폰 — 판을 넓게 펴고 **가로 스크롤**(2026-10-24, 요청: "모바일 가로 스크롤 허용하고 폭 충분히 활용 · 대신 시간축 이동은 드래그로 불가능") — 손가락 좌우 밀기는
@@ -338,7 +338,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   /** kind — 그 칩이 말하는 건물 종류(같은 종류 강조) · at — 그 칩의 때(초) · what — 무엇(본 칩 착공 · 변태 · 붙음 · 변태 시작) · grp — 묶음(×N)의 채들. */
   type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; grp?: Bld[]; /** 머릿말(caps ★ · 없으면 빈 글) */ cap: string };
   const GROUP_SEC = 45;
-  /** 머릿말 글(위 caps ★) — 그 칩의 때(묶음은 첫 채 = t.at) "3:10 · 12"(인구 없으면 시각만). 폰(caps 꺼짐)은 빈 글. */
+  /** 머릿말 글(위 caps ★) — 그 칩의 때(묶음은 첫 채 = t.at) "3:10 · 12"(인구 없으면 시각만). caps 가 꺼지면 빈 글(폰도 켠다 · 2026-10-25). */
   const capOf = (l: BuildLane, sec: number): string => { if (!caps) return ""; const sup = supAt(l.spt, sec); return sup === null ? clock(sec) : `${clock(sec)} · ${sup}`; };
   /** 칩 폭 — 이름 줄과 머릿말 줄 중 넓은 쪽. */
   const chipW2 = (label: string, cap: string): number => Math.max(chipW(label), cap ? textW(cap, CAP_FS) + 2 * PX : 0);
@@ -744,7 +744,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const laneW = mobile ? Math.max(box.w, PL + padR + sc.x * LANE_PX_MIN) : box.w;
   const lanesEl = (
     <BuildLanes
-      maxX={sc.x} ticksX={sc.xt} w={laneW} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps={!mobile} hscroll={mobile}
+      maxX={sc.x} ticksX={sc.xt} w={laneW} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps hscroll={mobile}
       lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds, spt: p.spt }))}
     />
   );
