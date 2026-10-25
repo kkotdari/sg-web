@@ -3056,6 +3056,9 @@ input.scr-list-search-input::placeholder { color: rgba(16,21,26,0.45); }
   .scr-app .scr-header { padding-top: 0; }
   .scr-app .scr-header-inner { display: none; }
   .scr-app .scr-main { padding-top: calc(14px + var(--safe-top)); }
+  /* 홈 화면 앱(PWA)은 20px 더 내린다(2026-10-25, 지적: "pwa 윗부분이 흐린 현상" → 2번) — 투명 상태바(black-translucent) 아래 띠에 iOS 가 흐림·페이드를 겹쳐, 상태바 바로 밑
+     (안전 영역 + 8)에 붙은 머리 줄이 흐려 보였다. 맨 위 내용을 그 띠 아래에서 시작한다(스크롤로 올라가는 내용이 흐려지는 것은 시스템 몫 그대로). 브라우저 탭은 그대로. */
+  @media (display-mode: standalone) { .scr-app .scr-main { padding-top: calc(34px + var(--safe-top)); } }
   .scr-brand-text { display: none; }
   .scr-brand-logo-img { height: 13px; }
   .scr-user-chip { display: none; }
