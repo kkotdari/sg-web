@@ -337,8 +337,12 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const STEP = CHH + 2 * BL.tier;
   type Bld = GameCurve["blds"][number];
   /** kind — 그 칩이 말하는 건물 종류(같은 종류 강조) · at — 그 칩의 때(초) · what — 무엇(본 칩 착공 · 변태 · 붙음 · 변태 시작) · grp — 묶음(×N)의 채들. */
-  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; grp?: Bld[]; /** 머릿말(caps ★ · 없으면 빈 글) */ cap: string };
+  type Tag = { x: number; w: number; label: string; at: number; what: string; kind?: number; cut?: boolean; grp?: Bld[]; /** 머릿말(caps ★ · 없으면 빈 글) */ cap: string;
+    /** 묶음(×N)의 채마다 때(팝오버 · 아래 묶음 나무 ★) · 놓인 단(사람 칸 안 · 0 = 맨 위) · 잇는 선의 앞 칩(이 채 tags 안 차례 · −1 = 없음). */
+    times?: number[]; r: number; par: number };
   const GROUP_SEC = 45;
+  /** 꺾은 선의 꺾음 자리 — 앞 칩 오른끝에서 잇는 몫의 반(아래 묶음 나무 ★). */
+  const bendOf9 = (pv: Tag): number => pv.x + pv.w + BL.link / 2;
   /** 머릿말 글(위 caps ★) — 그 칩의 때(묶음은 첫 채 = t.at) "3:10 · 12"(인구 없으면 시각만). caps 가 꺼지면 빈 글(폰도 켠다 · 2026-10-25). */
   const capOf = (l: BuildLane, sec: number): string => { if (!caps) return ""; const sup = supAt(l.spt, sec); return sup === null ? clock(sec) : `${clock(sec)} · ${sup}`; };
   /** 칩 폭 — 이름 줄과 머릿말 줄 중 넓은 쪽. */
@@ -359,59 +363,89 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     const tag = (at9: number, label: string, what: string, extra?: Partial<Tag>): Tag => {
       const cap = capOf(l, at9);
       const w = chipW2(label, cap);
-      return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, cap, ...extra };
+      return { x: Math.min(x(at9), RIGHT - w), w, label, at: at9, what, cap, r: 0, par: -1, ...extra } as Tag;
     };
-    /* 한 채(또는 묶음)의 칩들 — 때 차례 · 뒤 칩은 앞 칩 오른끝 + 잇는 몫 뒤로 민다(잇는 선이 설 자리). */
-    const units: { bs: Bld[]; tags: Tag[] }[] = [];
-    const open9 = new Map<number, { bs: Bld[]; tags: Tag[] }>();
-    for (const b of shown) {
-      const plain9 = b.m.length === 0 && !(onHost9.get(b)?.length) && !(b.x?.length);
-      const name9 = BUILD_LABEL[b.t] ?? `#${b.t}`;
-      /* ★ 묶기는 **간단히 보기에서도**(2026-10-24, 요청: "간단히 보기에서도 근처 칩 묶기 — 간단히 보기는 자세히 보기에서 필터만 건 것") — 옛 `!techOnly &&` 걷음. */
-      if (plain9) {
-        const g9 = open9.get(b.t);
-        if (g9 && b.s - g9.bs[g9.bs.length - 1].s <= GROUP_SEC) {
-          g9.bs.push(b);
-          const t0 = g9.tags[0];
-          const lab9 = `${name9} ×${g9.bs.length}`;
-          const w9 = chipW2(lab9, t0.cap);   // 머릿말은 첫 채의 것 그대로(t0.cap · caps ★)
-          g9.tags[0] = { ...t0, label: lab9, w: w9, x: Math.min(x(t0.at), RIGHT - w9), grp: g9.bs, cut: g9.bs.every((m) => m.d === null && m.e !== null) };
-          continue;
-        }
-      }
-      const tags: Tag[] = [tag(b.s, name9, "착공", { kind: b.t })];
-      for (const [mt, ms] of b.m) {
-        tags.push(tag(ms, BUILD_LABEL[mt] ?? `#${mt}`, "변태", { kind: mt }));
-      }
-      for (const { at: at9, a } of onHost9.get(b) ?? []) {
-        tags.push(tag(at9, BUILD_LABEL[a.t] ?? `#${a.t}`, "붙음", { kind: a.t, cut: a.d === null && a.e !== null }));
-      }
+    /* ★★ **묶음 나무**(2026-10-25, 요청: "저그 테란 건물 보면 변태나 애드온 때문에 합치기를 못하는 거 같은데 그러지 말고 하나로 합치고 애드온이나 변태를 선으로 연결할 때도
+       시간이 비슷하면 합치고 아니면 선을 꺾어서 나누면 되잖아" → "꺾어 아랫단은 아니고 위아래 빈 곳으로 아무 데나") — 옛 묶기는 딸린 칩(변태·애드온·변태 취소)이 **없는** 채만 묶었다.
+       이제 같은 종류는 늘 묶고(앞 채 착공에서 GROUP_SEC 안 · 사슬), 채마다의 뒤 칩 사슬(때 차례)을 **나무**로 합친다: 같은 깊이의 뒤 칩이 같은 것(무엇 · 종류)이고 그 마디의 마지막
+       때에서 GROUP_SEC 안이면 한 마디 "머신샵 ×2", 아니면 새 가지. 칩마다 자리를 따로 잡는다 — 부모와 같은 단이 비면 곧은 선, 아니면 부모 단에서 가까운 위아래 빈 단 아무 데나
+       (위 · 아래 번갈아 한 단씩 멀리) 놓고 **꺾은 선**(부모 오른끝 → 꺾음 → 세로 → 자식 왼끝)으로 잇는다 · 빈 데가 없으면 맨 아래에 단을 연다. 팝오버(묶음만)는 채마다의 그 마디 때. */
+    type Node9 = { what: string; kind?: number; label: string; times: number[]; bs: Bld[]; cut: boolean; last: number; kids: Node9[] };
+    const follow9 = (b: Bld): { what: string; kind?: number; label: string; at: number; cut: boolean }[] => {
+      const fs9: { what: string; kind?: number; label: string; at: number; cut: boolean }[] = [];
+      for (const [mt, ms] of b.m) fs9.push({ what: "변태", kind: mt, label: BUILD_LABEL[mt] ?? `#${mt}`, at: ms, cut: false });
+      for (const { at: at9, a } of onHost9.get(b) ?? []) fs9.push({ what: "붙음", kind: a.t, label: BUILD_LABEL[a.t] ?? `#${a.t}`, at: at9, cut: a.d === null && a.e !== null });
       for (const [xs] of b.x ?? []) {
         const base = b.m.filter(([, , md]) => md !== null && md <= xs).map(([mt]) => mt).pop() ?? b.t;
-        tags.push(tag(xs, MORPH_TO[base] ?? "변태", "변태 시작", { cut: true }));
+        fs9.push({ what: "변태 시작", label: MORPH_TO[base] ?? "변태", at: xs, cut: true });
       }
-      tags.sort((p, q) => p.at - q.at);
-      for (let ti = 1; ti < tags.length; ti += 1) {
-        const pv = tags[ti - 1]; const t = tags[ti];
-        t.x = Math.min(Math.max(t.x, pv.x + pv.w + BL.link), RIGHT - t.w);
+      return fs9.sort((p, q) => p.at - q.at);
+    };
+    const roots9: Node9[] = [];
+    const open9 = new Map<number, Node9>();
+    for (const b of shown) {
+      const gone9 = b.d === null && b.e !== null;   // 못 지은 채(짓다 사라짐)
+      let root9 = open9.get(b.t);
+      if (root9 && b.s - root9.last <= GROUP_SEC) {
+        root9.times.push(b.s); root9.bs.push(b); root9.last = b.s; root9.cut = root9.cut && gone9;
+      } else {
+        root9 = { what: "착공", kind: b.t, label: BUILD_LABEL[b.t] ?? `#${b.t}`, times: [b.s], bs: [b], cut: gone9, last: b.s, kids: [] };
+        roots9.push(root9); open9.set(b.t, root9);
       }
-      const u9 = { bs: [b], tags };
-      units.push(u9);
-      if (plain9) open9.set(b.t, u9); else open9.delete(b.t);
+      let cur9 = root9;
+      for (const f of follow9(b)) {
+        let kid9 = cur9.kids.find((k9) => k9.what === f.what && k9.kind === f.kind && k9.label === f.label && f.at - k9.last <= GROUP_SEC);
+        if (kid9) { kid9.times.push(f.at); kid9.bs.push(b); kid9.last = Math.max(kid9.last, f.at); kid9.cut = kid9.cut && f.cut; }
+        else { kid9 = { what: f.what, kind: f.kind, label: f.label, times: [f.at], bs: [b], cut: f.cut, last: f.at, kids: [] }; cur9.kids.push(kid9); }
+        cur9 = kid9;
+      }
     }
-    /* 자리는 칩만이 아니라 **잇는 선이 지나는 폭까지**다(같은 날 지적 — 해처리 → 레어 선이 같은 단의 스포닝풀·크립 밑을 지나갔다) — 딸린 칩이 있는 채는 첫 칩 왼끝부터 끝 칩 오른끝까지 한 덩이로 잡는다. */
+    /* 자리 잡기 — 단마다 칩·선이 지나는 폭(used). 자리는 칩만이 아니라 **잇는 선이 지나는 폭까지**다(2026-10-23 지적 — 해처리 → 레어 선이 같은 단의 스포닝풀·크립 밑을 지나갔다):
+       곧은 선은 부모 오른끝 ~ 자식 끝 · 꺾은 선은 부모 단의 꺾음까지 · 자식 단의 꺾음 ~ 자식 끝 · 사이 단의 세로선 자리. */
     const used: [number, number][][] = [];
-    const items = units.map((u) => {
-      const spans: [number, number][] = u.tags.length > 1
-        ? [[u.tags[0].x, Math.max(...u.tags.map((t) => t.x + t.w))]]
-        : u.tags.map((t) => [t.x, t.x + t.w] as [number, number]);
-      const free = (k: number): boolean => spans.every(([a0, z0]) => used[k].every(([a9, z9]) => z0 + BL.gap <= a9 || a0 >= z9 + BL.gap));
-      let k = 0;
-      while (k < used.length && !free(k)) k += 1;
-      if (k === used.length) used.push([]);
-      for (const sp of spans) used[k].push(sp);
-      return { u, k };
+    const freeAt9 = (k: number, a0: number, z0: number): boolean => (used[k] ?? []).every(([a9, z9]) => z0 + BL.gap <= a9 || a0 >= z9 + BL.gap);
+    const take9 = (k: number, a0: number, z0: number): void => { while (used.length <= k) used.push([]); used[k].push([a0, z0]); };
+    const units: { bs: Bld[]; tags: Tag[] }[] = roots9.map((root9) => {
+      const tags: Tag[] = [];
+      const place9 = (n: Node9, par: number): void => {
+        const many9 = n.times.length > 1;
+        const t = tag(Math.min(...n.times), many9 ? `${n.label} ×${n.times.length}` : n.label, n.what, {
+          kind: n.kind, cut: n.cut, grp: many9 ? n.bs : undefined, times: many9 ? n.times.slice().sort((a9, b9) => a9 - b9) : undefined, par,
+        });
+        if (par < 0) {
+          let k = 0;
+          while (!freeAt9(k, t.x, t.x + t.w)) k += 1;
+          t.r = k; take9(k, t.x, t.x + t.w);
+        } else {
+          const pv = tags[par];
+          t.x = Math.min(Math.max(t.x, pv.x + pv.w + BL.link), RIGHT - t.w);
+          const bx9 = bendOf9(pv);
+          const between9 = (k: number): boolean => {
+            for (let r9 = Math.min(k, pv.r) + 1; r9 < Math.max(k, pv.r); r9 += 1) if (!freeAt9(r9, bx9 - 1, bx9 + 1)) return false;
+            return true;
+          };
+          let k = -1;
+          if (freeAt9(pv.r, pv.x + pv.w + BL.gap + 0.01, t.x + t.w)) k = pv.r;   // 부모 칩 자신은 막힘이 아니다(그 오른끝부터 잰다)
+          for (let d9 = 1; k < 0 && d9 <= used.length; d9 += 1) {
+            for (const c9 of [pv.r - d9, pv.r + d9]) if (k < 0 && c9 >= 0 && c9 < used.length && freeAt9(c9, bx9, t.x + t.w) && between9(c9)) k = c9;
+          }
+          if (k < 0) k = used.length;   // 빈 데가 없다 — 맨 아래에 새 단
+          t.r = k;
+          if (k === pv.r) take9(k, pv.x + pv.w, t.x + t.w);
+          else {
+            take9(pv.r, pv.x + pv.w, bx9);
+            for (let r9 = Math.min(k, pv.r) + 1; r9 < Math.max(k, pv.r); r9 += 1) take9(r9, bx9 - 1, bx9 + 1);
+            take9(k, bx9, t.x + t.w);
+          }
+        }
+        const me9 = tags.length;
+        tags.push(t);
+        for (const kd of n.kids.slice().sort((a9, b9) => Math.min(...a9.times) - Math.min(...b9.times))) place9(kd, me9);
+      };
+      place9(root9, -1);
+      return { bs: root9.bs, tags };
     });
+    const items = units.map((u) => ({ u, k: 0 }));   // 단은 칩마다(t.r) — k 는 옛 묶음 단 자리(늘 0)
     const h = Math.max(used.length * STEP + 2 * BL.pad, 36);
     const row = { l, items, top: y0, h };
     y0 += h + AXIS_H;   // 사람마다 제 가로축 띠(아래 ★)
@@ -449,7 +483,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   /** 팝오버 — 그 칩의 시각(본 칩 = 착공 · 변태·애드온 칩 = 그 때) · 묶음이면 채마다 착공 시각을 나열(번호 없이). 줄마다 그때 인구. */
   const popOf = (l: BuildLane, t: Tag, key: string, ly: number): ChipPopAt => ({
     key, x: t.x, y: ly - CHH / 2, w: t.w,
-    lines: (t.grp ? t.grp.map((m) => m.s) : [t.at]).map((sec) => ({ sec, sup: supAt(l.spt, sec) })),
+    lines: (t.times ?? [t.at]).map((sec) => ({ sec, sup: supAt(l.spt, sec) })),   // 묶음은 채마다 그 칩(마디)의 때(위 묶음 나무 ★)
   });
   return (
     <figure className="scr-rc-chart">
@@ -474,20 +508,25 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
               <text className="scr-rc-at" x={x(at * 60)} y={top + h + AXIS_H - 5} textAnchor="middle" style={{ fontSize: font.axis }}>{`${Math.round(at)}분`}</text>
             )}
             {items.map(({ u, k }) => {
-              const ly = lyOf(top, k);
               const b = u.bs[0];
               return (
                 <g key={`${b.s}:${b.t}:${k}`} className="scr-bl-hit">
-                  {/* 잇는 선 — 한 채의 앞 칩 오른끝 → 뒤 칩 왼끝(변태·애드온 · 같은 단이라 곧은 선). */}
-                  {u.tags.slice(1).map((t, ti) => {
-                    const pv = u.tags[ti];
-                    if (t.x <= pv.x + pv.w + 0.5) return null;
+                  {/* 잇는 선 — 앞 칩 오른끝 → 뒤 칩 왼끝(변태·애드온) · 같은 단은 곧은 선, 다른 단(위아래 빈 곳)은 **꺾은 선**(위 묶음 나무 ★). */}
+                  {u.tags.map((t, ti) => {
+                    if (t.par < 0) return null;
+                    const pv = u.tags[t.par];
+                    if (t.r === pv.r && t.x <= pv.x + pv.w + 0.5) return null;
                     if (hoverAt !== null && t.at > hoverAt + 0.5) return null;   // 그때 아직 없는 칩으로 가는 선도 함께 숨김(stCls is-after)
                     /* ★ 애드온(붙음)은 **그냥 점선** · 변태(변태 · 변태 시작)는 **화살표 점선**(2026-10-24, 요청: "애드온 그냥 점선, 변태 화살표 점선으로 잇기 · 선 두께 반") — 옛 둘 다 실선 화살표. */
                     const addon9 = t.what === "붙음";
-                    return <line key={`l${ti}`} className={cx("scr-bl-link", addon9 && "is-addon")} x1={pv.x + pv.w} x2={t.x - (addon9 ? 0 : 1)} y1={ly} y2={ly} markerEnd={addon9 ? undefined : `url(#${arrowId})`} />;
+                    const lyP9 = lyOf(top, k + pv.r); const lyT9 = lyOf(top, k + t.r);
+                    const x29 = t.x - (addon9 ? 0 : 1);
+                    if (t.r === pv.r) return <line key={`l${ti}`} className={cx("scr-bl-link", addon9 && "is-addon")} x1={pv.x + pv.w} x2={x29} y1={lyT9} y2={lyT9} markerEnd={addon9 ? undefined : `url(#${arrowId})`} />;
+                    const bx9 = bendOf9(pv);
+                    return <polyline key={`l${ti}`} className={cx("scr-bl-link", addon9 && "is-addon")} points={`${pv.x + pv.w},${lyP9} ${bx9},${lyP9} ${bx9},${lyT9} ${x29},${lyT9}`} markerEnd={addon9 ? undefined : `url(#${arrowId})`} />;
                   })}
                   {u.tags.map((t, ti) => {
+                    const ly = lyOf(top, k + t.r);
                     const hl9 = tagHlOf(t);
                     /* 누르면 팝오버 · PC(마우스)는 얹자마자 뜨고 떼면 걷는다(2026-10-23). */
                     const popKey = `${l.key}:${b.s}:${b.t}:${ti}`;
@@ -532,7 +571,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         {hoverKind !== null && rows.map(({ l, items, top }) => (
           <g key={l.key} className={rowCls(l)} pointerEvents="none">
             {items.flatMap(({ u, k }) => u.tags.map((t, ti) => (tagHlOf(t) ? (
-              <g key={`${u.bs[0].s}:${u.bs[0].t}:${k}:${ti}`} className={cx("scr-bl-hit", stCls(t, t.grp ?? u.bs))}>{chipOf(t, lyOf(top, k), "is-hl")}</g>
+              <g key={`${u.bs[0].s}:${u.bs[0].t}:${k}:${ti}`} className={cx("scr-bl-hit", stCls(t, t.grp ?? u.bs))}>{chipOf(t, lyOf(top, k + t.r), "is-hl")}</g>
             ) : null)))}
           </g>
         ))}
