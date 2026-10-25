@@ -308,7 +308,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const [pop, setPop] = useState<ChipPopAt | null>(null);
   useCloseOutside(pop !== null, plotRef, ".scr-bl-hit", () => setPop(null));
   /** 마우스를 얹은 칩 하나(진짜 주인공) — 같은 종류 강조보다 진하게 · 맨 위(svg 끝)에 한 번 더 그린다(아래 ★). */
-  const [me, setMe] = useState<{ key: string; lane: BuildLane; x: number; y: number; w: number; label: string; cap: string } | null>(null);
+  const [me, setMe] = useState<{ key: string; lane: BuildLane; x: number; y: number; w: number; label: string; cap: string; cnt?: boolean } | null>(null);
   /* 폰 — 누른 칩 강조(같은 종류 · 그 시점)도 **다른 곳을 누르면 푼다**(2026-10-25, 요청: "강조(테크나 그래프) 시 다른 곳 터치하면 취소되게" → "다른 곳 터치 시 강조 해제는 테크에만" · 곡선 판의 칩 강조는 그대로). PC 는 얹기·떼기라 그대로. */
   const meOn9 = me !== null;
   useCloseOutside(hscroll && meOn9, plotRef, ".scr-bl-hit", () => { setHoverKind(null); setHoverAt(null); setMe(null); });
@@ -347,6 +347,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
     /** 종류별 줄(byKind ★)만 — 그 칩 뒤 개수(0 이면 줄 안 선을 안 긋는다) · 다른 줄에서 이 칩으로 오는 선의 앞 칩(변태 전 종류 · 애드온은 본 건물 줄). */
     n?: number; src?: { x: number; w: number; r: number; addon: boolean } };
   const GROUP_SEC = 45;
+  /** 종류별 줄의 개수 뒤 **작은 "개"**(2026-10-25, 요청: "개수 옆에 개 붙이기 좀 작게") — 이름 글자의 0.78 배 · 칩 폭에 그 몫(CNT_W9)을 더한다. */
+  const CNT_FS9 = BL.fs * 0.78;
+  const CNT_W9 = textW("개", CNT_FS9) + 1;
+  const cntOf9 = <tspan dx={1} style={{ fontSize: CNT_FS9 }}>개</tspan>;
   /** 단을 건너는 잇는 선의 **S자 곡선 폭**(2026-10-25, 요청: "선을 직각으로 꺾지 말고 부드럽게") — 앞 칩 오른끝에서 이만큼 가며 단을 옮기고 남은 길은 곧게(화살촉 자리 6 남김) · 8~22. */
   const curveL9 = (pv: Tag, t: Tag): number => Math.min(22, Math.max(8, t.x - (pv.x + pv.w) - 6));
   /** 머릿말 글(위 caps ★) — 그 칩의 때(묶음은 첫 채 = t.at) "3:10 · 12"(인구 없으면 시각만). caps 가 꺼지면 빈 글(폰도 켠다 · 2026-10-25). */
@@ -460,10 +464,11 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
           const pv = tags[tags.length - 1];
           /* 줄 안 선(2026-10-25, 요청: "선도 있어야 할 듯") — 앞 칩 → 이 칩(par) · 앞 칩 뒤 개수가 0 이면 렌더가 안 긋는다. */
           const t = tag(at9, lab9, "개수", { kind: rw.kind, r: ri, par: tags.length - 1, n: n9 });
+          t.w += CNT_W9; t.x = Math.min(x(at9), RIGHT - t.w);   // 개수 뒤 작은 "개"(cntOf9 ★) 몫
           if (pv && t.x < pv.x + pv.w + BL.gap) {
             /* 앞 칩에 닿는다 — 합쳐 개수만 새로(첫 칩이면 이름은 그대로) · 팝오버는 그 때들 */
             const lab2 = tags.length === 1 ? `${name9}\u2002${n9}` : String(n9);
-            const w2 = chipW2(lab2, pv.cap);
+            const w2 = chipW2(lab2, pv.cap) + CNT_W9;
             tags[tags.length - 1] = { ...pv, label: lab2, w: w2, x: Math.min(pv.x, RIGHT - w2), times: [...(pv.times ?? [pv.at]), at9], grp: [], n: n9 };
             continue;
           }
@@ -555,7 +560,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
       <rect className={cx("scr-bl-chip", cls)} x={t.x} y={ly - CHH / 2} width={t.w} height={CHH} rx={RX} />
       {t.cap && <text className="scr-bl-cap" x={t.x + PX} y={ly - CHH / 2 + CAP_LH / 2 + 0.5} dominantBaseline="central" style={{ fontSize: CAP_FS }}>{t.cap}</text>}
       <text className="scr-tl-label" x={t.x + PX} y={ly - CHH / 2 + CAPH + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>
-        {t.label}
+        {t.label}{t.what === "개수" && cntOf9}
       </text>
     </>
   );
@@ -627,7 +632,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                       onPointerEnter={(e) => {
                         if (e.pointerType !== "mouse") return;
                         setHoverKind(t.kind ?? null); setHoverAt(t.at);
-                        setMe({ key: popKey, lane: l, x: t.x, y: ly - CHH / 2, w: t.w, label: t.label, cap: t.cap });
+                        setMe({ key: popKey, lane: l, x: t.x, y: ly - CHH / 2, w: t.w, label: t.label, cap: t.cap, cnt: t.what === "개수" });
                         if (t.grp) setPop(popOf(l, t, popKey, ly));   // 팝오버는 **묶음(×N)만**(2026-10-24, 요청: "팝오버는 뭉친 거만 나오게") — 홑 칩은 위 글(caps)이 말한다
                       }}
                       onPointerLeave={(e) => {
@@ -642,7 +647,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                         /* 폰 — 누른 칩이 '그 시점'이다(2026-10-24 요청 "터치 시") · 같은 칩을 다시 누르면 푼다. 팝오버는 묶음만(종전). */
                         const on9 = me?.key === popKey;
                         setHoverKind(on9 ? null : (t.kind ?? null)); setHoverAt(on9 ? null : t.at);
-                        setMe(on9 ? null : { key: popKey, lane: l, x: t.x, y: ly - CHH / 2, w: t.w, label: t.label, cap: t.cap });
+                        setMe(on9 ? null : { key: popKey, lane: l, x: t.x, y: ly - CHH / 2, w: t.w, label: t.label, cap: t.cap, cnt: t.what === "개수" });
                         if (t.grp) setPop((p) => (p?.key === popKey ? null : popOf(l, t, popKey, ly)));
                       }}
                     >
@@ -671,7 +676,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
             <g className="scr-bl-me" transform={`translate(${me.x + me.w / 2} ${me.y + CHH / 2}) scale(1.3) translate(${-(me.x + me.w / 2)} ${-(me.y + CHH / 2)})`}>
               <rect className="scr-bl-chip is-hl is-me" x={me.x} y={me.y} width={me.w} height={CHH} rx={RX} />
               {me.cap && <text className="scr-bl-cap is-me" x={me.x + PX} y={me.y + CAP_LH / 2 + 0.5} dominantBaseline="central" style={{ fontSize: CAP_FS }}>{me.cap}</text>}
-              <text className="scr-tl-label" x={me.x + PX} y={me.y + CAPH + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}</text>
+              <text className="scr-tl-label" x={me.x + PX} y={me.y + CAPH + CH / 2} dominantBaseline="central" style={{ fontSize: BL.fs }}>{me.label}{me.cnt && cntOf9}</text>
             </g>
           </g>
         )}
@@ -791,8 +796,9 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 자원은 누적(캔 양) 이 기본 · '순간'이면 그때 쥔 양(2026-10-22, 요청: "자원은 누적 · 순간"). */
   const [rsNow, setRsNow] = useState(false);
   /* PC 건설 줄의 '테크 건물만'(2026-10-21, 요청: "테크 건물만 토글 넣고"). */
-  /* 건설 줄의 '종류별'(BuildLanes byKind ★ · 2026-10-25) — 탭을 오가도 남게 여기서 든다. */
-  const [byKind, setByKind] = useState(false);
+  /* 건설 줄은 **종류별이 기본이자 유일한 보기**(BuildLanes byKind ★ · 2026-10-25, 요청: "종류별을 기본 보기로 변경하고 기존 거는 코드만 남겨 놓기") — 토글(onByKind)은 안 건넨다.
+     묶음 나무 보기(byKind 거짓 · roots9)는 코드로 남아 있다 — 되살리려면 여기를 useState 로 두고 onByKind 를 건넨다. */
+  const byKind = true;
   /* 끝 칩을 누르면 그 사람 선만 굵게(2026-10-21, 요청: "칩터치 → 그 그래프만 두껍게 보기로 변경" — 옛 끄고 켜기 대신) · 두 판이 같이 쓴다. */
   const [focus, setFocus] = useState<string | null>(null);
   /* 세 판이 한 세로선(분)을 같이 쓴다(요청: "세로선을 모든 테크 & 그래프 간 동기화"). */
@@ -877,7 +883,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const laneW = mobile ? Math.max(box.w, PL + padR + sc.x * LANE_PX_MIN) : box.w;
   const lanesEl = (
     <BuildLanes
-      maxX={sc.x} ticksX={sc.xt} w={laneW} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps hscroll={mobile} byKind={byKind} onByKind={setByKind}
+      maxX={sc.x} ticksX={sc.xt} w={laneW} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps hscroll={mobile} byKind={byKind}
       lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds, spt: p.spt }))}
     />
   );
