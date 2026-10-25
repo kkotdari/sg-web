@@ -793,9 +793,9 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* ★ 개인/팀별(색 · 팀별 합산)은 **그래프 탭 아래**(2026-10-25, 요청: "색깔과 팀별합산을 그래프 탭 아래로 옮기고") — 옛 자리는 맨 위 고르기(.scr-gc-top) 안. */
   const modeEl = teamGame ? (
     <div className="scr-rc-mode scr-gc-mode">
-      <span className="scr-gc-flabel" aria-hidden>개인/팀별:</span>
+      <span className="scr-gc-flabel" aria-hidden>구분:</span>   {/* 옛 "개인/팀별:"(2026-10-25, 요청: "개인/팀별 라벨명을 구분으로 변경") */}
       {/* 탭 꼴(2026-10-22, 요청: "여기에 탭 디자인 적용") — 게임 목록 · 통계 탭과 같은 .scr-line-tabs. */}
-      <div className="scr-line-tabs" role="tablist" aria-label="개인/팀별">
+      <div className="scr-line-tabs" role="tablist" aria-label="구분">
         {VIEW_MODES.map(([m, label]) => (
           <button
             key={m} type="button" role="tab" aria-selected={mode === m}
