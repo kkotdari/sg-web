@@ -28,6 +28,10 @@ export function statTrendMonths(period: string): string[] {
   return out;
 }
 
+/** 변화 그래프의 한 줄 — 평균 줄(2026-10-25)은 그 달의 **경기 수**(games · 화면 clanGames 규칙)를 함께 든다. */
+export type TrendEntry = MemberStatsEntry & { games?: number };
+/** 평균 줄의 회원 id — 표가 평균 행에 쓰는 가짜 회원(StatGrid CLAN_LABEL)과 같은 빈 id. 그래프는 이 id 면 clanByMonth 에서 줄을 찾는다. */
+export const CLAN_MEMBER_ID = "";
 export interface StatTrendData {
   /** 조회한 달(YYYY-MM · 여러 달이면 마지막 달) — 그래프 맨 오른쪽. */
   period: string;
@@ -35,6 +39,8 @@ export interface StatTrendData {
   months: string[];
   /** 달 → 회원 → 그 달의 통계 줄. 조회한 달도 든다(화면이 받은 그것). 아직 안 온 달은 키가 없다. */
   byMonth: Record<string, Record<string, MemberStatsEntry> | undefined>;
+  /** 달 → 평균 줄(응답 trendClan + trendGames · 2026-10-25, 요청: "통계의 평균행에도 상세 팝업 붙여야지"). 없으면 평균 행은 보통 칸. */
+  clanByMonth?: Record<string, TrendEntry | undefined>;
   /** 앞 달들을 아직 받는 중. */
   loading: boolean;
 }
@@ -43,7 +49,7 @@ export interface TrendSeries {
   label: string;
   /** 선 색 클래스 — "" 본문색 · is-dealt 초록 · is-taken 빨강 · is-sub 옅게. */
   cls: string;
-  pick: (e: MemberStatsEntry) => number | null;
+  pick: (e: TrendEntry) => number | null;
   fmt: (v: number) => string;
 }
 export interface StatMetric {
@@ -55,6 +61,9 @@ export interface StatMetric {
 }
 
 const n = (v: number | null | undefined): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+/** 그래프가 쓸 그 달의 줄 — 평균 행(CLAN_MEMBER_ID)은 clanByMonth, 나머지는 byMonth. */
+export const trendEntryOf = (data: StatTrendData, member: Member, month: string): TrendEntry | undefined =>
+  member.id === CLAN_MEMBER_ID ? data.clanByMonth?.[month] : data.byMonth[month]?.[member.id];
 const of = (race: BaseRace | null) => (e: MemberStatsEntry) => (race ? e.byRace?.[race] : e.overall);
 const playsOf = (race: BaseRace | null) => (e: MemberStatsEntry) => { const s = of(race)(e); return s && s.plays > 0 ? s.plays : null; };
 const rateOf = (race: BaseRace | null) => (e: MemberStatsEntry) => { const s = of(race)(e); return s && s.plays > 0 ? n(s.winRate) : null; };
@@ -63,8 +72,18 @@ const pct = (v: number) => `${Math.round(v)}%`;
 const x100 = (v: number) => (v / 100).toFixed(1);
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "apm" | "rec", race: BaseRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "apm" | "rec" | "games" | "crec", race: BaseRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
+  /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
+  const gamesOf = (e: TrendEntry) => n(e.games);
+  if (kind === "games") return { key: "games", label: "경기 수", series: [{ label: "경기 수", cls: "", pick: gamesOf, fmt: int }], mode: "single" };
+  if (kind === "crec") {
+    return {
+      key: "crec", label: "전체 전적",
+      series: [{ label: "참여", cls: "", pick: playsOf(null), fmt: int }, { label: "경기 수", cls: "is-sub", pick: gamesOf, fmt: int }],
+      mode: "stacked",
+    };
+  }
   if (kind === "plays") return { key: `${race ?? ""}:plays`, label: `${who}게임수`, series: [{ label: "게임수", cls: "", pick: playsOf(race), fmt: int }], mode: "single" };
   if (kind === "rate") return { key: `${race ?? ""}:rate`, label: `${who}승률`, series: [{ label: "승률", cls: "", pick: rateOf(race), fmt: pct }], mode: "single" };
   if (kind === "apm") return { key: "apm", label: "APM", series: [{ label: "APM", cls: "", pick: (e) => n(e.overall.avgApm), fmt: int }], mode: "single" };
@@ -106,7 +125,7 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
   const padBottom = mode === "shared" ? 46 : PAD_BOTTOM;
   const bandH = mode === "stacked" ? 74 : H - 34 - padBottom;
   const bandTop = (ri: number) => (mode === "stacked" ? 30 + ri * (bandH + 36) : 34);
-  const picked = metric.series.map((s) => months.map((m) => { const e = data.byMonth[m]?.[member.id]; return e ? s.pick(e) : null; }));
+  const picked = metric.series.map((s) => months.map((m) => { const e = trendEntryOf(data, member, m); return e ? s.pick(e) : null; }));
   const allKnown = picked.flat().filter((v): v is number => v !== null);
   const rows = metric.series.map((s, ri) => {
     const vals = picked[ri];

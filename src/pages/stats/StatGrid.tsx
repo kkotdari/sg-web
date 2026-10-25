@@ -171,21 +171,23 @@ function RaceCells({ s, race, member }: { s?: MemberStats; race: BaseRace; membe
 
 function PcRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
   const s = row.stats;
-  const who = clan ? undefined : row.member;   // 평균 줄은 변화 그래프가 없다(TCell 이 보통 칸으로)
+  /* ★ 평균 줄도 변화 그래프(2026-10-25, 요청: "통계의 평균행에도 상세 팝업 붙여야지") — 값이 있는 칸(게임수 = 경기 수 · APM · 종족 게임수·승률)만. 승률·데미지 칸은 "-" 라 손잡이 없음.
+     평균 줄의 회원은 빈 id(StatTrend CLAN_MEMBER_ID) — 그래프가 clanByMonth 에서 줄을 찾는다. 자료(trend.clanByMonth)가 없으면 TCell 이 보통 칸. */
+  const who = row.member;
   return (
       <div className={cx("scr-sg-row", clan && "is-clan")}>
         <span className="scr-sg-c scr-sg-who">
           {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <Who member={row.member} />}
         </span>
-        <TCell member={who} metric={statMetric("plays")}>
+        <TCell member={who} metric={statMetric(clan ? "games" : "plays")}>
           {clan
             /* 평균 줄 = **경기 수만**(2026-10-22, 요청: "평균 게임수 괄호 없애고 게임수만 표시" · 옛 "1,180 (212경기)" — 사람 몫을 다 더한 전적 + 괄호 경기 수). */
             ? <Num v={(games ?? 0).toLocaleString()} />
             : <Num v={s.plays > 0 ? s.plays.toLocaleString() : null} />}
         </TCell>
-        <TCell member={who} metric={statMetric("rate")}>{clan ? <Dash /> : <Rate s={s} />}</TCell>
+        <TCell member={clan ? undefined : who} metric={statMetric("rate")}>{clan ? <Dash /> : <Rate s={s} />}</TCell>
         {/* 데미지 · APM 차례(2026-10-22, 요청: "APM 데미지 위치 교환" — 옛: APM · 데미지) */}
-        <TCell member={who} metric={statMetric("dmg")}>{clan ? <Dash /> : <Dmg s={s} />}</TCell>
+        <TCell member={clan ? undefined : who} metric={statMetric("dmg")}>{clan ? <Dash /> : <Dmg s={s} />}</TCell>
         <TCell member={who} metric={statMetric("apm")}><Num v={s.avgApm} /></TCell>
         {RACES.map((r) => <RaceCells key={r} s={row.byRace?.[r]} race={r} member={who} />)}
       </div>
@@ -197,7 +199,7 @@ function PcRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?:
 function MCell({ s, games, noRate, member, race = null }: { s?: MemberStats; games?: number; noRate?: boolean; member?: Member; race?: BaseRace | null }) {
   if (!s || s.plays === 0) return <span className="scr-sg-c scr-sg-mrec"><Dash /></span>;
   return (
-    <TCell member={member} metric={statMetric("rec", race)} className="scr-sg-mrec">
+    <TCell member={member} metric={statMetric(games !== undefined ? "crec" : "rec", race)} className="scr-sg-mrec">
       <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b></span>
       {games !== undefined
         ? <span className="scr-sg-mrate">{games.toLocaleString()}</span>
@@ -208,7 +210,7 @@ function MCell({ s, games, noRate, member, race = null }: { s?: MemberStats; gam
 
 function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
   const s = row.stats;
-  const who = clan ? undefined : row.member;
+  const who = row.member;   // 평균 줄도 변화 그래프(위 PcRow ★ · 데미지 칸만 손잡이 없음)
   return (
     <div className={cx("scr-sg-row", clan && "is-clan")}>
       <span className="scr-sg-c scr-sg-who">
@@ -216,7 +218,7 @@ function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; gam
       </span>
       {/* APM · 데미지(초록 딜 위 · 빨강 피해 아래)는 제 칸(2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 닉네임 아래 한 줄 "APM 230 1.4 0.8".
           클랜원 전체는 데미지가 없다. */}
-      <TCell member={who} metric={statMetric("dmg")} className="scr-sg-mnum">{clan ? <Dash /> : <Dmg s={s} compact />}</TCell>
+      <TCell member={clan ? undefined : who} metric={statMetric("dmg")} className="scr-sg-mnum">{clan ? <Dash /> : <Dmg s={s} compact />}</TCell>
       <TCell member={who} metric={statMetric("apm")} className="scr-sg-mnum">{s.avgApm ?? <Dash />}</TCell>
       <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} member={who} />
       {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} member={who} race={r} />)}

@@ -357,6 +357,9 @@ export interface GameResultStatsResponse {
   clanCompVs?: ClanCompVsEntry[];
   /** 달별 변화("YYYY-MM" → 사람 줄들) — trendMonths 를 줬을 때만(2026-10-24 · 통계 변화 그래프). */
   trend?: Record<string, MemberStatsEntry[]> | null;
+  /** 달별 평균 줄 · 달별 경기 수(2026-10-25 · 평균 행의 변화 그래프) — trend 와 같은 열쇠. */
+  trendClan?: Record<string, MemberStatsEntry> | null;
+  trendGames?: Record<string, number> | null;
 }
 
 export interface TeamRankEntry {

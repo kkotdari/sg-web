@@ -6,7 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
-import { statTrendMonths, type StatTrendData } from "../stats/StatTrend";
+import { statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -148,6 +148,8 @@ export default function ClanStatsScreen() {
     stats: Record<string, MemberStatsEntry>;
     /** 달별 변화("YYYY-MM" → 회원 → 줄) — 응답 trend 를 회원별로 펼친 것 · 달로 조회할 때만. */
     trend: Record<string, Record<string, MemberStatsEntry>> | null;
+    /** 달별 평균 줄(응답 trendClan 에 trendGames 의 경기 수를 얹은 것 · 2026-10-25 평균 행 팝오버). */
+    trendClan: Record<string, TrendEntry> | null;
     clan: MemberStatsEntry | null;
     clanComps: ClanCompEntry[];
     /** 편성(4:4·3:3·2:2 …)별 경기 수 — 이 합이 **실제 경기 수**다(clan.overall.plays 는 사람이 뛴 횟수라 몇 배 크다). */
@@ -167,7 +169,7 @@ export default function ClanStatsScreen() {
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
       : monthPeriodToRange(MONTH_PERIOD_RE.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue());
-    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null }); return; }
+    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null, trendClan: null }); return; }
     let cancelled = false;
     setError("");
     const byId = (res: GameResultStatsResponse) => {
@@ -193,15 +195,17 @@ export default function ClanStatsScreen() {
         list.forEach((entry) => { map[entry.memberId] = entry; });
         trendBy[month] = map;
       }
+      const trendClan: Record<string, TrendEntry> = {};
+      for (const [month, entry] of Object.entries(res.trendClan ?? {})) trendClan[month] = { ...entry, games: res.trendGames?.[month] ?? 0 };
       setView({
         ...blank, stats: byId(res), clan: res.clan ?? null,
         clanComps: res.clanComps ?? [], clanFormats: res.clanFormats ?? [],
-        trend: res.trend ? trendBy : null,
+        trend: res.trend ? trendBy : null, trendClan: res.trendClan ? trendClan : null,
       });
     }).catch((e) => {
       if (cancelled) return;
       setError(e instanceof Error ? e.message : "통계를 불러오지 못했어요.");
-      setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null });
+      setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null, trendClan: null });
     });
     return () => { cancelled = true; };
   }, [debouncedQuery, debouncedSignature]);
@@ -212,7 +216,7 @@ export default function ClanStatsScreen() {
   const trend: StatTrendData | null = useMemo(() => {
     if (!view || view.key !== debouncedSignature || !view.trend) return null;   // 전체 기간도 최근 일곱 달(위 trendMonths ★)
     const { last, period } = trendBase(debouncedQuery.period);
-    return { period: last, months: statTrendMonths(period), byMonth: view.trend, loading: false };
+    return { period: last, months: statTrendMonths(period), byMonth: view.trend, clanByMonth: view.trendClan ?? undefined, loading: false };
   }, [view, debouncedSignature, debouncedQuery.period]);
 
   const viewMembers = useMemo(() => {
