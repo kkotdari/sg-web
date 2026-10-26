@@ -162,7 +162,22 @@ async function tryRefresh(): Promise<boolean> {
 
 const NO_REFRESH_RETRY_PATHS = ["/api/auth/login", "/api/auth/signup", "/api/auth/refresh"];
 
+/** 접근 토큰(JWT)의 만료 초(exp) — 못 읽으면 null. */
+function tokenExp(tok: string): number | null {
+  try {
+    const b64 = tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const exp = (JSON.parse(atob(b64)) as { exp?: unknown }).exp;
+    return typeof exp === "number" ? exp : null;
+  } catch { return null; }
+}
+
 async function request<T>(path: string, options: RequestInit = {}, retryOn401 = true): Promise<T> {
+  /* 접근 토큰(60분)이 이미 끝났거나 30초 안에 끝나면 **먼저** 갱신한다(2026-10-26, 지적: 콘솔의 "/api/app-version 401") — 옛 길은 끝난 토큰으로 보내 401 을 받고
+     갱신 뒤 다시 보냈다(결과는 같지만 브라우저가 그 401 을 콘솔에 남긴다 · 탭으로 돌아올 때의 버전 확인이 늘 첫 요청이라 거기서 보였다). 401 뒤 갱신은 그대로 남는다. */
+  if (accessToken && refreshToken && retryOn401 && !NO_REFRESH_RETRY_PATHS.includes(path)) {
+    const exp = tokenExp(accessToken);
+    if (exp !== null && exp - 30 <= Date.now() / 1000) await tryRefresh();
+  }
   const headers = new Headers(options.headers);
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   headers.set("X-Client-Env", CLIENT_ENV);
