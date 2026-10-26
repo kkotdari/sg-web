@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { ChartLine, Play } from "lucide-react";
+import { ChartLine } from "lucide-react";
 import { cachedReplayMap } from "scplay";
 import { isMeleeGame, resolveSlotName } from "./GameResultSides";
 import { cleanMapName } from "../../utils/mapName";
@@ -46,8 +46,8 @@ export function GameDataButton({ game, graph = true }: { game: GameResult; graph
 }
 
 /** 맵·길이 배지 + (data) 추천·데이터 단추(폰 · 로스터 아래 줄 · PC 는 숨는다 · global.css). 폰 게임 줄의 재생 배지는 걷었다(2026-10-21, 요청: "데이터랑 상관없이 재생배지 지우란 거였어")
- *  → (play) 맵 배지 안 '분' 옆에 다시(같은 날 요청: "모바일 게임목록 재생 가능 배지를 맵 배지 안에 넣기 분 옆에"). */
-export function GameRowStatus({ game, data, play }: { game: GameResult; data?: boolean; play?: boolean }) {
+ *  → (play) 맵 배지 안 '분' 옆에 다시(같은 날 요청) → 2026-10-26 다시 걷음("모바일 피시에서 재생가능 배지 제거" · play 는 받기만). */
+export function GameRowStatus({ game, data }: { game: GameResult; data?: boolean; play?: boolean }) {
   if (isSecretGame(game)) {
     return (
       <span className="scr-activity-row-status scr-activity-row-status-dur scr-activity-row-status-secret" title="숨긴 경기">
@@ -67,7 +67,6 @@ export function GameRowStatus({ game, data, play }: { game: GameResult; data?: b
       <span className="scr-activity-row-status scr-activity-row-status-dur" title={full || undefined}>
         {map !== "" && <span>{map}</span>}
         {sec != null && <span>{Math.round(sec / 60)}분</span>}
-        {play && <Play size={9} className="scr-activity-row-play scr-activity-row-status-play" aria-label="재생 가능" fill="currentColor" />}
       </span>
     )}
     {tail && <GameDataButton game={game} graph={!game.ums} />}
@@ -105,9 +104,8 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
       </span>
     );
   }
-  const playBadge = playable
-    ? <Play size={12} className="scr-activity-row-play" aria-label="재생 가능" fill="currentColor" />
-    : null;
+  /* 재생 가능 배지는 걷었다(2026-10-26, 요청: "모바일 피시에서 재생가능 배지 제거") — playable 은 받기만 한다. */
+  void playable;
   /* ★★ **폰은 팀마다 세로 칸**(2026-10-19, 요청: "로스터 형태 변경 …" → 첫 판(2×2 격자)을 보고 "가독성이 오히려 떨어지네 · 이렇게 —
        재생배지 · 맵시간배지 · 타임스탬프 / 1팀 승패배지 · 2팀 승패배지(3팀 있으면 …) / 1팀 로스터(세로) vs 2팀 로스터(3팀 있으면 vs 로스터 …)") —
        윗줄(재생 · 맵 · 시각)은 global.css 가 맞춘다. 여기는 둘째·셋째 줄: 격자 두 줄 × [팀 1fr | vs | 팀 1fr | vs …] — 첫 줄에 팀마다 승패 배지(칸 가운데) ·
@@ -167,7 +165,6 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
           </span>
         </span>
       </FlatLine>
-      {playBadge}
     </>);
   }
   return (<>
@@ -184,7 +181,6 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
         <span className="scr-activity-row-name-main">{sideNodes(game.team2)}</span>
       </span>
     </FlatLine>
-    {playBadge}
   </>);
 }
 

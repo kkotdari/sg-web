@@ -1,5 +1,5 @@
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
-import { ChartLine, EyeOff, Play, Save, Share2 } from "lucide-react";
+import { ChartLine, EyeOff, Save, Share2 } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { canManageGame } from "../../utils/gameAccess";
 import { shareToKakao } from "../../utils/kakaoShare";
@@ -14,7 +14,6 @@ import { useLongPress } from "../../hooks/useLongPress";
 import { cleanMapName } from "../../utils/mapName";
 import { cx } from "../../utils/format";
 import { pad } from "../../utils/date";
-import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
 import { isMeleeGame } from "./GameResultSides";
 import { GameRowNames } from "./GameRow";
@@ -207,7 +206,6 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   const hold = useLongPress(onLongPress);
   const secret = isSecretGame(game);
   const map = secret ? "" : cleanMapName(game.mapCanonName ?? cachedReplayMap(game.mapHash)?.canonName ?? game.mapName);
-  const playable = !secret && gamePlayable(game);
   const kind = secret ? "-" : gameKindText(game);
   const user = useAppStore((st) => st.user);
   const canHide = !!onHide && !game.hidden && canManageGame(game, user);
@@ -255,7 +253,6 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         <span className="scr-gtab-cell scr-gtab-num scr-gtab-len">
           <span className="scr-gtab-len-t">
             {lengthText(game.durationSeconds)}
-            {playable && <Play size={11} className="scr-activity-row-play scr-gtab-len-play" aria-label="재생 가능" fill="currentColor" />}
           </span>
         </span>
         <span className="scr-gtab-cell scr-gtab-roster">
