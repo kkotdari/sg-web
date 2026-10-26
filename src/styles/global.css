@@ -5431,7 +5431,10 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-feed-row-game.scr-gm > .scr-feed-row-main > .scr-feed-row-desc.has-lead:has(> .scr-feed-row-lead:empty) > .scr-feed-row-desc-body { grid-column: 1 / -1; border-right: 0; padding-right: 0; }
 /* 맵 배지는 다시 **로스터 칸 가운데**(같은 날 되요청: "맵 배지 다시 로스터 중앙으로") — 시각(왼끝)과 같은 칸(1) · 같은 줄에 겹쳐 세운다.
    겹치려면 줄을 못 박아야 한다: 리그 머리 줄이 있으면 2줄 · 없으면 1줄. 이름 몸·미니맵은 그 다음 줄로 자동 배치. */
-.scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead) > .scr-feed-row-status { grid-column: 1; grid-row: 1; justify-self: center; }
+.scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead) > .scr-feed-row-status { grid-column: 1; grid-row: 1; justify-self: center; margin-right: 11px; }
+/* ↑ 오른쪽 11 = 로스터 몸의 오른쪽 안쪽 여백 10 + 세로 줄 1 — 칸 가운데가 아니라 **로스터(vs) 가운데**에 서게(2026-10-26, 지적: "맵배지랑 로스터 중앙이 안맞음" · 5.5px 오른쪽이었다).
+   미니맵이 없는 판은 로스터가 두 칸을 다 쓰고 여백·줄도 없다 — 아래에서 배지도 두 칸 가운데로. */
+.scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead:has(> .scr-feed-row-lead:empty)) > .scr-feed-row-status { grid-column: 1 / -1; margin-right: 0; }
 .scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead) > .scr-feed-row-badges { grid-column: 1; grid-row: 1; }
 .scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead):has(> .scr-feed-row-above) > .scr-feed-row-status,
 .scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead):has(> .scr-feed-row-above) > .scr-feed-row-badges { grid-row: 2; }
