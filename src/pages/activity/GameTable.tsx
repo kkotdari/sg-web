@@ -46,10 +46,13 @@ const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "�
 
 /** 맵 그림(안개 없음) — 해시마다 한 번 그려 data URL 로 쥔다(같은 맵의 줄이 나눠 쓴다 · 타일당 1px). */
 const thumbCache = new Map<string, Promise<string | null>>();
+/** 다 구운 그림(받은 뒤 다시 뜨는 줄이 빈 판 한 틀을 안 거치게 · 아래 StartMapCell 첫 값). */
+const thumbDone = new Map<string, string | null>();
 function mapThumb(hash: string, grid: ReplayMapGrid): Promise<string | null> {
   let p = thumbCache.get(hash);
   if (!p) {
-    p = renderMinimapCanvas(grid, 1).then((cv) => cv.toDataURL("image/png")).catch(() => null);
+    p = renderMinimapCanvas(grid, 1).then((cv) => cv.toDataURL("image/png")).catch(() => null)
+      .then((u) => { thumbDone.set(hash, u); return u; });
     thumbCache.set(hash, p);
   }
   return p;
@@ -76,13 +79,19 @@ const edgeSnap = (v: number) => Math.min(1, Math.max(0, (v - 0.12) / 0.76));
  *  폰 게임 줄은 카드 안 이름 줄 왼쪽에 같은 그림(ListRow lead · 같은 날 요청: "모바일에도 · 카드 안에"). */
 export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (id: string) => Member | undefined }) {
   const grid = useReplayMap(game.mapHash);
-  const [url, setUrl] = useState<string | null>(null);
+  /* undefined = 굽는 중 · null = 못 구움 */
+  const [url, setUrl] = useState<string | null | undefined>(() => (game.mapHash ? thumbDone.get(game.mapHash) : undefined));
   useEffect(() => {
     let dead = false;
     if (grid && game.mapHash) void mapThumb(game.mapHash, grid as ReplayMapGrid).then((u) => { if (!dead) setUrl(u); });
     return () => { dead = true; };
   }, [grid, game.mapHash]);
-  if (!grid || !url) return <span className="scr-gtab-dim">-</span>;
+  /* 받는 중(격자 undefined · 그림 굽는 중)엔 **같은 크기 빈 판**을 세운다 — "-" 를 세웠다가 그림이 오면 줄 키가 자랐다
+     (2026-10-26 지적: "배치맵 뜨기 전과 뜬 후 행 높이 변하는 현상"). 격자를 모르면 정사각(맵 대부분). 맵이 없다(null)고 판가름 나면 빈 칸. */
+  if (grid === null || !game.mapHash || url === null) return null;   /* 맵 없음은 칸을 비운다(같은 날 요청: "없으면 - 말고 비우기") */
+  if (!grid || !url) {
+    return <span className="scr-gtab-startmap is-pending" style={{ aspectRatio: grid ? `${grid.width} / ${grid.height}` : "1 / 1" }} aria-hidden />;
+  }
   /* 팀전이면 칩 바탕을 연한 팀색으로(2026-10-26, 요청: "팀전만 너무 튀지 않게" → 후보 A "연한 팀색 바탕 · 조금씩 진하게") — 1팀 빨강 · 2팀 파랑(원작 · scplay TEAM_COLOR).
      개인전(밀리)은 흰 칩 그대로. */
   const melee = isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 });

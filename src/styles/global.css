@@ -8074,6 +8074,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* ★ 배치 칸(2026-10-26, 요청: "로스터 다음에 배치 컬럼 — 미니맵 안개 없는 버전에 각 유저 스타팅 위치 · 종족" · GameTable StartMapCell) — 맵 그림 위 시작 자리 점(종족 글자 · 팀색 테두리). */
 .scr-gtab-start { justify-content: center; padding: 18px; }   /* 좌우 6 → 14 → 사방 18(2026-10-26 요청 둘) — 칸 폭 116 = 맵 80 + 18·2 */
 .scr-gtab-startmap { position: relative; display: block; width: 100%; max-width: 80px; max-height: 80px; margin: 0 auto; border-radius: 4px; overflow: hidden; box-shadow: 0 0 0 1px var(--line-faint); }
+.scr-gtab-startmap.is-pending { background: var(--line-faint); }   /* 받는 중 자리(StartMapCell ★ · 줄 키를 미리 잡는다) */
 .scr-gtab-startmap > img { display: block; width: 100%; height: 100%; object-fit: fill; image-rendering: auto; }
 .scr-gtab-spot {   /* 닉네임 앞 두 글자 칩(2026-10-26 · 흰 바탕 · 검은 글 — 같은 날 "흰색칩으로 통일" · 옛 판은 개인색 바탕) */
   background: #eceef2; color: #1f232a;   /* 톤다운(같은 날 "흰색 유저칩 톤다운 필요" · 옛 #fff · #16181d · 테 0.6) → 반투명 회백(0.78)은 "너무 다운됨" — 불투명 연회백 · 테 0.45 */
@@ -8100,6 +8101,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   padding-right: 10px; border-right: 1px solid var(--line-faint);   /* 로스터 | 미니맵 사이 연한 세로 줄 · 틈 6 → 10 + 줄 + 12(2026-10-26 요청: "간격 띄우고 연하게 | 구분선") */
 }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc.has-lead > .scr-activity-row-lead { grid-column: 2; order: 5; justify-self: center; margin: 6px 0; }   /* 헤더(시각·맵 배지) · 푸터(추천·데이터) 줄을 뺀 가운데 줄의 세로 가운데(같은 날 되요청 — 잠깐 8 내렸다 걷음) */
+/* 맵이 없는 판(StartMapCell 이 아무것도 안 세움)은 미니맵 칸·세로 줄을 걷는다(2026-10-26 "없으면 비우기"). */
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc.has-lead > .scr-activity-row-lead:empty { display: none; }
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc.has-lead:has(> .scr-activity-row-lead:empty) > .scr-activity-row-desc-body { grid-column: 1 / -1; border-right: 0; padding-right: 0; }
 /* 맵 배지는 다시 **로스터 칸 가운데**(같은 날 되요청: "맵 배지 다시 로스터 중앙으로") — 시각(왼끝)과 같은 칸(1) · 같은 줄에 겹쳐 세운다.
    겹치려면 줄을 못 박아야 한다: 리그 머리 줄이 있으면 2줄 · 없으면 1줄. 이름 몸·미니맵은 그 다음 줄로 자동 배치. */
 .scr-activity-row-game.scr-gm > .scr-activity-row-main:has(> .scr-activity-row-desc.has-lead) > .scr-activity-row-status { grid-column: 1; grid-row: 1; justify-self: center; }
