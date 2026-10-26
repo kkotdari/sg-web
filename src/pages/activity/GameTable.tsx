@@ -7,7 +7,6 @@ import { gameResultShareContent } from "./gameShare";
 import { downloadReplay } from "../../utils/replayDownload";
 import { cachedReplayMap, useReplayMap, useReplayMapTick } from "scplay";
 import { renderMinimapCanvas } from "../../utils/minimapExport";
-import { inkOn } from "../stats/RaceCurves";
 import type { ReplayMapGrid } from "../../utils/replayParser";
 import { api } from "../../api/client";
 import { showToast } from "../../components/common/Toast";
@@ -73,7 +72,7 @@ function shortSpot(name: string): string {
 const edgeSnap = (v: number) => Math.min(1, Math.max(0, (v - 0.12) / 0.76));
 
 /** ★ 배치 칸(2026-10-26 · 위 COLS) — 맵 그림 위에 사람마다 시작 자리(서버 참가자 startX·startY · 타일)에 **닉네임 앞 두 글자** 칩
- *  (같은 날 되요청: "2글자 정도라도 · 팀 배지 없이 · 종족 없이" — 처음 낸 종족 글자 점 · 팀색 테두리는 걷었다). 칩 바탕은 그 사람 개인색(모르면 회색).
+ *  (같은 날 되요청: "2글자 정도라도 · 팀 배지 없이 · 종족 없이" — 처음 낸 종족 글자 점 · 팀색 테두리는 걷었다). 칩은 모두 흰 바탕 · 검은 글(같은 날 되요청: "색도 흰색칩으로 통일" — 처음 판은 개인색 바탕이었다).
  *  시작 자리를 모르는 옛 판(재분석 전)은 맵 그림만 · 맵 격자가 없으면 "-". 가장자리 자리는 칩이 테두리에 거의 붙는다(edgeSnap).
  *  폰 게임 줄은 카드 안 이름 줄 왼쪽에 같은 그림(ListRow lead · 같은 날 요청: "모바일에도 · 카드 안에"). */
 export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (id: string) => Member | undefined }) {
@@ -89,7 +88,7 @@ export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (
     .filter((p) => !p.observer && p.startX != null && p.startY != null)
     .map((p) => {
       const name = memberOf(p.memberId)?.nickname ?? p.rawName ?? "";
-      return { name, short: shortSpot(name), color: p.color || "#5b6270",
+      return { name, short: shortSpot(name),
         ex: edgeSnap((p.startX as number) / grid.width), ey: edgeSnap((p.startY as number) / grid.height) };
     });
   return (
@@ -100,7 +99,7 @@ export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (
           key={i} className="scr-gtab-spot" title={sp.name || undefined}
           style={{
             left: `calc(2px + ${sp.ex} * (100% - 4px))`, top: `calc(1px + ${sp.ey} * (100% - 2px))`,
-            transform: `translate(${-sp.ex * 100}%, ${-sp.ey * 100}%)`, background: sp.color, color: inkOn(sp.color),
+            transform: `translate(${-sp.ex * 100}%, ${-sp.ey * 100}%)`,
           }}
         >{sp.short}</i>
       ))}
