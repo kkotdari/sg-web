@@ -8193,5 +8193,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-bbs-item-sub { display: flex; align-items: center; gap: 0; min-width: 0; font-size: var(--fs-11); color: var(--muted); font-variant-numeric: tabular-nums; }
 .scr-bbs-item-sub > * { white-space: nowrap; }
 .scr-bbs-item-sub > * + *::before { content: "·"; margin: 0 6px; color: var(--dim); }
-.scr-bbs-item-sub > .scr-post-when { overflow: hidden; text-overflow: ellipsis; }
-.scr-bbs-item-sub > .scr-post-when { margin-left: 0; font-size: inherit; font-weight: 600; }
+/* 일정 글의 일시 — 오른쪽에 따로 "일시: …"(2026-10-26). PC 는 제목 칸 오른끝 · 폰은 아랫줄 오른끝(구분점 없이). */
+.scr-bbs-when { flex: 0 0 auto; margin-left: auto; padding-left: 12px; white-space: nowrap; font-size: var(--fs-caption); font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.scr-bbs-when-k { font-weight: 500; color: var(--muted); }
+.scr-bbs-item-sub > .scr-bbs-when { font-size: inherit; }
+.scr-bbs-item-sub > .scr-bbs-when::before { content: none; }

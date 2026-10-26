@@ -54,8 +54,10 @@ export const BoardRow = memo(function BoardRow({ post, notes, fresh, mobile, min
     onOpen(post);
   };
   const cat = post.category ? <span className={cx("scr-post-badge", `is-${post.category}`)}>{categoryLabel(post.category)}</span> : null;
+  /* 일정 글의 일시는 **오른쪽에 따로** "일시: …"(2026-10-26, 요청: "게시판 일시를 오른쪽에 별도로 표시 일시: ... 이렇게") —
+     PC 는 제목 칸 오른끝 · 폰은 아랫줄(글쓴이·날짜) 오른끝. */
   const when = post.category === "schedule" && post.scheduledDate
-    ? <span className="scr-post-when">{postWhenText(post.scheduledDate, post.scheduledTime)}</span> : null;
+    ? <span className="scr-bbs-when"><span className="scr-bbs-when-k">일시:</span> {postWhenText(post.scheduledDate, post.scheduledTime)}</span> : null;
   const title = (
     <span className="scr-bbs-title-line">
       <span className="scr-bbs-title-text">{post.title}</span>
