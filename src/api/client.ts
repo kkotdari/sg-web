@@ -1,9 +1,8 @@
 import type { GameCurve,
-  Member, GameResult, ItemComment, CommentTargetType, RankingShift, FeedNotice, FeedEntry, FeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
+  Member, GameResult, ItemComment, CommentTargetType, RankingShift, FeedEntry, FeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
   ScreenKey, AppVersion, AppVersionStatus, AppVersionInfo,
   MapCanon, MapCatalog,
-  GameResultSlot, GameResultPage, GameResultStatsResponse, GameOutcome, GameType, Race, TeamRankingResponse,
-  RatingHistoryResponse, RivalryPair,
+  GameResultSlot, GameResultPage, GameResultStatsResponse, GameOutcome, GameType, Race,
   ReplayNameClassificationEntry, ReplayNameKind, ReplayNameMappingEntry, ReplayNameMappingKind,
   League, LeagueListItem, LeagueCreatePayload, LeagueUpdatePayload,
   LeagueMatchSide, LeagueMatchSet, PlacementRound, PlacementRoundBrief, LeaguePoolKind, LeagueTeamCompositionEntry,
@@ -30,13 +29,13 @@ type WireGameResult = Omit<GameResult, "team1" | "team2"> & { team1: WireSlot[];
 type WireDeletedGameResult = Omit<DeletedGameResult, "team1" | "team2"> & { team1: WireSlot[]; team2: WireSlot[] };
 type WireFeedPage = Omit<FeedPage, "items"> & {
   items: (Omit<FeedEntry, "gameResults"> & { gameResults: WireGameResult[] })[];
-  /** 이 쪽 경기들의 맵 — 격자 없이(크기 · 이름 · 썸네일 표식 · mapsLite=1 · utils/mapThumbs ★). */
+  /** 이 쪽 경기들의 맵 — 격자 없이(크기 · 이름 · 썸네일 표식 · utils/mapThumbs ★). */
   mapThumbs?: MapThumb[];
 };
 
 /* ★ 게임 목록 응답에 실려 온 맵(2026-10-26, 요청: "게임목록 조회시 배치맵도 같이 담겨서 오게 한번에") — 목록 → 맵 두 번 왕복하지 않게
    /api/activities 가 그 쪽 경기들의 맵을 함께 싣는다. 같은 날 그림을 서버가 굽게 되며(지적: "게임목록 사진 뜨기 전까지 화면 멈추고")
-   격자 대신 **썸네일 표식**만 싣는다(mapsLite=1) — 재생 화면은 격자를 제 길(getReplayMaps)로 받는다. */
+   격자 대신 **썸네일 표식**만 싣는다 — 재생 화면은 격자를 제 길(getReplayMaps)로 받는다. */
 /** 지금까지 목록으로 받은 해시 — 다음 쪽에서 서버가 빼고 보낸다(knownMap). */
 const feedKnown = new Set<string>();
 
@@ -95,18 +94,6 @@ export interface GameResultStatsParams {
   mapGroup?: "fastest" | "hunter" | "spirit";
   /** 달별 변화 — dateTo 가 든 달을 마지막으로 N 달의 사람 줄을 응답 trend 에 함께(2026-10-24 · 요청 한 번). */
   trendMonths?: number;
-}
-
-export interface TeamRankingParams {
-  dateFrom?: string;
-  dateTo?: string;
-}
-
-export interface MainRaceParams {
-  memberId: string;
-  dateFrom?: string;
-  dateTo?: string;
-  matchType?: GameType | "all";
 }
 
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
@@ -214,7 +201,6 @@ export class ApiError extends Error {
     this.status = status;
   }
 }
-export const apiStatusOf = (e: unknown): number | undefined => (e instanceof ApiError ? e.status : undefined);
 
 export const api = {
   async login(id: string, password: string): Promise<AuthResponse> {
@@ -294,11 +280,6 @@ export const api = {
     return { ...page, items: page.items.map(gameResultFromWire) };
   },
 
-  async countGameResults(params: GameResultListParams = {}): Promise<number> {
-    const page = await this.getGameResultsPage({ ...params, cursor: undefined, limit: 1 });
-    return page.total ?? page.items.length;
-  },
-
   async setGameOutcome(id: number, result: GameOutcome, winnerPlayerName?: string): Promise<GameResult> {
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}/result`, {
       method: "PUT", body: JSON.stringify({ result, winnerPlayerName }),
@@ -354,44 +335,6 @@ export const api = {
       trendMonths: params.trendMonths,
     });
     return request<GameResultStatsResponse>(`/api/game-results/stats${qs}`);
-  },
-
-  async getRivalries(params: { dateFrom?: string; dateTo?: string; mode?: "solo" | "team" } = {}): Promise<{ pairs: RivalryPair[] }> {
-    const qs = buildQuery({ dateFrom: params.dateFrom, dateTo: params.dateTo, mode: params.mode });
-    return request<{ pairs: RivalryPair[] }>(`/api/game-results/stats/rivalries${qs}`);
-  },
-
-  async getRanking(params: GameResultStatsParams = {}): Promise<GameResultStatsResponse> {
-    const qs = buildQuery({
-      dateFrom: params.dateFrom,
-      dateTo: params.dateTo,
-      matchType: params.matchType,
-      race: params.race,
-    });
-    return request<GameResultStatsResponse>(`/api/game-results/ranking${qs}`);
-  },
-
-  async getRatingHistory(
-    memberId: string, matchType?: string, dateFrom?: string, dateTo?: string, race?: string,
-  ): Promise<RatingHistoryResponse> {
-    const qs = buildQuery({ memberId, matchType, dateFrom, dateTo, race });
-    return request<RatingHistoryResponse>(`/api/game-results/rating-history${qs}`);
-  },
-
-  async getTeamRanking(params: TeamRankingParams = {}): Promise<TeamRankingResponse> {
-    const qs = buildQuery({ dateFrom: params.dateFrom, dateTo: params.dateTo });
-    return request<TeamRankingResponse>(`/api/game-results/team-ranking${qs}`);
-  },
-
-  async getMemberMainRace(params: MainRaceParams): Promise<Race | null> {
-    const qs = buildQuery({
-      memberId: params.memberId,
-      dateFrom: params.dateFrom,
-      dateTo: params.dateTo,
-      matchType: params.matchType,
-    });
-    const res = await request<{ race: Race | null }>(`/api/game-results/main-race${qs}`);
-    return res.race;
   },
 
   async getEarliestGameResultDate(): Promise<string | null> {
@@ -454,10 +397,6 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ rawName, kind, memberId }),
     });
-  },
-
-  async deleteReplayNameMapping(rawName: string): Promise<void> {
-    await request<void>(`/api/game-results/replay-name-mappings/${encodeURIComponent(rawName)}`, { method: "DELETE" });
   },
 
   async getReplayMaps(hashes: string[]): Promise<ReplayMapGrid[]> {
@@ -532,7 +471,6 @@ export const api = {
     return { game: gameResultFromWire(res), merged: res.merged === true, deleted: res.deleted === true };
   },
 
-
   async deleteGameResult(id: number): Promise<void> {
     await request<void>(`/api/game-results/${id}`, { method: "DELETE" });
   },
@@ -581,10 +519,6 @@ export const api = {
   async recommendGame(id: number, on: boolean): Promise<{ recommendCount: number; recommended: boolean }> {
     return request<{ recommendCount: number; recommended: boolean }>(`/api/game-results/${id}/recommend`, { method: on ? "POST" : "DELETE" });
   },
-  /** 그 판을 추천한 사람(추천한 차례대로). */
-  async listGameRecommends(id: number): Promise<{ memberId: string; nickname: string; createdAt: string }[]> {
-    return (await request<{ items: { memberId: string; nickname: string; createdAt: string }[] }>(`/api/game-results/${id}/recommends`)).items;
-  },
   /** 게임 자료 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
   /** 마감 상태 — 마감한 마지막 날 · 보존 대기 판(pending) · 그중 리플레이 붙은 판(replays) · 보존 때 판째 지울 공방 · 지운 판(dropPending). */
   async getGamesClose(): Promise<{ closedUntil: string | null; pending: number; dropPending: number; replays: number }> {
@@ -614,20 +548,8 @@ export const api = {
     return request<{ deleted: number }>("/api/game-results/admin/delete", { method: "POST", body: JSON.stringify({ ids }) });
   },
 
-  async recomputeRankingShifts(): Promise<{ changed: boolean }> {
-    return request<{ changed: boolean }>("/api/activities/ranking-shifts/recompute", { method: "POST" });
-  },
-
-  async reseedRankingShifts(): Promise<Record<string, number>> {
-    return request<Record<string, number>>("/api/activities/ranking-shifts/seed", { method: "POST" });
-  },
-
   async listRankingShifts(): Promise<RankingShift[]> {
     return request<RankingShift[]>("/api/activities/ranking-shifts");
-  },
-
-  async getFeedNotice(id: number): Promise<FeedNotice> {
-    return request<FeedNotice>(`/api/activities/notices/${id}`);
   },
 
   /** kinds — 화면마다 제 몫만(게임 gameResultPost · 게시판 post · 리그 화면 leagueMatch · 2026-10-26). */
@@ -637,7 +559,6 @@ export const api = {
     if (params.limit) q.set("limit", String(params.limit));
     for (const k of params.kinds ?? []) q.append("kind", k);
     for (const h of feedKnown) q.append("knownMap", h);
-    q.set("mapsLite", "1");
     const { mapThumbs = [], ...page } = await request<WireFeedPage>(`/api/activities?${q.toString()}`);
     /* 실려 온 맵을 맡겨 두고, 이 쪽에서 물었는데 안 온 해시는 '없음'으로 적는다(utils/mapThumbs). */
     const asked = page.items.flatMap((it) => (it.gameResults ?? []).map((g) => g.mapHash ?? "").filter((h) => h && !feedKnown.has(h)));
@@ -657,13 +578,6 @@ export const api = {
       `/api/activities/item?kind=${encodeURIComponent(kind)}&id=${id}`,
     );
     return { ...it, gameResults: (it.gameResults ?? []).map(gameResultFromWire) };
-  },
-
-
-
-  /* 자유게시판(2026-10-26) — 고치기·지우기는 쓴 사람만(서버가 가른다) · 공지는 운영자만. */
-  async getPost(id: number): Promise<Post> {
-    return request<Post>(`/api/posts/${id}`);
   },
   async createPost(payload: PostWrite): Promise<Post> {
     return request<Post>("/api/posts", { method: "POST", body: JSON.stringify(payload) });
@@ -697,7 +611,6 @@ export const api = {
   async deleteComment(commentId: number): Promise<void> {
     await request<void>(`/api/activities/comments/${commentId}`, { method: "DELETE" });
   },
-
 
   async downloadReplay(gameResultId: number): Promise<Blob> {
     const headers = new Headers();
@@ -877,14 +790,6 @@ export const api = {
     });
   },
 
-  async verifyAdminPanelPassword(password: string): Promise<boolean> {
-    const res = await request<{ ok: boolean }>("/api/env-vars/admin-panel/verify", {
-      method: "POST",
-      body: JSON.stringify({ password }),
-    });
-    return res.ok;
-  },
-
   async getLeagues(): Promise<LeagueListItem[]> {
     const res = await request<{ items: LeagueListItem[] }>("/api/leagues");
     return res.items;
@@ -898,9 +803,6 @@ export const api = {
   async createPlacementRound(name: string): Promise<PlacementRound> {
     return request<PlacementRound>("/api/placement", { method: "POST", body: JSON.stringify({ name }) });
   },
-  async renamePlacementRound(id: number, name: string): Promise<PlacementRound> {
-    return request<PlacementRound>(`/api/placement/${id}`, { method: "PATCH", body: JSON.stringify({ name }) });
-  },
   async deletePlacementRound(id: number): Promise<void> {
     await request<void>(`/api/placement/${id}`, { method: "DELETE" });
   },
@@ -913,7 +815,7 @@ export const api = {
   /** 한 대진의 세트를 통째로 — 이긴 쪽(a · b)은 여기 적은 a · b 기준. */
   async setPlacementSets(id: number, a: string, b: string, sets: LeagueMatchSet[]): Promise<PlacementRound> {
     return request<PlacementRound>(`/api/placement/${id}/sets`, {
-      method: "PUT", body: JSON.stringify({ a, b, sets: sets.map((s) => ({ gameResultId: s.gameResultId, winner: s.winner, memo: s.memo ?? "" })) }),
+      method: "PUT", body: JSON.stringify({ a, b, sets: sets.map((s) => ({ gameResultId: s.gameResultId, winner: s.winner, memo: s.memo })) }),
     });
   },
 
@@ -939,16 +841,6 @@ export const api = {
   async removeLeaguePoolMember(leagueId: number, poolId: number): Promise<League> {
     return request<League>(`/api/leagues/${leagueId}/pool/${poolId}`, { method: "DELETE" });
   },
-  async addLeagueTeam(leagueId: number, size: number): Promise<League> {
-    return request<League>(`/api/leagues/${leagueId}/teams`, {
-      method: "POST", body: JSON.stringify({ size }),
-    });
-  },
-  async updateLeagueTeam(leagueId: number, teamId: number, size: number): Promise<League> {
-    return request<League>(`/api/leagues/${leagueId}/teams/${teamId}`, {
-      method: "PATCH", body: JSON.stringify({ size }),
-    });
-  },
   async setLeagueTeamComposition(
     leagueId: number, teams: LeagueTeamCompositionEntry[],
   ): Promise<League> {
@@ -967,13 +859,6 @@ export const api = {
   },
   async confirmLeagueBracket(leagueId: number): Promise<League> {
     return request<League>(`/api/leagues/${leagueId}/bracket/confirm`, { method: "POST" });
-  },
-  async setLeagueBracketSeeding(
-    leagueId: number, assignments: { matchId: number; side: LeagueMatchSide; teamId: number | null }[],
-  ): Promise<League> {
-    return request<League>(`/api/leagues/${leagueId}/bracket/seeding`, {
-      method: "PUT", body: JSON.stringify({ assignments }),
-    });
   },
   async setLeagueMatchSchedule(leagueId: number, matchId: number, scheduledAt: string | null): Promise<League> {
     return request<League>(`/api/leagues/${leagueId}/matches/${matchId}/schedule`, {

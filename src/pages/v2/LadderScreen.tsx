@@ -258,9 +258,6 @@ export default function LadderScreen() {
         count={rows.length}
         countLabel="명"
         showCount={false}
-        showSearch={false}
-        searchValue=""
-        onSearchChange={() => { }}
         heading={<div className="scr-stat-filters">
           <div className="scr-stat-filter-row">
             <div className="scr-stat-filter-group">

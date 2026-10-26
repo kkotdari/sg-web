@@ -31,7 +31,7 @@ export default function PlacementPairModal({
   const [err, setErr] = useState("");
   const sideA = useMemo(() => sideOfPeople([{ id: a.memberId, nick: a.nickname }]), [a]);
   const sideB = useMemo(() => sideOfPeople([{ id: b.memberId, nick: b.nickname }]), [b]);
-  const keyOf = (list: LeagueMatchSet[]): string => JSON.stringify(list.map((x) => [x.gameResultId, x.winner, (x.memo ?? "").trim()]));
+  const keyOf = (list: LeagueMatchSet[]): string => JSON.stringify(list.map((x) => [x.gameResultId, x.winner, x.memo.trim()]));
   const won = sets.filter((s) => s.winner === "a").length;
   const lost = sets.filter((s) => s.winner === "b").length;
   const decided = sets.some((s) => s.winner !== null);

@@ -12,12 +12,10 @@ const SCREEN_SEG: Partial<Record<ScreenKey, string>> = {
   minimaps: "minimaps", control: "control", catalog: "catalog", explore: "explore", placement: "placement",
 };
 /* 통계 주소는 /stats(2026-10-21, 요청: "/clan 주소가 안 맞다 · 통계인데") — 화면 열쇠 clan 은 메뉴 권한 등에 그대로 두고 주소만 바꿨다.
-   옛 주소 /clan 으로 들어오면 그 화면을 열고 주소창은 /stats 로 고친다(App · canonicalPathname). */
-const OLD_SEG: Record<string, ScreenKey> = { clan: "clan" };
-const SEG_SCREEN: Record<string, ScreenKey> = {
-  ...OLD_SEG,
-  ...Object.fromEntries((Object.entries(SCREEN_SEG) as [ScreenKey, string][]).map(([k, v]) => [v, k])),
-};
+   옛 /clan 잇기는 걷었다(2026-10-26, 요청: "예전 버전 받게 한 거 다 삭제"). */
+const SEG_SCREEN: Record<string, ScreenKey> = Object.fromEntries(
+  (Object.entries(SCREEN_SEG) as [ScreenKey, string][]).map(([k, v]) => [v, k]),
+);
 const GROUP_OF: Partial<Record<ScreenKey, FeedGroup>> = { games: "gameResult", board: "board" };
 
 export interface Route {
@@ -33,12 +31,6 @@ export function parseRoute(pathname: string = window.location.pathname): Route {
   const screen = SEG_SCREEN[segs[0]];
   if (screen) return { screen, group: GROUP_OF[screen] ?? null, item: segs[1] ?? null };
   return home;
-}
-
-/** 옛 주소(OLD_SEG)면 지금 주소로, 아니면 그대로. */
-export function canonicalPathname(pathname: string = window.location.pathname): string {
-  const head = pathname.split("/").filter(Boolean)[0];
-  return head !== undefined && head in OLD_SEG && SCREEN_SEG[OLD_SEG[head]] !== head ? pathOf(parseRoute(pathname)) : pathname;
 }
 
 export function pathOf(r: { screen: ScreenKey; item?: string | null }): string {
@@ -68,18 +60,11 @@ export function takeListScroll(): number | null {
   return scrListY;
 }
 
-const DEAD_PARAMS = ["screen", "group", "item", "game"] as const;
-export function stripDeadParams(search: string): string {
-  const q = new URLSearchParams(search);
-  for (const k of DEAD_PARAMS) q.delete(k);
-  return q.toString();
-}
-
 export function navigateTo(
   path: string, opts: { replace?: boolean; search?: string; notify?: boolean } = {},
 ): void {
-  const search = stripDeadParams(opts.search ?? "");
-  const url = `${path}${search && search !== "?" ? (search.startsWith("?") ? search : `?${search}`) : ""}`;
+  const search = (opts.search ?? "").replace(/^\?/, "");
+  const url = search ? `${path}?${search}` : path;
   if (opts.replace) window.history.replaceState(window.history.state, "", url);
   else window.history.pushState(PUSHED_STATE, "", url);
   if (opts.notify !== false) window.dispatchEvent(new PopStateEvent("popstate"));

@@ -16,7 +16,6 @@ import { cx } from "../../utils/format";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { ROLE_INFO, isAdminRole } from "../../constants/roles";
-import { activeMemberSearchTerms, memberMatchesQuery, splitSearchTerms } from "../../utils/memberSearch";
 import type { MemberRole, MemberStatus, ReplayNameMappingEntry, ReplayNameMappingKind } from "../../types";
 
 const PAGE_SIZE = 20;
@@ -69,7 +68,6 @@ export default function MembersScreen() {
   const [filterRaw, setFilterRaw] = useUrlState("st", "all");
   const filter = filterRaw as StatusFilter;
   const setFilter = setFilterRaw as (v: StatusFilter) => void;
-  const [query, setQuery] = useUrlState("u");
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -79,7 +77,6 @@ export default function MembersScreen() {
     return next;
   });
   const isAdmin = !!currentUser && isAdminRole(currentUser.roles);
-  const suggestions = useMemo(() => activeMemberSearchTerms(members), [members]);
 
   const [entries, setEntries] = useState<ReplayNameMappingEntry[]>([]);
   const [mapLoading, setMapLoading] = useState(true);
@@ -95,17 +92,15 @@ export default function MembersScreen() {
   }, []);
 
   const rows = useMemo(() => {
-    const list = members.filter((m) =>
-      (filter === "all" || m.status === filter) &&
-      memberMatchesQuery(m, query));
+    const list = members.filter((m) => filter === "all" || m.status === filter);
     return [...list].sort((a, b) => {
       const aTime = filter === "all" ? a.createdAt : a.updatedAt;
       const bTime = filter === "all" ? b.createdAt : b.updatedAt;
       return bTime.localeCompare(aTime);
     });
-  }, [members, filter, query]);
+  }, [members, filter]);
 
-  useEffect(() => { setPage(1); setExpandedIds(new Set()); }, [filter, query]);
+  useEffect(() => { setPage(1); setExpandedIds(new Set()); }, [filter]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -125,30 +120,25 @@ export default function MembersScreen() {
   const byRecency = (a: ReplayNameMappingEntry, b: ReplayNameMappingEntry) =>
     (b.lastSeen ?? "").localeCompare(a.lastSeen ?? "");
 
-  const rawNameMatches = (rawName: string) => {
-    const terms = splitSearchTerms(query);
-    if (terms.length === 0) return true;
-    return terms.some((t) => rawName.toLowerCase().includes(t));
-  };
   const [unresolvedSort, setUnresolvedSort] = useState<"recent" | "count">("recent");
   const unresolvedRows = useMemo(() => {
-    const list = entries.filter((e) => e.kind === "unresolved" && rawNameMatches(e.rawName));
+    const list = entries.filter((e) => e.kind === "unresolved");
     if (unresolvedSort === "count") {
       return [...list].sort((a, b) =>
         (b.appearances ?? 0) - (a.appearances ?? 0) || byRecency(a, b));
     }
     return [...list].sort(byRecency);
-  }, [entries, query, unresolvedSort]);
+  }, [entries, unresolvedSort]);
   const nonMemberRows = useMemo(() => {
-    return entries.filter((e) => e.kind === "unregistered" && rawNameMatches(e.rawName)).sort(byRecency);
-  }, [entries, query]);
+    return entries.filter((e) => e.kind === "unregistered").sort(byRecency);
+  }, [entries]);
   const frequentNonMemberRows = useMemo(
     () => nonMemberRows.filter((e) => (e.appearances ?? 0) >= FREQUENT_NON_MEMBER_MIN),
     [nonMemberRows],
   );
   const computerRows = useMemo(
-    () => entries.filter((e) => e.kind === "computer" && rawNameMatches(e.rawName)).sort(byRecency),
-    [entries, query],
+    () => entries.filter((e) => e.kind === "computer").sort(byRecency),
+    [entries],
   );
 
   const memberOptions = useMemo(
@@ -214,11 +204,6 @@ export default function MembersScreen() {
       <SearchFilterBar
         count={rows.length}
         countLabel="명"
-        searchValue={query}
-        onSearchChange={setQuery}
-        searchPlaceholder="유저 입력 또는 @로 목록 띄우기"
-        suggestions={suggestions}
-        showSearch={false}
         filterPanel={
           <FilterItem label="상태">
             <PillTabs options={FILTER_OPTS} value={filter} onChange={setFilter} aria-label="회원 상태" />

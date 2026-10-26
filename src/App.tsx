@@ -4,8 +4,7 @@ import { isAdminRole } from "./constants/roles";
 import ScrollTopButton from "./components/common/ScrollTopButton";
 import ToastHost from "./components/common/Toast";
 import AlertHost from "./components/common/AlertDialog";
-import { canonicalPathname, navigateTo, parseRoute, pathOf, stripDeadParams } from "./utils/route";
-import { LoadingMark } from "./components/common/Feedback";
+import { navigateTo, parseRoute, pathOf } from "./utils/route";
 import { api } from "./api/client";
 import { useBottomViewportInset } from "./hooks/useBottomViewportInset";
 import { useModalDragDismiss } from "./hooks/useModalDragDismiss";
@@ -29,7 +28,6 @@ import GamesScreen from "./pages/games/GamesScreen";
 import BoardScreen from "./pages/board/BoardScreen";
 import LadderScreen from "./pages/v2/LadderScreen";
 import ClanStatsScreen from "./pages/v2/ClanStatsScreen";
-import SharePage, { type ShareTarget } from "./pages/share/SharePage";
 import CatalogScreen from "./pages/catalog/CatalogScreen";
 import GuestApp from "./pages/guest/GuestApp";
 
@@ -39,19 +37,8 @@ function screenFromUrl(): ScreenKey {
   return parseRoute().screen;
 }
 
-function shareTargetFromUrl(): ShareTarget | null {
-  const params = new URLSearchParams(window.location.search);
-  const sv = params.get("sv");
-  const id = Number(params.get("sid"));
-  if ((sv === "gameResult" || sv === "rankingShift")
-    && Number.isFinite(id) && id > 0) {
-    return { type: sv, id };
-  }
-  return null;
-}
-
 /* 메뉴로 화면을 옮길 때 떨구는 화면 제 것 — tab(게임 탭)·size(통계 규모 탭)도(2026-10-20, 요청: "tab 파라미터가 다른 화면까지 남음"). */
-const SCREEN_LOCAL_PARAMS = ["t", "u", "q", "f", "st", "period", "tab", "size"] as const;
+const SCREEN_LOCAL_PARAMS = ["t", "u", "f", "st", "period", "tab", "size"] as const;
 
 
 export default function App() {
@@ -93,23 +80,7 @@ export default function App() {
   const dismissUpdateNotice = useAppStore((s) => s.dismissUpdateNotice);
 
   const [screen, setScreen] = useState<ScreenKey>(screenFromUrl);
-  useEffect(() => {
-    const cleaned = stripDeadParams(window.location.search);
-    const path = canonicalPathname();
-    if (cleaned !== window.location.search.replace(/^\?/, "") || path !== window.location.pathname) {
-      window.history.replaceState(
-        window.history.state, "",
-        `${path}${cleaned ? `?${cleaned}` : ""}${window.location.hash}`,
-      );
-    }
-  }, []);
-  const [shareTarget, setShareTarget] = useState<ShareTarget | null>(shareTargetFromUrl);
-  const [shareLanding] = useState<boolean>(() => {
-    try {
-      const q = new URLSearchParams(window.location.search);
-      return q.has("sv") || parseRoute().item !== null;
-    } catch { return false; }
-  });
+  const [shareLanding] = useState<boolean>(() => parseRoute().item !== null);
   const [profileOpen, setProfileOpen] = useState(false);
   const shownScreen = useRef<ScreenKey | null>(null);
   const navigate = (next: ScreenKey) => {
@@ -139,16 +110,6 @@ export default function App() {
     setScreen(screenIntent);
     clearScreenIntent();
   }, [screenIntent, clearScreenIntent]);
-  const exitShare = () => {
-    const params = new URLSearchParams(window.location.search);
-    params.delete("sv");
-    params.delete("sid");
-    params.delete("sd");
-    const qs = params.toString();
-    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`);
-    setShareTarget(null);
-    setScreen(HOME_SCREEN);
-  };
   useBottomViewportInset();
 
   useEffect(() => {
@@ -208,13 +169,8 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    if (shareTarget) {
-      const detail = `${shareTarget.type}#${shareTarget.id}`;
-      void api.pingAccess("share", detail);
-      return;
-    }
     void api.pingAccess(screen);
-  }, [user, screen, shareTarget]);
+  }, [user, screen]);
 
   useEffect(() => {
     if (parseRoute().screen === screen) return;
@@ -232,23 +188,11 @@ export default function App() {
   }
 
   if (!user) {
-    if (guest && !shareTarget) return <GuestApp />;
+    if (guest) return <GuestApp />;
     return (
         <div className="scr-app scr-app-fallback-scroll" id="scr-app">
           <InAppBrowserNotice compact={shareLanding} />
           <AuthScreen />
-        </div>
-    );
-  }
-
-  if (shareTarget) {
-    return (
-        <div className="scr-app scr-app-fallback-scroll" id="scr-app">
-          <div className="scr-bg-grid" />
-          <InAppBrowserNotice compact />
-          {booting
-            ? <LoadingMark full />
-            : <SharePage target={shareTarget} onExit={exitShare} />}
         </div>
     );
   }

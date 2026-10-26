@@ -60,13 +60,6 @@ function jiggleScroll(): void {
   });
 }
 
-export function forceLightTheme(): () => void {
-  const root = document.documentElement;
-  const had = root.classList.contains("scr-light-theme");
-  if (!had) { root.classList.add("scr-light-theme"); applyThemeColor(true); }
-  return () => { if (!had) { root.classList.remove("scr-light-theme"); applyThemeColor(false); } };
-}
-
 function applyLightTheme(on: boolean): void {
   document.documentElement.classList.toggle("scr-light-theme", on);
   applyThemeColor(on);

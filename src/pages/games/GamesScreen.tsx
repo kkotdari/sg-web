@@ -29,7 +29,6 @@ import {
 } from "../feed/feedItems";
 
 export { GameResultCard } from "./GameResultCard";
-export { gameResultItem } from "../feed/feedItems";
 
 const MAX_REPLAY_FILES = 20;
 
@@ -80,7 +79,7 @@ function GamesRouter() {
   const openItem = (item: DisplayItem): void => {
     rememberListScroll();   // 뒤로 오면 목록이 이 자리로(GameListPage · route.ts)
     // 게임 목록의 공방/내전 탭은 목록 주소의 것 — 상세 주소엔 안 싣는다(뒤로 가면 목록 주소에서 되살아난다)
-    const search = linkParams([...SCENE_LINK_KEYS9, "u", "q", "f", "tab"]);
+    const search = linkParams([...SCENE_LINK_KEYS9, "f", "tab"]);
     if (item.kind !== "gameResult") return;
     go(gamePath(item.gameResult.matchNo || String(item.gameResult.id)), { search });
     pushedItemRef.current = true;

@@ -93,10 +93,6 @@ function lockBodyScroll(onOutside?: () => void): () => void {
   };
 }
 
-export function isBodyScrollLocked(): boolean {
-  return lockCount > 0;
-}
-
 export function useLockBodyScroll(active = true, onOutside?: () => void): void {
   const cbRef = useRef(onOutside);
   cbRef.current = onOutside;

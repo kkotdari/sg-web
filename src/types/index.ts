@@ -167,7 +167,7 @@ export interface RankingShift {
 }
 
 export type CommentTargetType =
-  | "gameResult" | "rankingShift" | "leagueMatch" | "schedule" | "notice" | "post";
+  | "gameResult" | "rankingShift" | "leagueMatch" | "notice" | "post";
 export interface ItemComment {
   id: number;
   targetType: CommentTargetType;
@@ -179,7 +179,6 @@ export interface ItemComment {
   canEdit: boolean;
   mentions: ItemCommentMention[];
 }
-
 
 export interface GameResult {
   id: number;
@@ -309,23 +308,6 @@ export interface MemberStatsEntry {
   provisional: boolean | null;
 }
 
-export interface RatingHistoryResponse {
-  deltas: Record<string, number>;
-  mu: number | null;
-  sigma: number | null;
-  conservative: number | null;
-  games: number;
-  provisional: boolean;
-}
-
-export interface RivalryPair {
-  a: string;
-  b: string;
-  aWins: number;
-  bWins: number;
-  draws: number;
-}
-
 export interface ClanBreakdownEntry {
   label: string;
   plays: number;
@@ -367,24 +349,9 @@ export interface GameResultStatsResponse {
   trendGames?: Record<string, number> | null;
 }
 
-export interface TeamRankEntry {
-  memberIds: string[];
-  plays: number;
-  wins: number;
-  losses: number;
-  draws: number;
-  points: number;
-}
-
-export interface TeamRankingResponse {
-  teams: TeamRankEntry[];
-}
-
 /* 옛 "activity"(활동) 화면은 게임 · 게시판 두 화면이 됐다(2026-10-26, 요청: "활동 화면 제거 · 게임 게시판 두개의 메뉴로"). */
 export type ScreenKey = "games" | "board" | "ladder" | "clan" | "members" | "leagues" | "minimaps" | "control"
   | "catalog" | "explore" | "placement";
-export const SCREEN_KEYS: ScreenKey[] = ["games", "board", "ladder", "clan", "members",
-  "leagues", "minimaps", "control", "catalog", "explore", "placement"];
 
 export interface ExtShareList {
   id: number;
@@ -412,8 +379,6 @@ export interface AppVersionInfo {
   number: AppVersion;
   notes: string;
 }
-
-export type PeriodPreset = "all" | "today" | "week" | "month" | "year" | "custom";
 
 export type LeagueMode = "team" | "individual";
 export type LeagueStatus = "setup" | "active" | "completed";
@@ -454,20 +419,11 @@ export interface LeagueMatchTeamRef {
   label: string;
 }
 
-export interface LeagueMatchSubstitution {
-  teamId: number;
-  rosterPosition: number;
-  substituteMemberId: string;
-  substituteNickname: string;
-  note: string;
-}
-
 /** 경기 한 판의 세트 — 그 세트로 친 게임 결과(고른 것이 있으면)와 이긴 쪽("draw" 무승부 · 2026-10-19) · 손으로 적은 글(게임을 안 이은 세트). */
 export interface LeagueMatchSet {
   gameResultId: number | null;
   winner: LeagueMatchSide | "draw" | null;
-  /** 옛 서버면 없다. */
-  memo?: string;
+  memo: string;
 }
 
 /* ★ 배치고사(2026-10-23) — 회차(1차 · 2차 …)마다 참가자 명단과 대진 세트가 따로다. 세트 꼴은 리그 세트와 같다(a = 대진의 앞사람). */
@@ -519,9 +475,7 @@ export interface LeagueMatch {
   setsWonB: number | null;
   winnerTeamId: number | null;
   note: string;
-  substitutions: LeagueMatchSubstitution[];
-  /** 옛 서버면 없다. */
-  sets?: LeagueMatchSet[];
+  sets: LeagueMatchSet[];
 }
 
 export interface League {
@@ -560,8 +514,6 @@ export interface LeagueTeamCompositionEntry {
   size?: number;
   roster: (number | null)[];
 }
-
-
 
 export interface MapCanon {
   id: number;
@@ -609,12 +561,6 @@ export interface LeagueMatchEntry {
   winnerSide: "a" | "b" | null;
   postedAt: string;
   updatedAt: string;
-}
-
-export interface ScheduleFile {
-  name: string;
-  url: string;
-  size: number;
 }
 
 export interface SchedulePhoto {

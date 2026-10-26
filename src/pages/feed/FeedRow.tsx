@@ -11,7 +11,7 @@ import { GameTableRow, UnhideRequestButton } from "../games/GameTable";
 import { commentStatOf, subscribeComments } from "./Comments";
 import { PostBadges, postWhenText } from "../board/PostCard";
 import {
-  commentTargetOf, namesWithRest, rowFlagsOf, rowKeyOf, type DisplayItem,
+  commentTargetOf, rowFlagsOf, rowKeyOf, type DisplayItem,
 } from "./feedItems";
 import type { GameResult, Member } from "../../types";
 
@@ -88,17 +88,6 @@ function rowDesc(item: DisplayItem, view: RowView) {
         )}
       </span>
     );
-  }
-  if (item.kind === "rankingShift") {
-    const names: string[] = [];
-    const seen = new Set<string>();
-    for (const sec of item.shift.sections) {
-      for (const e of sec.shifts) {
-        if (seen.has(e.memberId)) continue;
-        seen.add(e.memberId); names.push(e.nickname);
-      }
-    }
-    return <span className="scr-feed-row-names">{namesWithRest(names)}{" 변동"}</span>;
   }
   return <GameNames game={item.gameResult} memberOf={view.memberOf} mobile={view.isMobile} />;
 }

@@ -211,7 +211,7 @@ function MatchEditModal({
   const [a, setA] = useState(() => (match.setsWonA === null ? "" : String(match.setsWonA)));
   const [b, setB] = useState(() => (match.setsWonB === null ? "" : String(match.setsWonB)));
   const [note, setNote] = useState(() => match.note);
-  const [sets, setSets] = useState<LeagueMatchSet[]>(() => match.sets ?? []);
+  const [sets, setSets] = useState<LeagueMatchSet[]>(() => match.sets);
   /* (걷어냄 · 2026-10-19, 요청: "탭 없애고 이렇게 해줘") 수기 입력 / 게임 결과 선택 두 탭 — 이제 세트 하나에 둘이 다 든다(게임을 이으면 그 판 ·
      안 이으면 글 칸). 몇 대 몇은 세트의 이긴 쪽으로만 채운다. 옛 메모(경기 note)는 적힌 것이 있을 때만 보여 고치거나 지울 수 있게 둔다. */
   const [busy, setBusy] = useState(false);
@@ -235,7 +235,7 @@ function MatchEditModal({
     setB(String(next.filter((x) => x.winner === "b").length));
   };
   const setsKey = (list: LeagueMatchSet[]): string =>
-    JSON.stringify(list.map((x) => [x.gameResultId, x.winner, (x.memo ?? "").trim()]));
+    JSON.stringify(list.map((x) => [x.gameResultId, x.winner, x.memo.trim()]));
 
   const save = async () => {
     setErr("");
@@ -246,7 +246,7 @@ function MatchEditModal({
       if (nextWhen !== (match.scheduledAt ? new Date(match.scheduledAt).toISOString() : null)) {
         next = await api.setLeagueMatchSchedule(league.id, match.id, nextWhen);
       }
-      if (canScore && setsKey(sets) !== setsKey(match.sets ?? [])) {
+      if (canScore && setsKey(sets) !== setsKey(match.sets)) {
         next = await api.setLeagueMatchSets(league.id, match.id, sets);
       }
       if (canScore) {
@@ -293,7 +293,7 @@ function MatchEditModal({
           />
         </label>
 
-        {canScore && match.sets !== undefined ? (
+        {canScore ? (
           <>
             <LeagueMatchSets
               league={league} match={match} sets={sets} onChange={changeSets}

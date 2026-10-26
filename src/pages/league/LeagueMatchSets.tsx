@@ -18,12 +18,9 @@ import type { GameResult, GameResultSlot, League, LeagueMatch, LeagueMatchSet, L
 
 export type Side = { ids: Set<string>; names: Set<string>; nicks: string[] };
 
-function sideOf(league: League, match: LeagueMatch, teamId: number | undefined): Side {
+function sideOf(league: League, teamId: number | undefined): Side {
   const team = league.teams.find((t) => t.id === teamId);
-  return sideOfPeople([
-    ...(team?.roster ?? []).map((r) => ({ id: r.memberId, nick: r.nickname })),
-    ...match.substitutions.filter((s) => s.teamId === teamId).map((s) => ({ id: s.substituteMemberId, nick: s.substituteNickname })),
-  ]);
+  return sideOfPeople((team?.roster ?? []).map((r) => ({ id: r.memberId, nick: r.nickname })));
 }
 
 /** 한 편(사람들) — 게임 슬롯을 회원 id 나 이름으로 그 편에 맞춘다. 배치고사는 한 사람이 한 편이다. */
@@ -46,8 +43,8 @@ type SetsProps = {
 };
 
 export default function LeagueMatchSets({ league, match, ...rest }: SetsProps & { league: League; match: LeagueMatch }) {
-  const sideA = useMemo(() => sideOf(league, match, match.teamA?.id), [league, match]);
-  const sideB = useMemo(() => sideOf(league, match, match.teamB?.id), [league, match]);
+  const sideA = useMemo(() => sideOf(league, match.teamA?.id), [league, match.teamA?.id]);
+  const sideB = useMemo(() => sideOf(league, match.teamB?.id), [league, match.teamB?.id]);
   return <MatchSets sideA={sideA} sideB={sideB} who="두 팀이" {...rest} />;
 }
 
@@ -251,7 +248,7 @@ export function MatchSets({
                       <input
                         type="text" className="scr-league-set-memo" disabled={disabled} maxLength={200}
                         style={{ gridColumn: "1 / -1", gridRow: 2 }}
-                        value={s.memo ?? ""} placeholder="세트 내용(예: 홍탑 승)" aria-label={`${i + 1}세트 내용`}
+                        value={s.memo} placeholder="세트 내용(예: 홍탑 승)" aria-label={`${i + 1}세트 내용`}
                         onChange={(e) => patch(i, { memo: e.target.value })}
                       />
                     </span>

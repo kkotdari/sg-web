@@ -51,10 +51,6 @@ export function showToast(
   return id;
 }
 
-export function clearToasts(): void {
-  for (const it of items) drop(it.id);
-}
-
 const ICON: Record<ToastKind, typeof AlertTriangle> = {
   warn: AlertTriangle, info: Info, ok: CheckCircle2,
 };

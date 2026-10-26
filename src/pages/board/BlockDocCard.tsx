@@ -57,8 +57,6 @@ export interface DocSpec<D extends BlockDoc, W> {
   HeadLine: (p: { doc: D; head: DocHead; editing: boolean; onChange: (part: Partial<DocHead>) => void }) => ReactNode;
   /** 도구 줄의 앞 단추(글: 운영자 공지). adopt 는 그 단추가 서버에서 받은 새 판을 카드에 싣는다. */
   extraTools?: (p: { doc: D; adopt: (saved: D) => void }) => ReactNode;
-  /** 블록 앞에 그리는 옛 본문(일정의 옛 글·링크·첨부). */
-  legacy?: (doc: D) => ReactNode;
   /** 아직 서버에 없는 새 문서(글쓰기 · 2026-10-26, 요청: "등록시 바로 등록폼으로 가고 제목과 분류같은거도 거기서 입력") —
    *  도구 줄(공유·삭제)을 걷고, 저장 단추는 등록 · 취소는 onDiscard(글쓰기를 떠난다) · 제목에 커서. */
   draft?: { saveLabel: string; onDiscard: () => void };
@@ -615,7 +613,6 @@ function BlockDocCardInner<D extends BlockDoc, W>({
           onChange={edit}
         />
 
-        {spec.legacy?.(doc)}
 
         <ScheduleBlocks
           blocks={draft ? draft.blocks : readBlocks} canEdit={editing}

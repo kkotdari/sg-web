@@ -4,7 +4,7 @@ import { LoadingMark } from "../../components/common/Feedback";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
 import { SelectionBar } from "../../components/common/Selection";
 import { activeMemberSearchTerms } from "../../utils/memberSearch";
-import { buildLexicon, decodeGameSearch, encodeGameSearch, formToServer, gameSuggestions, legacyToForm } from "../../utils/gameSearch";
+import { decodeGameSearch, encodeGameSearch, formToServer, gameSuggestions } from "../../utils/gameSearch";
 import GameSearchForm from "./GameSearchForm";
 import { api } from "../../api/client";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -92,15 +92,6 @@ export default memo(function GameListPage({
   /* 피드(게임 몫)는 맵 이름 추천어에만 쓴다 — 목록 자체는 서버 쪽수(아래 serverGames). */
   const items = useMemo<FeedItem[]>(() => feedOfTab(feedAll, gameTab, memberOf), [feedAll, gameTab, memberOf]);
   const suggestions = useMemo(() => activeMemberSearchTerms(members), [members]);
-  const [searchApplied, setSearchApplied] = useUrlState("u");
-  const [search, setSearch] = useState(() => searchApplied);
-  const [legacyQ, setLegacyQ] = useUrlState("q");
-  useEffect(() => { setSearch(searchApplied); }, [searchApplied]);
-  useEffect(() => {
-    if (!legacyQ) return;
-    setSearchApplied([searchApplied, legacyQ].filter(Boolean).join(", "));
-    setLegacyQ("");
-  }, [legacyQ]);
   const gameOptions = useMemo(() => gameSuggestions(
     new Set(items.flatMap((it) => {
       if (it.kind !== "gameResult") return [];
@@ -108,23 +99,9 @@ export default memo(function GameListPage({
       return name9 ? [name9] : [];
     })),
   ), [items]);
-  const lexicon = useMemo(
-    () => buildLexicon(suggestions.flatMap((s9) => s9.matchTexts), gameOptions),
-    [suggestions, gameOptions],
-  );
-  const lexRef = useRef(lexicon);
-  lexRef.current = lexicon;
-  /* ★★ 게임 목록은 검색폼(GameSearchForm · 2026-10-20) — 조건은 주소 f= (JSON). 옛 한 줄 검색어(u=)로 들어오면 한 번 폼으로 옮긴다. */
-  const onGames9 = true;
+  /* ★★ 게임 목록은 검색폼(GameSearchForm · 2026-10-20) — 조건은 주소 f= (JSON). */
   const [formRaw, setFormRaw] = useUrlState("f");
   const gameForm = useMemo(() => decodeGameSearch(formRaw), [formRaw]);
-  useEffect(() => {
-    if (!onGames9 || !searchApplied) return;
-    const next = legacyToForm(searchApplied, lexicon, gameOptions);
-    setSearchApplied("");
-    setFormRaw(encodeGameSearch(next));
-  }, [onGames9, searchApplied]);
-  const searchKey9 = onGames9 ? formRaw : searchApplied;
   /* ★ 게임 목록은 **50개씩 무한 스크롤 · 전체 개수는 첫 쪽에서**(2026-10-23, 요청: "게임 목록 검색을 100개 무한스크롤로 복귀하고 대신 전체 개수는 가져오기" →
      "100개도 많은듯 50개씩" · 한때 2026-10-22 한 번에 다 받기). 상세에서 뒤로 온 칸이면 적어 둔 스크롤 y(route.ts takeListScroll — 읽는 즉시 칸에서 지운다) —
      새로 받아 그려 보고 페이지가 y 까지 내려갈 만큼 길어질 때까지 더 받은 뒤 y 로(더 받을 게 없으면 끝까지), 그 밖의 목록은 바로 y 로. */
@@ -165,7 +142,7 @@ export default memo(function GameListPage({
       .catch(() => { if (!dead) setServerGames(null); })
       .finally(() => { if (!dead) setServerBusy(false); });
     return () => { dead = true; };
-  }, [searchKey9, gameTab, refreshKey]);
+  }, [formRaw, gameTab, refreshKey]);
 
   /* ★ 전체 선택(게임 목록)은 **받은 쪽이 아니라 그 조건의 판 전부**(같은 날 요청: "전체 선택 후 어떤 명령을 내리면 전체라는 파라미터를 전달해서 서버에서 처리") —
      켜진 동안 더 받은 쪽도 골라 두고, 받은 판 가운데 고르지 않은 것(풀었거나 못 고르는 것)을 exclude 로 넘긴다. 다 풀면 꺼진다. */
@@ -231,28 +208,17 @@ export default memo(function GameListPage({
           <h1 className="scr-title scr-v2-toolbar-title">게임</h1>
         </div>
       </div>
-      {onGames9 && (
-        <GameSearchForm
-          value={gameForm}
-          onApply={(next) => setFormRaw(encodeGameSearch(next))}
-          members={suggestions.map((s9) => s9.member)}
-          terms={gameOptions}
-          maps={gameOptions.filter((o) => o.tag === "맵").map((o) => o.value)}
-        />
-      )}
+      <GameSearchForm
+        value={gameForm}
+        onApply={(next) => setFormRaw(encodeGameSearch(next))}
+        members={suggestions.map((s9) => s9.member)}
+        terms={gameOptions}
+        maps={gameOptions.filter((o) => o.tag === "맵").map((o) => o.value)}
+      />
       <SearchFilterBar
-        showSearch={!onGames9}
         count={serverGames?.total ?? 0}
         countLabel="건"
         countLoading={serverBusy}
-        searchValue={search}
-        onSearchChange={setSearch}
-        onSearchEnter={(v9) => setSearchApplied(v9)}
-        suggestions={suggestions}
-        termSuggestions={gameOptions}
-        lexicon={lexicon}
-        searchLabel="검색"
-        searchPlaceholder="⌕  검색어 입력"
         heading={<GameTabs value={gameTab} onChange={onGameTabChange} />}
       />
       {selection && filtered.length > 0 && (

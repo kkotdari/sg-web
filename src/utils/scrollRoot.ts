@@ -60,10 +60,6 @@ export function isProgrammaticScroll(): boolean {
 }
 
 let suppressHideUntil = 0;
-export function suppressScrollHide(ms = 900): void {
-  const until = performance.now() + ms;
-  if (until > suppressHideUntil) suppressHideUntil = until;
-}
 export function isScrollHideSuppressed(): boolean {
   return performance.now() < suppressHideUntil;
 }
@@ -84,17 +80,4 @@ export function addRafScrollListener(listener: () => void, root: ScrollRoot = ge
     removed = true;
     root.removeEventListener("scroll", onScroll);
   };
-}
-
-export interface ScrollMetrics { scrollTop: number; clientHeight: number; scrollHeight: number }
-
-export function getScrollMetrics(root: ScrollRoot = getScrollRoot()): ScrollMetrics {
-  if (root instanceof Window) {
-    return {
-      scrollTop: root.scrollY,
-      clientHeight: document.documentElement.clientHeight,
-      scrollHeight: document.documentElement.scrollHeight,
-    };
-  }
-  return { scrollTop: root.scrollTop, clientHeight: root.clientHeight, scrollHeight: root.scrollHeight };
 }

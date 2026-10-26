@@ -14,54 +14,6 @@ function getCtx(): AudioContext | null {
   }
 }
 
-export function playMailChime(): void {
-  const ac = getCtx();
-  if (!ac) return;
-  try {
-    const t0 = ac.currentTime;
-    const echo = ac.createDelay(1.0);
-    echo.delayTime.setValueAtTime(0.26, t0);
-    const feedback = ac.createGain();
-    feedback.gain.setValueAtTime(0.12, t0);
-    const echoLevel = ac.createGain();
-    echoLevel.gain.setValueAtTime(0.28, t0);
-    echo.connect(feedback).connect(echo);
-    echo.connect(echoLevel).connect(ac.destination);
-    const bus = ac.createGain();
-    bus.gain.setValueAtTime(1, t0);
-    bus.connect(ac.destination);
-    bus.connect(echo);
-
-    const partials: [number, number, number][] = [
-      [1.0, 1.0, 0.45],
-      [2.76, 0.5, 0.3],
-      [5.40, 0.24, 0.2],
-      [8.93, 0.08, 0.14],
-    ];
-    const strike = (start: number, base: number, peak: number) => {
-      for (const [ratio, vol, decay] of partials) {
-        const f = base * ratio;
-        const o = ac.createOscillator();
-        o.type = "sine";
-        o.frequency.setValueAtTime(f * 1.012, start);
-        o.frequency.exponentialRampToValueAtTime(f, start + 0.025);
-        const g = ac.createGain();
-        g.gain.setValueAtTime(0.0001, start);
-        g.gain.exponentialRampToValueAtTime(peak * vol, start + 0.003);
-        g.gain.exponentialRampToValueAtTime(0.0001, start + decay);
-        o.connect(g).connect(bus);
-        o.start(start);
-        o.stop(start + decay + 0.05);
-      }
-    };
-    const BASE = 3136;
-    for (let i = 0; i < 4; i++) {
-      strike(t0 + i * 0.15, BASE, 0.11);
-    }
-  } catch {
-  }
-}
-
 export function playMagicRise(): void {
   const ac = getCtx();
   if (!ac) return;

@@ -1,8 +1,6 @@
-import { type ReactNode } from "react";
 import { cx } from "../../utils/format";
 import { serverMs } from "../../utils/date";
-import { parseRoute, type FeedGroup } from "../../utils/route";
-import type { CommentTargetType, GameResult, LeagueMatchEntry, Member, Post, RankingShift } from "../../types";
+import type { CommentTargetType, GameResult, LeagueMatchEntry, Member, Post } from "../../types";
 
 /* 게임·게시판 화면(목록·상세·게임 상세)이 함께 쓰는 항목 꼴과 셈 — 2026-10-19 화면을 컴포넌트로 나누며 GamesScreen 에서 옮겼다.
    (2026-10-26 활동 화면을 게임 · 게시판 두 화면으로 나누고 일정은 꼭지 '일정' 글이 됐다 — 옛 일정 항목·홈 미리보기 셈은 걷었다.) */
@@ -15,13 +13,6 @@ export interface GameResultItem {
   time: number;
   withClock: boolean;
   gameResult: GameResult;
-}
-
-export interface RankingShiftItem {
-  kind: "rankingShift";
-  time: number;
-  withClock: boolean;
-  shift: RankingShift;
 }
 
 export interface LeagueMatchItem {
@@ -40,7 +31,7 @@ export interface PostItem {
 }
 
 export type FeedItem =
-  | GameResultItem | RankingShiftItem | LeagueMatchItem | PostItem;
+  | GameResultItem | LeagueMatchItem | PostItem;
 
 export type DisplayItem = FeedItem;
 
@@ -79,38 +70,15 @@ export function sessionDateOf(it: GameResultItem): string {
   const dd = `${d.getDate()}`.padStart(2, "0");
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
-export function detailIdOf(it: DisplayItem): number | null {
-  return it.kind === "post" ? it.post.id
-      : it.kind === "rankingShift" ? it.shift.id
-        : it.kind === "leagueMatch" ? it.match.id
-          : null;
-}
-
-export function detailGroupOf(it: DisplayItem): FeedGroup | null {
-  return it.kind === "post" ? "board"
-          : null;
-}
-
-export const GROUP_ITEM_KIND: Record<FeedGroup, string> = {
-  gameResult: "gameResult",
-  board: "post",
-};
-
-export function gameParamOf(): string | null {
-  const r = parseRoute();
-  return r.group === "gameResult" ? r.item : null;
-}
 
 export function commentTargetOf(it: DisplayItem): { type: CommentTargetType; id: number } {
   return it.kind === "post" ? { type: "post", id: it.post.id }
-      : it.kind === "rankingShift" ? { type: "rankingShift", id: it.shift.id }
         : it.kind === "leagueMatch" ? { type: "leagueMatch", id: it.match.id }
           : { type: "gameResult", id: it.gameResult.id };
 }
 
 export function rowKeyOf(it: DisplayItem): string {
-  return it.kind === "rankingShift" ? `rs-${it.shift.id}`
-      : it.kind === "leagueMatch" ? `lm-${it.match.id}`
+  return it.kind === "leagueMatch" ? `lm-${it.match.id}`
         : it.kind === "post" ? `po-${it.post.id}`
           : `m-${it.gameResult.id}`;
 }
@@ -127,51 +95,6 @@ export function bulkDeleteMessageOf(items: DisplayItem[], gameCount?: number): s
 }
 
 export const HIDE_FORMS = { did: "숨겼어요", couldNot: "숨기지 못했어요" };
-
-const ROW_NAME_MAX = 1;
-
-export function nameNodes(names: string[]): ReactNode[] {
-  return names.flatMap((n, i) => [
-    ...(i > 0 ? [<span className="scr-feed-row-sep" key={`s${i}`}>·</span>] : []),
-    <span className="scr-feed-row-em" key={`n${i}`}>{n}</span>,
-  ]);
-}
-
-export function namesWithRest(names: string[]): ReactNode {
-  if (names.length === 0) return null;
-  const rest = names.length - ROW_NAME_MAX;
-  return (
-    <>
-      {nameNodes(names.slice(0, ROW_NAME_MAX))}
-      {rest > 0 && <>{" 외 "}<span className="scr-feed-row-em">{rest}</span>{"명"}</>}
-    </>
-  );
-}
-
-export function sessionDateLabel(date: string): string {
-  const [, m, d] = date.split("-");
-  return `${Number(m)}월 ${Number(d)}일`;
-}
-/* (걷어냄 · 2026-10-13, 요청: 알림 묶음 걷어 내기 — "알림이 뭐야? 그런 기능 본 적이 없어" → "2") 알림(랭킹 변동 · rankingShift) 묶음.
-   서버는 그대로 만들지만 활동 화면에 싣지 않는다(feedAll · 상세 링크). 타입·카드(RankingShiftCard)는 남겨 둔다. */
-export const GROUP_DEFS: { key: FeedGroup; label: string }[] = [
-  { key: "gameResult", label: "게임" },
-  { key: "board", label: "게시판" },
-];
-
-/* 접속 기록의 화면 열쇠 — 화면 이름 그대로(2026-10-26, 요청: "activity라는 파일이나 클래스를 다 변경"). */
-export const GROUP_SCREEN_CODE: Record<FeedGroup, string> = {
-  gameResult: "games",
-  board: "board",
-};
-
-export function groupKeyOf(item: FeedItem): FeedGroup | null {
-  return item.kind === "gameResult" ? "gameResult"
-    : item.kind === "post" ? "board"
-    : null;
-}
-
-export const SEARCHABLE_GROUPS = new Set<FeedGroup>(["gameResult"]);
 
 /* ★ 내전·공방은 **서버가 실어 준 clan** 으로 가른다(2026-10-12, 지적: "활동 화면과 게임 목록에서 내전·공방 목록이 달라 — 원래 공방에 있던 게 내전에") — 비공개(숨긴) 판은
    팀을 비워 내려와 옛 셈(슬롯 전원이 회원)이 빈 목록에서 늘 참이라 공방 판이 내전 탭에 들었다. 게임 목록(서버 membersOnly)과 같은 셈이다. 옛 서버(clan 없음)만 슬롯으로 잰다. */
@@ -223,15 +146,6 @@ export const dateLabelOf = (item: { time: number }): string => {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 };
 
-export function touchMsOf(it: DisplayItem): number {
-  if (it.kind === "leagueMatch") {
-    return Math.max(serverMs(it.match.postedAt), serverMs(it.match.updatedAt));
-  }
-  if (it.kind === "post") return Math.max(serverMs(it.post.createdAt), serverMs(it.post.updatedAt));
-  if (it.kind === "rankingShift") return serverMs(it.shift.createdAt);
-  return it.time;
-}
-
 export function rowFlagsOf(it: DisplayItem): ("new" | "update")[] {
   const now = Date.now();
   const fresh = (ms: number) => now - ms >= 0 && now - ms <= NEW_WINDOW_MS;
@@ -251,7 +165,6 @@ export function rowFlagsOf(it: DisplayItem): ("new" | "update")[] {
     if (updated - created > TOUCHED_SLACK_MS && fresh(updated)) flags.push("update");
     return flags;
   }
-  if (it.kind === "rankingShift") return fresh(serverMs(it.shift.createdAt)) ? ["new"] : [];
   return fresh(it.time) ? ["new"] : [];
 }
 
