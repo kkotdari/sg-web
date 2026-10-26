@@ -6,6 +6,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import KakaoShareButton from "../../components/common/KakaoShareButton";
 import { type KakaoShareContent } from "../../utils/kakaoShare";
 import { pad } from "../../utils/date";
+import { cx } from "../../utils/format";
 import { LoadingMark } from "../../components/common/Feedback";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { readAsDataUrl } from "../../utils/image";
@@ -93,16 +94,23 @@ function DocHeadRow<D extends BlockDoc, W>({
   return (
     <>
       <div className="scr-schedule-title-row">
-        {editing ? (
-          <input
-            className="scr-schedule-title scr-sb-line" value={head.title} placeholder="제목"
-            ref={draft ? focusTitle : undefined}
-            onChange={(e) => onChange({ title: e.target.value })}
-            onClick={(e) => e.stopPropagation()}
-          />
-        ) : (
-          <h3 className="scr-schedule-title scr-sb-line">{head.title}</h3>
-        )}
+        {/* 작성자는 제목 옆에(2026-10-26, 요청: "올라간 글도 작성자를 제목 옆에" — 옛: 본문 아래 오른쪽 "OO 작성") · 글쓰기(draft)는 안 띄운다(쓰는 사람이 저다). */}
+        <div className="scr-doc-title-wrap">
+          {editing ? (
+            /* 칸은 글만큼(뒤의 숨은 글자가 폭을 잡는다) — 작성자가 제목 바로 뒤에 붙게. 글쓰기는 남는 폭을 다 쓴다. */
+            <span className={cx("scr-doc-title-fit", draft && "is-draft")} data-v={head.title || "제목"}>
+              <input
+                className="scr-schedule-title scr-sb-line" value={head.title} placeholder="제목" size={1}
+                ref={draft ? focusTitle : undefined}
+                onChange={(e) => onChange({ title: e.target.value })}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </span>
+          ) : (
+            <h3 className="scr-schedule-title scr-sb-line">{head.title}</h3>
+          )}
+          {!draft && <span className="scr-doc-by">{spec.byline(doc)}</span>}
+        </div>
         {/* ★ 저장은 단추로(2026-10-20, 요청: "수정 시 저장 버튼 눌러야 서버에 반영") — 고친 게 있으면 [취소 | 저장], 없으면 마지막 저장 시각.
             취소는 저장 안 한 고침을 버리고 마지막 저장 판으로 돌아간다(옛 요청 "방금 전으로 되돌리기"의 몫).
             폰은 마지막 저장 시각을 안 띄운다(2026-10-23, 요청: "모바일에서 일정 마지막 저장 표시 X"). */}
@@ -633,9 +641,6 @@ function BlockDocCardInner<D extends BlockDoc, W>({
           onChange={onBlocks}
         />
 
-        {/* 누가 올렸는지 또렷이(2026-10-20, 요청: "등록자도 누구 등록으로 명확하게") — 옛 "— 정구".
-            글쓰기(아직 없는 글)에는 안 띄운다(2026-10-26, 요청: "이건 없어도 됨 누구 작성" — 쓰는 사람이 저다). */}
-        {!spec.draft && <div className="scr-schedule-by">{spec.byline(doc)}</div>}
       </div>
       {shield && createPortal(
         <div className="scr-save-shield">
