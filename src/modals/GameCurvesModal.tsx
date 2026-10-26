@@ -358,7 +358,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   /** 종류별 줄의 개수 뒤 **작은 "개"**(2026-10-25, 요청: "개수 옆에 개 붙이기 좀 작게") — 이름 글자의 0.78 배 · 칩 폭에 그 몫(CNT_W9)을 더한다. */
   const CNT_FS9 = BL.fs * 0.78;
   const CNT_W9 = textW("개", CNT_FS9) + 1;
-  const cntOf9 = <tspan dx={1} style={{ fontSize: CNT_FS9 }}>개</tspan>;
+  /* 세로 자리는 **제 tspan 에 못 박는다**(2026-10-26, 지적: "건물칩의 단위 개 글자 위치가 이상함") — 사파리는 text 의 dominantBaseline 을 tspan 에
+     물려주지 않아 작은 "개"가 제 알파벳 기준선을 칩 가운데에 두고 위로 떴다. central 을 직접 주고, 작은 글자의 기준선이 숫자의 기준선과 맞게
+     글자 차의 0.36 만큼 내린다(central → 기준선 거리가 글자 크기에 비례). */
+  const cntOf9 = <tspan dx={1} dy={(BL.fs - CNT_FS9) * 0.36} dominantBaseline="central" style={{ fontSize: CNT_FS9 }}>개</tspan>;
   /** 단을 건너는 잇는 선의 **S자 곡선 폭**(2026-10-25, 요청: "선을 직각으로 꺾지 말고 부드럽게") — 앞 칩 오른끝에서 이만큼 가며 단을 옮기고 남은 길은 곧게(화살촉 자리 6 남김) · 8~22. */
   const curveL9 = (pv: Tag, t: Tag): number => Math.min(22, Math.max(8, t.x - (pv.x + pv.w) - 6));
   /** 머릿말 글(위 caps ★) — 그 칩의 때(묶음은 첫 채 = t.at) "3:10 · 12"(인구 없으면 시각만). caps 가 꺼지면 빈 글(폰도 켠다 · 2026-10-25). */
@@ -893,10 +896,12 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* ★ 폰도 **PC 건설 줄과 한 꼴**(2026-10-24, 요청: "모바일은 PC 의 간단히 보기 모드와 통일") — 옛 폰 전용 TechLanes(다 지은 때 칩)는 안 쓴다(코드는 남겨 둠 · 아래 void). */
   void TechLanes;
   /* 폰 건설 판 폭(BuildLanes hscroll ★) — 분당 LANE_PX_MIN px 로 펴고 가로 스크롤 · PC 는 판 폭 그대로. */
-  const laneW = mobile ? Math.max(box.w, PL + padR + sc.x * LANE_PX_MIN) : box.w;
+  /* 폰 건설 판의 왼쪽은 **사람 칩 폭만큼 더**(2026-10-26, 요청: "유저칩 공간 폭을 유저칩 폭만큼 더 확보") — 그래프 판(PL 30)과 달리 칩이 첫 건물 칩을 덮었다. */
+  const lanePL = mobile ? PL + Math.max(0, ...names.map((n) => chipWOf(n, font.label))) : PL;
+  const laneW = mobile ? Math.max(box.w, lanePL + padR + sc.x * LANE_PX_MIN) : box.w;
   const lanesEl = (
     <BuildLanes
-      maxX={sc.x} ticksX={sc.xt} w={laneW} padL={PL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps hscroll={mobile} byKind={byKind}
+      maxX={sc.x} ticksX={sc.xt} w={laneW} padL={lanePL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps hscroll={mobile} byKind={byKind}
       lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds, spt: p.spt }))}
     />
   );
