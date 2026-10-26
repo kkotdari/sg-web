@@ -3765,6 +3765,13 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 }
 .scr-drawer-user .scr-avatar { width: 48px !important; height: 48px !important; }
 .scr-drawer-user-name { font-weight: 700; font-size: var(--fs-subhead); }
+.scr-drawer-user-acts { display: flex; align-items: center; gap: 2px; margin-left: -6px; }
+.scr-drawer-user-act {
+  padding: 3px 6px; border: none; border-radius: 4px; background: none; cursor: pointer;
+  font: inherit; font-size: var(--fs-caption); color: var(--muted); -webkit-tap-highlight-color: transparent;
+}
+.scr-drawer-user-sep { color: var(--dim); font-size: var(--fs-caption); }
+@media (hover: hover) { .scr-drawer-user-act:hover { color: var(--text); } }
 .scr-drawer-nav { display: flex; flex-direction: column; gap: 4px; margin-top: auto; }
 .scr-menu-pop-drawer-title { cursor: default; color: var(--muted); }
 @media (hover: hover) { .scr-menu-pop-drawer-title:hover { background: transparent; color: var(--muted); } }

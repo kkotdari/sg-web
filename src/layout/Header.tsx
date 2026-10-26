@@ -247,9 +247,16 @@ export default function Header({
             >
               <BrandLogo light={lightTheme} />
             </button>
+            {/* 내 정보 · 로그아웃은 아바타 아래 작은 글자 단추(2026-10-26, 요청: "내정보 로그아웃을 좀 작게해서 아바타 아래로") ·
+                서랍의 업로더 설치는 걷었다(같은 요청 — PC 머리띠에는 그대로). */}
             <div className="scr-drawer-user">
               <Avatar member={user} size={48} />
               <div className="scr-drawer-user-name">{user.nickname}</div>
+              <div className="scr-drawer-user-acts">
+                <button type="button" className="scr-drawer-user-act" onClick={() => { onOpenProfile(); setMenuOpen(false); }}>내 정보</button>
+                <span className="scr-drawer-user-sep" aria-hidden>·</span>
+                <button type="button" className="scr-drawer-user-act" onClick={() => { onLogout(); setMenuOpen(false); }}>로그아웃</button>
+              </div>
             </div>
             <nav className="scr-drawer-nav">
               {railOnlyItems}
@@ -259,15 +266,6 @@ export default function Header({
             <div className="scr-drawer-actions">
               <button className="scr-rect-btn is-secondary" onClick={() => setLightTheme((v) => !v)}>
                 테마
-              </button>
-              <button className="scr-rect-btn is-secondary" onClick={() => setUploaderOpen(true)}>
-                업로더 설치
-              </button>
-              <button className="scr-rect-btn is-secondary" onClick={() => { onOpenProfile(); setMenuOpen(false); }}>
-                내 정보
-              </button>
-              <button className="scr-rect-btn is-secondary" onClick={() => { onLogout(); setMenuOpen(false); }}>
-                로그아웃
               </button>
               <button className="scr-rect-btn is-secondary" onClick={() => setMenuOpen(false)}>
                 메뉴 닫기
