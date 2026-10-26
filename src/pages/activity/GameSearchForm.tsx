@@ -57,8 +57,10 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
   const linkOpts = useMemo<Opt[]>(() => [...RACES.map((r) => ({ value: r, tag: "종족" })), ...itemOpts], [itemOpts]);
   const mapOpts = useMemo<Opt[]>(() => maps.map((m) => ({ value: m, tag: "맵" })), [maps]);
 
+  /* 한 사람 줄은 비어 있어도 **한 줄은 늘 보인다**(2026-10-26, 요청: "한 사람이 직접에 기본 1줄은 원래 노출되게") — 조건이 없으면 빈 줄 하나를 그리고, 거기 적으면 그때 줄이 생긴다. */
+  const linkRows: GameSearchLink[] = draft.links.length > 0 ? draft.links : [{ name: "", items: [] }];
   const setLink = (i: number, p: Partial<GameSearchLink>): void =>
-    setDraft((d) => ({ ...d, links: d.links.map((l, k) => (k === i ? { ...l, ...p } : l)) }));
+    setDraft((d) => ({ ...d, links: (d.links.length > 0 ? d.links : [{ name: "", items: [] }]).map((l, k) => (k === i ? { ...l, ...p } : l)) }));
 
   /* 접힌 머리 줄의 요약 칩 — 적용된 조건(value)만. 칩의 ×는 그 조건만 바로 빼고 다시 찾는다. */
   const summary: { key: string; label: string; drop: () => void }[] = [];
@@ -132,15 +134,15 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
           <div className="scr-gs-field scr-gs-links">
             <span className="scr-gs-label">한 사람이 직접<i>그 선수가 그 종족으로 · 그 유닛·전술을</i></span>
             <div className="scr-gs-ctl scr-gs-link-list">
-              {draft.links.map((l, i) => (
+              {linkRows.map((l, i) => (
                 <div key={i} className="scr-gs-link">
                   {/* 한 사람 조건은 값을 담는 엔터에 **바로 찾는다**(2026-10-24, 요청) — ChipInput submitOnAdd. */}
                   <ChipInput single values={l.name ? [l.name] : []} onChange={(v) => setLink(i, { name: v[0] ?? "" })} options={memberOpts} placeholder="선수" onSubmit={() => apply()} submitOnAdd />
                   <ChipInput values={l.items} onChange={(v) => setLink(i, { items: v })} options={linkOpts} placeholder="종족·유닛·건물·스킬·전술" onSubmit={() => apply()} submitOnAdd />
-                  <button type="button" className="scr-icon-btn scr-gs-link-x" aria-label="이 조건 빼기" onClick={() => set("links", draft.links.filter((_, k) => k !== i))}><X size={13} /></button>
+                  <button type="button" className="scr-icon-btn scr-gs-link-x" aria-label="이 조건 빼기" onClick={() => set("links", draft.links.filter((_, k) => k !== i))} disabled={draft.links.length === 0}><X size={13} /></button>
                 </div>
               ))}
-              <button type="button" className="scr-compact-rect-btn is-secondary scr-gs-link-add" onClick={() => set("links", [...draft.links, { name: "", items: [] }])}>
+              <button type="button" className="scr-compact-rect-btn is-secondary scr-gs-link-add" onClick={() => set("links", [...linkRows, { name: "", items: [] }])}>
                 <Plus size={13} aria-hidden /> 조건 추가
               </button>
             </div>
