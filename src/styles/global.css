@@ -8069,17 +8069,14 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-gtab-start { justify-content: center; }
 .scr-gtab-startmap { position: relative; display: block; width: 100%; max-width: 72px; max-height: 72px; margin: 0 auto; border-radius: 4px; overflow: hidden; box-shadow: 0 0 0 1px var(--line-faint); }
 .scr-gtab-startmap > img { display: block; width: 100%; height: 100%; object-fit: fill; image-rendering: auto; }
-.scr-gtab-spot {
-  position: absolute; transform: translate(-50%, -50%); width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; border: 2px solid #fff;
-  display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 8px; font-weight: 800; line-height: 1; color: #fff;
-  background: #666; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+.scr-gtab-spot {   /* 닉네임 앞 두 글자 칩(2026-10-26 · 바탕 = 개인색 · 글자색은 JSX inkOn) */
+  position: absolute; transform: translate(-50%, -50%); height: 12px; padding: 0 2px; box-sizing: border-box; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 8px; font-weight: 800; line-height: 1; white-space: nowrap;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
 }
-.scr-gtab-spot.is-terran { background: var(--terran); }
-.scr-gtab-spot.is-protoss { background: var(--protoss); }
-.scr-gtab-spot.is-zerg { background: var(--zerg); }
 /* 폰 게임 줄의 배치 미니맵(2026-10-26, 요청: "모바일에도 미니맵 배치 · 왼쪽에 자리" → "카드 안에 넣기") — ListRow lead · 카드(줄 몸) 안 이름 줄의 왼쪽. */
 .scr-activity-row-desc.has-lead { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .scr-activity-row-desc.has-lead > .scr-activity-row-lead { flex: none; width: 56px; }
 .scr-activity-row-desc.has-lead > .scr-activity-row-lead .scr-gtab-startmap { max-width: 56px; max-height: 56px; margin: 0; }
 .scr-activity-row-desc.has-lead > .scr-activity-row-desc-body { flex: 1 1 auto; min-width: 0; }
-.scr-activity-row-lead .scr-gtab-spot { width: 13px; height: 13px; font-size: 7px; border-width: 1.5px; }
+.scr-activity-row-lead .scr-gtab-spot { height: 11px; font-size: 7.5px; }

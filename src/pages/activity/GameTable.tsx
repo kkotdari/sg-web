@@ -5,8 +5,9 @@ import { canManageGame } from "../../utils/gameAccess";
 import { shareToKakao } from "../../utils/kakaoShare";
 import { gameResultShareContent } from "./gameShare";
 import { downloadReplay } from "../../utils/replayDownload";
-import { TEAM_COLOR, cachedReplayMap, useReplayMap, useReplayMapTick } from "scplay";
+import { cachedReplayMap, useReplayMap, useReplayMapTick } from "scplay";
 import { renderMinimapCanvas } from "../../utils/minimapExport";
+import { inkOn } from "../stats/RaceCurves";
 import type { ReplayMapGrid } from "../../utils/replayParser";
 import { api } from "../../api/client";
 import { showToast } from "../../components/common/Toast";
@@ -55,13 +56,12 @@ function mapThumb(hash: string, grid: ReplayMapGrid): Promise<string | null> {
   }
   return p;
 }
-const RACE_LETTER: Record<string, string> = { 테란: "T", 프로토스: "P", 저그: "Z", 랜덤: "R" };
-const RACE_KEY: Record<string, string> = { 테란: "terran", 프로토스: "protoss", 저그: "zerg", 랜덤: "random" };
 
-/** ★ 배치 칸(2026-10-26 · 위 COLS) — 맵 그림 위에 사람마다 시작 자리(서버 참가자 startX·startY · 타일) 점 · 점 안 글자는 종족(T·P·Z) · 테두리는 팀색(개인전은 없음).
- *  시작 자리를 모르는 옛 판(재분석 전)은 맵 그림만 · 맵 격자가 없으면 "-". 가장자리 자리는 점이 그림 밖으로 안 잘리게 반지름만큼 안쪽으로 민다.
+/** ★ 배치 칸(2026-10-26 · 위 COLS) — 맵 그림 위에 사람마다 시작 자리(서버 참가자 startX·startY · 타일)에 **닉네임 앞 두 글자** 칩
+ *  (같은 날 되요청: "2글자 정도라도 · 팀 배지 없이 · 종족 없이" — 처음 낸 종족 글자 점 · 팀색 테두리는 걷었다). 칩 바탕은 그 사람 개인색(모르면 회색).
+ *  시작 자리를 모르는 옛 판(재분석 전)은 맵 그림만 · 맵 격자가 없으면 "-". 가장자리 자리는 칩이 그림 밖으로 안 잘리게 안쪽으로 민다.
  *  폰 게임 줄은 카드 안 이름 줄 왼쪽에 같은 그림(ListRow lead · 같은 날 요청: "모바일에도 · 카드 안에"). */
-export function StartMapCell({ game }: { game: GameResult }) {
+export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (id: string) => Member | undefined }) {
   const grid = useReplayMap(game.mapHash);
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -70,18 +70,21 @@ export function StartMapCell({ game }: { game: GameResult }) {
     return () => { dead = true; };
   }, [grid, game.mapHash]);
   if (!grid || !url) return <span className="scr-gtab-dim">-</span>;
-  const melee = isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 });
-  const spots = ([[1, game.team1], [2, game.team2]] as const).flatMap(([t, side]) => side
+  const spots = [...game.team1, ...game.team2]
     .filter((p) => !p.observer && p.startX != null && p.startY != null)
-    .map((p) => ({ t, race: p.race, x: (p.startX as number) / grid.width, y: (p.startY as number) / grid.height, name: p.rawName ?? "" })));
+    .map((p) => {
+      const name = memberOf(p.memberId)?.nickname ?? p.rawName ?? "";
+      return { name, short: Array.from(name).slice(0, 2).join(""), color: p.color || "#5b6270",
+        x: (p.startX as number) / grid.width, y: (p.startY as number) / grid.height };
+    });
   return (
     <span className="scr-gtab-startmap" style={{ aspectRatio: `${grid.width} / ${grid.height}` }}>
       <img src={url} alt="" draggable={false} />
       {spots.map((sp, i) => (
         <i
-          key={i} className={cx("scr-gtab-spot", `is-${RACE_KEY[sp.race] ?? "none"}`)} title={sp.name || undefined}
-          style={{ left: `clamp(7px, ${sp.x * 100}%, calc(100% - 7px))`, top: `clamp(7px, ${sp.y * 100}%, calc(100% - 7px))`, ...(melee ? {} : { borderColor: TEAM_COLOR[sp.t] }) }}
-        >{RACE_LETTER[sp.race] ?? "?"}</i>
+          key={i} className="scr-gtab-spot" title={sp.name || undefined}
+          style={{ left: `clamp(12px, ${sp.x * 100}%, calc(100% - 12px))`, top: `clamp(6px, ${sp.y * 100}%, calc(100% - 6px))`, background: sp.color, color: inkOn(sp.color) }}
+        >{sp.short}</i>
       ))}
     </span>
   );
@@ -242,7 +245,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           <GameRowNames game={game} memberOf={memberOf} mobile playable={false} />
           {game.hidden && <UnhideRequestButton game={game} />}
         </span>
-        <span className="scr-gtab-cell scr-gtab-start">{secret ? <span className="scr-gtab-dim">-</span> : <StartMapCell game={game} />}</span>
+        <span className="scr-gtab-cell scr-gtab-start">{secret ? <span className="scr-gtab-dim">-</span> : <StartMapCell game={game} memberOf={memberOf} />}</span>
         {/* 그래프 보기 — 참가자 전원의 분당 인구 · 일꾼 수 · 자원 · 건설(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다. */}
         <span className="scr-gtab-cell">
           {!secret && !game.ums ? linkBtn("graph", "데이터 그래프", () => { setGraphOpen(true); void api.pingGameAction("graph", game); }, <ChartLine size={13} />)
