@@ -122,7 +122,8 @@ export default function MonthCalendar({
               );
             })}
           </div>
-          {range && <p className="scr-month-cal-hint">{anchor ? "끝 달을 누르면 그 사이 전부" : "두 달을 차례로 누르면 그 사이 전부"}</p>}
+          {/* 설명글(2026-10-26, 요청: "팝업 설명글을 시작과 끝 달을 선택으로 변경") — 첫 달을 누른 뒤엔 "끝 달을 선택". */}
+          {range && <p className="scr-month-cal-hint">{anchor ? "끝 달을 선택" : "시작과 끝 달을 선택"}</p>}
           {allValue !== undefined && (
             <div className="scr-month-cal-extra">
               <button
