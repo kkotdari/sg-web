@@ -256,7 +256,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 rawName: p.rawName, race: p.race,
                 apm: p.apm, eapm: p.eapm,
                 cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount,
-                buildCount: p.buildCount,
+                buildCount: p.buildCount, startX: p.startX, startY: p.startY,
               })),
             };
           }

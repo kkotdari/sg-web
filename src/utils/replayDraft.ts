@@ -24,6 +24,9 @@ export interface UnmatchedPlayer {
   cmdCount: number | null;
   effectiveCmdCount: number | null;
   buildCount: number | null;
+  /** 시작 위치(타일 · 2026-10-26 · 게임 목록 배치 칸) — 리플레이 MapData.StartLocations(그 슬롯) ÷ 32 · 서버가 반올림. */
+  startX?: number | null;
+  startY?: number | null;
 }
 
 export interface ReplayDraft {
@@ -82,7 +85,7 @@ async function buildDraft(file: File, members: Member[]): Promise<ReplayDraft> {
         if (p.isComputer) {
           rows.push({
             memberId: newComputerSlotId(), race: p.race, rawName: p.rawName,
-            apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount,
+            apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount, startX: p.startX, startY: p.startY,
           });
           return;
         }
@@ -91,12 +94,12 @@ async function buildDraft(file: File, members: Member[]): Promise<ReplayDraft> {
           usedIds.add(member.id);
           rows.push({
             memberId: member.id, race: p.race, rawName: p.rawName,
-            apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount,
+            apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount, startX: p.startX, startY: p.startY,
           });
         } else {
           unmatched.push({
             rawName: p.rawName, race: p.race,
-            apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount,
+            apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount, startX: p.startX, startY: p.startY,
           });
         }
       });
@@ -177,7 +180,7 @@ export function resolveUnmatchedAsUnregistered(d: ReplayDraft): ReplayDraft {
   if (d.unmatchedTeam1.length === 0 && d.unmatchedTeam2.length === 0) return d;
   const toSlot = (p: UnmatchedPlayer): GameResultSlot => ({
     memberId: newUnregisteredSlotId(), rawName: p.rawName,
-    race: p.race, apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount,
+    race: p.race, apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount, startX: p.startX, startY: p.startY,
   });
   return {
     ...d,
@@ -249,7 +252,7 @@ async function applyKnownClassifications(drafts: ReplayDraft[]): Promise<ReplayD
       if (!kind) { unmatched.push(p); return; }
       rows.push({
         memberId: kind === "computer" ? newComputerSlotId() : newUnregisteredSlotId(), rawName: p.rawName,
-        race: p.race, apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount,
+        race: p.race, apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount, effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount, startX: p.startX, startY: p.startY,
       });
     });
     return { rows, unmatched };
@@ -300,12 +303,12 @@ function draftToMergePayload(d: ReplayDraft, gameStartedAt: string) {
   const fromSlots = [...d.team1, ...d.team2].map((s) => ({
     playerName: s.rawName ?? "",
     race: s.race || null, apm: s.apm, eapm: s.eapm, cmdCount: s.cmdCount,
-    effectiveCmdCount: s.effectiveCmdCount, buildCount: s.buildCount,
+    effectiveCmdCount: s.effectiveCmdCount, buildCount: s.buildCount, startX: s.startX, startY: s.startY,
   }));
   const fromUnmatched = [...d.unmatchedTeam1, ...d.unmatchedTeam2].map((p) => ({
     playerName: p.rawName,
     race: p.race || null, apm: p.apm, eapm: p.eapm, cmdCount: p.cmdCount,
-    effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount,
+    effectiveCmdCount: p.effectiveCmdCount, buildCount: p.buildCount, startX: p.startX, startY: p.startY,
   }));
   return {
     replay: d.replay,

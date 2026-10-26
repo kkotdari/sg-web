@@ -178,8 +178,10 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   </>);
 }
 
-export function ListRow({ desc, status, top, side, onClick, check, picked, className, disabled, onLongPress, above }: {
+export function ListRow({ desc, status, top, side, onClick, check, picked, className, disabled, onLongPress, above, lead }: {
   desc: ReactNode;
+  /** 이름 줄 **왼쪽** 앞자리(폰 게임 줄의 배치 미니맵 · 2026-10-26, 요청: "모바일에도 미니맵 배치 · 왼쪽에 자리 · 카드 안에") — 없으면 안 선다. */
+  lead?: ReactNode;
   /** 줄 **위**에 따로 서는 배지 줄(리그 판의 "2026 팀리그 · 결승 · 1세트" · 2026-10-19). */
   above?: ReactNode;
   /** 맵·길이 배지(GameRowStatus 따위) — desc 안이 아니라 **제 칸**에 선다. 폰 게임 줄은 이 칸을 시각 옆 윗줄로 올린다(global.css). */
@@ -208,7 +210,13 @@ export function ListRow({ desc, status, top, side, onClick, check, picked, class
         <span className={cx("scr-activity-row-main", !!above && "has-above")}>
           {above && <span className="scr-activity-row-above">{above}</span>}
           {status}
-          <span className="scr-activity-row-desc">{desc}</span>
+          {/* 앞자리(lead)는 **카드 안** 이름 줄의 왼쪽(같은 날 되요청: "카드 안에 넣기") — 이름 칸과 한 줄. */}
+          {lead ? (
+            <span className="scr-activity-row-desc has-lead">
+              <span className="scr-activity-row-lead">{lead}</span>
+              <span className="scr-activity-row-desc-body">{desc}</span>
+            </span>
+          ) : <span className="scr-activity-row-desc">{desc}</span>}
           <span className="scr-activity-row-badges">
             <span className="scr-activity-row-badges-top">{top}</span>
             <span className="scr-activity-row-time">{side}</span>

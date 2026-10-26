@@ -110,6 +110,9 @@ export interface GameResultSlot {
   cmdCount: number | null;
   effectiveCmdCount: number | null;
   buildCount: number | null;
+  /** 시작 위치(타일 · 2026-10-26 · 게임 목록 배치 칸) — 리플레이 MapData.StartLocations(그 슬롯) ÷ 32 · 서버가 반올림. */
+  startX?: number | null;
+  startY?: number | null;
   color?: string | null;
   observer?: boolean | null;
 }

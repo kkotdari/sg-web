@@ -6,6 +6,7 @@ import { formatAgo } from "../../utils/date";
 import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
 import { GameRowNames, GameRowStatus, ListRow } from "./GameRow";
+import { StartMapCell } from "./GameTable";
 import { GameTableRow, UnhideRequestButton } from "./GameTable";
 import { commentStatOf, subscribeComments } from "./ActivityComments";
 import {
@@ -159,6 +160,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
         else act.current.setMany([], true);
       } : undefined}
       status={rowStatusOf(item)}
+      lead={item.kind === "gameResult" && !secret ? <StartMapCell game={item.gameResult} /> : undefined}
       above={item.kind === "gameResult" && item.gameResult.league ? (
         /* 리그 판 배지 — 리그 이름 · 라운드 · 세트(요청: "위에 별도 배지로 리그명 라운드명 세트번호(2026 팀리그 · 결승 · 1세트)"). */
         <span className="scr-league-tag">

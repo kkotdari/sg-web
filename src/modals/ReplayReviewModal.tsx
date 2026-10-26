@@ -185,7 +185,7 @@ export default function ReplayReviewModal({
       if (!t1Match && !t2Match) return d;
       const toSlot = (match: UnmatchedPlayer): GameResultSlot => ({
         memberId: member.id, race: match.race, rawName: match.rawName,
-        apm: match.apm, eapm: match.eapm, cmdCount: match.cmdCount, effectiveCmdCount: match.effectiveCmdCount, buildCount: match.buildCount,
+        apm: match.apm, eapm: match.eapm, cmdCount: match.cmdCount, effectiveCmdCount: match.effectiveCmdCount, buildCount: match.buildCount, startX: match.startX, startY: match.startY,
       });
       const next = {
         ...d,
@@ -210,7 +210,7 @@ export default function ReplayReviewModal({
       const toSlot = (match: UnmatchedPlayer): GameResultSlot => ({
         memberId: kind === "computer" ? newComputerSlotId() : newUnregisteredSlotId(),
         race: match.race, rawName: match.rawName,
-        apm: match.apm, eapm: match.eapm, cmdCount: match.cmdCount, effectiveCmdCount: match.effectiveCmdCount, buildCount: match.buildCount,
+        apm: match.apm, eapm: match.eapm, cmdCount: match.cmdCount, effectiveCmdCount: match.effectiveCmdCount, buildCount: match.buildCount, startX: match.startX, startY: match.startY,
       });
       return {
         ...d,

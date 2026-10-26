@@ -1,11 +1,13 @@
-import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ChartLine, EyeOff, Play, Save, Share2 } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { canManageGame } from "../../utils/gameAccess";
 import { shareToKakao } from "../../utils/kakaoShare";
 import { gameResultShareContent } from "./gameShare";
 import { downloadReplay } from "../../utils/replayDownload";
-import { cachedReplayMap, useReplayMapTick } from "scplay";
+import { TEAM_COLOR, cachedReplayMap, useReplayMap, useReplayMapTick } from "scplay";
+import { renderMinimapCanvas } from "../../utils/minimapExport";
+import type { ReplayMapGrid } from "../../utils/replayParser";
 import { api } from "../../api/client";
 import { showToast } from "../../components/common/Toast";
 import { useLongPress } from "../../hooks/useLongPress";
@@ -39,7 +41,51 @@ import type { GameResult, Member } from "../../types";
    리그 탭은 유형 칸 없이 리그 칸 끝에 "(유형)" · 그 칸 이름은 "경기 정보"(같은 날 요청: "리그 컬럼명을 매치 정보로" → "매치래 경기"). */
 /* 링크 칸 → **도구** · 조회수 칸 → **추천**(2026-10-22, 요청: "PC 목록 링크 컬럼을 도구로 바꾸고 추천 버튼도 추가" · "조회수는 화면에서 제거하고 추천 수로" ·
    같은 날 "추천 아이콘은 도구에서 추천 컬럼으로 이동"). */
-const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "로스터", "게임길이", "데이터", "도구", "추천"];
+/* 차례(2026-10-26, 요청: "피시에서 게임길이 컬럼을 맵 다음으로 옮기고 로스터 다음에 배치라는 컬럼 — 미니맵 안개 없는 버전에 각 유저 스타팅 위치 · 종족") —
+   맵 · 게임길이 · 로스터 · 배치(아래 StartMapCell). */
+const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "게임길이", "로스터", "배치", "데이터", "도구", "추천"];
+
+/** 맵 그림(안개 없음) — 해시마다 한 번 그려 data URL 로 쥔다(같은 맵의 줄이 나눠 쓴다 · 타일당 1px). */
+const thumbCache = new Map<string, Promise<string | null>>();
+function mapThumb(hash: string, grid: ReplayMapGrid): Promise<string | null> {
+  let p = thumbCache.get(hash);
+  if (!p) {
+    p = renderMinimapCanvas(grid, 1).then((cv) => cv.toDataURL("image/png")).catch(() => null);
+    thumbCache.set(hash, p);
+  }
+  return p;
+}
+const RACE_LETTER: Record<string, string> = { 테란: "T", 프로토스: "P", 저그: "Z", 랜덤: "R" };
+const RACE_KEY: Record<string, string> = { 테란: "terran", 프로토스: "protoss", 저그: "zerg", 랜덤: "random" };
+
+/** ★ 배치 칸(2026-10-26 · 위 COLS) — 맵 그림 위에 사람마다 시작 자리(서버 참가자 startX·startY · 타일) 점 · 점 안 글자는 종족(T·P·Z) · 테두리는 팀색(개인전은 없음).
+ *  시작 자리를 모르는 옛 판(재분석 전)은 맵 그림만 · 맵 격자가 없으면 "-". 가장자리 자리는 점이 그림 밖으로 안 잘리게 반지름만큼 안쪽으로 민다.
+ *  폰 게임 줄은 카드 안 이름 줄 왼쪽에 같은 그림(ListRow lead · 같은 날 요청: "모바일에도 · 카드 안에"). */
+export function StartMapCell({ game }: { game: GameResult }) {
+  const grid = useReplayMap(game.mapHash);
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let dead = false;
+    if (grid && game.mapHash) void mapThumb(game.mapHash, grid as ReplayMapGrid).then((u) => { if (!dead) setUrl(u); });
+    return () => { dead = true; };
+  }, [grid, game.mapHash]);
+  if (!grid || !url) return <span className="scr-gtab-dim">-</span>;
+  const melee = isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 });
+  const spots = ([[1, game.team1], [2, game.team2]] as const).flatMap(([t, side]) => side
+    .filter((p) => !p.observer && p.startX != null && p.startY != null)
+    .map((p) => ({ t, race: p.race, x: (p.startX as number) / grid.width, y: (p.startY as number) / grid.height, name: p.rawName ?? "" })));
+  return (
+    <span className="scr-gtab-startmap" style={{ aspectRatio: `${grid.width} / ${grid.height}` }}>
+      <img src={url} alt="" draggable={false} />
+      {spots.map((sp, i) => (
+        <i
+          key={i} className={cx("scr-gtab-spot", `is-${RACE_KEY[sp.race] ?? "none"}`)} title={sp.name || undefined}
+          style={{ left: `clamp(7px, ${sp.x * 100}%, calc(100% - 7px))`, top: `clamp(7px, ${sp.y * 100}%, calc(100% - 7px))`, ...(melee ? {} : { borderColor: TEAM_COLOR[sp.t] }) }}
+        >{RACE_LETTER[sp.race] ?? "?"}</i>
+      ))}
+    </span>
+  );
+}
 
 export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
   return (
@@ -184,10 +230,6 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           </span>
         ) : <span className="scr-gtab-cell">{kind}</span>}
         <span className="scr-gtab-cell scr-gtab-map" title={map || undefined}><span>{map || "-"}</span></span>
-        <span className="scr-gtab-cell scr-gtab-roster">
-          <GameRowNames game={game} memberOf={memberOf} mobile playable={false} />
-          {game.hidden && <UnhideRequestButton game={game} />}
-        </span>
         {/* 재생 가능 표시는 게임길이 아래(2026-10-20, 요청: "링크 컬럼의 재생버튼은 제거 · 재생여부 표시는 게임길이 컬럼에 시간 아래줄로 · 시간은 세로 가운데 유지 ·
             버튼 유무에 따라 흔들림 X") — 시간은 칸 가운데 그대로, 표시는 그 아래에 띄워(absolute) 줄 높이를 안 바꾼다. */}
         <span className="scr-gtab-cell scr-gtab-num scr-gtab-len">
@@ -196,6 +238,11 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
             {playable && <Play size={11} className="scr-activity-row-play scr-gtab-len-play" aria-label="재생 가능" fill="currentColor" />}
           </span>
         </span>
+        <span className="scr-gtab-cell scr-gtab-roster">
+          <GameRowNames game={game} memberOf={memberOf} mobile playable={false} />
+          {game.hidden && <UnhideRequestButton game={game} />}
+        </span>
+        <span className="scr-gtab-cell scr-gtab-start">{secret ? <span className="scr-gtab-dim">-</span> : <StartMapCell game={game} />}</span>
         {/* 그래프 보기 — 참가자 전원의 분당 인구 · 일꾼 수 · 자원 · 건설(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다. */}
         <span className="scr-gtab-cell">
           {!secret && !game.ums ? linkBtn("graph", "데이터 그래프", () => { setGraphOpen(true); void api.pingGameAction("graph", game); }, <ChartLine size={13} />)
