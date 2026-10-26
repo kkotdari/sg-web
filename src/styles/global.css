@@ -5437,7 +5437,7 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
   grid-column: 1 / -1; order: 5; justify-self: stretch; padding: 0 0 2px;
 }
-.scr-activity-row-data { grid-column: 2; width: 32px; height: 32px; color: var(--row-dim); }
+.scr-activity-row-data { grid-column: 3; justify-self: end; width: 32px; height: 32px; margin-right: 4px; color: var(--row-dim); }   /* 가운데 → 오른끝(추천의 거울 · 2026-10-26 요청: "데이터 아이콘은 추천의 반대로 오른쪽으로") */
 /* 추천 단추(Recommend.tsx · 2026-10-22) — 켜면 채운 엄지 · 강조색. 폰 줄은 데이터 옆에 수와 함께. */
 .scr-recommend-btn { color: var(--row-dim, var(--muted)); gap: 3px; }
 .scr-recommend-btn svg { flex-shrink: 0; }
