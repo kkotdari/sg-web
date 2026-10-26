@@ -30,7 +30,18 @@ type WireGameResult = Omit<GameResult, "team1" | "team2"> & { team1: WireSlot[];
 type WireDeletedGameResult = Omit<DeletedGameResult, "team1" | "team2"> & { team1: WireSlot[]; team2: WireSlot[] };
 type WireActivityFeedPage = Omit<ActivityFeedPage, "items"> & {
   items: (Omit<ActivityFeedItem, "gameResults"> & { gameResults: WireGameResult[] })[];
+  /** 이 쪽 경기들의 맵 격자(2026-10-26 · 아래 feedMaps). */
+  maps?: ReplayMapGrid[];
 };
+
+/* ★ 게임 목록 응답에 실려 온 맵 격자(2026-10-26, 요청: "게임목록 조회시 배치맵도 같이 담겨서 오게 한번에") —
+   예전엔 목록이 온 뒤 /replay-maps 를 따로 물었다(목록 → 맵 두 번 왕복). 이제 /api/activities 가 그 쪽 경기들의 맵을 함께 싣고,
+   getReplayMaps(= scplay 맵 받기 길)가 여기서 먼저 꺼내 준다. **한 번 꺼내면 지운다** — 그 뒤의 물음(재생 화면의 세션 대조 ·
+   재분석 뒤)은 서버로 간다. missing = 서버가 이 쪽에 대해 '없다'고 한 해시(옛 판 · 맵 없는 수동 등록). */
+const feedMaps = new Map<string, ReplayMapGrid>();
+const feedMissing = new Set<string>();
+/** 지금까지 목록으로 받은 해시 — 다음 쪽에서 서버가 빼고 보낸다(knownMap). */
+const feedKnown = new Set<string>();
 
 function slotToWire(slot: GameResultSlot): WireSlot {
   const { rawName, ...rest } = slot;
@@ -453,7 +464,16 @@ export const api = {
   },
 
   async getReplayMaps(hashes: string[]): Promise<ReplayMapGrid[]> {
-    if (hashes.length === 0) return [];
+    const pre: ReplayMapGrid[] = [];
+    const ask: string[] = [];
+    for (const h of hashes) {
+      const m = feedMaps.get(h);
+      if (m) { pre.push(m); feedMaps.delete(h); }
+      else if (feedMissing.has(h)) feedMissing.delete(h);
+      else ask.push(h);
+    }
+    if (ask.length === 0) return pre;
+    hashes = ask;
     const qs = hashes.map((h) => `hash=${encodeURIComponent(h)}`).join("&");
     const res = extShareCtx
       ? await request<{ maps: ReplayMapGrid[] }>(
@@ -461,7 +481,7 @@ export const api = {
         { headers: { "X-Ext-Pass": extShareCtx.pass } },
       )
       : await request<{ maps: ReplayMapGrid[] }>(`/api/game-results/replay-maps?${qs}`);
-    return res.maps;
+    return [...pre, ...res.maps];
   },
 
   async getMapCatalog(): Promise<MapCatalog> {
@@ -627,8 +647,17 @@ export const api = {
     const q = new URLSearchParams();
     if (params.cursor) q.set("cursor", params.cursor);
     if (params.limit) q.set("limit", String(params.limit));
+    for (const h of feedKnown) q.append("knownMap", h);
     const qs = q.toString();
-    const page = await request<WireActivityFeedPage>(`/api/activities${qs ? `?${qs}` : ""}`);
+    const { maps = [], ...page } = await request<WireActivityFeedPage>(`/api/activities${qs ? `?${qs}` : ""}`);
+    /* 실려 온 맵을 맡겨 두고, 이 쪽에서 물었는데 안 온 해시는 '없음'으로 적는다(feedMaps ★). */
+    for (const m of maps) { feedMaps.set(m.hash, m); feedKnown.add(m.hash); }
+    for (const it of page.items) {
+      for (const g of it.gameResults ?? []) {
+        const h = g.mapHash;
+        if (h && !feedKnown.has(h)) { feedMissing.add(h); feedKnown.add(h); }
+      }
+    }
     return {
       ...page,
       items: page.items.map((it) => ({
