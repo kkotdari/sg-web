@@ -8139,3 +8139,51 @@ html.scr-light-theme .scr-sb-text .scr-comment-mention, html.scr-light-theme .sc
 .scr-league-screen > .scr-coming { margin-bottom: 14px; }
 /* 리그 수정 중 머리 줄의 이름 칸(2026-10-26, 지적: "리그 수정시 제목 수정이 안돼"). */
 .scr-league-name-input { flex: 1 1 auto; min-width: 0; max-width: 420px; font-size: var(--fs-subhead); font-weight: 800; padding: 4px 8px; }
+
+/* ★ 게시판 목록(2026-10-26, 요청: "게시판을 좀더 게시판처럼 보이게") — BoardRow. PC 는 표(번호 · 분류 · 제목 · 글쓴이 · 날짜),
+   폰은 두 줄(제목 줄 · 글쓴이·날짜 줄). 윗선은 굵게 · 줄 사이는 가는 선 · 공지 줄은 옅은 붉은 바탕(공지 배지와 같은 색). */
+.scr-bbs { display: flex; flex-direction: column; margin-top: 4px; border-top: 2px solid rgba(var(--overlay-rgb), 0.45); }
+.scr-bbs > .scr-empty { padding: 28px 0; }
+.scr-bbs-row {
+  display: grid; grid-template-columns: 64px 64px minmax(0, 1fr) 128px 76px; align-items: center;
+  min-height: 42px; border-bottom: 1px solid var(--scr-row-line, var(--line-faint));
+  color: var(--text); text-decoration: none; font-size: var(--fs-body);
+  -webkit-tap-highlight-color: transparent;
+}
+.scr-bbs-row > span { min-width: 0; padding: 0 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scr-bbs-row > .scr-bbs-title { display: flex; align-items: center; gap: 8px; text-align: left; }
+.scr-bbs-head { min-height: 36px; font-size: var(--fs-11); font-weight: 700; color: var(--muted); background: rgba(var(--overlay-rgb), 0.06); }
+.scr-bbs-head > .scr-bbs-title { justify-content: center; }
+.scr-bbs-row:not(.scr-bbs-head) .scr-bbs-no, .scr-bbs-row:not(.scr-bbs-head) .scr-bbs-date {
+  font-size: var(--fs-caption); color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.scr-bbs-row:not(.scr-bbs-head) .scr-bbs-who { font-size: var(--fs-caption); color: var(--text-dim, var(--muted)); }
+.scr-bbs-row .scr-post-badge { vertical-align: 1px; }
+.scr-bbs-dim { color: var(--dim); }
+.scr-bbs-row.is-notice, .scr-bbs-item.is-notice { background: color-mix(in srgb, #d8525b 7%, transparent); }
+.scr-bbs-row.is-notice .scr-bbs-title-text, .scr-bbs-item.is-notice .scr-bbs-title-text { font-weight: 700; }
+@media (hover: hover) {
+  .scr-bbs-row:not(.scr-bbs-head):hover, .scr-bbs-item:hover { background: var(--lighting-hover-bg); }
+  .scr-bbs-row:not(.scr-bbs-head):hover .scr-bbs-title-text { text-decoration: underline; text-underline-offset: 3px; }
+}
+.scr-bbs-title-line { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.scr-bbs-title-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr-bbs-notes { flex: 0 0 auto; font-size: var(--fs-11); font-weight: 700; color: #ef8a4a; font-variant-numeric: tabular-nums; }
+html.scr-light-theme .scr-bbs-notes { color: #c2410c; }
+.scr-bbs-new {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 3px; background: var(--new-badge); color: #0b0d10;
+  font-size: 9px; font-weight: 800; line-height: 1;
+}
+html.scr-light-theme .scr-bbs-new { color: #fff; }
+.scr-bbs-item {
+  display: flex; flex-direction: column; gap: 5px; padding: 11px 4px;
+  border-bottom: 1px solid var(--scr-row-line, var(--line-faint));
+  color: var(--text); text-decoration: none; -webkit-tap-highlight-color: transparent;
+}
+.scr-bbs-item-top { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--fs-body); font-weight: 500; }
+.scr-bbs-item-sub { display: flex; align-items: center; gap: 0; min-width: 0; font-size: var(--fs-11); color: var(--muted); font-variant-numeric: tabular-nums; }
+.scr-bbs-item-sub > * { white-space: nowrap; }
+.scr-bbs-item-sub > * + *::before { content: "·"; margin: 0 6px; color: var(--dim); }
+.scr-bbs-item-sub > .scr-post-when { overflow: hidden; text-overflow: ellipsis; }
+.scr-bbs-item-sub > .scr-post-when { margin-left: 0; font-size: inherit; font-weight: 600; }

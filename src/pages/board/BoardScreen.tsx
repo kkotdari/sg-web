@@ -1,15 +1,16 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LoadingMark } from "../../components/common/Feedback";
-import { useAppStore } from "../../store/appStore";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useEditableFocused } from "../../hooks/useEditableFocused";
 import { cx } from "../../utils/format";
 import { navigateTo, parseRoute, pathOf, rememberListScroll, takeListScroll, type Route } from "../../utils/route";
 import type { Post } from "../../types";
-import { FeedRow, rowPropsOf, useRowClock, type RowAct, type RowView } from "../feed/FeedRow";
+import { useRowClock } from "../feed/FeedRow";
+import { commentStatOf } from "../feed/Comments";
 import { FeedProvider, useFeedActions, useFeedData } from "../feed/feed";
-import type { DisplayItem, FeedItem } from "../feed/feedItems";
+import { rowFlagsOf, type FeedItem } from "../feed/feedItems";
 import PostDetailPage, { NEW_POST_ITEM } from "./PostDetailPage";
+import { BoardHead, BoardRow } from "./BoardRow";
 
 /* ★ 게시판 화면(2026-10-26, 요청: "일정과 게시판을 합치고 · 활동 화면 제거 · 게임 게시판 두개의 메뉴로" ·
    "보드와 게임은 자체 컴포넌트로 분리 · 보드는 꼭지구분없이 전체 섞여서 시간순 표시").
@@ -29,8 +30,6 @@ export default function BoardScreen() {
     </FeedProvider>
   );
 }
-
-const NO_PICK = { selecting: false, canPick: () => false, picked: null };
 
 function BoardRouter() {
   const feed = useFeedActions();
@@ -56,10 +55,9 @@ function BoardRouter() {
     };
   }, [sync]);
 
-  const open = (item: DisplayItem): void => {
-    if (item.kind !== "post") return;
+  const open = (post: Post): void => {
     rememberListScroll();   // 뒤로 오면 목록이 이 자리로(route.ts)
-    go(pathOf({ screen: "board", item: String(item.post.id) }));
+    go(pathOf({ screen: "board", item: String(post.id) }));
     pushed.current = true;
   };
   const openNew = (): void => {
@@ -77,8 +75,10 @@ function BoardRouter() {
     go(pathOf({ screen: "board", item: String(p.id) }), true);
   };
 
-  const act = useRef<RowAct>({ open, toggle: () => {}, setMany: () => {}, hide: () => {} });
-  act.current = { open, toggle: () => {}, setMany: () => {}, hide: () => {} };
+  /* 줄에는 늘 같은 손잡이를 건넨다(줄이 memo) — 누를 때 최신 open 을 부른다. */
+  const openRef = useRef(open);
+  openRef.current = open;
+  const onOpen = useCallback((p: Post) => openRef.current(p), []);
   const fabHidden = useEditableFocused();
 
   if (view.kind === "detail") {
@@ -93,7 +93,7 @@ function BoardRouter() {
   }
   return (
     <div className="scr-screen scr-board-screen">
-      <BoardList act={act} />
+      <BoardList onOpen={onOpen} />
       <div className={cx("scr-feed-add-fab-wrap scr-feed-add-wrap", fabHidden && "scr-feed-add-fab-wrap-hidden")}>
         <button type="button" className="scr-feed-add-fab scr-circle-btn" onClick={openNew}>등록</button>
       </div>
@@ -101,14 +101,10 @@ function BoardRouter() {
   );
 }
 
-const BoardList = memo(function BoardList({ act }: { act: RefObject<RowAct> }) {
+const BoardList = memo(function BoardList({ onOpen }: { onOpen: (p: Post) => void }) {
   const { feedAll, loading, loadingMore, hasMore, loadMore } = useFeedData();
   const isMobile = useIsMobile();
-  const memberOf = useAppStore((s) => s.memberOf);
   const minute = useRowClock();
-  const view = useMemo<RowView>(() => ({
-    isMobile, memberOf, selecting: false, selMode: false, selectionNote: "", leagueCol: false,
-  }), [isMobile, memberOf]);
   /* 꼭지는 가르지 않는다 — 새 글 순 그대로(피드 차례) · 공지 글만 위로(sort 는 안정이라 공지끼리·나머지끼리는 새 글 순). */
   const rows = useMemo<FeedItem[]>(() => {
     const posts = feedAll.filter((it) => it.kind === "post");
@@ -143,11 +139,14 @@ const BoardList = memo(function BoardList({ act }: { act: RefObject<RowAct> }) {
         </div>
       </div>
       {loading ? <LoadingMark /> : (
-        <div className="scr-feed-rows scr-feed-group-page-rows">
-          {rows.length === 0 ? <div className="scr-empty">글이 없어요</div> : rows.map((item) => {
-            const { key, ...p } = rowPropsOf(item, NO_PICK);
-            return <FeedRow key={key} {...p} minute={minute} view={view} act={act} />;
-          })}
+        <div className="scr-bbs" role="table" aria-label="게시판 글">
+          {!isMobile && <BoardHead />}
+          {rows.length === 0 ? <div className="scr-empty">글이 없어요</div> : rows.map((item) => item.kind === "post" && (
+            <BoardRow
+              key={item.post.id} post={item.post} mobile={isMobile} minute={minute} onOpen={onOpen}
+              notes={commentStatOf("post", item.post.id).count} fresh={rowFlagsOf(item).includes("new")}
+            />
+          ))}
           {hasMore && <div ref={sentinel} className="scr-feed-more-sentinel">{loadingMore && <LoadingMark />}</div>}
         </div>
       )}
