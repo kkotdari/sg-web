@@ -264,8 +264,9 @@ export default function Header({
             </nav>
 
             <div className="scr-drawer-actions">
-              <button className="scr-rect-btn is-secondary" onClick={() => setLightTheme((v) => !v)}>
-                테마
+              {/* 테마는 메뉴가 아니라 작은 글자 단추(2026-10-26, 요청: "테마변경은 좀 작게 · 메뉴는 아니니까") — 아바타 아래 단추와 같은 꼴. */}
+              <button type="button" className="scr-drawer-user-act scr-drawer-theme" onClick={() => setLightTheme((v) => !v)}>
+                테마 변경
               </button>
               <button className="scr-rect-btn is-secondary" onClick={() => setMenuOpen(false)}>
                 메뉴 닫기

@@ -3771,6 +3771,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   font: inherit; font-size: var(--fs-caption); color: var(--muted); -webkit-tap-highlight-color: transparent;
 }
 .scr-drawer-user-sep { color: var(--dim); font-size: var(--fs-caption); }
+.scr-drawer-actions > .scr-drawer-theme { align-self: flex-start; margin-left: 6px; }
 @media (hover: hover) { .scr-drawer-user-act:hover { color: var(--text); } }
 .scr-drawer-nav { display: flex; flex-direction: column; gap: 4px; margin-top: auto; }
 .scr-menu-pop-drawer-title { cursor: default; color: var(--muted); }
