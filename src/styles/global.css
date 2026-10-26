@@ -8096,7 +8096,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   grid-column: 1; order: 4; margin: 6px 0;
   padding-right: 10px; border-right: 1px solid var(--line-faint);   /* 로스터 | 미니맵 사이 연한 세로 줄 · 틈 6 → 10 + 줄 + 12(2026-10-26 요청: "간격 띄우고 연하게 | 구분선") */
 }
-.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc.has-lead > .scr-activity-row-lead { grid-column: 2; order: 5; justify-self: center; margin: 6px 0; transform: translateY(8px); }   /* 조금 아래로(같은 날 요청 · 자리는 그대로 · 그림만 8 내림) */
+.scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc.has-lead > .scr-activity-row-lead { grid-column: 2; order: 5; justify-self: center; margin: 6px 0; }   /* 헤더(시각·맵 배지) · 푸터(추천·데이터) 줄을 뺀 가운데 줄의 세로 가운데(같은 날 되요청 — 잠깐 8 내렸다 걷음) */
 /* 맵 배지는 다시 **로스터 칸 가운데**(같은 날 되요청: "맵 배지 다시 로스터 중앙으로") — 시각(왼끝)과 같은 칸(1) · 같은 줄에 겹쳐 세운다.
    겹치려면 줄을 못 박아야 한다: 리그 머리 줄이 있으면 2줄 · 없으면 1줄. 이름 몸·미니맵은 그 다음 줄로 자동 배치. */
 .scr-activity-row-game.scr-gm > .scr-activity-row-main:has(> .scr-activity-row-desc.has-lead) > .scr-activity-row-status { grid-column: 1; grid-row: 1; justify-self: center; }
