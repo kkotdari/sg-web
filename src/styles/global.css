@@ -5655,10 +5655,10 @@ html.scr-light-theme .scr-activity-card-comment .scr-comment-mention { color: #1
   margin-inline: calc(8px - var(--feed-trow-pad-x, 8px));
 }
 .scr-sum-team1, .scr-sum-team2 { font-weight: 700; }
-.scr-sum-team1 { color: #2475cc; }
-.scr-sum-team2 { color: #cf3f55; }
-.scr-story-cap .scr-sum-team1 { color: #8fcaff; }
-.scr-story-cap .scr-sum-team2 { color: #ffa3b1; }
+.scr-sum-team1 { color: #cf3f55; }   /* 1팀 빨강 · 2팀 파랑(2026-10-26 원작대로 바로잡음 · 여태 반대) */
+.scr-sum-team2 { color: #2475cc; }
+.scr-story-cap .scr-sum-team1 { color: #ffa3b1; }
+.scr-story-cap .scr-sum-team2 { color: #8fcaff; }
 
 
 .scr-activity-card-time {
