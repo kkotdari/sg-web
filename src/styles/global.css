@@ -1052,6 +1052,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 
 .scr-v2-toolbar-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .scr-v2-toolbar-month { flex: none; }
+/* 통계 기간 셋(2026-10-26 · 월 선택 · 전체기간 · 오늘 — 배타 · 켜진 것만 채움) */
+.scr-stats-period { display: inline-flex; align-items: center; gap: 6px; flex: none; }
 
 .scr-clan-dash {
   display: flex; flex-direction: column; gap: 12px;
@@ -1353,6 +1355,8 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
   -webkit-tap-highlight-color: transparent;
 }
 .scr-feed-game-tab.is-on, .scr-line-tab-btn.is-on { color: var(--btn-fill-text); background: var(--btn-fill-bg); }
+/* 탭 무리 사이 구분선(2026-10-26 · 통계 규모 탭의 팀전 | 1:1) */
+.scr-line-tab-sep { align-self: center; padding: 0 6px; font-size: var(--fs-caption); line-height: 1.2; color: var(--dim); user-select: none; }
 @media (hover: hover) {
   .scr-feed-game-tab:hover:not(.is-on), .scr-line-tab-btn:hover:not(.is-on) { color: var(--text); }
 }

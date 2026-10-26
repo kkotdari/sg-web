@@ -16,6 +16,8 @@ interface MonthCalendarProps {
   /** 연속 달 고르기(통계 · 2026-10-22, 요청: "통계에서 월을 연속적으로 선택 가능하게") — 값이 "YYYY-MM~YYYY-MM" 일 수 있다.
    *  첫 칸을 누르면 그 한 달로 바로 바뀌고 창이 열린 채 남는다 · 다른 칸을 누르면 두 달 사이 전부로 닫힌다(같은 칸이나 창 밖은 한 달 그대로). */
   range?: boolean;
+  /** 달이 아닌 기간(밖의 [전체기간]·[오늘])이 켜진 동안 — 단추를 테두리 꼴로 · 글자 "월 선택"(통계 · 2026-10-26 배타 기간 단추). */
+  idle?: boolean;
 }
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -23,7 +25,7 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const yearOf = (m: string) => Number(m.slice(0, 4));
 
 export default function MonthCalendar({
-  value, onChange, minMonth, maxMonth, allValue, allLabel = "전체 기간", className, range = false,
+  value, onChange, minMonth, maxMonth, allValue, allLabel = "전체 기간", className, range = false, idle = false,
 }: MonthCalendarProps) {
   const [open, setOpen] = useState(false);
   const isAll = allValue !== undefined && value === allValue;
@@ -81,13 +83,13 @@ export default function MonthCalendar({
     <div className={cx("scr-month-cal", className)} ref={ref}>
       <button
         type="button"
-        className={cx("scr-month-cal-trigger scr-compact-rect-btn", open && "scr-month-cal-open")}
+        className={cx("scr-month-cal-trigger scr-compact-rect-btn", open && "scr-month-cal-open", idle && "is-secondary")}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
         aria-haspopup="dialog" aria-expanded={open}
       >
         <CalendarDays size={14} aria-hidden />
-        <span>{isAll ? allLabel : monthPeriodLabel(value)}</span>
+        <span>{idle ? "월 선택" : isAll ? allLabel : monthPeriodLabel(value)}</span>
       </button>
       {open && createPortal(
         <div className="scr-month-cal-pop" ref={popRef} role="dialog" aria-label="기간 고르기">
@@ -112,7 +114,7 @@ export default function MonthCalendar({
               return (
                 <button
                   key={m} type="button"
-                  className={cx("scr-month-cal-cell", (v === lo || v === hi) && "scr-month-cal-cell-on", v > lo && v < hi && "scr-month-cal-cell-in")}
+                  className={cx("scr-month-cal-cell", !idle && (v === lo || v === hi) && "scr-month-cal-cell-on", !idle && v > lo && v < hi && "scr-month-cal-cell-in")}
                   onClick={() => pick(v)} disabled={!inRange(v)}
                 >
                   {m}월

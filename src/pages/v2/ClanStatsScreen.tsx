@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
@@ -42,7 +42,21 @@ const MAP_DEFAULT: MapTab = "fastest";
 const mapTabOf = (v: string): MapTab => (MAP_TABS.some((t) => t.value === v) ? v as MapTab : MAP_DEFAULT);
 const PERIOD_ALL = "all";
 /* 기간은 달 단위뿐이다 — [어제] [오늘] 하루 고르기는 걷었다(2026-10-22, 요청: "아예 달 단위로 통일 · 오늘 어제 일자 조회 다 제거" — 마감한 달은
-   달별 합계만 남는다). 옛 주소의 period=today/yesterday 는 달 범위로 못 읽어 이번 달로 떨어진다(아래 qRange). */
+   달별 합계만 남는다). 옛 주소의 period=yesterday 는 달 범위로 못 읽어 이번 달로 떨어진다(아래 qRange).
+   ★ [오늘]은 되살렸다(2026-10-26, 요청: "기간에 전체기간 과 오늘 버튼을 외부에 추가(월선택, 전체기간, 오늘은 배타적으로 활성됨)" → "기준을 오후 4시로 변경 ·
+   게임번호가 아닌 실제 시작시간으로") — 한국 시각 오후 4시가 하루의 경계다(4시 전이면 어제 4시부터). 서버는 dateFrom/dateTo 의 THH:MM 을 판의 실제 시작 시각으로
+   자른다(sg-api DayAt · 시작 시각을 모르는 판은 안 든다). */
+const PERIOD_TODAY = "today";
+/** 하루의 경계(한국 시각 · 시) — 오늘은 이 시각부터 다음 날 이 시각 앞까지. */
+const TODAY_CUT_H = 16;
+/** 오늘(한국 시각 · 오후 4시 경계)의 [시작, 끝) — "YYYY-MM-DDT16:00" 둘. 4시 전이면 어제 4시부터다. */
+function todayRange(): { from: string; to: string } {
+  const kst = new Date(Date.now() + (9 - TODAY_CUT_H) * 3600_000);   // 경계 시각을 0시로 당긴 한국 시각 — 그 날짜가 '오늘'
+  const d = (t: Date): string => t.toISOString().slice(0, 10);
+  const next = new Date(kst.getTime() + 24 * 3600_000);
+  const hm = `${String(TODAY_CUT_H).padStart(2, "0")}:00`;
+  return { from: `${d(kst)}T${hm}`, to: `${d(next)}T${hm}` };
+}
 
 /** 정렬 자 이름 — 정렬 줄("정렬: 전체 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid · 2026-10-22, 요청: "정렬은 머리 터치로 변경" →
  *  "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개") — 옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
@@ -168,6 +182,7 @@ export default function ClanStatsScreen() {
     };
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
+      : debouncedQuery.period === PERIOD_TODAY ? todayRange()
       : monthPeriodToRange(MONTH_PERIOD_RE.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue());
     if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null, trendClan: null }); return; }
     let cancelled = false;
@@ -284,26 +299,37 @@ export default function ClanStatsScreen() {
       <div className="scr-v2-toolbar">
         <div className="scr-v2-toolbar-title-row">
           <h1 className="scr-title scr-v2-toolbar-title">통계</h1>
-          <MonthCalendar
-            value={period} onChange={setPeriod}
-            maxMonth={currentMonthValue()}
-            allValue={PERIOD_ALL}
-            range
-            className="scr-v2-toolbar-month"
-          />
+          {/* 기간 셋은 배타(2026-10-26 · 위 PERIOD_TODAY ★) — 켜진 것만 채움 단추 · 나머지는 테두리. 달 고르기 창 안의 '전체 기간'은 밖 단추로 옮겼다. */}
+          <div className="scr-stats-period">
+            <MonthCalendar
+              value={MONTH_PERIOD_RE.test(period) ? period : currentMonthValue()} onChange={setPeriod}
+              maxMonth={currentMonthValue()}
+              idle={!MONTH_PERIOD_RE.test(period)}
+              range
+              className="scr-v2-toolbar-month"
+            />
+            <button type="button" className={cx("scr-compact-rect-btn", period !== PERIOD_ALL && "is-secondary")}
+              aria-pressed={period === PERIOD_ALL} onClick={() => setPeriod(PERIOD_ALL)}>전체기간</button>
+            <button type="button" className={cx("scr-compact-rect-btn", period !== PERIOD_TODAY && "is-secondary")}
+              aria-pressed={period === PERIOD_TODAY} onClick={() => setPeriod(PERIOD_TODAY)} title="오후 4시부터 다음 날 오후 4시 전까지">오늘</button>
+          </div>
         </div>
       </div>
 
       <div className="scr-line-tabs scr-stats-size-tabs" role="tablist" aria-label="팀 규모">
         {SIZE_TABS.map((t) => (
-          <button
-            key={t.value} type="button" role="tab"
-            aria-selected={t.value === size}
-            className={cx("scr-line-tab-btn", t.value === size && "is-on")}
-            onClick={() => setSize(t.value)}
-          >
-            {t.label}
-          </button>
+          <Fragment key={t.value}>
+            {/* 팀전과 1:1 사이 구분선(2026-10-26, 요청: "통계 게임 유형에서 팀전과 1:1 사이에 | 구분선 넣기") */}
+            {t.value === "1" && <span className="scr-line-tab-sep" aria-hidden>|</span>}
+            <button
+              type="button" role="tab"
+              aria-selected={t.value === size}
+              className={cx("scr-line-tab-btn", t.value === size && "is-on")}
+              onClick={() => setSize(t.value)}
+            >
+              {t.label}
+            </button>
+          </Fragment>
         ))}
       </div>
       <div className="scr-line-tabs scr-stats-size-tabs scr-stats-map-tabs" role="tablist" aria-label="맵">
