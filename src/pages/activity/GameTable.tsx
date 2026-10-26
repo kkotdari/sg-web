@@ -57,6 +57,17 @@ function mapThumb(hash: string, grid: ReplayMapGrid): Promise<string | null> {
   return p;
 }
 
+/** 배치 칩 글 — 폭 4칸(한글·한자 등 넓은 글자 2칸 · 영문·숫자 1칸) 안에서 앞부터(2026-10-26, 요청: "2글자 정도" → "영어는 4글자"). */
+function shortSpot(name: string): string {
+  let out = ""; let w = 0;
+  for (const ch of Array.from(name)) {
+    const cw = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]/.test(ch) ? 2 : 1;
+    if (w + cw > 4) break;
+    out += ch; w += cw;
+  }
+  return out;
+}
+
 /** ★ 배치 칸(2026-10-26 · 위 COLS) — 맵 그림 위에 사람마다 시작 자리(서버 참가자 startX·startY · 타일)에 **닉네임 앞 두 글자** 칩
  *  (같은 날 되요청: "2글자 정도라도 · 팀 배지 없이 · 종족 없이" — 처음 낸 종족 글자 점 · 팀색 테두리는 걷었다). 칩 바탕은 그 사람 개인색(모르면 회색).
  *  시작 자리를 모르는 옛 판(재분석 전)은 맵 그림만 · 맵 격자가 없으면 "-". 가장자리 자리는 칩이 그림 밖으로 안 잘리게 안쪽으로 민다.
@@ -74,7 +85,7 @@ export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (
     .filter((p) => !p.observer && p.startX != null && p.startY != null)
     .map((p) => {
       const name = memberOf(p.memberId)?.nickname ?? p.rawName ?? "";
-      return { name, short: Array.from(name).slice(0, 2).join(""), color: p.color || "#5b6270",
+      return { name, short: shortSpot(name), color: p.color || "#5b6270",
         x: (p.startX as number) / grid.width, y: (p.startY as number) / grid.height };
     });
   return (
