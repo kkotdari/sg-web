@@ -103,6 +103,8 @@ export interface ParsedReplay {
   mapGrid: ReplayMapGrid | null;
   /** 경기 채팅 — name 은 말한 사람의 게임 이름(2026-10-10 · 재생기 중계 자막 gg 선언·노엘 외침). */
   chats: { frame: number; text: string; name?: string }[];
+  /** 이 리플레이를 저장한 사람의 게임 이름(2026-10-26) — 서버가 팀챗/전체를 가른다(상대 편 저장본이 그 말을 봤나). 채팅이 없으면 null. */
+  chatSaver: string | null;
   startSpots: [number, number][];
 }
 
@@ -175,6 +177,8 @@ interface ScrepResult {
     WinnerTeam: number;
     PlayerDescs: ScrepPlayerDesc[] | null;
     LeaveGameCmds?: { Frame: number; PlayerID: number }[] | null;
+    /** 리플레이를 저장한 사람(screp — 채팅 명령의 PlayerID 는 저장자다) · 채팅이 없으면 없다. */
+    RepSaverPlayerID?: number | null;
   };
   Commands?: { Cmds?: ScrepCmd[] | null } | null;
 }
@@ -946,6 +950,10 @@ export async function parseReplayFile(file: File): Promise<ParsedReplay> {
       }
       out.sort((a, b) => a.frame - b.frame || (a.text < b.text ? -1 : a.text > b.text ? 1 : 0));
       return out;
+    })(),
+    chatSaver: (() => {
+      const id = res.Computed?.RepSaverPlayerID;
+      return typeof id === "number" ? (res.Header.Players ?? []).find((p) => p.ID === id)?.Name ?? null : null;
     })(),
     startSpots: (res.MapData?.StartLocations ?? []).map((sp) => [sp.X / 32, sp.Y / 32] as [number, number]),
   };

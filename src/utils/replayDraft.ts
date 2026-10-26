@@ -46,6 +46,8 @@ export interface ReplayDraft {
   leaves: { rawName: string; leaveSec: number | null; reason: string | null; lastCmdSec: number | null }[];
   mapGrid: ReplayMapGrid | null;
   chats: { frame: number; text: string }[];
+  /** 리플레이 저장자(팀챗/전체 가름 · replayParser chatSaver). */
+  chatSaver: string | null;
   parseError: string | null;
   excluded: boolean;
   excludeReason: "duplicate" | "computer" | "nonmember" | "gametype" | "fewmembers" | null;
@@ -135,6 +137,7 @@ async function buildDraft(file: File, members: Member[]): Promise<ReplayDraft> {
       leaves,
       mapGrid: parsed.mapGrid,
       chats: parsed.chats,
+      chatSaver: parsed.chatSaver,
       parseError: null,
       excluded: isRejectedGameType(parsed.gameTypeId),
       excludeReason: isRejectedGameType(parsed.gameTypeId) ? "gametype" : null,
@@ -162,6 +165,7 @@ async function buildDraft(file: File, members: Member[]): Promise<ReplayDraft> {
       leaves: [],
       mapGrid: null,
       chats: [],
+      chatSaver: null,
       parseError: e instanceof ReplayParseError ? e.message : "리플레이를 분석하지 못했어요. 직접 입력해 주세요.",
       excluded: false,
       excludeReason: null,
@@ -311,6 +315,7 @@ function draftToMergePayload(d: ReplayDraft, gameStartedAt: string) {
     durationSeconds: d.durationSeconds,
     mapData: d.mapGrid,
     chats: d.chats,
+    chatSaver: d.chatSaver,
     players: [...fromSlots, ...fromUnmatched].filter((p) => p.playerName),
   };
 }

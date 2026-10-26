@@ -317,15 +317,19 @@ export const api = {
   },
 
   /** 자취 + 경기 채팅 — 채팅은 재생기 중계 자막의 gg 선언·노엘 외침 재료(2026-10-10 · 말한 사람을 아는 줄만 · 프레임 → 초는 fastest 42ms). */
-  async getGameUnitTracks(id: number): Promise<{ motion: string | null; chats?: { sec: number; name: string; text: string }[] }> {
-    type Res = { motion?: string | null; chats?: { frame: number; text: string; name?: string | null }[] };
+  /* scope(2026-10-26) — "team" 팀챗 · "all" 전체 · 없음 = 서버가 못 가름(재생기는 배지 없이). */
+  async getGameUnitTracks(id: number): Promise<{ motion: string | null; chats?: { sec: number; name: string; text: string; scope?: "team" | "all" }[] }> {
+    type Res = { motion?: string | null; chats?: { frame: number; text: string; name?: string | null; scope?: string | null }[] };
     const res = extShareCtx
       ? await request<Res>(
         `/api/restricted/share/lists/${extShareCtx.listId}/games/${id}/unit-tracks`,
         { headers: { "X-Ext-Pass": extShareCtx.pass } },
       )
       : await request<Res>(`/api/game-results/${id}/unit-tracks`);
-    const chats = (res.chats ?? []).flatMap((c) => (c.name ? [{ sec: (c.frame * 42) / 1000, name: c.name, text: c.text }] : []));
+    const chats = (res.chats ?? []).flatMap((c) => (c.name ? [{
+      sec: (c.frame * 42) / 1000, name: c.name, text: c.text,
+      ...(c.scope === "team" || c.scope === "all" ? { scope: c.scope as "team" | "all" } : {}),
+    }] : []));
     return { motion: res.motion ?? null, ...(chats.length > 0 ? { chats } : {}) };
   },
 
@@ -394,6 +398,7 @@ export const api = {
     durationSeconds: number | null;
     mapData: ReplayMapGrid | null;
     chats?: { frame: number; text: string; name?: string }[];
+    chatSaver?: string | null;
     players: {
       playerName: string;
       race: string | null;
@@ -703,6 +708,7 @@ export const api = {
     body: {
       mapData?: ReplayMapGrid | null;
       chats?: { frame: number; text: string; name?: string }[];
+      chatSaver?: string | null;
       mapName?: string | null;
       gameStartedAt?: string | null;
       durationSeconds?: number | null;

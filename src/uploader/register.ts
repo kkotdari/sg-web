@@ -69,6 +69,7 @@ async function settle(d: ReplayDraft): Promise<UploadOutcome> {
     mapName: r.mapName || null, gameStartedAt: r.gameStartedAt, durationSeconds: r.durationSeconds,
     mapData: r.mapGrid,
     chats: r.chats,
+    chatSaver: r.chatSaver,
   };
   const { game, merged, deleted } = await api.createGameResult(payload);
   if (deleted) return { kind: "skipped", reason: "운영자가 삭제한 경기(다시 등록하지 않음)", summary };

@@ -239,6 +239,8 @@ export type NewGameResult = Omit<GameResult, "id" | "matchNo" | "createdBy" | "r
   replay: ReplayUpload | null;
   mapData: ReplayMapGrid | null;
   chats?: { frame: number; text: string; name?: string }[];
+  /** 리플레이 저장자(2026-10-26 · 팀챗/전체 가름). */
+  chatSaver?: string | null;
 };
 
 export interface GameResultPage {

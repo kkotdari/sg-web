@@ -25,6 +25,7 @@ export type SummaryJobResult =
     gameStartedAt: string | null;
     durationSeconds: number | null;
     chats: { frame: number; text: string }[];
+    chatSaver: string | null;
     slots: ReanalyzedSlot[];
   }
   | { id: number; ok: false; error: string };
@@ -46,6 +47,7 @@ ctx.onmessage = (e: MessageEvent<SummaryJob>) => {
         gameStartedAt: parsed.gameStartedAt ?? null,
         durationSeconds: parsed.durationSeconds ?? null,
         chats: parsed.chats,
+        chatSaver: parsed.chatSaver,
         slots: parsed.players.map((p) => ({
           rawName: p.rawName,
           race: p.race,

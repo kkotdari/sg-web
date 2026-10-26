@@ -241,7 +241,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
             body = {
               mapData: r.mapData,
               mapName: r.mapName, gameStartedAt: r.gameStartedAt,
-              durationSeconds: r.durationSeconds, chats: r.chats, slots: r.slots,
+              durationSeconds: r.durationSeconds, chats: r.chats, chatSaver: r.chatSaver, slots: r.slots,
             };
           } else {
             const parsed = await parseReplayFile(new File([blob], `${id}.rep`));
@@ -251,6 +251,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
               gameStartedAt: parsed.gameStartedAt ?? null,
               durationSeconds: parsed.durationSeconds ?? null,
               chats: parsed.chats,
+              chatSaver: parsed.chatSaver,
               slots: parsed.players.map((p) => ({
                 rawName: p.rawName, race: p.race,
                 apm: p.apm, eapm: p.eapm,

@@ -356,6 +356,7 @@ export default function ReplayReviewModal({
             mapName: d.mapName || null, gameStartedAt: d.gameStartedAt, durationSeconds: d.durationSeconds,
             mapData: d.mapGrid,
             chats: d.chats,
+            chatSaver: d.chatSaver,
           };
           try {
             const { merged, deleted } = await addGameResult(payload);
