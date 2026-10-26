@@ -44,12 +44,12 @@ const PERIOD_ALL = "all";
 /* 기간은 달 단위뿐이다 — [어제] [오늘] 하루 고르기는 걷었다(2026-10-22, 요청: "아예 달 단위로 통일 · 오늘 어제 일자 조회 다 제거" — 마감한 달은
    달별 합계만 남는다). 옛 주소의 period=yesterday 는 달 범위로 못 읽어 이번 달로 떨어진다(아래 qRange).
    ★ [오늘]은 되살렸다(2026-10-26, 요청: "기간에 전체기간 과 오늘 버튼을 외부에 추가(월선택, 전체기간, 오늘은 배타적으로 활성됨)" → "기준을 오후 4시로 변경 ·
-   게임번호가 아닌 실제 시작시간으로") — 한국 시각 오후 4시가 하루의 경계다(4시 전이면 어제 4시부터). 서버는 dateFrom/dateTo 의 THH:MM 을 판의 실제 시작 시각으로
+   게임번호가 아닌 실제 시작시간으로") → "정오 기준으로 변경") — 한국 시각 정오가 하루의 경계다(정오 전이면 어제 정오부터). 서버는 dateFrom/dateTo 의 THH:MM 을 판의 실제 시작 시각으로
    자른다(sg-api DayAt · 시작 시각을 모르는 판은 안 든다). */
 const PERIOD_TODAY = "today";
 /** 하루의 경계(한국 시각 · 시) — 오늘은 이 시각부터 다음 날 이 시각 앞까지. */
-const TODAY_CUT_H = 16;
-/** 오늘(한국 시각 · 오후 4시 경계)의 [시작, 끝) — "YYYY-MM-DDT16:00" 둘. 4시 전이면 어제 4시부터다. */
+const TODAY_CUT_H = 12;   // 8 → 16 → 12(2026-10-26, 요청: "정오 기준으로 변경")
+/** 오늘(한국 시각 · 정오 경계)의 [시작, 끝) — "YYYY-MM-DDT12:00" 둘. 정오 전이면 어제 정오부터다. */
 function todayRange(): { from: string; to: string } {
   const kst = new Date(Date.now() + (9 - TODAY_CUT_H) * 3600_000);   // 경계 시각을 0시로 당긴 한국 시각 — 그 날짜가 '오늘'
   const d = (t: Date): string => t.toISOString().slice(0, 10);
@@ -311,7 +311,7 @@ export default function ClanStatsScreen() {
             <button type="button" className={cx("scr-compact-rect-btn", period !== PERIOD_ALL && "is-secondary")}
               aria-pressed={period === PERIOD_ALL} onClick={() => setPeriod(PERIOD_ALL)}>전체기간</button>
             <button type="button" className={cx("scr-compact-rect-btn", period !== PERIOD_TODAY && "is-secondary")}
-              aria-pressed={period === PERIOD_TODAY} onClick={() => setPeriod(PERIOD_TODAY)} title="오후 4시부터 다음 날 오후 4시 전까지">오늘</button>
+              aria-pressed={period === PERIOD_TODAY} onClick={() => setPeriod(PERIOD_TODAY)} title="정오부터 다음 날 정오 전까지">오늘</button>
           </div>
         </div>
       </div>
