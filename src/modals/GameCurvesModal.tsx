@@ -669,7 +669,8 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                 </g>
               );
             })}
-            <NameChip name={shortName(l.name, font.label)} color={l.color} right={Math.max(PL - 6, chipWOf(shortName(l.name, font.label), font.label))} cy={top + h / 2} fs={font.label} big={focus === l.group} onPick={() => onFocus(l.group)} />
+            {/* 사람 칩은 그 칸 **맨 위 칩 줄**에(2026-10-26, 요청: "건설의 유저 칩을 맨 위로 정렬 각 행에서" — 옛 칸 세로 가운데). */}
+            <NameChip name={shortName(l.name, font.label)} color={l.color} right={Math.max(PL - 6, chipWOf(shortName(l.name, font.label), font.label))} cy={lyOf(top, 0)} fs={font.label} big={focus === l.group} onPick={() => onFocus(l.group)} />
           </g>
         ))}
         {at !== null && <line className="scr-rc-cross" x1={x(at * 60)} x2={x(at * 60)} y1={4} y2={H - AXIS_H} />}
