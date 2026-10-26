@@ -30,6 +30,8 @@ type GroupTab = "bl" | "sp" | "dmg" | "rs";
 /** 탭 — bl(건설 줄 · 2026-10-25 "테크가 아니라 건설")은 **한 종류만 보이기**(폰 · PC 창모드)에서만 탭이다(2026-10-25 · 아래 oneKind9 ★). PC 전체화면은 건설 줄이 늘 위에 · 탭은 셋. */
 const GROUP_TABS: [GroupTab, string][] = [["bl", "건설"], ["sp", "인구"], ["dmg", "데미지"], ["rs", "자원"]];
 const cumsum = (a: readonly number[]): number[] => { let s = 0; return a.map((v) => (s += v)); };
+/** 건설 칩의 시간축 처지(얹은 칩의 때보다 늦은 칩 숨김 · 이미 사라진 칩 딤 · 그 칩으로 가는 선 숨김) — 껐다(2026-10-26, 요청: "건물의 시간축 효과 제거해 줘") · 코드만 남김. */
+const TIME_FX9 = false;
 const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
 
 /** 테크 건물 짧은 이름(서버 series.TECH 와 짝). */
@@ -550,7 +552,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
   const stCls = (t: Tag, bs: Bld[]): string | undefined => {
     const c: string[] = [];
     if (t.cut) c.push("is-cut");
-    if (hoverAt !== null) {
+    if (TIME_FX9 && hoverAt !== null) {
       if (t.at > hoverAt + 0.5) c.push("is-after");
       else if (!t.cut && bs.length > 0 && bs.every((b) => b.e !== null && b.e <= hoverAt)) c.push("is-gone");
     }
@@ -604,7 +606,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                   {/* 종류별 줄의 줄 사이 선(t.src · 위 kindUnits9 ★) — 앞 종류 줄의 칩 오른끝 → 이 줄 첫 칩(S자). */}
                   {u.tags.map((t, ti) => {
                     const sr9 = t.src;
-                    if (!sr9 || (hoverAt !== null && t.at > hoverAt + 0.5)) return null;
+                    if (!sr9 || (TIME_FX9 && hoverAt !== null && t.at > hoverAt + 0.5)) return null;
                     /* 앞 종류 줄을 따라가다 **그 때 바로 앞에서** 내려간다(사이 줄의 칩을 덜 가로지르게 · 그 줄의 줄 안 선과 겹쳐 '거기서 갈라짐'으로 읽힌다). */
                     const p09 = sr9.x + sr9.w; const lyP9 = lyOf(top, k + sr9.r); const lyT9 = lyOf(top, k + t.r); const x29 = t.x - (sr9.addon ? 0 : 1);
                     const cl9 = Math.min(22, Math.max(8, x29 - p09 - 4)); const c19 = Math.max(p09, x29 - cl9 - 4);
@@ -615,7 +617,7 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
                     const pv = u.tags[t.par];
                     if (t.r === pv.r && t.x <= pv.x + pv.w + 0.5) return null;
                     if (t.what === "개수" && pv.n === 0) return null;   // 종류별 줄 — 다 사라진 뒤로는 줄 안 선이 없다
-                    if (hoverAt !== null && t.at > hoverAt + 0.5) return null;   // 그때 아직 없는 칩으로 가는 선도 함께 숨김(stCls is-after)
+                    if (TIME_FX9 && hoverAt !== null && t.at > hoverAt + 0.5) return null;   // 그때 아직 없는 칩으로 가는 선도 함께 숨김(stCls is-after)
                     /* ★ 애드온(붙음)은 **그냥 점선** · 변태(변태 · 변태 시작)는 **화살표 점선**(2026-10-24, 요청: "애드온 그냥 점선, 변태 화살표 점선으로 잇기 · 선 두께 반") — 옛 둘 다 실선 화살표. */
                     const addon9 = t.what === "붙음" || t.what === "개수";   // 종류별 줄 안 선도 촉 없는 점선
                     const lyP9 = lyOf(top, k + pv.r); const lyT9 = lyOf(top, k + t.r);
@@ -937,14 +939,13 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const modeEl = teamGame ? (
     <div className="scr-rc-mode scr-gc-mode">
       <span className="scr-gc-flabel" aria-hidden>구분:</span>   {/* 옛 "개인/팀별:"(2026-10-25, 요청: "개인/팀별 라벨명을 구분으로 변경") */}
-      {/* 탭 꼴(2026-10-22, 요청: "여기에 탭 디자인 적용") — 게임 목록 · 통계 탭과 같은 .scr-line-tabs. */}
-      <div className="scr-line-tabs" role="tablist" aria-label="구분">
+      {/* 동그라미 체크 라디오(2026-10-26, 요청: "구분 쪽은 동그라미 체크 라디오 버튼으로 변경") — 옛 탭 꼴(.scr-line-tabs · 2026-10-22 "여기에 탭 디자인 적용")을 갈았다. 꼴은 .scr-checkbox-field 의 radio. */}
+      <div className="scr-gc-radios" role="radiogroup" aria-label="구분">
         {VIEW_MODES.map(([m, label]) => (
-          <button
-            key={m} type="button" role="tab" aria-selected={mode === m}
-            className={cx("scr-line-tab-btn", mode === m && "is-on")}
-            onClick={() => { setView(m); setFocus(null); }}
-          >{label}</button>
+          <label key={m} className="scr-checkbox-field scr-gc-radio">
+            <input type="radio" name="scr-gc-view" checked={mode === m} onChange={() => { setView(m); setFocus(null); }} />
+            <span>{label}</span>
+          </label>
         ))}
       </div>
     </div>
