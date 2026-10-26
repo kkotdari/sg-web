@@ -53,6 +53,8 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
     return terms.filter((t) => (t.tag === "유닛" || t.tag === "건물" || t.tag === "스킬" || t.tag === "전술") && !seen.has(t.value) && (seen.add(t.value), true))
       .map((t) => ({ value: t.value, tag: t.tag }));
   }, [terms]);
+  /* 한 사람 줄은 종족도 받는다(2026-10-26, 요청: "여기서 조건으로 종족도 받게 해 줘 — 종족 유닛 스킬 등등") — 서버는 그 사람이 그 종족으로 뛰었나로 본다. */
+  const linkOpts = useMemo<Opt[]>(() => [...RACES.map((r) => ({ value: r, tag: "종족" })), ...itemOpts], [itemOpts]);
   const mapOpts = useMemo<Opt[]>(() => maps.map((m) => ({ value: m, tag: "맵" })), [maps]);
 
   const setLink = (i: number, p: Partial<GameSearchLink>): void =>
@@ -128,13 +130,13 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
             <ChipInput values={draft.nos} onChange={(v) => set("nos", v)} options={[]} placeholder="261019213105 · 앞자리만(261019)도 됨" onSubmit={() => apply()} />
           </Field>
           <div className="scr-gs-field scr-gs-links">
-            <span className="scr-gs-label">한 사람이 직접<i>그 선수가 그 유닛·전술을</i></span>
+            <span className="scr-gs-label">한 사람이 직접<i>그 선수가 그 종족으로 · 그 유닛·전술을</i></span>
             <div className="scr-gs-ctl scr-gs-link-list">
               {draft.links.map((l, i) => (
                 <div key={i} className="scr-gs-link">
                   {/* 한 사람 조건은 값을 담는 엔터에 **바로 찾는다**(2026-10-24, 요청) — ChipInput submitOnAdd. */}
                   <ChipInput single values={l.name ? [l.name] : []} onChange={(v) => setLink(i, { name: v[0] ?? "" })} options={memberOpts} placeholder="선수" onSubmit={() => apply()} submitOnAdd />
-                  <ChipInput values={l.items} onChange={(v) => setLink(i, { items: v })} options={itemOpts} placeholder="유닛·건물·스킬·전술" onSubmit={() => apply()} submitOnAdd />
+                  <ChipInput values={l.items} onChange={(v) => setLink(i, { items: v })} options={linkOpts} placeholder="종족·유닛·건물·스킬·전술" onSubmit={() => apply()} submitOnAdd />
                   <button type="button" className="scr-icon-btn scr-gs-link-x" aria-label="이 조건 빼기" onClick={() => set("links", draft.links.filter((_, k) => k !== i))}><X size={13} /></button>
                 </div>
               ))}

@@ -149,8 +149,8 @@ export function toServerMerged(q: string, lex: Lexicon = EMPTY_LEXICON): ServerQ
    · 선수 · 종족 · 유닛/건물/스킬 — 칸 안의 값마다 조건 하나(**모두** 맞아야 · 그 판에 있었나)
    · 맵 · 게임번호 — 칸 안의 값끼리는 **그중 하나**(한 판엔 맵이 하나라서)
    · 유형 — 하나만(a:b · 차례 없음)
-   · 한 사람 조건 — 줄마다 [선수 · 유닛·건물·스킬·전술…] 을 **그 사람이 직접**(옛 붙여 쓰기 · 종족은 걷었다 — 2026-10-20, 요청: "사람 종족 타겟에서 종족만 제거해서 단순하게")
-     — 서버는 그 사람이 주인인(…당함이면 타겟인) 게임 색인 사건으로 찾는다. */
+   · 한 사람 조건 — 줄마다 [선수 · 종족·유닛·건물·스킬·전술…] 을 **그 사람이 직접**(옛 붙여 쓰기) — 서버는 그 사람이 주인인(…당함이면 타겟인) 게임 색인 사건으로,
+     종족 낱말은 그 사람이 그 종족으로 뛰었나로 찾는다(2026-10-26, 요청: "여기서 조건으로 종족도 받게" — 2026-10-20 "사람 종족 타겟에서 종족만 제거"로 걷었던 것을 되살림). */
 export interface GameSearchLink { name: string; items: string[] }
 export interface GameSearchForm {
   players: string[];
@@ -216,9 +216,8 @@ export function legacyToForm(q: string, lex: Lexicon, options: GameSuggestion[])
     const names = parts.filter((p) => p.kind === "name").map((p) => p.text);
     const rest = parts.filter((p) => p.kind !== "name").map((p) => p.text);
     if (names.length > 0 && rest.length > 0) {
-      /* 옛 한 줄의 "사람 종족"은 종족 칸으로 옮긴다(한 사람 줄에 종족이 없다 · 2026-10-20). */
-      for (const t of rest) if (tagOf.get(squashTerm(t)) === "종족") f.races.push(t);
-      f.links.push({ name: names[0], items: rest.filter((t) => tagOf.get(squashTerm(t)) !== "종족") });
+      /* 옛 한 줄의 "사람 종족"은 한 사람 줄에 그대로(2026-10-26 · 한 사람 줄이 종족을 다시 받는다 — 옛: 종족 칸으로 옮겼다). */
+      f.links.push({ name: names[0], items: rest });
       f.players.push(...names.slice(1));
       continue;
     }
@@ -227,7 +226,6 @@ export function legacyToForm(q: string, lex: Lexicon, options: GameSuggestion[])
   return f;
 }
 
-const OLD_LINK_RACES = new Set(["테란", "프로토스", "저그", "랜덤"]);
 /** 주소(f=) 안의 폼 — 짧은 열쇠의 JSON. 망가진 값은 빈 폼. */
 export function encodeGameSearch(f: GameSearchForm): string {
   if (gameSearchEmpty(f)) return "";
@@ -250,8 +248,8 @@ export function decodeGameSearch(raw: string): GameSearchForm {
     return {
       players: arr(o.p), races: arr(o.r), items: arr(o.i), maps: arr(o.m),
       size: typeof o.s === "string" ? o.s : "", nos: arr(o.n),
-      /* 옛 주소는 [이름, 종족, …유닛]이었다 — 종족 자리(빈 값 · 종족 이름)는 버린다(2026-10-20). */
-      links: Array.isArray(o.l) ? o.l.map((x) => { const a = arr(x); return { name: a[0] ?? "", items: a.slice(1).filter((t) => t && !OLD_LINK_RACES.has(t)) }; }) : [],
+      /* 옛 주소는 [이름, 종족, …유닛]이었다 — 빈 종족 자리만 버린다(종족 이름은 이제 한 사람 줄의 조건 · 2026-10-26). */
+      links: Array.isArray(o.l) ? o.l.map((x) => { const a = arr(x); return { name: a[0] ?? "", items: a.slice(1).filter((t) => t) }; }) : [],
     };
   } catch {
     return EMPTY_GAME_SEARCH;
