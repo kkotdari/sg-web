@@ -95,7 +95,8 @@ function BoardRouter() {
     <div className="scr-screen scr-board-screen">
       <BoardList onOpen={onOpen} />
       <div className={cx("scr-feed-add-fab-wrap scr-feed-add-wrap", fabHidden && "scr-feed-add-fab-wrap-hidden")}>
-        <button type="button" className="scr-feed-add-fab scr-circle-btn" onClick={openNew}>등록</button>
+        {/* 라벨은 '글쓰기' 한 줄(2026-10-26, 요청: "게시판 등록 라벨을 새글쓰기로" → "글쓰기로 한줄"). */}
+        <button type="button" className="scr-feed-add-fab scr-circle-btn" onClick={openNew}>글쓰기</button>
       </div>
     </div>
   );
