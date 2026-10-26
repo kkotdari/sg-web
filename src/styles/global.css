@@ -3285,7 +3285,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 /* 데이터 창 판은 어느 꼴이든 불투명(2026-10-24, 지적: "scr-gc-top에 배경색이 있는 문제") — PC 가운데 창만 반투명 유리(.scr-modal::before 0.66 + 흐림)라
    위에 붙는 고르기 띠(.scr-gc-top · 판 색으로 뒤를 가림)가 네모로 드러났다. 폰·가득·오른쪽 칸은 이미 판 색이었다 — 한 줄로 모은다. */
 .scr-modal.scr-modal-graph::before { background: var(--panel-solid); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
-.scr-modal-graph > .scr-modal-body { flex: 1 1 auto; padding: 4px 24px 20px; overflow-y: auto; min-height: 0; }
+.scr-modal-graph > .scr-modal-body { flex: 1 1 auto; padding: 4px 16px 20px; overflow-y: auto; min-height: 0; }   /* 좌우 24 → 16(2026-10-26, 요청: "들여쓰기 정리") — 몸 글자가 제목("데이터")과 같은 x */
 /* 제목은 "데이터" · 그 뒤 "게임번호: 번호"는 작고 연하게(2026-10-21, 요청: "데이터 좀 작고 연하게 게임번호: 번호" → "데이터가 진하고 큰거야"). */
 .scr-gc-sub { margin-left: 8px; font-style: normal; font-size: 0.8em; font-weight: 600; color: var(--dim); }
 .scr-tl-svg { touch-action: pan-y; cursor: default; }
@@ -3309,6 +3309,9 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc-headbtns { display: flex; align-items: center; gap: 4px; }
 .scr-modal.scr-modal-graph.is-full { max-width: none; width: 100vw; height: 100vh; border-radius: 0; }
 .scr-modal.scr-modal-graph.is-full::before { border-radius: 0; }
+/* 전체화면은 몸 전체 1.5배(2026-10-26, 요청: "데이터창 전체화면에서 건물칩 · 그래프 눈금 · 그래프 탭 등 모든 크기 1.5배 정도(안의 글자도)") — 판은 clientWidth(확대 전 자)로 재서
+   그리므로 폭은 그대로 맞고 칩·눈금·탭·글자·선이 함께 커진다. 머리(제목·단추)는 그대로. */
+.scr-modal.scr-modal-graph.is-full > .scr-modal-body { zoom: 1.5; }
 .scr-gc-cols { display: flex; gap: 40px; align-items: flex-start; }
 .scr-gc-col { flex: none; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .scr-rc-mode { display: flex; gap: 4px; }
@@ -3325,13 +3328,16 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-gc-mode { align-items: center; margin-top: 4px; }
 .scr-gc-radios { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }   /* 구분 라디오(2026-10-26 · 옛 탭 꼴) */
 .scr-gc-radio { font-size: var(--fs-caption); font-weight: 500; color: var(--text); }
-.scr-gc-tabs > .scr-line-tab-btn { font-size: var(--fs-lead); }   /* 그래프 종류 탭 두 단 크게(2026-10-26, 요청: "그래프 종류 탭 크기 2스텝 키우고" · caption → lead) */
+.scr-gc-tabs > .scr-line-tab-btn { font-size: var(--fs-lead); }
+/* 탭 글자를 아래 줄 라벨(표시: · 1팀 · 구분:)과 같은 x 에(2026-10-26, 요청: "들여쓰기 정리") — 탭 단추 왼 여백(PC 6 · 폰 5)만큼 탭 줄을 왼쪽으로 · 고른 탭 바탕은 판 여백으로 나간다. */
+.scr-gc-tabs { margin-left: -6px; }
+@media (max-width: 960px) { .scr-gc-tabs { margin-left: -5px; } }   /* 그래프 종류 탭 두 단 크게(2026-10-26, 요청: "그래프 종류 탭 크기 2스텝 키우고" · caption → lead) */
 /* 한 종류만 보이기(2026-10-25 · GameCurvesModal oneKind9) — 탭이 맨 위 고르기(.scr-gc-top) 첫 줄 · 그 아래 첫 판은 위 줄·여백 없이. */
 .scr-gc-top > .scr-gc-tabs { align-self: flex-start; }
 .scr-gc-top > .scr-gc-mode { margin-top: 0; }
 .scr-gc-top + .scr-rc-chart, .scr-gc-top + .scr-rc-empty { border-top: 0; padding-top: 0; }   /* 개인/팀별 — 그래프 탭 아래(2026-10-25 · 옛 맨 위 고르기 안 .scr-gc-top .scr-rc-mode) */
 .scr-gc-flabel { flex: none; margin-right: 2px; font-size: var(--fs-caption); font-weight: 700; color: var(--muted); }   /* 고르기 줄 앞 라벨(2026-10-22) */
-.scr-gc-uteams { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 36px; }
+.scr-gc-uteams { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 36px; padding-left: 14px; }   /* 표시: 아래 팀 줄은 한 칸 들여(2026-10-26, 요청: "표시 아래 팀줄은 좀 더 들어가게") */
 .scr-gc-ugroup { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .scr-gc-ulabel { flex: none; min-width: 28px; font-size: var(--fs-caption); font-weight: 800; }
 .scr-gc-user { font-size: var(--fs-caption); color: var(--text); }
