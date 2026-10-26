@@ -3726,6 +3726,12 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 /* 게임길이 칸 — 시간은 가운데 그대로, 재생 표시는 그 아래에 띄운다(줄 높이·시간 자리를 안 바꾼다). */
 .scr-gtab-len-t { position: relative; display: inline-block; }
 .scr-gtab-link { width: 26px; height: 26px; color: var(--row-dim); }
+/* 데이터 칸 전체가 데이터창 열기(2026-10-26 · GameTable) — 칸에 손이 닿으면 칸이 옅게 밝아지고 아이콘도 짙어진다. */
+.scr-gtab-datacell { cursor: pointer; align-self: stretch; }
+@media (hover: hover) {
+  .scr-gtab-datacell:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+  .scr-gtab-datacell:hover .scr-gtab-link { color: var(--text); }
+}
 .scr-gtab-roster { flex-direction: column; gap: 3px; white-space: normal; }
 .scr-gtab-roster > .scr-gtab-unhide { margin-top: 3px; }
 .scr-gtab-roster > .scr-feed-row-cols { width: 100%; font-size: var(--fs-body); }

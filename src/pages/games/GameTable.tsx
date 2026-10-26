@@ -221,6 +221,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
     </button>
   );
   const open = () => { if (!disabled) onClick(); };
+  const openGraph = (): void => { setGraphOpen(true); void api.pingGameAction("graph", game); };
   return (
     <div className={cx("scr-feed-row-wrap", !!check && "scr-feed-row-wrap-sel", picked && "is-picked")}>
       {check}
@@ -254,11 +255,16 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           {game.hidden && <UnhideRequestButton game={game} />}
         </span>
         <span className="scr-gtab-cell scr-gtab-start">{secret ? <span className="scr-gtab-dim">-</span> : <StartMapCell game={game} memberOf={memberOf} />}</span>
-        {/* 그래프 보기 — 참가자 전원의 분당 인구 · 일꾼 수 · 자원 · 건설(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다. */}
-        <span className="scr-gtab-cell">
-          {!secret && !game.ums ? linkBtn("graph", "데이터 그래프", () => { setGraphOpen(true); void api.pingGameAction("graph", game); }, <ChartLine size={13} />)
-            : <span className="scr-gtab-dim">-</span>}
-        </span>
+        {/* 그래프 보기 — 참가자 전원의 분당 인구 · 일꾼 수 · 자원 · 건설(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다.
+            칸 전체가 누름 자리(2026-10-26, 요청: "피시에서 데이터 셀 전체가 데이터창 열기로 동작") — 아이콘 단추만 누르던 옛 꼴은 칸 가장자리를 누르면 게임 상세가 열렸다. */}
+        {!secret && !game.ums ? (
+          <span
+            className="scr-gtab-cell scr-gtab-datacell" title="데이터 그래프"
+            onClick={(e) => { e.stopPropagation(); openGraph(); }}
+          >
+            {linkBtn("graph", "데이터 그래프", openGraph, <ChartLine size={13} />)}
+          </span>
+        ) : <span className="scr-gtab-cell"><span className="scr-gtab-dim">-</span></span>}
         <span className="scr-gtab-cell scr-gtab-links">
           {!secret && game.replay && linkBtn("save", "리플레이 저장", () => { void downloadReplay(game); void api.pingGameAction("replay", game); }, <Save size={13} />)}
           {!secret && linkBtn("share", "공유", () => { void share(); }, <Share2 size={13} />)}
