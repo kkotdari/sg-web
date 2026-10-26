@@ -1,8 +1,7 @@
 import { todayStr } from "./date";
-import { parseReplayFile, ReplayParseError } from "./replayParser";
-import type { ReplayMapGrid } from "./replayParser";
+import type { ReplayMapGrid } from "scplay";
 import { matchReplayPlayerToMember } from "./replayMemberMatch";
-import { api } from "../api/client";
+import { api, ApiError } from "../api/client";
 import { isComputerSlot, newComputerSlotId } from "../constants/computerSlot";
 import { isUnregisteredSlot, newUnregisteredSlotId } from "../constants/unregisteredSlot";
 import type { ReplayUpload, GameOutcome, GameResultSlot, GameType, Race, Member } from "../types";
@@ -68,6 +67,8 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+const PARSE_LANES = 4;
+
 async function buildDraft(file: File, members: Member[]): Promise<ReplayDraft> {
   const replay: ReplayUpload = {
     originalName: file.name,
@@ -76,7 +77,8 @@ async function buildDraft(file: File, members: Member[]): Promise<ReplayDraft> {
   };
 
   try {
-    const parsed = await parseReplayFile(file);
+    /* 읽기는 서버의 분석기가 한다(2026-10-26, 요청: "등록 시 웹에서 하는 작업 거의 없게" — 옛 판은 여기서 screp 로 읽었다 · 꼴은 같다). */
+    const parsed = await api.parseReplay(file, file.name);
     const usedIds = new Set<string>();
     const assign = (players: typeof parsed.team1): { rows: GameResultSlot[]; unmatched: UnmatchedPlayer[] } => {
       const rows: GameResultSlot[] = [];
@@ -169,7 +171,8 @@ async function buildDraft(file: File, members: Member[]): Promise<ReplayDraft> {
       mapGrid: null,
       chats: [],
       chatSaver: null,
-      parseError: e instanceof ReplayParseError ? e.message : "리플레이를 분석하지 못했어요. 직접 입력해 주세요.",
+      /* 서버가 리플레이가 아니라고 하면 그 까닭(400) · 그 밖(망 · 서버 오류)은 직접 입력 안내. */
+      parseError: e instanceof ApiError && e.status === 400 ? e.message : "리플레이를 분석하지 못했어요. 직접 입력해 주세요.",
       excluded: false,
       excludeReason: null,
     };
@@ -274,7 +277,15 @@ async function applyKnownClassifications(drafts: ReplayDraft[]): Promise<ReplayD
 }
 
 export async function buildReplayDrafts(files: File[], members: Member[]): Promise<ReplayDraft[]> {
-  const built = await Promise.all(files.map((f) => buildDraft(f, members)));
+  /* 서버 읽기는 판마다 분석기 하나를 띄운다 — 한꺼번에 몰지 않게 넷씩. 차례는 고른 차례 그대로. */
+  const built: ReplayDraft[] = new Array(files.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(PARSE_LANES, files.length) }, async () => {
+    while (next < files.length) {
+      const i = next++;
+      built[i] = await buildDraft(files[i], members);
+    }
+  }));
   const preClassified = await applyKnownClassifications(built);
   const classified = preClassified.map((d) => {
     if (d.excluded || d.parseError) return d;

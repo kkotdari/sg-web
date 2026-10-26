@@ -11,7 +11,7 @@ import { showToast } from "../../components/common/Toast";
 import { useReplayMap } from "scplay";
 import { cleanMapName } from "../../utils/mapName";
 import { downloadMinimapPng, renderMinimapCanvas } from "../../utils/minimapExport";
-import type { ReplayMapGrid } from "../../utils/replayParser";
+import type { ReplayMapGrid } from "scplay";
 import { cx } from "../../utils/format";
 import type { MapCanon, MapCatalog, MapCatalogEntry } from "../../types";
 import { imgSrc } from "../../utils/imgSrc";

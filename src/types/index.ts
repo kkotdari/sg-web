@@ -1,5 +1,5 @@
 import type { TruthMix } from "../utils/statsMix";
-import type { ReplayMapGrid } from "../utils/replayParser";
+import type { ReplayMapGrid } from "scplay";
 
 export type BaseRace = "테란" | "프로토스" | "저그";
 

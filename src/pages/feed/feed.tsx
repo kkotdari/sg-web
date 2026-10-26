@@ -1,5 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { primeReplayMaps } from "scplay";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { api } from "../../api/client";
 import { useCursorPagination } from "../../hooks/useCursorPagination";
 import { primeComments } from "./Comments";
@@ -75,19 +74,8 @@ export function FeedProvider({ children, kinds }: { children: ReactNode; kinds: 
     void primeComments(feedItems.flatMap((it) => it.comments));
   }, [feedItems]);
 
-  const [mapsLoading, setMapsLoading] = useState(true);
-  const didPrimeMapsRef = useRef(false);
-  const aliveRef = useRef(true);
-  useEffect(() => {
-    aliveRef.current = true;
-    return () => { aliveRef.current = false; };
-  }, []);
-  useEffect(() => {
-    if (feedLoading || didPrimeMapsRef.current) return;
-    didPrimeMapsRef.current = true;
-    primeReplayMaps(gameResults.map((g) => g.mapHash))
-      .catch(() => {}).finally(() => { if (aliveRef.current) setMapsLoading(false); });
-  }, [feedLoading, gameResults]);
+  /* 맵 격자를 미리 받던 자리(primeReplayMaps)는 걷었다(2026-10-26) — 배치 칸 그림은 서버가 굽고 목록 응답이 크기 · 표식을 싣는다(utils/mapThumbs ★).
+     옛 판은 그 격자가 다 올 때까지 목록을 '받는 중'으로 붙들었다. */
 
   const feedAll = useMemo<FeedItem[]>(() => {
     const items: FeedItem[] = [
@@ -126,8 +114,8 @@ export function FeedProvider({ children, kinds }: { children: ReactNode; kinds: 
   }, [feedAll, feedLoading]);
 
   const data = useMemo<FeedData>(() => ({
-    feedAll, comingMatches, loading: feedLoading || mapsLoading, loadingMore, hasMore, loadMore,
-  }), [feedAll, comingMatches, feedLoading, mapsLoading, loadingMore, hasMore, loadMore]);
+    feedAll, comingMatches, loading: feedLoading, loadingMore, hasMore, loadMore,
+  }), [feedAll, comingMatches, feedLoading, loadingMore, hasMore, loadMore]);
 
   return (
     <ActionsCtx.Provider value={actions}>

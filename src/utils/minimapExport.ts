@@ -1,6 +1,4 @@
-import type { ReplayMapGrid } from "./replayParser";
-import { decodeMapTerrain, terrainFace } from "./mapTerrain";
-import { drawMapGrid } from "./mapTiles";
+import { decodeMapTerrain, drawMapGrid, terrainFace, type ReplayMapGrid } from "scplay";
 
 export const EXPORT_PX_PER_TILE = 16;
 

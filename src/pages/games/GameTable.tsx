@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
 import { ChartLine, EyeOff, Save, Share2 } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { canManageGame } from "../../utils/gameAccess";
@@ -6,8 +6,7 @@ import { shareToKakao } from "../../utils/kakaoShare";
 import { gameResultShareContent } from "./gameShare";
 import { downloadReplay } from "../../utils/replayDownload";
 import { cachedReplayMap, useReplayMap, useReplayMapTick } from "scplay";
-import { mapThumbDone, mapThumbUrl } from "../../utils/mapThumb";
-import type { ReplayMapGrid } from "../../utils/replayParser";
+import { mapThumbOf, mapThumbSrc } from "../../utils/mapThumbs";
 import { api } from "../../api/client";
 import { showToast } from "../../components/common/Toast";
 import { useLongPress } from "../../hooks/useLongPress";
@@ -44,10 +43,6 @@ import type { GameResult, Member } from "../../types";
    맵 · 게임길이 · 로스터 · 배치(아래 StartMapCell). */
 const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "게임길이", "로스터", "배치", "데이터", "도구", "추천"];
 
-/** 맵 그림(안개 없음) — 해시마다 한 번 · 일꾼이 굽는다(mapThumb.ts ★ · 같은 맵의 줄이 나눠 쓴다 · 타일당 1px). */
-const mapThumb = mapThumbUrl;
-const thumbDone = mapThumbDone;
-
 /** 배치 칩 글 — 폭 4칸(한글·한자 등 넓은 글자 2칸 · 영문·숫자 1칸) 안에서 앞부터(2026-10-26, 요청: "2글자 정도" → "영어는 4글자"). */
 function shortSpot(name: string): string {
   let out = ""; let w = 0;
@@ -68,19 +63,16 @@ const edgeSnap = (v: number) => Math.min(1, Math.max(0, (v - 0.12) / 0.76));
  *  시작 자리를 모르는 옛 판(재분석 전)은 맵 그림만 · 맵 격자가 없으면 "-". 가장자리 자리는 칩이 테두리에 거의 붙는다(edgeSnap).
  *  폰 게임 줄은 카드 안 이름 줄 왼쪽에 같은 그림(ListRow lead · 같은 날 요청: "모바일에도 · 카드 안에"). */
 export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (id: string) => Member | undefined }) {
-  const grid = useReplayMap(game.mapHash);
-  /* undefined = 굽는 중 · null = 못 구움 */
-  const [url, setUrl] = useState<string | null | undefined>(() => (game.mapHash ? thumbDone.get(game.mapHash) : undefined));
-  useEffect(() => {
-    let dead = false;
-    if (grid && game.mapHash) void mapThumb(game.mapHash, grid as ReplayMapGrid).then((u) => { if (!dead) setUrl(u); });
-    return () => { dead = true; };
-  }, [grid, game.mapHash]);
-  /* 받는 중(격자 undefined · 그림 굽는 중)엔 **같은 크기 빈 판**을 세운다 — "-" 를 세웠다가 그림이 오면 줄 키가 자랐다
-     (2026-10-26 지적: "배치맵 뜨기 전과 뜬 후 행 높이 변하는 현상"). 격자를 모르면 정사각(맵 대부분). 맵이 없다(null)고 판가름 나면 빈 칸. */
-  if (grid === null || !game.mapHash || url === null) return null;   /* 맵 없음은 칸을 비운다(같은 날 요청: "없으면 - 말고 비우기") */
-  if (!grid || !url) {
-    return <span className="scr-gtab-startmap is-pending" style={{ aspectRatio: grid ? `${grid.width} / ${grid.height}` : "1 / 1" }} aria-hidden />;
+  /* 맵 그림은 서버가 굽는다(utils/mapThumbs ★ · 2026-10-26) — 목록이 실어 온 크기 · 표식으로 고리만 붙인다.
+     목록 밖에서 연 판(외부 공유 등)은 맵 격자를 받아 그 표식을 쓴다(격자는 서버 썸네일 표식 thumb 를 함께 싣는다). */
+  const lite = mapThumbOf(game.mapHash);
+  const grid = useReplayMap(lite === undefined ? game.mapHash : null) as (ReturnType<typeof useReplayMap> & { thumb?: string | null }) | null | undefined;
+  const map = lite ?? (grid ? { width: grid.width, height: grid.height, thumb: grid.thumb ?? "" } : grid);
+  const [failed, setFailed] = useState(false);
+  if (map === null || !game.mapHash || failed) return null;   /* 맵 없음은 칸을 비운다(같은 날 요청: "없으면 - 말고 비우기") */
+  if (!map) {
+    /* 받는 중엔 **같은 크기 빈 판** — 줄 키가 그림이 온 뒤 자라지 않게(2026-10-26 지적: "배치맵 뜨기 전과 뜬 후 행 높이 변하는 현상"). */
+    return <span className="scr-gtab-startmap is-pending" style={{ aspectRatio: "1 / 1" }} aria-hidden />;
   }
   /* 팀전이면 칩 바탕을 연한 팀색으로(2026-10-26, 요청: "팀전만 너무 튀지 않게" → 후보 A "연한 팀색 바탕 · 조금씩 진하게") — 1팀 빨강 · 2팀 파랑(원작 · scplay TEAM_COLOR).
      개인전(밀리)은 흰 칩 그대로. */
@@ -90,11 +82,11 @@ export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (
     .map(({ p, t }) => {
       const name = memberOf(p.memberId)?.nickname ?? p.rawName ?? "";
       return { name, short: shortSpot(name), team: melee ? 0 : t,
-        ex: edgeSnap((p.startX as number) / grid.width), ey: edgeSnap((p.startY as number) / grid.height) };
+        ex: edgeSnap((p.startX as number) / map.width), ey: edgeSnap((p.startY as number) / map.height) };
     });
   return (
-    <span className="scr-gtab-startmap" style={{ aspectRatio: `${grid.width} / ${grid.height}` }}>
-      <img src={url} alt="" draggable={false} />
+    <span className="scr-gtab-startmap" style={{ aspectRatio: `${map.width} / ${map.height}` }}>
+      <img src={mapThumbSrc(game.mapHash, map.thumb)} alt="" draggable={false} decoding="async" onError={() => setFailed(true)} />
       {spots.map((sp, i) => (
         <i
           key={i} className={cx("scr-gtab-spot", sp.team === 1 && "is-team1", sp.team === 2 && "is-team2")} title={sp.name || undefined}
@@ -207,7 +199,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   useReplayMapTick();
   const hold = useLongPress(onLongPress);
   const secret = isSecretGame(game);
-  const map = secret ? "" : cleanMapName(game.mapCanonName ?? cachedReplayMap(game.mapHash)?.canonName ?? game.mapName);
+  const map = secret ? "" : cleanMapName(game.mapCanonName ?? mapThumbOf(game.mapHash)?.canonName ?? cachedReplayMap(game.mapHash)?.canonName ?? game.mapName);
   const kind = secret ? "-" : gameKindText(game);
   const user = useAppStore((st) => st.user);
   const canHide = !!onHide && !game.hidden && canManageGame(game, user);
