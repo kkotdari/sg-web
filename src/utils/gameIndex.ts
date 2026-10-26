@@ -1,6 +1,6 @@
 import { gameIndexOf9 } from "scplay";
 import { api } from "../api/client";
-import { isMeleeGame } from "../pages/activity/GameResultSides";
+import { isMeleeGame } from "../pages/games/GameResultSides";
 
 /* ★ 게임 색인 굽기(2026-10-20, 요청: "모든 색인은 주인, 타겟, 대상, 행위, 추가속성 · 유저별로" → "전부 재생기 함수(api 제공) · 같은 사람의 같은 사건도 시간별로 저장" ·
    먼저 "누가 그 판을 열어도 채우지 않기 · 운영자 재분석에 포함시키고 참값 제거 시 제거 안 되게") — **운영자 재분석만** 부른다. 서버의 참값 자취와 맵을 받아 재생기와 같은

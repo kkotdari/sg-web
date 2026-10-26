@@ -1,5 +1,5 @@
 import type { GameCurve,
-  Member, GameResult, ActivityComment, ActivityTargetType, RankingShift, ActivityNotice, ActivityFeedItem, ActivityFeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
+  Member, GameResult, ItemComment, CommentTargetType, RankingShift, FeedNotice, FeedEntry, FeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
   ScreenKey, AppVersion, AppVersionStatus, AppVersionInfo,
   MapCanon, MapCatalog,
   GameResultSlot, GameResultPage, GameResultStatsResponse, GameOutcome, GameType, Race, TeamRankingResponse,
@@ -7,7 +7,7 @@ import type { GameCurve,
   ReplayNameClassificationEntry, ReplayNameKind, ReplayNameMappingEntry, ReplayNameMappingKind,
   League, LeagueListItem, LeagueCreatePayload, LeagueUpdatePayload,
   LeagueMatchSide, LeagueMatchSet, PlacementRound, PlacementRoundBrief, LeaguePoolKind, LeagueTeamCompositionEntry,
-  Schedule, ScheduleWrite, Post, PostWrite,
+  Post, PostWrite,
   ExtShareList, ExtShareAddResult,
   DeletedGameResult,
   GameUnhideRequest,
@@ -28,8 +28,8 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
 type WireSlot = Omit<GameResultSlot, "rawName"> & { playerName?: string | null };
 type WireGameResult = Omit<GameResult, "team1" | "team2"> & { team1: WireSlot[]; team2: WireSlot[] };
 type WireDeletedGameResult = Omit<DeletedGameResult, "team1" | "team2"> & { team1: WireSlot[]; team2: WireSlot[] };
-type WireActivityFeedPage = Omit<ActivityFeedPage, "items"> & {
-  items: (Omit<ActivityFeedItem, "gameResults"> & { gameResults: WireGameResult[] })[];
+type WireFeedPage = Omit<FeedPage, "items"> & {
+  items: (Omit<FeedEntry, "gameResults"> & { gameResults: WireGameResult[] })[];
   /** 이 쪽 경기들의 맵 격자(2026-10-26 · 아래 feedMaps). */
   maps?: ReplayMapGrid[];
 };
@@ -639,17 +639,19 @@ export const api = {
     return request<RankingShift[]>("/api/activities/ranking-shifts");
   },
 
-  async getActivityNotice(id: number): Promise<ActivityNotice> {
-    return request<ActivityNotice>(`/api/activities/notices/${id}`);
+  async getFeedNotice(id: number): Promise<FeedNotice> {
+    return request<FeedNotice>(`/api/activities/notices/${id}`);
   },
 
-  async listActivityFeed(params: { cursor?: string; limit?: number } = {}): Promise<ActivityFeedPage> {
+  /** kinds — 화면마다 제 몫만(게임 gameResultPost · 게시판 post · 리그 화면 leagueMatch · 2026-10-26). */
+  async listFeed(params: { cursor?: string; limit?: number; kinds?: FeedEntry["kind"][] } = {}): Promise<FeedPage> {
     const q = new URLSearchParams();
     if (params.cursor) q.set("cursor", params.cursor);
     if (params.limit) q.set("limit", String(params.limit));
+    for (const k of params.kinds ?? []) q.append("kind", k);
     for (const h of feedKnown) q.append("knownMap", h);
     const qs = q.toString();
-    const { maps = [], ...page } = await request<WireActivityFeedPage>(`/api/activities${qs ? `?${qs}` : ""}`);
+    const { maps = [], ...page } = await request<WireFeedPage>(`/api/activities${qs ? `?${qs}` : ""}`);
     /* 실려 온 맵을 맡겨 두고, 이 쪽에서 물었는데 안 온 해시는 '없음'으로 적는다(feedMaps ★). */
     for (const m of maps) { feedMaps.set(m.hash, m); feedKnown.add(m.hash); }
     for (const it of page.items) {
@@ -667,34 +669,14 @@ export const api = {
     };
   },
 
-  async getActivityItem(kind: string, id: number): Promise<ActivityFeedItem> {
-    const it = await request<WireActivityFeedPage["items"][number]>(
+  async getFeedItem(kind: string, id: number): Promise<FeedEntry> {
+    const it = await request<WireFeedPage["items"][number]>(
       `/api/activities/item?kind=${encodeURIComponent(kind)}&id=${id}`,
     );
     return { ...it, gameResults: (it.gameResults ?? []).map(gameResultFromWire) };
   },
 
-  async listSchedules(): Promise<Schedule[]> {
-    const res = await request<{ items: Schedule[] }>("/api/schedules");
-    return res.items;
-  },
-  async getSchedule(id: number): Promise<Schedule> {
-    return request<Schedule>(`/api/schedules/${id}`);
-  },
-  async createSchedule(payload: ScheduleWrite): Promise<Schedule> {
-    return request<Schedule>("/api/schedules", { method: "POST", body: JSON.stringify(payload) });
-  },
-  async updateSchedule(id: number, payload: ScheduleWrite): Promise<Schedule> {
-    return request<Schedule>(`/api/schedules/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
-  },
-  async attendSchedule(id: number, response: "going" | "notGoing" | null): Promise<Schedule> {
-    return request<Schedule>(`/api/schedules/${id}/attend`, {
-      method: "POST", body: JSON.stringify({ response }),
-    });
-  },
-  async deleteSchedule(id: number): Promise<void> {
-    await request<void>(`/api/schedules/${id}`, { method: "DELETE" });
-  },
+
 
   /* 자유게시판(2026-10-26) — 고치기·지우기는 쓴 사람만(서버가 가른다) · 공지는 운영자만. */
   async getPost(id: number): Promise<Post> {
@@ -710,26 +692,26 @@ export const api = {
     await request<void>(`/api/posts/${id}`, { method: "DELETE" });
   },
 
-  async listActivityComments(targetType: ActivityTargetType, targetId: number): Promise<ActivityComment[]> {
-    return request<ActivityComment[]>(`/api/activities/comments?targetType=${targetType}&targetId=${targetId}`);
+  async listComments(targetType: CommentTargetType, targetId: number): Promise<ItemComment[]> {
+    return request<ItemComment[]>(`/api/activities/comments?targetType=${targetType}&targetId=${targetId}`);
   },
-  async createActivityComment(
-    targetType: ActivityTargetType, targetId: number, text: string, targetMemberIds: string[],
-  ): Promise<ActivityComment> {
-    return request<ActivityComment>("/api/activities/comments", {
+  async createComment(
+    targetType: CommentTargetType, targetId: number, text: string, targetMemberIds: string[],
+  ): Promise<ItemComment> {
+    return request<ItemComment>("/api/activities/comments", {
       method: "POST",
       body: JSON.stringify({ targetType, targetId, text, targetMemberIds }),
     });
   },
-  async updateActivityComment(
+  async updateComment(
     commentId: number, text: string, targetMemberIds: string[],
-  ): Promise<ActivityComment> {
-    return request<ActivityComment>(`/api/activities/comments/${commentId}`, {
+  ): Promise<ItemComment> {
+    return request<ItemComment>(`/api/activities/comments/${commentId}`, {
       method: "PATCH",
       body: JSON.stringify({ text, targetMemberIds }),
     });
   },
-  async deleteActivityComment(commentId: number): Promise<void> {
+  async deleteComment(commentId: number): Promise<void> {
     await request<void>(`/api/activities/comments/${commentId}`, { method: "DELETE" });
   },
 

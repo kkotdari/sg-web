@@ -1842,11 +1842,11 @@ export default function ScheduleBlocks({
       {canEdit && slot !== null && createPortal(
         <>
           <div
-            className="scr-activity-add-backdrop scr-menu-pop-backdrop"
+            className="scr-feed-add-backdrop scr-menu-pop-backdrop"
             onPointerDown={(e) => { e.preventDefault(); setSlot(null); }} aria-hidden
           />
           <div
-            className="scr-menu-pop-drop scr-activity-post-menu-drop scr-scroll scr-sb-slot-menu" ref={slotDrop}
+            className="scr-menu-pop-drop scr-feed-post-menu-drop scr-scroll scr-sb-slot-menu" ref={slotDrop}
             role="menu" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.preventDefault()}
           >
             {SLASH_OPTS.map((o, k) => (

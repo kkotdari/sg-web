@@ -246,11 +246,11 @@ export default function PlacementScreen() {
 
       <div className="scr-pl-bar">
         {rounds && rounds.length > 0 && (
-          <div className="scr-activity-game-tabs" role="tablist" aria-label="회차">
+          <div className="scr-feed-game-tabs" role="tablist" aria-label="회차">
             {[...rounds].reverse().map((r) => (
               <button
                 key={r.id} type="button" role="tab" aria-selected={r.id === shownId}
-                className={cx("scr-activity-game-tab", r.id === shownId && "is-on")}
+                className={cx("scr-feed-game-tab", r.id === shownId && "is-on")}
                 onClick={() => open(r.id)}
               >
                 {r.name}

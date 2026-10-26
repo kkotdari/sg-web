@@ -14,7 +14,7 @@ import { RowCheck, SelectionBar } from "../components/common/Selection";
 import { useSelection } from "../hooks/useSelection";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { batchSummary, runBatch } from "../utils/batch";
-import { GameRowNames, GameRowStatus, ListRow } from "../pages/activity/GameRow";
+import { GameRowNames, GameRowStatus, ListRow } from "../pages/games/GameRow";
 import { gamePlayable } from "../utils/gamePlayable";
 import { useAppStore } from "../store/appStore";
 import type { DeletedGameResult } from "../types";
@@ -156,7 +156,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                   </button>
                 </SelectionBar>
               )}
-              <div className="scr-trash-list scr-activity-rows">
+              <div className="scr-trash-list scr-feed-rows">
                 {filtered.map((g) => {
                   const busy = busyId === g.id;
                   const key = String(g.id);
@@ -170,7 +170,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
                       {/* 줄 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "삭제 게임 목록도 … 모바일 화면의 게임목록처럼") — 지운 사람·때는 머리 줄. */}
                       <div className="scr-trash-main scr-trash-main-gm">
                         <ListRow
-                          className="scr-activity-row-game scr-gm"
+                          className="scr-feed-row-game scr-gm"
                           onClick={() => { if (isMobile && sel.mode) sel.toggle(key); }}
                           onLongPress={isMobile ? () => sel.toggle(key) : undefined}
                           above={(
@@ -221,7 +221,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
             ? `선택한 ${bulk.games.length}판을 복원할까요?`
             : `선택한 ${bulk.games.length}판을 완전히 지울까요?`}
           message={bulk.kind === "restore"
-            ? "목록·통계·활동에 다시 나타나고, 그 뒤 같은 리플레이가 올라오면 그 게임에 갱신돼요."
+            ? "목록·통계에 다시 나타나고, 그 뒤 같은 리플레이가 올라오면 그 게임에 갱신돼요."
             : "리플레이 파일까지 지워지고 되돌릴 수 없어요. 그 뒤에 같은 리플레이가 올라오면 새 게임으로 등록돼요."}
           confirmLabel={bulkProgress
             ? `${bulk.kind === "restore" ? "복원" : "지우는"} 중... ${bulkProgress.done}/${bulkProgress.total}`
@@ -234,7 +234,7 @@ export default function DeletedGamesModal({ onClose }: { onClose: () => void }) 
       {confirm && confirm.kind === "restore" && (
         <ConfirmDialog
           title={`${confirm.game.matchNo} 게임을 복원할까요?`}
-          message="목록·통계·활동에 다시 나타나고, 그 뒤 같은 리플레이가 올라오면 이 게임에 갱신돼요."
+          message="목록·통계에 다시 나타나고, 그 뒤 같은 리플레이가 올라오면 이 게임에 갱신돼요."
           confirmLabel={busyId === confirm.game.id ? "복원 중..." : "복원"}
           error={confirmErr}
           onConfirm={() => { void run("restore", confirm.game); }}

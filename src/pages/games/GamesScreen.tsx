@@ -1,18 +1,15 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { CalendarPlus, PenLine, SquarePen, Upload } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { PenLine, Upload } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import ReplayReviewModal from "../../modals/ReplayReviewModal";
-import ScheduleFormModal from "../../modals/ScheduleFormModal";
-import PostFormModal from "../../modals/PostFormModal";
 import GameResultManualModal from "../../modals/GameResultManualModal";
-import { focusFirstLineOnOpen } from "./BlockDocCard";
 import { SCENE_LINK_KEYS9 } from "scplay";
 import { useAppStore } from "../../store/appStore";
 import { isAdminRole } from "../../constants/roles";
 import { cx } from "../../utils/format";
 import { api } from "../../api/client";
-import { navigateTo, parseRoute, pathOf, rememberListScroll, type ActivityGroupKey, type Route } from "../../utils/route";
+import { gamePath, navigateTo, parseRoute, pathOf, rememberListScroll, type Route } from "../../utils/route";
 import { showAlert } from "../../components/common/AlertDialog";
 import { showToast } from "../../components/common/Toast";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -23,66 +20,49 @@ import { batchSummary, runBatch } from "../../utils/batch";
 import { canManageGame, isSecretGame } from "../../utils/gameAccess";
 import { buildReplayDrafts, type ReplayDraft } from "../../utils/replayDraft";
 import { hasAppUpdatePreloadErrorOccurred } from "../../utils/appUpdate";
-import type { LeagueMatchActivity } from "../../types";
-import ActivityHome from "./ActivityHome";
-import ActivityGroupPage, { type GameBulkAll } from "./ActivityGroupPage";
-import ActivityDetailPage from "./ActivityDetailPage";
+import GameListPage, { type GameBulkAll } from "./GameListPage";
 import GameDetailPage from "./GameDetailPage";
-import type { RowAct, RowView } from "./ActivityRow";
-import { FeedProvider, useFeedActions, useRecentLeague } from "./activityFeed";
+import type { RowAct, RowView } from "../feed/FeedRow";
+import { FeedProvider, useFeedActions, useRecentLeague } from "../feed/feed";
 import {
-  GROUP_DEFS, GROUP_ITEM_KIND, GROUP_SCREEN_CODE, HIDE_FORMS, bulkDeleteMessageOf, deletableOf,
-  detailGroupOf, detailIdOf, leagueMatchItem, postItem, scheduleItem, type DisplayItem, type GameTab,
-} from "./activityItems";
+  HIDE_FORMS, bulkDeleteMessageOf, deletableOf, type DisplayItem, type GameTab,
+} from "../feed/feedItems";
 
 export { GameResultCard } from "./GameResultCard";
-export { gameResultItem } from "./activityItems";
+export { gameResultItem } from "../feed/feedItems";
 
 const MAX_REPLAY_FILES = 20;
 
-/* ★ 활동 화면 = **주소로 고르는 라우터**(2026-10-19, 요청: "활동과 일정 너나와 리그 게임 목록과 상세등 모두 컴포넌트 분리").
-   주소(/ · /schedules · /schedules/7 · /games/123 …)가 곧 화면이고, 화면마다 제 컴포넌트다 — 홈(ActivityHome) · 묶음 목록(ActivityGroupPage) ·
-   상세(ActivityDetailPage: 일정·리그) · 게임 상세(GameDetailPage). 피드(목록 데이터)는 FeedProvider 가 들고 목록 화면만 구독한다 —
-   상세는 제 항목을 제 상태로 들어, 목록이 바뀌어도(다시 받기·다른 카드 저장) 상세는 다시 그려지지 않는다. 라우터는 피드를 구독하지 않는다. */
+/* ★ 게임 화면 = **주소로 고르는 라우터**(2026-10-19 화면을 컴포넌트로 나눔 → 2026-10-26, 요청: "활동 화면 제거 · 게임 게시판 두개의
+   메뉴로 탄생" · "액티비티 다 제거 · 보드와 게임은 자체 컴포넌트로 분리"). /games 목록(GameListPage) · /games/<게임번호> 상세(GameDetailPage).
+   피드(목록 데이터)는 FeedProvider 가 게임 몫만 들고 목록만 구독한다 — 상세는 제 항목을 제 상태로 든다. 게시판은 BoardScreen. */
 
 type View =
-  | { kind: "home" }
-  | { kind: "group"; key: ActivityGroupKey }
-  | { kind: "detail"; group: ActivityGroupKey; id: number; path: string }
+  | { kind: "list" }
   | { kind: "game"; idText: string; path: string };
 
-const isListGroup = (g: ActivityGroupKey | null): g is ActivityGroupKey =>
-  !!g && g !== "league" && GROUP_DEFS.some((d) => d.key === g);
-
 function viewOf(r: Route, path: string, miss: string | null): View {
-  if (r.item !== null && r.group && path !== miss) {
-    if (r.group === "gameResult") return { kind: "game", idText: r.item, path };
-    const id = Number(r.item);
-    if (r.group in GROUP_ITEM_KIND && Number.isFinite(id)) return { kind: "detail", group: r.group, id, path };
-  }
-  return isListGroup(r.group) ? { kind: "group", key: r.group } : { kind: "home" };
+  return r.item !== null && path !== miss ? { kind: "game", idText: r.item, path } : { kind: "list" };
 }
 
-export default function ActivityScreen() {
+export default function GamesScreen() {
   return (
-    <FeedProvider>
-      <ActivityRouter />
+    <FeedProvider kinds={["gameResultPost"]}>
+      <GamesRouter />
     </FeedProvider>
   );
 }
 
-function ActivityRouter() {
+function GamesRouter() {
   const feed = useFeedActions();
   const [route, setRoute] = useState<{ r: Route; path: string }>(() => ({ r: parseRoute(), path: window.location.pathname }));
   /** 서버에 없던 상세 주소 — 그 주소에선 목록을 그린다. */
   const [miss, setMiss] = useState<string | null>(null);
   const view = useMemo(() => viewOf(route.r, route.path, miss), [route, miss]);
-  const viewKey = view.kind === "home" ? "home" : view.kind === "group" ? `g:${view.key}` : view.path;
-  const groupKey = view.kind === "group" ? view.key : null;
+  const viewKey = view.kind === "list" ? "list" : view.path;
+  const listPath = pathOf({ screen: "games" });
 
-  const pushedGroupRef = useRef(false);
   const pushedItemRef = useRef(false);
-  const homeScrollRef = useRef(0);
   const sync = useCallback(() => {
     setMiss(null);
     setRoute({ r: parseRoute(), path: window.location.pathname });
@@ -97,59 +77,23 @@ function ActivityRouter() {
     return params.toString();
   };
 
-  const openGroup = (key: ActivityGroupKey): void => {
-    homeScrollRef.current = window.scrollY;
-    // 게임 탭(tab)은 게임 전체 보기에만 넘긴다(2026-10-20 · App.tsx 같은 요청) — 일정 묶음엔 쓸모가 없다.
-    go(pathOf({ screen: "activity", group: key }), { search: linkParams(key === "gameResult" ? ["u", "q"] : ["u", "q", "tab"]) });
-    pushedGroupRef.current = true;
-    void api.pingAccess(GROUP_SCREEN_CODE[key]);
-  };
-  const closeGroup = (): void => {
-    if (pushedGroupRef.current) { window.history.back(); return; }
-    go("/", { replace: true, search: window.location.search });
-  };
   const openItem = (item: DisplayItem): void => {
-    rememberListScroll();   // 뒤로 오면 목록이 이 자리로(ActivityGroupPage · route.ts)
+    rememberListScroll();   // 뒤로 오면 목록이 이 자리로(GameListPage · route.ts)
     // 게임 목록의 공방/내전 탭은 목록 주소의 것 — 상세 주소엔 안 싣는다(뒤로 가면 목록 주소에서 되살아난다)
     const search = linkParams([...SCENE_LINK_KEYS9, "u", "q", "f", "tab"]);
-    let path: string;
-    if (item.kind === "gameResult") {
-      path = pathOf({ screen: "activity", group: "gameResult", item: item.gameResult.matchNo || String(item.gameResult.id) });
-    } else {
-      const id = detailIdOf(item);
-      const group = detailGroupOf(item);
-      if (id === null || group === null) return;
-      path = pathOf({ screen: "activity", group, item: String(id) });
-    }
-    go(path, { search });
+    if (item.kind !== "gameResult") return;
+    go(gamePath(item.gameResult.matchNo || String(item.gameResult.id)), { search });
     pushedItemRef.current = true;
   };
-  /** 카드 안에서 상세를 닫을 때(GameDetailCloseContext). */
+  /** 상세를 닫을 때(게임으로 가기 · GameDetailCloseContext) — 들어온 목록으로. */
   const closeDetail = (): void => {
     if (pushedItemRef.current) { window.history.back(); return; }
-    go(pathOf({ screen: "activity", group: parseRoute().group }), { replace: true, search: window.location.search });
+    go(listPath, { replace: true, search: linkParams([...SCENE_LINK_KEYS9]) });
   };
-  const closeGame = (): void => {
-    if (pushedItemRef.current) { window.history.back(); return; }
-    go("/games", { replace: true, search: linkParams([...SCENE_LINK_KEYS9]) });
-  };
-  /** 상세 머리 줄의 뒤로 — 그 묶음 목록으로(리그는 홈으로). */
-  const gotoGroupList = (key: ActivityGroupKey): void => {
-    if (pushedItemRef.current) {
-      pushedItemRef.current = false;
-      window.history.back();
-      return;
-    }
-    const search = linkParams([...SCENE_LINK_KEYS9]);
-    if (key === "league") { go(pathOf({ screen: "activity" }), { replace: true, search }); return; }
-    go(pathOf({ screen: "activity", group: key }), { replace: true, search });
-    if (groupKey !== key) void api.pingAccess(GROUP_SCREEN_CODE[key]);
-  };
-  const gameGone = (): void => go("/games", { replace: true });
+  const gameGone = (): void => go(listPath, { replace: true });
 
   useEffect(() => {
     const onPop = (): void => {
-      pushedGroupRef.current = false;
       pushedItemRef.current = false;
       sync();
     };
@@ -161,32 +105,16 @@ function ActivityRouter() {
       window.removeEventListener("scr-screen-nav", onNav);
     };
   }, [sync]);
-  useEffect(() => {
-    if (groupKey) void api.pingAccess(GROUP_SCREEN_CODE[groupKey]);
-  }, []);
-  useLayoutEffect(() => {
-    if (view.kind === "home" && homeScrollRef.current > 0) {
-      window.scrollTo({ top: homeScrollRef.current, behavior: "instant" });
-    }
-  }, [viewKey]);
 
   /* 화면마다 넘기는 손잡이는 늘 같은 함수다(아래 nav) — 상세·목록이 memo 라 라우터가 다시 그려져도 따라 그리지 않는다. */
-  const navRef = useRef({ openGroup, closeGroup, openItem, closeDetail, closeGame, gotoGroupList, gameGone, setMiss, view });
-  navRef.current = { openGroup, closeGroup, openItem, closeDetail, closeGame, gotoGroupList, gameGone, setMiss, view };
+  const navRef = useRef({ openItem, closeDetail, gameGone, setMiss, view });
+  navRef.current = { openItem, closeDetail, gameGone, setMiss, view };
   const nav = useMemo(() => ({
-    openGroup: (key: ActivityGroupKey) => navRef.current.openGroup(key),
-    closeGroup: () => navRef.current.closeGroup(),
-    openLeague: (m: LeagueMatchActivity) => navRef.current.openItem(leagueMatchItem(m)),
     closeDetail: () => navRef.current.closeDetail(),
-    closeGame: () => navRef.current.closeGame(),
-    backFromDetail: () => {
-      const v = navRef.current.view;
-      navRef.current.gotoGroupList(v.kind === "detail" ? v.group : "gameResult");
-    },
     gameGone: () => navRef.current.gameGone(),
     miss: () => {
       const v = navRef.current.view;
-      if (v.kind === "detail" || v.kind === "game") navRef.current.setMiss(v.path);
+      if (v.kind === "game") navRef.current.setMiss(v.path);
     },
   }), []);
 
@@ -196,8 +124,7 @@ function ActivityRouter() {
   const memberOf = useAppStore((s) => s.memberOf);
   const members = useAppStore((s) => s.members);
   const sel = useSelection();
-  /* 자유게시판엔 고르기가 없다 — 글은 쓴 사람만 지운다(묶어 지우기 대상이 아니다). */
-  const selection = user && groupKey && groupKey !== "board" ? sel : null;
+  const selection = user && view.kind === "list" ? sel : null;
   const selClear = sel.clear;   // 일괄 지우기·숨기기 뒤 — 고른 것만 풀고 선택 모드는 둔다
   const selExit = sel.exit;
   useEffect(() => { selExit(); }, [selExit, viewKey]);
@@ -212,7 +139,7 @@ function ActivityRouter() {
   rowAct.current = { open: openItem, toggle: sel.toggle, setMany: sel.setMany, hide: hideOne };
 
   /* ★ 게임 탭 기본값은 **내전**, 전날 리그 판이 등록됐을 때만 **리그**(2026-10-21, 요청: "활동이랑 게임에서 기본탭 내전으로 하고 리그는 전날경기 등록됐을때만" ·
-     한때 2026-10-19 "기본 리그 · 일주일 안에 리그 판이 없으면 내전"). 활동 홈과 게임 목록이 이 한 값을 같이 쓴다.
+     한때 2026-10-19 "기본 리그 · 일주일 안에 리그 판이 없으면 내전").
      주소에 탭이 없을 때만 이 셈을 타고, 사람이 고른 탭은 주소(tab=league|clan|pub|fame)에 남아 그대로 선다. */
   const recentLeague = useRecentLeague();
   const [gameTabRaw, setGameTabRaw] = useUrlState("tab");
@@ -241,13 +168,7 @@ function ActivityRouter() {
   const [parsingReplays, setParsingReplays] = useState(false);
   const [reviewDrafts, setReviewDrafts] = useState<ReplayDraft[] | null>(null);
   const pendingNoticeRef = useRef<{ text: string; kind: "success" | "error" } | null>(null);
-  const [scheduleFormOpen, setScheduleFormOpen] = useState(false);
-  const [postFormOpen, setPostFormOpen] = useState(false);
-  const [error, setError] = useState("");
   /* 게임 목록의 등록은 메뉴(리플레이 등록 · 수기 입력 · 2026-10-23, 요청: "경기결과 수기 입력 폼 필요") — 옛: 곧바로 리플레이 고르기. */
-  const directAdd: (() => void) | null =
-    groupKey === "schedule" ? () => setScheduleFormOpen(true)
-      : groupKey === "board" ? () => setPostFormOpen(true) : null;
   const [manualOpen, setManualOpen] = useState(false);
 
   const handleReplayFilesChosen = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -256,13 +177,12 @@ function ActivityRouter() {
     if (picked.length === 0) return;
     const chosen = picked.filter((f) => f.name.toLowerCase().endsWith(".rep"));
     if (chosen.length === 0) {
-      setError("리플레이(.rep) 파일이 아니에요 — .rep 파일을 골라 주세요.");
+      showAlert("리플레이(.rep) 파일이 아니에요 — .rep 파일을 골라 주세요.");
       return;
     }
     const truncated = chosen.length > MAX_REPLAY_FILES;
     const batch = chosen.slice(0, MAX_REPLAY_FILES);
     setParsingReplays(true);
-    setError("");
     try {
       const [drafts] = await Promise.all([
         buildReplayDrafts(batch, members),
@@ -297,7 +217,7 @@ function ActivityRouter() {
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const [bulkErr, setBulkErr] = useState<string | null>(null);
   const [groupRefreshKey, setGroupRefreshKey] = useState(0);
-  /* 게임 목록 '전체 선택' 뒤의 명령은 한 번에 서버로(api.bulkGames · all = 목록 조건 · exclude = 받은 판 중 안 고른 것 — ActivityGroupPage ★). */
+  /* 게임 목록 '전체 선택' 뒤의 명령은 한 번에 서버로(api.bulkGames · all = 목록 조건 · exclude = 받은 판 중 안 고른 것 — GameListPage ★). */
   const [bulkAll, setBulkAll] = useState<GameBulkAll | null>(null);
   const runBulkAll = async (action: "delete" | "hide", all: GameBulkAll): Promise<boolean> => {
     const verb = action === "delete" ? "삭제" : "";
@@ -337,16 +257,13 @@ function ActivityRouter() {
     setBulkProgress({ done: 0, total: items.length });
     const { done, failed } = await runBatch(items, async (it) => {
       if (it.kind === "gameResult") await api.deleteGameResult(it.gameResult.id);
-      else if (it.kind === "schedule") await api.deleteSchedule(it.schedule.id);
     }, { onProgress: (n) => setBulkProgress({ done: n, total: items.length }) });
     if (done.length > 0) {
       const gameIds = new Set(done.flatMap((it) => (it.kind === "gameResult" ? [it.gameResult.id] : [])));
-      const scheduleIds = new Set(done.flatMap((it) => (it.kind === "schedule" ? [it.schedule.id] : [])));
       feed.patch((prev) => prev
         .map((it) => (it.gameResults.some((g) => gameIds.has(g.id))
           ? { ...it, gameResults: it.gameResults.filter((g) => !gameIds.has(g.id)) }
           : it))
-        .filter((it) => !(it.schedule && scheduleIds.has(it.schedule.id)))
         .filter((it) => it.kind !== "gameResultPost" || it.gameResults.length > 0));
       setGroupRefreshKey((k) => k + 1);
       feed.reload();
@@ -390,31 +307,23 @@ function ActivityRouter() {
     showToast(batchSummary("", done.length, failed.length, "개", HIDE_FORMS), { kind: failed.length > 0 ? "warn" : "ok" });
   };
 
-  const listShown = view.kind === "home" || view.kind === "group";
+  const listShown = view.kind === "list";
 
   return (
-    <div className="scr-screen scr-activity-screen">
+    <div className="scr-screen scr-feed-screen">
       {view.kind === "game" && (
         <GameDetailPage
           key={view.path} idText={view.idText}
-          onBack={nav.backFromDetail} onClose={nav.closeGame} onGone={nav.gameGone} onMiss={nav.miss}
+          onBack={nav.closeDetail} onClose={nav.closeDetail} onGone={nav.gameGone} onMiss={nav.miss}
         />
       )}
-      {view.kind === "detail" && (
-        <ActivityDetailPage
-          key={view.path} group={view.group} id={view.id}
-          onBack={nav.backFromDetail} onClose={nav.closeDetail} onMiss={nav.miss}
-        />
-      )}
-      {view.kind === "group" && (
-        <ActivityGroupPage
-          groupKey={view.key}
+      {view.kind === "list" && (
+        <GameListPage
           members={members}
           view={rowView}
           act={rowAct}
           gameTab={gameTab}
           onGameTabChange={setGameTab}
-          onBack={nav.closeGroup}
           selection={selection}
           canPick={canPick}
           onDeleteItems={askBulkDelete}
@@ -422,16 +331,16 @@ function ActivityRouter() {
           refreshKey={groupRefreshKey}
         />
       )}
-      {listShown && (view.kind === "home" || directAdd || groupKey === "gameResult") && (
+      {listShown && (
       <div className={cx(
-        "scr-activity-add-fab-wrap scr-activity-add-wrap",
-        fabHidden && "scr-activity-add-fab-wrap-hidden",
+        "scr-feed-add-fab-wrap scr-feed-add-wrap",
+        fabHidden && "scr-feed-add-fab-wrap-hidden",
       )}>
         {/* ★ 선택 중에는 **선택 끝내기**(2026-10-13, 요청: "선택 중에 등록 버튼을 선택 끝내기로 변경") — 폰 선택 모드(sel.mode)에서 등록 대신 선택 모드를 닫는다. 둥근 단추라 두 줄. */}
         {sel.mode ? (
           <button
             type="button" key="fab-exit"
-            className={cx("scr-activity-add-fab scr-circle-btn scr-activity-add-fab-exit", fabSwap && "scr-fab-swap")}
+            className={cx("scr-feed-add-fab scr-circle-btn scr-feed-add-fab-exit", fabSwap && "scr-fab-swap")}
             onClick={() => { setAddMenuOpen(false); sel.exit(); }}
           >
             <span>선택<br />끝내기</span>
@@ -439,17 +348,17 @@ function ActivityRouter() {
         ) : (
           <button
             type="button" key="fab-add"
-            className={cx("scr-activity-add-fab scr-circle-btn", fabSwap && "scr-fab-swap")}
-            onClick={directAdd ?? (() => setAddMenuOpen((v) => !v))}
-            aria-expanded={directAdd ? undefined : addMenuOpen}
+            className={cx("scr-feed-add-fab scr-circle-btn", fabSwap && "scr-fab-swap")}
+            onClick={() => setAddMenuOpen((v) => !v)}
+            aria-expanded={addMenuOpen}
           >
             {parsingReplays ? <Spinner size={18} /> : "등록"}
           </button>
         )}
-        {(view.kind === "home" || groupKey === "gameResult") && addMenuOpen && !sel.mode && (
+        {addMenuOpen && !sel.mode && (
           <>
-            <div className="scr-activity-add-backdrop" onClick={() => setAddMenuOpen(false)} aria-hidden />
-            <div className="scr-activity-add-menu scr-activity-add-menu-up" role="menu">
+            <div className="scr-feed-add-backdrop" onClick={() => setAddMenuOpen(false)} aria-hidden />
+            <div className="scr-feed-add-menu scr-feed-add-menu-up" role="menu">
               <button
                 type="button" role="menuitem"
                 onClick={() => { setAddMenuOpen(false); replayInputRef.current?.click(); }}
@@ -462,22 +371,6 @@ function ActivityRouter() {
               >
                 <PenLine size={14} aria-hidden /> 게임결과 수기 입력
               </button>
-              {view.kind === "home" && (
-                <button
-                  type="button" role="menuitem"
-                  onClick={() => { setAddMenuOpen(false); setScheduleFormOpen(true); }}
-                >
-                  <CalendarPlus size={14} aria-hidden /> 일정 등록
-                </button>
-              )}
-              {view.kind === "home" && (
-                <button
-                  type="button" role="menuitem"
-                  onClick={() => { setAddMenuOpen(false); setPostFormOpen(true); }}
-                >
-                  <SquarePen size={14} aria-hidden /> 자유게시판 글쓰기
-                </button>
-              )}
             </div>
           </>
         )}
@@ -487,14 +380,6 @@ function ActivityRouter() {
         ref={replayInputRef} type="file" accept=".rep" multiple hidden
         onChange={handleReplayFilesChosen}
       />
-
-      {view.kind === "home" && (
-        <ActivityHome
-          gameTab={gameTab} onGameTab={setGameTab} error={error}
-          onOpenGroup={nav.openGroup} onOpenLeague={nav.openLeague}
-          view={rowView} act={rowAct}
-        />
-      )}
 
       {bulkConfirm && (
         <ConfirmDialog
@@ -523,24 +408,6 @@ function ActivityRouter() {
         <GameResultManualModal
           onClose={() => setManualOpen(false)}
           onSaved={() => { setGroupRefreshKey((k) => k + 1); feed.reload(); showToast("게임결과를 등록했어요.", { kind: "ok" }); }}
-        />
-      )}
-
-      {scheduleFormOpen && (
-        <ScheduleFormModal
-          initial={null}
-          onClose={() => setScheduleFormOpen(false)}
-          /* 등록하면 그 일정의 상세(늘 편집 상태)로 바로 간다(2026-10-20, 요청: "등록하면 바로 상세 편집으로 · 지금은 목록이 나오네"). */
-          onSaved={(s) => { feed.upsertSchedule(s); focusFirstLineOnOpen("schedule", s.id); openItem(scheduleItem(s)); }}
-        />
-      )}
-
-      {postFormOpen && (
-        <PostFormModal
-          admin={isAdmin}
-          onClose={() => setPostFormOpen(false)}
-          /* 일정처럼 등록하면 그 글의 상세(쓴 사람에겐 늘 편집 상태)로 바로 가 첫 줄에 커서를 둔다. */
-          onSaved={(p) => { feed.upsertPost(p); focusFirstLineOnOpen("post", p.id); openItem(postItem(p)); }}
         />
       )}
 

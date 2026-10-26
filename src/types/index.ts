@@ -135,12 +135,12 @@ export interface GameResultAuthor {
   nickname: string;
 }
 
-export interface ActivityCommentMention {
+export interface ItemCommentMention {
   memberId: string;
   nickname: string;
 }
 
-export interface ActivityCommentAuthor {
+export interface ItemCommentAuthor {
   memberId: string;
   nickname: string;
   avatar: string | null;
@@ -166,18 +166,18 @@ export interface RankingShift {
   sections: RankingShiftSection[];
 }
 
-export type ActivityTargetType =
+export type CommentTargetType =
   | "gameResult" | "rankingShift" | "leagueMatch" | "schedule" | "notice" | "post";
-export interface ActivityComment {
+export interface ItemComment {
   id: number;
-  targetType: ActivityTargetType;
+  targetType: CommentTargetType;
   targetId: number;
   text: string;
-  author: ActivityCommentAuthor;
+  author: ItemCommentAuthor;
   createdAt: string;
   updatedAt: string;
   canEdit: boolean;
-  mentions: ActivityCommentMention[];
+  mentions: ItemCommentMention[];
 }
 
 
@@ -380,9 +380,10 @@ export interface TeamRankingResponse {
   teams: TeamRankEntry[];
 }
 
-export type ScreenKey = "activity" | "ladder" | "clan" | "members" | "leagues" | "minimaps" | "control"
+/* 옛 "activity"(활동) 화면은 게임 · 게시판 두 화면이 됐다(2026-10-26, 요청: "활동 화면 제거 · 게임 게시판 두개의 메뉴로"). */
+export type ScreenKey = "games" | "board" | "ladder" | "clan" | "members" | "leagues" | "minimaps" | "control"
   | "catalog" | "explore" | "placement";
-export const SCREEN_KEYS: ScreenKey[] = ["activity", "ladder", "clan", "members",
+export const SCREEN_KEYS: ScreenKey[] = ["games", "board", "ladder", "clan", "members",
   "leagues", "minimaps", "control", "catalog", "explore", "placement"];
 
 export interface ExtShareList {
@@ -595,7 +596,7 @@ export interface LeagueMatchTeam {
   members: LeagueMatchMember[];
 }
 
-export interface LeagueMatchActivity {
+export interface LeagueMatchEntry {
   id: number;
   leagueId: number;
   leagueName: string;
@@ -614,13 +615,6 @@ export interface ScheduleFile {
   name: string;
   url: string;
   size: number;
-}
-
-export interface ScheduleAttendee {
-  memberId: string;
-  nickname: string;
-  avatar: string | null;
-  response: "going" | "notGoing";
 }
 
 export interface SchedulePhoto {
@@ -653,21 +647,6 @@ export interface ScheduleBlock {
 /** 사진을 담는 요소 — 사진 목록(photos · 격자)과 사진 슬라이드(slides · 큰 액자)(2026-10-22, 요청: "요소를 사진 목록과 사진 슬라이드로 나눔"). */
 export const isPhotoSet = (b: { kind: ScheduleBlock["kind"] }): b is { kind: "photos" | "slides" } => b.kind === "photos" || b.kind === "slides";
 
-export interface Schedule {
-  id: number;
-  title: string;
-  scheduledDate: string;
-  scheduledTime: string | null;
-  content: string;
-  linkUrl: string;
-  files: ScheduleFile[];
-  blocks: ScheduleBlock[];
-  attendees: ScheduleAttendee[];
-  createdBy: { id: string; nickname: string; avatar: string | null };
-  createdAt: string;
-  updatedAt: string;
-}
-
 export type ScheduleBlockWrite = (
   | { kind: "text"; id?: string; title: string; text: string }
   | { kind: "list"; id?: string; title: string; items: string[]; levels: number[] }
@@ -676,19 +655,9 @@ export type ScheduleBlockWrite = (
   | { kind: "photo" | "file"; file: { name: string; data: string } }
 ) & { collapsed?: boolean; indent?: number };
 
-export interface ScheduleWrite {
-  title: string;
-  scheduledDate: string;
-  scheduledTime: string | null;
-  expectedUpdatedAt?: string;
-  blocks?: ScheduleBlockWrite[];
-  content?: string;
-  linkUrl?: string;
-  files?: (ScheduleFile | { name: string; data: string })[];
-}
-
-/** 자유게시판 꼭지 — 잡담 · 질문 · 공략(2026-10-26, 요청: "꼭지(분류) 고를수있음 잡담 질문 공략"). 공지는 꼭지가 아니라 따로 붙는 속성(notice). */
-export type PostCategory = "chat" | "question" | "guide";
+/** 게시판 꼭지 — 잡담 · 질문 · 공략(2026-10-26, 요청: "꼭지(분류) 고를수있음 잡담 질문 공략") · 일정(같은 날 "일정도 하나의 글로").
+ *  공지는 꼭지가 아니라 따로 붙는 속성(notice). */
+export type PostCategory = "chat" | "question" | "guide" | "schedule";
 
 /** 자유게시판 글 — 본문은 일정과 같은 블록 문서(ScheduleBlock). */
 export interface Post {
@@ -697,6 +666,9 @@ export interface Post {
   /** 안 골랐으면 null(요청: "카테고리 픽은 필수 아닌 선택으로"). */
   category: PostCategory | null;
   notice: boolean;
+  /** 꼭지 '일정' 글의 일시(YYYY-MM-DD · HH:MM) — 그 밖의 글은 null. */
+  scheduledDate: string | null;
+  scheduledTime: string | null;
   blocks: ScheduleBlock[];
   createdBy: { id: string; nickname: string; avatar: string | null };
   createdAt: string;
@@ -708,11 +680,13 @@ export interface PostWrite {
   category: PostCategory | null;
   /** 운영자만 먹는다(서버가 다른 사람의 값은 무시). */
   notice?: boolean;
+  scheduledDate?: string | null;
+  scheduledTime?: string | null;
   expectedUpdatedAt?: string;
   blocks?: ScheduleBlockWrite[];
 }
 
-export interface ActivityNotice {
+export interface FeedNotice {
   id: number;
   kind: string;
   payload: {
@@ -723,20 +697,19 @@ export interface ActivityNotice {
   createdAt: string;
 }
 
-export interface ActivityFeedItem {
+export interface FeedEntry {
   key: string;
-  kind: "gameResultPost" | "leagueMatch" | "schedule" | "notice" | "post";
+  kind: "gameResultPost" | "leagueMatch" | "notice" | "post";
   gameResults: GameResult[];
-  leagueMatch?: LeagueMatchActivity | null;
-  schedule?: Schedule | null;
+  leagueMatch?: LeagueMatchEntry | null;
   post?: Post | null;
-  notice?: ActivityNotice | null;
-  comments: ActivityComment[];
+  notice?: FeedNotice | null;
+  comments: ItemComment[];
 }
 
-export interface ActivityFeedPage {
+export interface FeedPage {
   total: number;
   totalActivities: number;
-  items: ActivityFeedItem[];
+  items: FeedEntry[];
   nextCursor: string | null;
 }

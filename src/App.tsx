@@ -25,7 +25,8 @@ import AdminPanelScreen from "./pages/admin/AdminPanelScreen";
 import MapCanonScreen from "./pages/minimaps/MapCanonScreen";
 import AppUpdateNoticeModal from "./modals/AppUpdateNoticeModal";
 import AppReloadModal from "./modals/AppReloadModal";
-import ActivityScreen from "./pages/activity/ActivityScreen";
+import GamesScreen from "./pages/games/GamesScreen";
+import BoardScreen from "./pages/board/BoardScreen";
 import LadderScreen from "./pages/v2/LadderScreen";
 import ClanStatsScreen from "./pages/v2/ClanStatsScreen";
 import SharePage, { type ShareTarget } from "./pages/share/SharePage";
@@ -42,14 +43,14 @@ function shareTargetFromUrl(): ShareTarget | null {
   const params = new URLSearchParams(window.location.search);
   const sv = params.get("sv");
   const id = Number(params.get("sid"));
-  if ((sv === "gameResult" || sv === "rankingShift" || sv === "schedule")
+  if ((sv === "gameResult" || sv === "rankingShift")
     && Number.isFinite(id) && id > 0) {
     return { type: sv, id };
   }
   return null;
 }
 
-/* 메뉴로 화면을 옮길 때 떨구는 화면 제 것 — tab(활동 게임 탭)·size(통계 규모 탭)도(2026-10-20, 요청: "tab 파라미터가 다른 화면까지 남음"). */
+/* 메뉴로 화면을 옮길 때 떨구는 화면 제 것 — tab(게임 탭)·size(통계 규모 탭)도(2026-10-20, 요청: "tab 파라미터가 다른 화면까지 남음"). */
 const SCREEN_LOCAL_PARAMS = ["t", "u", "q", "f", "st", "period", "tab", "size"] as const;
 
 
@@ -146,7 +147,7 @@ export default function App() {
     const qs = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`);
     setShareTarget(null);
-    setScreen("activity");
+    setScreen(HOME_SCREEN);
   };
   useBottomViewportInset();
 
@@ -217,10 +218,10 @@ export default function App() {
 
   useEffect(() => {
     if (parseRoute().screen === screen) return;
-    /* 게임 탭(tab=league|clan|pub)은 활동 화면 것 — 다른 화면으로 옮길 땐 떨군다(2026-10-20, 요청: "tab 파라미터가 다른 화면까지 남음 ·
-       오로지 활동 → 전체보기 할 때만 전달"). */
+    /* 게임 탭(tab=league|clan|pub)은 게임 화면 것 — 다른 화면으로 옮길 땐 떨군다(2026-10-20, 요청: "tab 파라미터가 다른 화면까지 남음 ·
+       옛 활동 → 전체보기 때 · 이제 게임 화면 안에서만"). */
     const q9 = new URLSearchParams(window.location.search);
-    if (screen !== "activity") q9.delete("tab");
+    if (screen !== "games") q9.delete("tab");
     navigateTo(pathOf({ screen }), { replace: true, search: q9.toString(), notify: false });
   }, [screen]);
 
@@ -254,10 +255,10 @@ export default function App() {
 
   const isAdmin = isAdminRole(user.roles);
   const resolvedScreen: ScreenKey =
-    screen === "members" && !isAdmin ? "activity" :
-    screen === "minimaps" && !isAdmin ? "activity" :
-    screen === "control" && !isAdmin ? "activity" :
-    screen === "explore" ? "activity" :
+    screen === "members" && !isAdmin ? HOME_SCREEN :
+    screen === "minimaps" && !isAdmin ? HOME_SCREEN :
+    screen === "control" && !isAdmin ? HOME_SCREEN :
+    screen === "explore" ? HOME_SCREEN :
     screen;
 
   return (
@@ -275,7 +276,8 @@ export default function App() {
             onLogout={logout}
           />
           <main className="scr-main">
-            {!booting && resolvedScreen === "activity" && <ActivityScreen />}
+            {!booting && resolvedScreen === "games" && <GamesScreen />}
+            {!booting && resolvedScreen === "board" && <BoardScreen />}
             {!booting && resolvedScreen === "ladder" && <LadderScreen />}
             {!booting && resolvedScreen === "clan" && <ClanStatsScreen />}
             {isAdmin && !booting && resolvedScreen === "members" && <MembersScreen />}

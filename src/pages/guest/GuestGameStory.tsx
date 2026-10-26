@@ -3,9 +3,9 @@ import { formatWhen } from "../../utils/date";
 import { ReplayModule, SCENE_LINK_KEYS9, sceneLinkOf9, sceneLinkQueryOf9, type MotionBase } from "scplay";
 import { createPortal } from "react-dom";
 import { api } from "../../api/client";
-import RosterSide, { isMeleeGame, outcomeFor, resolveSlotName } from "../activity/GameResultSides";
+import RosterSide, { isMeleeGame, outcomeFor, resolveSlotName } from "../games/GameResultSides";
 import Avatar from "../../components/common/Avatar";
-import { GameDetailCloseContext } from "../activity/gameDetailClose";
+import { GameDetailCloseContext } from "../games/gameDetailClose";
 import { useReplayMap } from "scplay";
 import { cleanMapName } from "../../utils/mapName";
 import { cx } from "../../utils/format";
@@ -207,7 +207,7 @@ export default function GuestGameStory({ gameResult, team1, team2, result, membe
     </div>);
     return (<div className="scr-story">
       {headMeta}
-      {showRoster && (melee ? (<div className={cx("scr-roster-matchup", "scr-roster-matchup-melee", "scr-activity-game-result-matchup", grid && "scr-story-matchup-wide")}>
+      {showRoster && (melee ? (<div className={cx("scr-roster-matchup", "scr-roster-matchup-melee", "scr-feed-game-result-matchup", grid && "scr-story-matchup-wide")}>
             {[...t1, ...t2].map((s9, i9) => (<React.Fragment key={`${s9.memberId}-${i9}`}>
                 {i9 > 0 && <span className="scr-story-melee-vs" aria-hidden>vs</span>}
                 <div className="scr-roster-melee-one">
@@ -217,7 +217,7 @@ export default function GuestGameStory({ gameResult, team1, team2, result, membe
                     && t1.some((w9) => w9.memberId === s9.memberId) && (<span className="scr-story-win scr-story-win-t1">승</span>)}
                 </div>
               </React.Fragment>))}
-          </div>) : (<div className={cx("scr-roster-matchup", "scr-activity-game-result-matchup", grid && "scr-story-matchup-wide")}>
+          </div>) : (<div className={cx("scr-roster-matchup", "scr-feed-game-result-matchup", grid && "scr-story-matchup-wide")}>
           <RosterSide team={t1} memberOf={memberOf} highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms} nameMask={alias}/>
           
           <div className="scr-story-mid">
@@ -225,7 +225,7 @@ export default function GuestGameStory({ gameResult, team1, team2, result, membe
           </div>
           <RosterSide team={t2} memberOf={memberOf} highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms} nameMask={alias}/>
         </div>))}
-      {result === "not_held" && <div className="scr-activity-game-result-notheld">미실시</div>}
+      {result === "not_held" && <div className="scr-feed-game-result-notheld">미실시</div>}
       {!showRoster && !headSlot && (mapMeta || winBadge) && (
         <div className="scr-game-result-trow-map-line scr-game-result-trow-map-meta scr-story-maphead">
           {mapName && <span className="scr-game-result-trow-map">{mapName}</span>}

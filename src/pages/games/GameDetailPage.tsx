@@ -6,7 +6,7 @@ import { isAdminRole } from "../../constants/roles";
 import { api } from "../../api/client";
 import { canManageGame, isSecretGame } from "../../utils/gameAccess";
 import type { GameResult } from "../../types";
-import ActivityComments from "./ActivityComments";
+import Comments from "../feed/Comments";
 import { GameResultTools } from "./GameResultCardBody";
 import GameResultStory from "./GameResultStory";
 import PlayerLoadShell from "./PlayerLoadShell";
@@ -53,7 +53,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   const gameId = game?.id ?? null;
   useEffect(() => {
     if (gameId === null || !game) return;
-    void api.pingAccess("activity_game", `game#${game.matchNo || String(gameId)}`);
+    void api.pingAccess("games", `game#${game.matchNo || String(gameId)}`);
     void api.markGameViewed(gameId).catch(() => {});
   }, [gameId]);
   useEffect(() => {
@@ -76,7 +76,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   /* 게임을 받는 동안도 페이지 꼴(머리 줄 · 판 자리)을 먼저 세우고 판 자리에 자료를 기다리는 재생기(PlayerLoadShell)를 둔다 — 옛 돌림표만 뜨던 빈 화면 대신. */
   if (!game) {
     return (
-      <div className="scr-activity-group-page">
+      <div className="scr-feed-group-page">
         <div className="scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar">
           <div className="scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle">
             <button type="button" className="scr-crumb-back" onClick={onBack}>
@@ -101,7 +101,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
     />
   );
   return (
-    <div className="scr-activity-group-page">
+    <div className="scr-feed-group-page">
       <div className="scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar">
         <div className="scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle">
           <button type="button" className="scr-crumb-back" onClick={onBack}>
@@ -123,8 +123,8 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
           menu={menu}
         />
       </div>
-      <div className="scr-activity-card-comment scr-game-page-comment">
-        <ActivityComments targetType="gameResult" targetId={game.id} />
+      <div className="scr-feed-card-comment scr-game-page-comment">
+        <Comments targetType="gameResult" targetId={game.id} />
       </div>
       {pendingDelete && (
         <ConfirmDialog

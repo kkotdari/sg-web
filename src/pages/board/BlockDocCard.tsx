@@ -12,7 +12,7 @@ import { apiStatusOf } from "../../api/client";
 import { readAsDataUrl } from "../../utils/image";
 import { showAlert } from "../../components/common/AlertDialog";
 import { isPhotoSet, type ScheduleBlock, type SchedulePhoto, type ScheduleBlockWrite } from "../../types";
-import { ActivityCard } from "./ActivityCard";
+import { FeedCard } from "../feed/FeedCard";
 import ScheduleBlocks, { NEW_PREFIX, sortingNow, splitTitles, withKeys, type DraftBlock } from "./ScheduleBlocks";
 
 /* ★ 블록 문서 카드(2026-10-26, 요청: "자유게시판 만들어줘 · 일정 폼 재사용(공통화)") — 일정 카드(ScheduleCard)의 늘 편집 상태 ·
@@ -57,6 +57,9 @@ export interface DocSpec<D extends BlockDoc, W> {
   extraTools?: (p: { doc: D; adopt: (saved: D) => void }) => ReactNode;
   /** 블록 앞에 그리는 옛 본문(일정의 옛 글·링크·첨부). */
   legacy?: (doc: D) => ReactNode;
+  /** 아직 서버에 없는 새 문서(글쓰기 · 2026-10-26, 요청: "등록시 바로 등록폼으로 가고 제목과 분류같은거도 거기서 입력") —
+   *  도구 줄(공유·삭제)·남의 고침 받기를 걷고, 저장 단추는 등록 · 취소는 onDiscard(글쓰기를 떠난다) · 제목에 커서. */
+  draft?: { saveLabel: string; onDiscard: () => void };
 }
 
 /* saved = 서버와 같음 · dirty = 저장 안 한 고침 · saving = 보내는 중 · failed = 보냈는데 실패. */
@@ -85,12 +88,14 @@ function DocHeadRow<D extends BlockDoc, W>({
 }) {
   const mobile = useIsMobile();
   const HeadLine = spec.HeadLine;
+  const draft = spec.draft;
   return (
     <>
       <div className="scr-schedule-title-row">
         {editing ? (
           <input
             className="scr-schedule-title scr-sb-line" value={head.title} placeholder="제목"
+            autoFocus={!!draft}
             onChange={(e) => onChange({ title: e.target.value })}
             onClick={(e) => e.stopPropagation()}
           />
@@ -100,7 +105,7 @@ function DocHeadRow<D extends BlockDoc, W>({
         {/* ★ 저장은 단추로(2026-10-20, 요청: "수정 시 저장 버튼 눌러야 서버에 반영") — 고친 게 있으면 [취소 | 저장], 없으면 마지막 저장 시각.
             취소는 저장 안 한 고침을 버리고 마지막 저장 판으로 돌아간다(옛 요청 "방금 전으로 되돌리기"의 몫).
             폰은 마지막 저장 시각을 안 띄운다(2026-10-23, 요청: "모바일에서 일정 마지막 저장 표시 X"). */}
-        {canEdit && editing && (saveState === "saved" ? (mobile ? null : (
+        {canEdit && editing && (saveState === "saved" && !draft ? (mobile ? null : (
           <span className="scr-schedule-save-state" role="status" aria-live="polite">
             마지막 저장: {savedAtText(savedAt)}
           </span>
@@ -109,19 +114,19 @@ function DocHeadRow<D extends BlockDoc, W>({
             {saveState === "failed" && <span className="scr-schedule-save-state scr-schedule-save-state-failed" role="status">저장 안 됨</span>}
             <button
               type="button" className="scr-compact-rect-btn is-secondary" disabled={saveState === "saving"}
-              onClick={(e) => { e.stopPropagation(); onDiscard(); }}
+              onClick={(e) => { e.stopPropagation(); if (draft) draft.onDiscard(); else onDiscard(); }}
             >
               취소
             </button>
             <button
-              type="button" className="scr-compact-rect-btn" disabled={saveState === "saving"}
+              type="button" className="scr-compact-rect-btn" disabled={saveState === "saving" || (!!draft && !spec.ready(head))}
               onClick={(e) => { e.stopPropagation(); onSave(); }}
             >
-              {saveState === "saving" ? "저장 중…" : "저장"}
+              {saveState === "saving" ? "저장 중…" : draft?.saveLabel ?? "저장"}
             </button>
           </span>
         ))}
-        {menu}
+        {!draft && menu}
       </div>
 
       <div className="scr-schedule-when-line">
@@ -414,13 +419,13 @@ export type BlockDocCardProps<D extends BlockDoc, W> = {
 };
 
 /* 갓 등록한 문서 — 상세가 열리면 첫 글 줄을 만들어 커서를 둔다(2026-10-20, 요청: "등록하면 바로 상세 편집으로" → "커서 포커싱까지").
-   등록 창(ActivityScreen)이 상세로 가기 전에 그 문서의 열쇠(종류:id)를 적어 두고, 카드가 편집 상태가 되는 순간 한 번 쓰고 지운다. */
+   등록 창(GamesScreen)이 상세로 가기 전에 그 문서의 열쇠(종류:id)를 적어 두고, 카드가 편집 상태가 되는 순간 한 번 쓰고 지운다. */
 let focusFirstLineOf: string | null = null;
 export function focusFirstLineOnOpen(kind: string, id: number): void { focusFirstLineOf = `${kind}:${id}`; }
 
 /* ★ 카드는 memo — 제 문서·권한·날짜 글자가 바뀔 때만 다시 그린다(요청: "요소 접기·펼치기도 전체 다시 그리는 등의 이유로 느린지 확인").
    손잡이(onDeleted)는 늘 새로 오지만 안에서 최신 것을 쓰고, footer 는 문서 id 로만 갈린다. spec 은 모듈 상수다.
-   카드 안 저장은 활동 목록에 알리지 않는다(요청: "목록은 신경쓰지말고 목록에서 상세 들어갈때마다 새로 받아야지") — 상세는 들어갈 때마다 서버에서 받는다(ActivityScreen ★). */
+   카드 안 저장은 목록에 알리지 않는다(요청: "목록은 신경쓰지말고 목록에서 상세 들어갈때마다 새로 받아야지") — 상세는 들어갈 때마다 서버에서 받는다(PostDetailPage ★). */
 const BlockDocCard = memo(BlockDocCardInner, (a, b) => (
   a.doc === b.doc && a.spec === b.spec && a.canEdit === b.canEdit && a.canDelete === b.canDelete
   && a.dateLabel === b.dateLabel && a.timeText === b.timeText
@@ -668,7 +673,7 @@ function BlockDocCardInner<D extends BlockDoc, W>({
   const refresh = async (): Promise<void> => {
     /* 저장 안 한 고침이 있어도 남의 고침은 꾸준히 받아 내 고침과 합친다(absorb → merge · 2026-10-20, 요청: "변경 사항 불러오기는 꾸준히") —
        저장이 단추로만 가니 고침을 쥔 채 오래 머문다. 치거나 끄는 도중·보내는 중에만 건너뛴다. */
-    if (saving.current || sortingNow() || typingNow()) return;
+    if (saving.current || sortingNow() || typingNow() || spec.draft) return;
     lastRefreshAt.current = Date.now();
     try {
       const s = await spec.get(latest.current.doc.id);
@@ -729,7 +734,7 @@ function BlockDocCardInner<D extends BlockDoc, W>({
   const head = draft?.head ?? spec.headOf(doc);
 
   return (
-    <ActivityCard
+    <FeedCard
       dateLabel={dateLabel}
       icon={spec.icon}
       label={spec.label}
@@ -781,6 +786,6 @@ function BlockDocCardInner<D extends BlockDoc, W>({
         </div>,
         document.body,
       )}
-    </ActivityCard>
+    </FeedCard>
   );
 }

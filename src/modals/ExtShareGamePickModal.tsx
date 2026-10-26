@@ -9,7 +9,7 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useAppStore } from "../store/appStore";
 import { formatAgo } from "../utils/date";
 import { gamePlayable } from "../utils/gamePlayable";
-import { GameRowNames, GameRowStatus, ListRow } from "../pages/activity/GameRow";
+import { GameRowNames, GameRowStatus, ListRow } from "../pages/games/GameRow";
 import type { GameResult } from "../types";
 
 const PAGE = 50;
@@ -113,7 +113,7 @@ export default function ExtShareGamePickModal({ listId, listName, have, onClose,
             ) : rows.length === 0 ? (
               <div className="scr-redo-pick-empty">{q ? "결과가 없어요" : "게임이 없어요"}</div>
             ) : (
-              <div className="scr-activity-rows">
+              <div className="scr-feed-rows">
                 {rows.map((g) => {
                   const inList = have.has(g.id);
                   const on = picked.has(g.id);
@@ -123,7 +123,7 @@ export default function ExtShareGamePickModal({ listId, listName, have, onClose,
                       check={<RowCheck checked={on || inList} disabled={inList} disabledTitle="이미 담긴 게임" onChange={() => toggle(g.id)} label="게임 선택" />}
                       picked={on}
                       disabled={inList}
-                      className={["scr-activity-row-game scr-gm", inList && "is-in"].filter(Boolean).join(" ")}
+                      className={["scr-feed-row-game scr-gm", inList && "is-in"].filter(Boolean).join(" ")}
                       onClick={() => toggle(g.id)}
                       status={<GameRowStatus game={g} />}
                       desc={<GameRowNames game={g} memberOf={memberOf} mobile playable={gamePlayable(g)} />}

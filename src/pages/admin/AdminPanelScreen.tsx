@@ -5,7 +5,7 @@ import { Spinner } from "../../components/common/Feedback";
 import Select from "../../components/common/Select";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { RowCheck, SelectAllToggle } from "../../components/common/Selection";
-import { GameRowNames, GameRowStatus, ListRow } from "../activity/GameRow";
+import { GameRowNames, GameRowStatus, ListRow } from "../games/GameRow";
 import { gamePlayable } from "../../utils/gamePlayable";
 import ReplayBatchButton from "../../components/common/ReplayBatchButton";
 import VersionManageModal from "../../modals/VersionManageModal";
@@ -694,13 +694,13 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     suffix={` (${pickShown.length}건)`}
                   />
                   {/* 줄 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "재분석 … 게임 목록을 노출하는 부분 전부 모바일 화면의 게임목록처럼"). */}
-                  <div className="scr-redo-pick-list scr-activity-rows">
+                  <div className="scr-redo-pick-list scr-feed-rows">
                     {pickShown.map((r) => (
                       <ListRow
                         key={r.id}
                         check={<RowCheck checked={picked.has(r.id)} onChange={() => togglePick(r.id)} label={`${r.matchNo} 선택`} />}
                         picked={picked.has(r.id)}
-                        className="scr-activity-row-game scr-gm"
+                        className="scr-feed-row-game scr-gm"
                         onClick={() => togglePick(r.id)}
                         status={<GameRowStatus game={r.game} />}
                         desc={<GameRowNames game={r.game} memberOf={memberOf} mobile playable={gamePlayable(r.game)} />}
@@ -767,13 +767,13 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   : `${redoTotal - redoFails.length}건은 다시 분석했어요(참값 자취는 서버가 뒤에서 굽습니다). 아래 ${redoFails.length}건은 그대로 두었어요.`}
               </div>
               {/* 줄 = 고르기 창과 같은 폰 게임 목록 꼴 · 위에 실패 까닭(2026-10-20). */}
-              <div className="scr-redo-pick-list scr-activity-rows">
+              <div className="scr-redo-pick-list scr-feed-rows">
                 {redoFails.map((f) => {
                   const g = (pickRows ?? []).find((r) => r.id === f.id)?.game;
                   return (
                     <ListRow
                       key={f.id}
-                      className="scr-activity-row-game scr-gm"
+                      className="scr-feed-row-game scr-gm"
                       onClick={() => {}}
                       above={<span className="scr-redo-fail-why">{f.matchNo || `#${f.id}`} · {f.why}</span>}
                       status={g ? <GameRowStatus game={g} /> : null}

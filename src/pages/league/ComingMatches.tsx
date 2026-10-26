@@ -4,14 +4,14 @@ import Avatar from "../../components/common/Avatar";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
 import { formatWhen, serverMs } from "../../utils/date";
-import type { LeagueMatchActivity, LeagueMatchTeam } from "../../types";
+import type { LeagueMatchEntry, LeagueMatchTeam } from "../../types";
 import { imgSrc } from "../../utils/imgSrc";
 
 export const COMING_WINDOW_MS = 7 * 24 * 3600 * 1000;
 export const COMING_GRACE_MS = 3 * 3600 * 1000;
 const SLIDE_MS = 6000;
 
-export function pickComingMatches(matches: LeagueMatchActivity[], now = Date.now()): LeagueMatchActivity[] {
+export function pickComingMatches(matches: LeagueMatchEntry[], now = Date.now()): LeagueMatchEntry[] {
   return matches
     .filter((m) => {
       if (!m.scheduledAt) return false;
@@ -72,8 +72,8 @@ function ComingSide({ team }: { team: LeagueMatchTeam | null }) {
 }
 
 export default function ComingMatches({ matches, onOpen }: {
-  matches: LeagueMatchActivity[];
-  onOpen: (match: LeagueMatchActivity) => void;
+  matches: LeagueMatchEntry[];
+  onOpen: (match: LeagueMatchEntry) => void;
 }) {
   const n = matches.length;
   const [index, setIndex] = useState(0);
@@ -104,11 +104,11 @@ export default function ComingMatches({ matches, onOpen }: {
     if (n > 1 && Math.abs(dx) > 40) go(index + (dx < 0 ? 1 : -1));
     if (!s.moved) swipe.current = null;
   };
-  const open = (m: LeagueMatchActivity): void => {
+  const open = (m: LeagueMatchEntry): void => {
     if (swipe.current?.moved) { swipe.current = null; return; }
     onOpen(m);
   };
-  const onKey = (e: ReactKeyboardEvent, m: LeagueMatchActivity): void => {
+  const onKey = (e: ReactKeyboardEvent, m: LeagueMatchEntry): void => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(m); }
     else if (e.key === "ArrowRight") go(index + 1);
     else if (e.key === "ArrowLeft") go(index - 1);

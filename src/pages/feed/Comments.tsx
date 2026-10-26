@@ -17,7 +17,7 @@ function isFreshComment(createdAt: string): boolean {
   const age = Date.now() - serverMs(createdAt);
   return age >= 0 && age <= COMMENT_NEW_WINDOW_MS;
 }
-import type { Member, ActivityComment, ActivityTargetType } from "../../types";
+import type { Member, ItemComment, CommentTargetType } from "../../types";
 
 const MESSAGE_MAX_LENGTH = 50;
 
@@ -76,7 +76,7 @@ function NoteComposer({
   };
 
   return (
-    <div className="scr-comment-compose-row scr-activity-note-compose-row">
+    <div className="scr-comment-compose-row scr-feed-note-compose-row">
       <div className="scr-comment-input-wrap">
         <div
           className="scr-input scr-comment-editor"
@@ -138,9 +138,9 @@ function hiddenOffset(el: HTMLElement): number {
 
 const SWIPE_CLOSE_PX = 96;
 
-const primed = new Map<string, ActivityComment[]>();
+const primed = new Map<string, ItemComment[]>();
 let primedOnce = false;
-const keyOf = (t: ActivityTargetType, id: number) => `${t}:${id}`;
+const keyOf = (t: CommentTargetType, id: number) => `${t}:${id}`;
 
 const listeners = new Set<() => void>();
 function notifyComments(): void {
@@ -152,14 +152,14 @@ export function subscribeComments(fn: () => void): () => void {
 }
 
 export function commentStatOf(
-  targetType: ActivityTargetType, targetId: number,
+  targetType: CommentTargetType, targetId: number,
 ): { count: number; latestMs: number } {
   const list = primed.get(keyOf(targetType, targetId));
   if (!list || list.length === 0) return { count: 0, latestMs: NaN };
   return { count: list.length, latestMs: Math.max(...list.map((c) => serverMs(c.createdAt))) };
 }
 
-export async function primeActivityComments(items: ActivityComment[]): Promise<void> {
+export async function primeComments(items: ItemComment[]): Promise<void> {
   primed.clear();
   for (const c of items) {
     const k = keyOf(c.targetType, c.targetId);
@@ -170,8 +170,8 @@ export async function primeActivityComments(items: ActivityComment[]): Promise<v
   notifyComments();
 }
 
-export default function ActivityComments({ targetType, targetId, overModal = false }: {
-  targetType: ActivityTargetType;
+export default function Comments({ targetType, targetId, overModal = false }: {
+  targetType: CommentTargetType;
   targetId: number;
   overModal?: boolean;
 }) {
@@ -183,14 +183,14 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
   };
   const user = useAppStore((s) => s.user);
   const members = useAppStore((s) => s.members);
-  const [notes, setNotes] = useState<ActivityComment[]>(
+  const [notes, setNotes] = useState<ItemComment[]>(
     () => (primedOnce ? primed.get(keyOf(targetType, targetId)) ?? [] : []),
   );
   const [editingId, setEditingId] = useState<number | null>(null);
   const [composerKey, setComposerKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ActivityComment | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ItemComment | null>(null);
   const mobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -344,13 +344,13 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
   useEffect(() => {
     if (primedOnce) { setNotes(primed.get(keyOf(targetType, targetId)) ?? []); return; }
     let cancelled = false;
-    api.listActivityComments(targetType, targetId)
+    api.listComments(targetType, targetId)
       .then((items) => { if (!cancelled) setNotes(items); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [targetType, targetId]);
 
-  const apply = (next: (prev: ActivityComment[]) => ActivityComment[]) => {
+  const apply = (next: (prev: ItemComment[]) => ItemComment[]) => {
     setNotes((prev) => {
       const out = next(prev);
       if (primedOnce) { primed.set(keyOf(targetType, targetId), out); notifyComments(); }
@@ -362,7 +362,7 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
     setBusy(true);
     setErr(null);
     try {
-      const created = await api.createActivityComment(targetType, targetId, text, ids);
+      const created = await api.createComment(targetType, targetId, text, ids);
       apply((prev) => [...prev, created]);
       setComposerKey((k) => k + 1);
     } catch (e) {
@@ -375,7 +375,7 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
     setBusy(true);
     setErr(null);
     try {
-      const updated = await api.updateActivityComment(id, text, ids);
+      const updated = await api.updateComment(id, text, ids);
       apply((prev) => prev.map((c) => (c.id === id ? updated : c)));
       setEditingId(null);
     } catch (e) {
@@ -388,7 +388,7 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
     setBusy(true);
     setErr(null);
     try {
-      await api.deleteActivityComment(id);
+      await api.deleteComment(id);
       apply((prev) => prev.filter((c) => c.id !== id));
     } catch (e) {
       setErr(e instanceof Error ? e.message : "메모를 삭제하지 못했어요.");
@@ -398,18 +398,18 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
     }
   };
 
-  const renderNote = (c: ActivityComment, interactive: boolean) => (
-    <li key={c.id} className="scr-comment-item scr-activity-note-item">
+  const renderNote = (c: ItemComment, interactive: boolean) => (
+    <li key={c.id} className="scr-comment-item scr-feed-note-item">
       <Avatar
         member={{ id: c.author.memberId, nickname: c.author.nickname, avatar: c.author.avatar }}
         size={28}
-        className="scr-activity-note-avatar"
+        className="scr-feed-note-avatar"
       />
-      <div className="scr-activity-note-body">
+      <div className="scr-feed-note-body">
         <div className="scr-comment-item-top">
           <div className="scr-comment-author">
             <span className="scr-comment-author-name">{c.author.nickname}</span>
-            <span className="scr-activity-note-time">{formatWhen(c.createdAt, { clock: true })}</span>
+            <span className="scr-feed-note-time">{formatWhen(c.createdAt, { clock: true })}</span>
             {isFreshComment(c.createdAt) && <span className="scr-comment-new">NEW</span>}
           </div>
         </div>
@@ -424,12 +424,12 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
             submitLabel={<CornerDownLeft size={14} />}
           />
         ) : (
-          <p className="scr-comment-text scr-activity-note-text">
+          <p className="scr-comment-text scr-feed-note-text">
             {renderInline(c.text, c.mentions)}
             {interactive && c.canEdit && (
-              <span className="scr-comment-actions scr-activity-note-actions">
+              <span className="scr-comment-actions scr-feed-note-actions">
                 <button
-                  type="button" className="scr-activity-note-icon-btn scr-activity-note-icon-danger"
+                  type="button" className="scr-feed-note-icon-btn scr-feed-note-icon-danger"
                   onClick={() => setDeleteTarget(c)}
                   aria-label="삭제"
                 >
@@ -457,27 +457,27 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
 
   return (
     <div
-      className="scr-activity-notes"
+      className="scr-feed-notes"
       onClick={(e) => e.stopPropagation()}
     >
-      {notes.length > 0 && <div className="scr-activity-comments-heading">댓글 {notes.length}</div>}
+      {notes.length > 0 && <div className="scr-feed-comments-heading">댓글 {notes.length}</div>}
       {mobile ? (
         <>
           {notes.length > 0 ? (
             <div
-              className="scr-activity-notes-preview" role="button" tabIndex={0}
+              className="scr-feed-notes-preview" role="button" tabIndex={0}
               aria-label={`댓글 ${notes.length}개 보기`}
               onClick={openSheet}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSheet(); } }}
             >
-              <ul className="scr-comment-list scr-activity-notes-list">
+              <ul className="scr-comment-list scr-feed-notes-list">
                 {notes.map((c) => renderNote(c, false))}
               </ul>
             </div>
           ) : user ? (
-            <div className="scr-activity-comment-row">
+            <div className="scr-feed-comment-row">
               <button
-                type="button" className="scr-activity-comments-toggle"
+                type="button" className="scr-feed-comments-toggle"
                 onClick={openSheet} title="댓글 쓰기"
               >
                 댓글 추가
@@ -488,17 +488,17 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
       ) : (
         <>
           {notes.length > 0 && (
-            <ul className="scr-comment-list scr-activity-notes-list">
+            <ul className="scr-comment-list scr-feed-notes-list">
               {notes.map((c) => renderNote(c, true))}
             </ul>
           )}
 
-          {err && <div className="scr-err scr-activity-note-err">{err}</div>}
+          {err && <div className="scr-err scr-feed-note-err">{err}</div>}
 
           {user && editingId === null && (
-            <div className={cx("scr-activity-comment-row", composerOpen && "scr-activity-comment-row-open")}>
+            <div className={cx("scr-feed-comment-row", composerOpen && "scr-feed-comment-row-open")}>
               <button
-                type="button" className="scr-activity-comments-toggle"
+                type="button" className="scr-feed-comments-toggle"
                 onClick={openComposer}
                 aria-expanded={composerOpen} title="댓글 쓰기"
                 tabIndex={composerOpen ? -1 : 0}
@@ -507,7 +507,7 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
               </button>
               <div
                 ref={composerWrapRef}
-                className="scr-activity-comment-composer"
+                className="scr-feed-comment-composer"
                 onBlur={(e) => {
                   if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setComposerOpen(false);
                 }}
@@ -522,7 +522,7 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
       {mobile && sheetOpen && createPortal(
         <div
           ref={sheetRef}
-          className={cx("scr-comment-sheet scr-activity-card-comment scr-activity-notes", typing && "scr-comment-sheet-typing", overModal && "scr-comment-sheet-over-modal")}
+          className={cx("scr-comment-sheet scr-feed-card-comment scr-feed-notes", typing && "scr-comment-sheet-typing", overModal && "scr-comment-sheet-over-modal")}
           role="dialog" aria-label="댓글"
           onFocus={() => setTyping(true)}
           onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setTyping(false); }}
@@ -535,14 +535,14 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
           </div>
           <div className="scr-comment-sheet-body scr-scroll" ref={sheetBodyRef}>
             {notes.length > 0 ? (
-              <ul className="scr-comment-list scr-activity-notes-list">
+              <ul className="scr-comment-list scr-feed-notes-list">
                 {notes.map((c) => renderNote(c, true))}
               </ul>
             ) : (
               <p className="scr-comment-sheet-empty">댓글이 없어요</p>
             )}
           </div>
-          {err && <div className="scr-err scr-activity-note-err">{err}</div>}
+          {err && <div className="scr-err scr-feed-note-err">{err}</div>}
           {user && editingId === null && (
             <div className="scr-comment-sheet-compose">
               <Avatar member={user} size={34} />

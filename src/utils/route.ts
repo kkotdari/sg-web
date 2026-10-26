@@ -1,15 +1,13 @@
 import type { ScreenKey } from "../types";
 
-export type ActivityGroupKey = "notice" | "schedule" | "league" | "gameResult" | "board";
-
-export const GROUP_SEG: Record<ActivityGroupKey, string> = {
-  notice: "notices", schedule: "schedules", league: "league", gameResult: "games", board: "board",
-};
-const SEG_GROUP: Record<string, ActivityGroupKey> = Object.fromEntries(
-  (Object.entries(GROUP_SEG) as [ActivityGroupKey, string][]).map(([k, v]) => [v, k]),
-);
+/* ★ 활동 화면을 걷고 **게임 · 게시판 두 화면**으로(2026-10-26, 요청: "일정과 게시판을 합치고 · 활동 화면 제거 ·
+   게임 게시판 두개의 메뉴로 탄생 · 주소에서도 activity 제거"). 주소는 /games · /games/<게임번호> · /board · /board/<글> · /board/new,
+   첫 화면(/)은 게임 목록. 묶음(group)은 그 화면 안의 목록 갈래 — gameResult(게임) · board(게시판).
+   옛 주소(/schedules · /league · /notices)는 잇지 않는다(요청: "옛 링크 폴백 필요없음") — 모르는 주소는 첫 화면. */
+export type FeedGroup = "gameResult" | "board";
 
 const SCREEN_SEG: Partial<Record<ScreenKey, string>> = {
+  games: "games", board: "board",
   ladder: "ladder", clan: "stats", members: "members", leagues: "leagues",
   minimaps: "minimaps", control: "control", catalog: "catalog", explore: "explore", placement: "placement",
 };
@@ -20,23 +18,20 @@ const SEG_SCREEN: Record<string, ScreenKey> = {
   ...OLD_SEG,
   ...Object.fromEntries((Object.entries(SCREEN_SEG) as [ScreenKey, string][]).map(([k, v]) => [v, k])),
 };
+const GROUP_OF: Partial<Record<ScreenKey, FeedGroup>> = { games: "gameResult", board: "board" };
 
 export interface Route {
   screen: ScreenKey;
-  group: ActivityGroupKey | null;
+  group: FeedGroup | null;
   item: string | null;
 }
 
 export function parseRoute(pathname: string = window.location.pathname): Route {
   const segs = pathname.split("/").filter(Boolean).map(decodeURIComponent);
-  const home: Route = { screen: "activity", group: null, item: null };
+  const home: Route = { screen: "games", group: "gameResult", item: null };
   if (segs.length === 0) return home;
-  const group = SEG_GROUP[segs[0]];
-  if (group) {
-    return { screen: "activity", group, item: segs[1] ?? null };
-  }
   const screen = SEG_SCREEN[segs[0]];
-  if (screen) return { screen, group: null, item: segs[1] ?? null };
+  if (screen) return { screen, group: GROUP_OF[screen] ?? null, item: segs[1] ?? null };
   return home;
 }
 
@@ -46,15 +41,13 @@ export function canonicalPathname(pathname: string = window.location.pathname): 
   return head !== undefined && head in OLD_SEG && SCREEN_SEG[OLD_SEG[head]] !== head ? pathOf(parseRoute(pathname)) : pathname;
 }
 
-export function pathOf(r: { screen: ScreenKey; group?: ActivityGroupKey | null; item?: string | null }): string {
-  if (r.screen === "activity") {
-    if (!r.group) return "/";
-    const base = `/${GROUP_SEG[r.group]}`;
-    return r.item ? `${base}/${encodeURIComponent(r.item)}` : base;
-  }
+export function pathOf(r: { screen: ScreenKey; item?: string | null }): string {
   const seg = SCREEN_SEG[r.screen] ?? "";
   return r.item ? `/${seg}/${encodeURIComponent(r.item)}` : `/${seg}`;
 }
+
+/** 게임 상세 주소. */
+export const gamePath = (no: string): string => pathOf({ screen: "games", item: no });
 
 export const PUSHED_STATE = { scrPushed: true } as const;
 export function wasPushed(): boolean {

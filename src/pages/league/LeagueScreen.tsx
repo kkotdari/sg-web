@@ -7,6 +7,7 @@ import LeagueTeamsPanel from "./LeagueTeamsPanel";
 import LeagueBracket from "./LeagueBracket";
 import LeaguePresentEdit from "./LeaguePresentEdit";
 import LeaguePresentView from "./LeaguePresentView";
+import LeagueComing from "./LeagueComing";
 import { useAppStore } from "../../store/appStore";
 import { useEditableFocused } from "../../hooks/useEditableFocused";
 import { isAdminRole } from "../../constants/roles";
@@ -105,12 +106,25 @@ export default function LeagueScreen() {
       recountDirty();
     }, [],
   );
+  /* 리그 이름 — 수정 중엔 머리 줄 제목이 입력 칸이고, 저장 단추가 다른 구성과 함께 보낸다(2026-10-26, 지적: "리그 수정시 제목 수정이 안돼"). */
+  const [nameDraft, setNameDraft] = useState("");
+  useEffect(() => { setNameDraft(league?.name ?? ""); }, [league?.id, league?.name, editMode]);
+  const nameDirty = canEdit && !!league && !!nameDraft.trim() && nameDraft.trim() !== league.name;
+  useEffect(() => {
+    if (nameDirty && league) {
+      const id = league.id;
+      const name = nameDraft.trim();
+      saversRef.current.name = { dirty: true, commit: () => api.updateLeague(id, { name }) };
+    } else delete saversRef.current.name;
+    recountDirty();
+  }, [nameDirty, nameDraft, league?.id]);
+
   const saveAll = async () => {
     setError("");
     setSaving(true);
     try {
       let latest: League | null = null;
-      for (const key of ["teams", "bracket"] as const) {
+      for (const key of ["name", "teams", "bracket"] as const) {
         const entry = saversRef.current[key];
         if (entry?.dirty) latest = await entry.commit();
       }
@@ -172,16 +186,25 @@ export default function LeagueScreen() {
               <ChevronLeft size={14} />
               <span>리그</span>
             </button>
-            <h1 className="scr-title scr-crumb-title">{league?.name ?? ""}</h1>
+            {canEdit && league ? (
+              <input
+                className="scr-input scr-league-name-input" value={nameDraft} maxLength={100}
+                onChange={(e) => setNameDraft(e.target.value)} aria-label="리그 이름"
+              />
+            ) : (
+              <h1 className="scr-title scr-crumb-title">{league?.name ?? ""}</h1>
+            )}
           </div>
         </div>
       )}
 
       {error && <div className="scr-err">{error}</div>}
 
+      {selectedId === null && <LeagueComing onOpenLeague={openLeague} />}
+
       {isAdmin && selectedId === null && (
-        <div className={cx("scr-activity-add-fab-wrap scr-activity-add-wrap", fabHidden && "scr-activity-add-fab-wrap-hidden")}>
-          <button type="button" className="scr-activity-add-fab scr-circle-btn" onClick={() => setCreating(true)}>
+        <div className={cx("scr-feed-add-fab-wrap scr-feed-add-wrap", fabHidden && "scr-feed-add-fab-wrap-hidden")}>
+          <button type="button" className="scr-feed-add-fab scr-circle-btn" onClick={() => setCreating(true)}>
             생성
           </button>
         </div>

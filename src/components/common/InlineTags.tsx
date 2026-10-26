@@ -6,7 +6,7 @@ import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { cx } from "../../utils/format";
 import { attachPopover } from "../../utils/popover";
-import { navigateTo, pathOf, rememberListScroll } from "../../utils/route";
+import { gamePath, navigateTo, rememberListScroll } from "../../utils/route";
 import type { GameResult, Member } from "../../types";
 
 /* ★ 글 속 태그(2026-10-26, 요청: "/g 로 언제든 게임목록 불러와서 게임 태그 가능하게(게임번호) @는 유저태그") —
@@ -19,7 +19,7 @@ const GAME_TAG = /#(\d{12}(?:-\d)?)(?![\d-])/g;
 const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function GameTagChip({ no }: { no: string }) {
-  const path = pathOf({ screen: "activity", group: "gameResult", item: no });
+  const path = gamePath(no);
   return (
     <a
       className="scr-tag-game" href={path}

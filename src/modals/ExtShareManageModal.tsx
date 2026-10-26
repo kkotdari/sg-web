@@ -17,7 +17,7 @@ import { useSelection } from "../hooks/useSelection";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useAppStore } from "../store/appStore";
 import { batchSummary, runBatch } from "../utils/batch";
-import { GameRowNames, GameRowStatus, ListRow } from "../pages/activity/GameRow";
+import { GameRowNames, GameRowStatus, ListRow } from "../pages/games/GameRow";
 import type { ExtShareList, GameResult } from "../types";
 
 const REMOVE_FORMS = { did: "뺐어요", couldNot: "빼지 못했어요" };
@@ -273,7 +273,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                 </SelectionBar>
               )}
               {games === null ? <Spinner /> : (
-                <div className="scr-activity-rows">
+                <div className="scr-feed-rows">
                   {games.length === 0 && <p className="scr-adm-note">게임이 없어요</p>}
                   {games.map((g) => {
                     const key = String(g.id);
@@ -283,7 +283,7 @@ export default function ExtShareManageModal({ onClose }: { onClose: () => void }
                         key={g.id}
                         check={<RowCheck checked={picked} onChange={() => sel.toggle(key)} label="게임 선택" />}
                         picked={picked}
-                        className="scr-activity-row-game scr-gm"
+                        className="scr-feed-row-game scr-gm"
                         onClick={() => sel.toggle(key)}
                         onLongPress={isMobile ? () => sel.toggle(key) : undefined}
                         status={<GameRowStatus game={g} />}

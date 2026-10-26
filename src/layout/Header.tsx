@@ -14,7 +14,7 @@ import { swallowNextClick } from "../utils/bodyScrollLock";
 import { useEditableFocused } from "../hooks/useEditableFocused";
 import { isAdminRole } from "../constants/roles";
 import { useLightTheme } from "../utils/theme";
-import { NAV_MENU_ITEMS, RAIL_MENU_ITEMS } from "../constants/menuVersions";
+import { HOME_SCREEN, NAV_MENU_ITEMS, RAIL_MENU_ITEMS } from "../constants/menuVersions";
 import { useRail } from "./useRail";
 import type { Member, ScreenKey } from "../types";
 
@@ -174,7 +174,7 @@ export default function Header({
       <div className="scr-header-inner">
         <button
           type="button" className="scr-brand"
-          onClick={() => go("activity")}
+          onClick={() => go(HOME_SCREEN)}
           aria-label="홈으로"
         >
           <BrandLogo light={lightTheme} />
@@ -242,7 +242,7 @@ export default function Header({
             {/* 로고 — 모바일 머리띠의 로고 자리를 걷고(2026-10-09, 요청) 서랍 머리로 옮겼다. 누르면 홈. */}
             <button
               type="button" className="scr-drawer-brand"
-              onClick={() => go("activity")}
+              onClick={() => go(HOME_SCREEN)}
               aria-label="홈으로"
             >
               <BrandLogo light={lightTheme} />

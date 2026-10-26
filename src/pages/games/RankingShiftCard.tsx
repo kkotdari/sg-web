@@ -4,16 +4,16 @@ import { cx } from "../../utils/format";
 import { normalizeSearchText } from "../../utils/memberSearch";
 import { shareThumb, type KakaoShareContent } from "../../utils/kakaoShare";
 import type { RankingShiftEntry, RankingShift } from "../../types";
-import { ActivityCard } from "./ActivityCard";
+import { FeedCard } from "../feed/FeedCard";
 
 export function shiftLabel(e: RankingShiftEntry): { rank: string; delta: string; cls: string } {
   const rank = `${e.to}위`;
-  if (e.from == null) return { rank, delta: "진입", cls: "scr-activity-shift-new" };
+  if (e.from == null) return { rank, delta: "진입", cls: "scr-feed-shift-new" };
   const d = e.from - e.to;
   return {
     rank,
     delta: d > 0 ? `▲${d}` : `▼${-d}`,
-    cls: d > 0 ? "scr-activity-shift-up" : "scr-activity-shift-down",
+    cls: d > 0 ? "scr-feed-shift-up" : "scr-feed-shift-down",
   };
 }
 
@@ -72,34 +72,34 @@ export default function RankingShiftCard({
 }) {
   const cols = SECTION_LABELS.map((s) => ({ ...s, rows: sectionOf(shift, s.matchType) }));
   return (
-    <ActivityCard
+    <FeedCard
       dateLabel={dateLabel}
       icon={<Trophy size={16} aria-hidden />}
       label={RANK_SHIFT_TITLE}
       timeText={timeText}
       actions={actions}
-      bodyClassName="scr-activity-shift-split"
+      bodyClassName="scr-feed-shift-split"
       comment={footer}
     >
       {cols.map(({ label, rows }) => (
-        <section className="scr-activity-shift-col" key={label}>
-          <h4 className="scr-activity-shift-col-head">{label}</h4>
+        <section className="scr-feed-shift-col" key={label}>
+          <h4 className="scr-feed-shift-col-head">{label}</h4>
           {rows.length === 0 ? (
-            <p className="scr-activity-shift-none">변동 없음</p>
+            <p className="scr-feed-shift-none">변동 없음</p>
           ) : (
-            <ul className="scr-activity-shift-list">
+            <ul className="scr-feed-shift-list">
               {rows.map((e) => {
                 const rank = shiftLabel(e);
                 return (
                   <li
                     key={`${e.memberId}-${e.to}`}
-                    className={cx("scr-activity-shift-row",
+                    className={cx("scr-feed-shift-row",
                       (highlightMemberIds?.has(e.memberId)
                         || highlightTerms?.some((t) => normalizeSearchText(e.nickname).includes(t)))
-                        && "scr-activity-shift-row-hl")}
+                        && "scr-feed-shift-row-hl")}
                   >
-                    <span className="scr-activity-shift-name">{e.nickname}</span>
-                    <span className="scr-activity-shift-rank">{rank.rank}</span>
+                    <span className="scr-feed-shift-name">{e.nickname}</span>
+                    <span className="scr-feed-shift-rank">{rank.rank}</span>
                     <span className={rank.cls}>{rank.delta}</span>
                   </li>
                 );
@@ -108,6 +108,6 @@ export default function RankingShiftCard({
           )}
         </section>
       ))}
-    </ActivityCard>
+    </FeedCard>
   );
 }

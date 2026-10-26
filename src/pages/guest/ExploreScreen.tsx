@@ -4,8 +4,8 @@ import { SCENE_LINK_KEYS9 } from "scplay";
 import GuestGameStory from "./GuestGameStory";
 import { LoadingMark, Spinner } from "../../components/common/Feedback";
 import { api, setExtShareContext } from "../../api/client";
-import { isMeleeGame } from "../activity/GameResultSides";
-import { GameRowStatus, ListRow } from "../activity/GameRow";
+import { isMeleeGame } from "../games/GameResultSides";
+import { GameRowStatus, ListRow } from "../games/GameRow";
 import { formatAgo } from "../../utils/date";
 import type { ExtShareList, GameResult } from "../../types";
 
@@ -256,7 +256,7 @@ export default function ExploreScreen() {
       )}
 
       {listId === null && (lists === null ? <LoadingMark /> : (
-        <div className="scr-activity-rows scr-activity-group-page-rows">
+        <div className="scr-feed-rows scr-feed-group-page-rows">
           {lists.length === 0 && <div className="scr-empty">목록이 없어요</div>}
           {lists.map((l) => (
             <ListRow
@@ -264,12 +264,12 @@ export default function ExploreScreen() {
               onClick={() => openList(l.id)}
               desc={<>
                 {l.locked && (
-                  <span className="scr-activity-row-status scr-extshare-lock" title="비밀번호">
+                  <span className="scr-feed-row-status scr-extshare-lock" title="비밀번호">
                     <Lock size={11} aria-label="비밀번호" />
                   </span>
                 )}
-                <span className="scr-activity-row-names">
-                  <span className="scr-activity-row-em">{l.name}</span>
+                <span className="scr-feed-row-names">
+                  <span className="scr-feed-row-em">{l.name}</span>
                 </span>
               </>}
               side={`${l.gameCount}판`}
@@ -295,25 +295,25 @@ export default function ExploreScreen() {
       )}
 
       {listId !== null && !open && (current ? !current.locked || !!pass : false) && (games === null ? <LoadingMark /> : (
-        <div className="scr-activity-rows scr-activity-group-page-rows">
+        <div className="scr-feed-rows scr-feed-group-page-rows">
           {games.length === 0 && <div className="scr-empty">게임이 없어요</div>}
           {[...games].sort((a, b) => gameTime(b).localeCompare(gameTime(a))).map((g) => (
             <ListRow
               key={g.id}
-              className="scr-activity-row-game scr-gm"
+              className="scr-feed-row-game scr-gm"
               onClick={() => openGame(g.id)}
               status={<GameRowStatus game={g} data />}
-              desc={<span className="scr-activity-row-names scr-extshare-title"><span className="scr-activity-row-em">{gameTitleOf(g)}</span></span>}
+              desc={<span className="scr-feed-row-names scr-extshare-title"><span className="scr-feed-row-em">{gameTitleOf(g)}</span></span>}
               side={formatAgo(gameTime(g))}
             />
           ))}
         </div>
       ))}
 
-      {/* 회원 게임 페이지와 같은 감싸개(.scr-activity-group-page · display contents)로 싼다(2026-10-12, 지적: "손님 모드 모바일 꽉 안 차") — 폰에서 재생기 틀을
-          뷰포트 폭으로 펴는 규칙(scplay replay.css '.scr-activity-group-page .scr-motion-frame { width: 100vw }')이 이 감싸개에만 걸린다. */}
+      {/* 회원 게임 페이지와 같은 감싸개(.scr-feed-group-page · display contents)로 싼다(2026-10-12, 지적: "손님 모드 모바일 꽉 안 차") — 폰에서 재생기 틀을
+          뷰포트 폭으로 펴는 규칙(scplay replay.css '.scr-feed-group-page .scr-motion-frame { width: 100vw }')이 이 감싸개에만 걸린다. */}
       {open && (
-        <div className="scr-activity-group-page">
+        <div className="scr-feed-group-page">
           <div className="scr-game-page-card scr-extshare-detail">
             <GuestGameStory
               headSlot={headSlot9}

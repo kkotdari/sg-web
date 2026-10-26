@@ -1,10 +1,11 @@
 import { type ReactNode } from "react";
 import { cx } from "../../utils/format";
 import { serverMs } from "../../utils/date";
-import { parseRoute, type ActivityGroupKey } from "../../utils/route";
-import type { ActivityTargetType, GameResult, LeagueMatchActivity, Member, Post, RankingShift, Schedule } from "../../types";
+import { parseRoute, type FeedGroup } from "../../utils/route";
+import type { CommentTargetType, GameResult, LeagueMatchEntry, Member, Post, RankingShift } from "../../types";
 
-/* 활동 화면들(홈·묶음 목록·상세·게임 상세)이 함께 쓰는 항목 꼴과 셈 — 2026-10-19 화면을 컴포넌트로 나누며 ActivityScreen 에서 옮겼다. */
+/* 게임·게시판 화면(목록·상세·게임 상세)이 함께 쓰는 항목 꼴과 셈 — 2026-10-19 화면을 컴포넌트로 나누며 GamesScreen 에서 옮겼다.
+   (2026-10-26 활동 화면을 게임 · 게시판 두 화면으로 나누고 일정은 꼭지 '일정' 글이 됐다 — 옛 일정 항목·홈 미리보기 셈은 걷었다.) */
 
 export const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
 export const TOUCHED_SLACK_MS = 5000;
@@ -27,18 +28,10 @@ export interface LeagueMatchItem {
   kind: "leagueMatch";
   time: number;
   withClock: boolean;
-  match: LeagueMatchActivity;
+  match: LeagueMatchEntry;
 }
 
-export interface ScheduleItem {
-  kind: "schedule";
-  time: number;
-  withClock: boolean;
-  sortTime: number;
-  schedule: Schedule;
-}
-
-/** 자유게시판 글(2026-10-26) — 시각은 쓴 때. */
+/** 게시판 글(2026-10-26) — 시각은 쓴 때. */
 export interface PostItem {
   kind: "post";
   time: number;
@@ -46,31 +39,20 @@ export interface PostItem {
   post: Post;
 }
 
-export type ActivityItem =
-  | GameResultItem | RankingShiftItem | LeagueMatchItem | ScheduleItem | PostItem;
+export type FeedItem =
+  | GameResultItem | RankingShiftItem | LeagueMatchItem | PostItem;
 
-export type DisplayItem = ActivityItem;
+export type DisplayItem = FeedItem;
 
-export function sortMsOf(it: ActivityItem): number {
-  return it.kind === "schedule" ? it.sortTime : it.time;
-}
-
-export function scheduleItem(s: Schedule): ScheduleItem {
-  const at = new Date(`${s.scheduledDate}T${s.scheduledTime || "23:59:59"}`).getTime();
-  return {
-    kind: "schedule",
-    time: at,
-    withClock: !!s.scheduledTime,
-    sortTime: at > Date.now() ? Math.max(at, Date.now() + 1) : at,
-    schedule: s,
-  };
+export function sortMsOf(it: FeedItem): number {
+  return it.time;
 }
 
 export function postItem(p: Post): PostItem {
   return { kind: "post", time: serverMs(p.createdAt), withClock: true, post: p };
 }
 
-export function leagueMatchItem(m: LeagueMatchActivity): LeagueMatchItem {
+export function leagueMatchItem(m: LeagueMatchEntry): LeagueMatchItem {
   return {
     kind: "leagueMatch",
     time: serverMs(m.scheduledAt ?? m.postedAt),
@@ -98,25 +80,18 @@ export function sessionDateOf(it: GameResultItem): string {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 export function detailIdOf(it: DisplayItem): number | null {
-  return it.kind === "schedule" ? it.schedule.id
-      : it.kind === "post" ? it.post.id
+  return it.kind === "post" ? it.post.id
       : it.kind === "rankingShift" ? it.shift.id
         : it.kind === "leagueMatch" ? it.match.id
           : null;
 }
 
-export function detailGroupOf(it: DisplayItem): ActivityGroupKey | null {
-  return it.kind === "schedule" ? "schedule"
-      : it.kind === "post" ? "board"
-      : it.kind === "rankingShift" ? "notice"
-        : it.kind === "leagueMatch" ? "league"
+export function detailGroupOf(it: DisplayItem): FeedGroup | null {
+  return it.kind === "post" ? "board"
           : null;
 }
 
-export const GROUP_ITEM_KIND: Record<ActivityGroupKey, string> = {
-  notice: "rankingShift",
-  schedule: "schedule",
-  league: "leagueMatch",
+export const GROUP_ITEM_KIND: Record<FeedGroup, string> = {
   gameResult: "gameResult",
   board: "post",
 };
@@ -126,9 +101,8 @@ export function gameParamOf(): string | null {
   return r.group === "gameResult" ? r.item : null;
 }
 
-export function commentTargetOf(it: DisplayItem): { type: ActivityTargetType; id: number } {
-  return it.kind === "schedule" ? { type: "schedule", id: it.schedule.id }
-      : it.kind === "post" ? { type: "post", id: it.post.id }
+export function commentTargetOf(it: DisplayItem): { type: CommentTargetType; id: number } {
+  return it.kind === "post" ? { type: "post", id: it.post.id }
       : it.kind === "rankingShift" ? { type: "rankingShift", id: it.shift.id }
         : it.kind === "leagueMatch" ? { type: "leagueMatch", id: it.match.id }
           : { type: "gameResult", id: it.gameResult.id };
@@ -137,24 +111,19 @@ export function commentTargetOf(it: DisplayItem): { type: ActivityTargetType; id
 export function rowKeyOf(it: DisplayItem): string {
   return it.kind === "rankingShift" ? `rs-${it.shift.id}`
       : it.kind === "leagueMatch" ? `lm-${it.match.id}`
-        : it.kind === "schedule" ? `sc-${it.schedule.id}`
         : it.kind === "post" ? `po-${it.post.id}`
           : `m-${it.gameResult.id}`;
 }
 
 /* 글은 쓴 사람만 지운다(운영자도 못 지운다 — 요청: "수정삭제는 본인만") — 그래서 묶어 고르기에서 빠진다. */
 export function deletableOf(it: DisplayItem): boolean {
-  return it.kind === "gameResult" || it.kind === "schedule";
+  return it.kind === "gameResult";
 }
 
 /** gameCount 는 게임 목록 '전체 선택'일 때 — 받은 줄이 아니라 서버 조건의 수. */
 export function bulkDeleteMessageOf(items: DisplayItem[], gameCount?: number): string {
   const games = gameCount ?? items.filter((it) => it.kind === "gameResult").length;
-  const others = gameCount !== undefined ? 0 : items.length - games;
-  const parts: string[] = [];
-  if (games > 0) parts.push(`게임 ${games}개는 목록·통계에서 사라지고, 운영자가 제어판의 '삭제된 경기'에서 복원할 수 있어요.`);
-  if (others > 0) parts.push(`일정 ${others}개는 되돌릴 수 없어요.`);
-  return parts.join(" ");
+  return games > 0 ? `게임 ${games}개는 목록·통계에서 사라지고, 운영자가 제어판의 '삭제된 경기'에서 복원할 수 있어요.` : "";
 }
 
 export const HIDE_FORMS = { did: "숨겼어요", couldNot: "숨기지 못했어요" };
@@ -163,8 +132,8 @@ const ROW_NAME_MAX = 1;
 
 export function nameNodes(names: string[]): ReactNode[] {
   return names.flatMap((n, i) => [
-    ...(i > 0 ? [<span className="scr-activity-row-sep" key={`s${i}`}>·</span>] : []),
-    <span className="scr-activity-row-em" key={`n${i}`}>{n}</span>,
+    ...(i > 0 ? [<span className="scr-feed-row-sep" key={`s${i}`}>·</span>] : []),
+    <span className="scr-feed-row-em" key={`n${i}`}>{n}</span>,
   ]);
 }
 
@@ -174,7 +143,7 @@ export function namesWithRest(names: string[]): ReactNode {
   return (
     <>
       {nameNodes(names.slice(0, ROW_NAME_MAX))}
-      {rest > 0 && <>{" 외 "}<span className="scr-activity-row-em">{rest}</span>{"명"}</>}
+      {rest > 0 && <>{" 외 "}<span className="scr-feed-row-em">{rest}</span>{"명"}</>}
     </>
   );
 }
@@ -185,39 +154,28 @@ export function sessionDateLabel(date: string): string {
 }
 /* (걷어냄 · 2026-10-13, 요청: 알림 묶음 걷어 내기 — "알림이 뭐야? 그런 기능 본 적이 없어" → "2") 알림(랭킹 변동 · rankingShift) 묶음.
    서버는 그대로 만들지만 활동 화면에 싣지 않는다(feedAll · 상세 링크). 타입·카드(RankingShiftCard)는 남겨 둔다. */
-export const GROUP_DEFS: { key: ActivityGroupKey; label: string }[] = [
-  { key: "schedule", label: "일정" },
-  { key: "league", label: "리그" },
+export const GROUP_DEFS: { key: FeedGroup; label: string }[] = [
   { key: "gameResult", label: "게임" },
-  { key: "board", label: "자유게시판" },
+  { key: "board", label: "게시판" },
 ];
 
-export const GROUP_SCREEN_CODE: Record<ActivityGroupKey, string> = {
-  notice: "activity_notice",
-  schedule: "activity_schedule",
-  league: "activity_league",
-  gameResult: "activity_game",
-  board: "activity_board",
+/* 접속 기록의 화면 열쇠 — 화면 이름 그대로(2026-10-26, 요청: "activity라는 파일이나 클래스를 다 변경"). */
+export const GROUP_SCREEN_CODE: Record<FeedGroup, string> = {
+  gameResult: "games",
+  board: "board",
 };
 
-export function groupKeyOf(item: ActivityItem): ActivityGroupKey {
+export function groupKeyOf(item: FeedItem): FeedGroup | null {
   return item.kind === "gameResult" ? "gameResult"
-    : item.kind === "leagueMatch" ? "league"
-    : item.kind === "schedule" ? "schedule"
     : item.kind === "post" ? "board"
-    : "notice";
+    : null;
 }
 
-const GROUP_PREVIEW_MAX = 3;
-const GAME_PREVIEW_MAX = 10;
-export const previewMaxOf = (k: ActivityGroupKey): number =>
-  (k === "gameResult" ? GAME_PREVIEW_MAX : GROUP_PREVIEW_MAX);
-
-export const SEARCHABLE_GROUPS = new Set<ActivityGroupKey>(["league", "gameResult"]);
+export const SEARCHABLE_GROUPS = new Set<FeedGroup>(["gameResult"]);
 
 /* ★ 내전·공방은 **서버가 실어 준 clan** 으로 가른다(2026-10-12, 지적: "활동 화면과 게임 목록에서 내전·공방 목록이 달라 — 원래 공방에 있던 게 내전에") — 비공개(숨긴) 판은
    팀을 비워 내려와 옛 셈(슬롯 전원이 회원)이 빈 목록에서 늘 참이라 공방 판이 내전 탭에 들었다. 게임 목록(서버 membersOnly)과 같은 셈이다. 옛 서버(clan 없음)만 슬롯으로 잰다. */
-export function isClanGame(item: ActivityItem, memberOf: (id: string) => Member | undefined): boolean {
+export function isClanGame(item: FeedItem, memberOf: (id: string) => Member | undefined): boolean {
   if (item.kind !== "gameResult") return true;
   if (typeof item.gameResult.clan === "boolean") return item.gameResult.clan;
   const slots = [...item.gameResult.team1, ...item.gameResult.team2];
@@ -236,7 +194,7 @@ const GAME_TAB_OPTIONS: { value: GameTab; label: string }[] = [
   { value: "pub", label: "공방" },
   { value: "fame", label: "명예의 전당" },
 ];
-export function inGameTab(item: ActivityItem, tab: GameTab, memberOf: (id: string) => Member | undefined): boolean {
+export function inGameTab(item: FeedItem, tab: GameTab, memberOf: (id: string) => Member | undefined): boolean {
   if (item.kind !== "gameResult") return true;
   if (tab === "fame") return !!item.gameResult.fame;
   if (item.gameResult.league) return tab === "league";
@@ -245,12 +203,12 @@ export function inGameTab(item: ActivityItem, tab: GameTab, memberOf: (id: strin
 }
 export function GameTabs({ value, onChange }: { value: GameTab; onChange: (next: GameTab) => void }) {
   return (
-    <div className="scr-activity-game-tabs" role="tablist" aria-label="게임 탭">
+    <div className="scr-feed-game-tabs" role="tablist" aria-label="게임 탭">
       {GAME_TAB_OPTIONS.map((o) => (
         <button
           key={o.value} type="button" role="tab"
           aria-selected={o.value === value}
-          className={cx("scr-activity-game-tab", o.value === value && "is-on")}
+          className={cx("scr-feed-game-tab", o.value === value && "is-on")}
           onClick={() => onChange(o.value)}
         >
           {o.label}
@@ -269,9 +227,6 @@ export function touchMsOf(it: DisplayItem): number {
   if (it.kind === "leagueMatch") {
     return Math.max(serverMs(it.match.postedAt), serverMs(it.match.updatedAt));
   }
-  if (it.kind === "schedule") {
-    return Math.max(serverMs(it.schedule.createdAt), serverMs(it.schedule.updatedAt));
-  }
   if (it.kind === "post") return Math.max(serverMs(it.post.createdAt), serverMs(it.post.updatedAt));
   if (it.kind === "rankingShift") return serverMs(it.shift.createdAt);
   return it.time;
@@ -288,10 +243,9 @@ export function rowFlagsOf(it: DisplayItem): ("new" | "update")[] {
     if (updated - posted > TOUCHED_SLACK_MS && fresh(updated)) flags.push("update");
     return flags;
   }
-  if (it.kind === "schedule" || it.kind === "post") {
-    const doc = it.kind === "schedule" ? it.schedule : it.post;
-    const created = serverMs(doc.createdAt);
-    const updated = serverMs(doc.updatedAt);
+  if (it.kind === "post") {
+    const created = serverMs(it.post.createdAt);
+    const updated = serverMs(it.post.updatedAt);
     const flags: ("new" | "update")[] = [];
     if (fresh(created)) flags.push("new");
     if (updated - created > TOUCHED_SLACK_MS && fresh(updated)) flags.push("update");
@@ -302,6 +256,6 @@ export function rowFlagsOf(it: DisplayItem): ("new" | "update")[] {
 }
 
 /** 그 묶음의 이 홈·목록에 실을 항목 — 내전·공방 탭으로 거른 것. */
-export function feedOfTab(feedAll: ActivityItem[], tab: GameTab, memberOf: (id: string) => Member | undefined): ActivityItem[] {
+export function feedOfTab(feedAll: FeedItem[], tab: GameTab, memberOf: (id: string) => Member | undefined): FeedItem[] {
   return feedAll.filter((it) => inGameTab(it, tab, memberOf));
 }

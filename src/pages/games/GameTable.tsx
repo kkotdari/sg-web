@@ -26,14 +26,14 @@ import type { GameResult, Member } from "../../types";
    컬럼: 게임번호 시작일시 게임길이 맵 로스터 유형(팀전, 유즈맵, 프리포올 등) 재생가능여부 조회수(→ 추천 2026-10-22) 숨김 · 숨긴 게임은 해제요청 버튼").
    2026-10-20: 게임번호 칸 뺌 · 리그는 제 칸 · 일시는 기본 타임스탬프 · 맵 칸 좁히고 가운데(요청).
    머리 줄(GameTableHead)과 줄(GameTableRow)이 같은 열 틀(--gtab-cols · global.css)을 쓴다 — 맵·시간·재생·NEW·'몇 분 전' 배지는 없다.
-   로스터 칸은 폰과 같은 꼴(GameRowNames mobile — 팀마다 승패 배지 · 세로 이름 · vs). 폰은 옛 줄(ActivityRow → ListRow) 그대로. */
+   로스터 칸은 폰과 같은 꼴(GameRowNames mobile — 팀마다 승패 배지 · 세로 이름 · vs). 폰은 옛 줄(FeedRow → ListRow) 그대로. */
 
 /* 리그 칸은 **앞에서 둘째**이고 **리그 탭에서만** 선다(2026-10-20, 요청: "리그 컬럼은 앞에서 두번째로 이동하고 리그 탭에서만 나오게") —
    열 틀은 목록의 .has-league 가 고른다(global.css). */
 /* 재생 칸 → **링크** 칸(2026-10-20, 요청: "게임목록에 pc에 다운로드 버튼(디스켓) 아이콘도 추가(링크 컬럼 추가)") — 리플레이 받기(💾) ·
    (재생 ▶ 은 같은 날 게임길이 칸 아래로 옮겼다) ·
    공유 · 숨기기(같은 날 요청: "링크에 숨기기 버튼 추가 · 스크랩버튼 공유버튼도" · 스크랩은 2026-10-22 기능째 걷었다) ·
-   공유는 게임 상세의 공유(카카오 · 안 되면 링크 복사) · 숨기기는 뛴 사람·운영자만(확인 창은 활동 화면이 띄운다 — onHide). */
+   공유는 게임 상세의 공유(카카오 · 안 되면 링크 복사) · 숨기기는 뛴 사람·운영자만(확인 창은 게임 화면이 띄운다 — onHide). */
 /* 숨김 칸은 걷었다(2026-10-20, 요청: "숨김 컬럼 제거하고 해제요청 버튼을 숨김 아래로") — 숨긴 판은 로스터 칸의 "비밀" 아래에 해제요청(폰 줄과 같은 꼴). */
 /* 데이터 칸(2026-10-21, 요청: "로스터칸 폭 줄이고 분석그래프 컬럼 추가" → "컬럼명 데이터로 · 아이콘은 다른 것들처럼 평범한 아이콘 글자로") — 그래프 보기를 링크 칸에서 꺼내 제 칸에 · 링크 칸과 같은 아이콘 단추. */
 /* 차례(2026-10-21, 요청: "유형을 맵 앞으로 · 게임길이 컬럼을 로스터 다음으로 · 리그에선 리그 + 유형 합치기 맨 마지막에 유형을 괄호로 표시") —
@@ -120,7 +120,7 @@ export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (
 
 export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
   return (
-    <div className={cx("scr-activity-row-wrap scr-gtab-headwrap", selecting && "scr-activity-row-wrap-sel")}>
+    <div className={cx("scr-feed-row-wrap scr-gtab-headwrap", selecting && "scr-feed-row-wrap-sel")}>
       {/* 체크 칸만큼 비운다(줄의 RowCheck 와 같은 폭). */}
       {selecting && <span className="scr-checkbox-field scr-selcell scr-gtab-headcheck" aria-hidden><input type="checkbox" tabIndex={-1} /></span>}
       <div className="scr-gtab scr-gtab-head">
@@ -151,7 +151,7 @@ const lengthText = (sec: number | null): string =>
 /** 이 화면에서 해제를 청한 판 — 서버는 같은 판에 기다리는 요청을 하나만 두니 다시 눌러도 되지만, 단추는 '요청됨'으로 잠근다. */
 const requested = new Set<number>();
 
-/** 해제요청 단추 — PC 표의 숨김 칸과 폰 숨긴 줄(ActivityRow)이 같이 쓴다. 폰 줄은 그 자체가 <button> 이라 단추를 못 넣는다 —
+/** 해제요청 단추 — PC 표의 숨김 칸과 폰 숨긴 줄(FeedRow)이 같이 쓴다. 폰 줄은 그 자체가 <button> 이라 단추를 못 넣는다 —
  *  inRow 면 span(role=button)으로 선다(2026-10-20, 요청: "모바일 숨김 경기에도 해제 요청 버튼"). */
 export function UnhideRequestButton({ game, inRow }: { game: GameResult; inRow?: boolean }) {
   const [state, setState] = useState<"idle" | "busy" | "done">(requested.has(game.id) ? "done" : "idle");
@@ -240,7 +240,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   );
   const open = () => { if (!disabled) onClick(); };
   return (
-    <div className={cx("scr-activity-row-wrap", !!check && "scr-activity-row-wrap-sel", picked && "is-picked")}>
+    <div className={cx("scr-feed-row-wrap", !!check && "scr-feed-row-wrap-sel", picked && "is-picked")}>
       {check}
       <div
         role="button" tabIndex={disabled ? -1 : 0}

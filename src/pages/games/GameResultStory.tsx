@@ -3,7 +3,7 @@ import { formatWhen } from "../../utils/date";
 import { ReplayModule, sceneLinkOf9, type MotionBase } from "scplay";
 import { createPortal } from "react-dom";
 import { api } from "../../api/client";
-import ActivityComments from "./ActivityComments";
+import Comments from "../feed/Comments";
 import { gameResultShareContent } from "./gameShare";
 import { preloadKakao, shareToKakao } from "../../utils/kakaoShare";
 import RosterSide, { isMeleeGame, outcomeFor, resolveSlotName } from "./GameResultSides";
@@ -203,7 +203,7 @@ export default function GameResultStory({
         melee={isMeleeGame({ matchType: gameResult.matchType, team1, team2 })}
         onFinish={soleViewNow ? () => setRevealWin(true) : undefined}
         side={detailClose
-          ? <ActivityComments targetType="gameResult" targetId={gameResult.id} overModal />
+          ? <Comments targetType="gameResult" targetId={gameResult.id} overModal />
           : undefined}
         menu={menu}
       />
@@ -216,7 +216,7 @@ export default function GameResultStory({
       {showRoster && (
         melee ? (
           <div className={cx("scr-roster-matchup", "scr-roster-matchup-melee",
-            "scr-activity-game-result-matchup", grid && "scr-story-matchup-wide")}>
+            "scr-feed-game-result-matchup", grid && "scr-story-matchup-wide")}>
             {[...team1, ...team2].map((s9, i9) => (
               <React.Fragment key={`${s9.memberId}-${i9}`}>
                 {i9 > 0 && <span className="scr-story-melee-vs" aria-hidden>vs</span>}
@@ -234,7 +234,7 @@ export default function GameResultStory({
             ))}
           </div>
         ) : (
-        <div className={cx("scr-roster-matchup", "scr-activity-game-result-matchup", grid && "scr-story-matchup-wide")}>
+        <div className={cx("scr-roster-matchup", "scr-feed-game-result-matchup", grid && "scr-story-matchup-wide")}>
           <RosterSide
             team={team1} memberOf={memberOf}
             highlightMemberIds={highlightMemberIds} highlightTerms={highlightTerms}
@@ -249,7 +249,7 @@ export default function GameResultStory({
         </div>
         )
       )}
-      {result === "not_held" && <div className="scr-activity-game-result-notheld">미실시</div>}
+      {result === "not_held" && <div className="scr-feed-game-result-notheld">미실시</div>}
     {!showRoster && !headSlot && (mapMeta || winBadge) && (
       <div className="scr-game-result-trow-map-line scr-game-result-trow-map-meta scr-story-maphead">
         {mapName && <span className="scr-game-result-trow-map">{mapName}</span>}

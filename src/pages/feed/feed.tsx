@@ -2,16 +2,16 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { primeReplayMaps } from "scplay";
 import { api } from "../../api/client";
 import { useCursorPagination } from "../../hooks/useCursorPagination";
-import { primeActivityComments } from "./ActivityComments";
-import { pickComingMatches } from "./ComingMatches";
+import { primeComments } from "./Comments";
+import { pickComingMatches } from "../league/ComingMatches";
 import {
-  gameResultItem, leagueMatchItem, postItem, scheduleItem, sessionDateOf, sortMsOf,
-  type ActivityItem,
-} from "./activityItems";
+  gameResultItem, leagueMatchItem, postItem, sessionDateOf, sortMsOf,
+  type FeedItem,
+} from "./feedItems";
 import { fmt } from "../../utils/date";
-import type { ActivityFeedItem, GameResult, LeagueMatchActivity, Post, Schedule } from "../../types";
+import type { FeedEntry, GameResult, LeagueMatchEntry, Post } from "../../types";
 
-/* ★ 활동 피드(홈·묶음 목록이 보는 서버 목록) — 2026-10-19(요청: "활동과 일정 너나와 리그 게임 목록과 상세등 모두 컴포넌트 분리").
+/* ★ 피드(게임 · 게시판 목록이 보는 서버 목록 · 화면마다 제 몫 kinds) — 2026-10-19(요청: "활동과 일정 너나와 리그 게임 목록과 상세등 모두 컴포넌트 분리").
    피드는 이 Provider 하나가 들고, 값(FeedData)과 손잡이(FeedActions)를 **다른 문맥**으로 나눠 준다. 목록 화면만 값을 구독하고,
    상세 화면·라우터는 손잡이만 쓴다 — 손잡이 문맥은 한 번 만든 그대로라 피드가 바뀌어도 상세·라우터는 다시 그려지지 않는다. */
 
@@ -19,8 +19,8 @@ const PAGE_SIZE = 100;
 
 export interface FeedData {
   /** 탭(내전·공방)으로 거르기 **전**의 전부(새 소식 순 차례). */
-  feedAll: ActivityItem[];
-  comingMatches: LeagueMatchActivity[];
+  feedAll: FeedItem[];
+  comingMatches: LeagueMatchEntry[];
   loading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
@@ -29,8 +29,7 @@ export interface FeedData {
 
 export interface FeedActions {
   reload: () => void;
-  patch: (updater: (prev: ActivityFeedItem[]) => ActivityFeedItem[]) => void;
-  upsertSchedule: (s: Schedule) => void;
+  patch: (updater: (prev: FeedEntry[]) => FeedEntry[]) => void;
   upsertPost: (p: Post) => void;
   /** 목록의 그 게임만 갈아 끼운다(상세가 제 것을 따로 고친다). */
   patchGameResult: (g: GameResult) => void;
@@ -56,11 +55,13 @@ export function useFeedActions(): FeedActions {
   return v;
 }
 
-export function FeedProvider({ children }: { children: ReactNode }) {
+/** kinds — 그 화면이 쓸 항목 종류만 받는다(게임 화면 gameResultPost · 게시판 post · 리그 화면 leagueMatch · 2026-10-26). */
+export function FeedProvider({ children, kinds }: { children: ReactNode; kinds: FeedEntry["kind"][] }) {
+  const kindsKey = kinds.join(",");
   const fetchPage = useCallback(async (cursor: string | null) => {
-    const page = await api.listActivityFeed({ cursor: cursor ?? undefined, limit: PAGE_SIZE });
+    const page = await api.listFeed({ cursor: cursor ?? undefined, limit: PAGE_SIZE, kinds: kindsKey.split(",") as FeedEntry["kind"][] });
     return { ...page, hasMore: page.nextCursor !== null, total: page.totalActivities };
-  }, []);
+  }, [kindsKey]);
   const {
     items: feedItems, loading: feedLoading, loadingMore, hasMore, loadMore, reload, patch,
   } = useCursorPagination(fetchPage, []);
@@ -68,11 +69,10 @@ export function FeedProvider({ children }: { children: ReactNode }) {
   const gameResults = useMemo(() => feedItems.flatMap((it) => it.gameResults), [feedItems]);
   const leagueMatches = useMemo(() => feedItems.flatMap((it) => (it.leagueMatch ? [it.leagueMatch] : [])), [feedItems]);
   const comingMatches = useMemo(() => pickComingMatches(leagueMatches), [leagueMatches]);
-  const schedules = useMemo(() => feedItems.flatMap((it) => (it.schedule ? [it.schedule] : [])), [feedItems]);
   const posts = useMemo(() => feedItems.flatMap((it) => (it.post ? [it.post] : [])), [feedItems]);
   useEffect(() => {
     if (feedItems.length === 0) return;
-    void primeActivityComments(feedItems.flatMap((it) => it.comments));
+    void primeComments(feedItems.flatMap((it) => it.comments));
   }, [feedItems]);
 
   const [mapsLoading, setMapsLoading] = useState(true);
@@ -89,28 +89,20 @@ export function FeedProvider({ children }: { children: ReactNode }) {
       .catch(() => {}).finally(() => { if (aliveRef.current) setMapsLoading(false); });
   }, [feedLoading, gameResults]);
 
-  const feedAll = useMemo<ActivityItem[]>(() => {
-    const items: ActivityItem[] = [
+  const feedAll = useMemo<FeedItem[]>(() => {
+    const items: FeedItem[] = [
       ...gameResults.map(gameResultItem),
       ...leagueMatches.map(leagueMatchItem),
-      ...schedules.map(scheduleItem),
       ...posts.map(postItem),
     ];
     return items.sort((a, b) => sortMsOf(b) - sortMsOf(a));
-  }, [gameResults, leagueMatches, schedules, posts]);
+  }, [gameResults, leagueMatches, posts]);
 
   const reloadRef = useRef(reload);
   reloadRef.current = reload;
   const actions = useMemo<FeedActions>(() => ({
     reload: () => reloadRef.current(),
     patch,
-    upsertSchedule: (updated) => patch((prev) => {
-      if (prev.some((it) => it.schedule?.id === updated.id)) {
-        return prev.map((it) => (it.schedule?.id === updated.id ? { ...it, schedule: updated } : it));
-      }
-      reloadRef.current();
-      return [{ key: `sc-${updated.id}`, kind: "schedule" as const, schedule: updated, gameResults: [], comments: [] }, ...prev];
-    }),
     upsertPost: (updated) => patch((prev) => {
       if (prev.some((it) => it.post?.id === updated.id)) {
         return prev.map((it) => (it.post?.id === updated.id ? { ...it, post: updated } : it));

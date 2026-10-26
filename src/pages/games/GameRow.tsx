@@ -16,8 +16,8 @@ import type { GameResult, GameResultSlot, Member } from "../../types";
  *  한때는 줄 폭을 재서 transform: scaleX(--flat) 로 글자를 좌우로 눌러 담았다(ResizeObserver + fonts.ready) — 글자가 찌그러져 보였다. */
 export function FlatLine({ children }: { children: ReactNode }) {
   return (
-    <span className="scr-activity-row-flat">
-      <span className="scr-activity-row-flat-in">{children}</span>
+    <span className="scr-feed-row-flat">
+      <span className="scr-feed-row-flat-in">{children}</span>
     </span>
   );
 }
@@ -29,12 +29,12 @@ export function GameDataButton({ game, graph = true }: { game: GameResult; graph
   const rec = useRecommend(game);
   const stop = (e: { stopPropagation: () => void }): void => e.stopPropagation();
   return (
-    <span className="scr-activity-row-data-wrap" onPointerDown={stop} onPointerUp={stop} onClick={stop} onKeyDown={stop} onContextMenu={stop}>
+    <span className="scr-feed-row-data-wrap" onPointerDown={stop} onPointerUp={stop} onClick={stop} onKeyDown={stop} onContextMenu={stop}>
       {/* 추천(폰 · 2026-10-22 요청) — 수와 함께 · 로스터 아래 줄 왼끝(global.css). */}
-      <RecommendButton rec={rec} size={14} count className="scr-activity-row-rec" />
+      <RecommendButton rec={rec} size={14} count className="scr-feed-row-rec" />
       {graph && (
         <button
-          type="button" className="scr-icon-btn scr-activity-row-data" title="데이터 그래프" aria-label="데이터 그래프"
+          type="button" className="scr-icon-btn scr-feed-row-data" title="데이터 그래프" aria-label="데이터 그래프"
           onClick={() => { setOpen(true); void api.pingGameAction("graph", game); }}
         >
           <ChartLine size={15} />
@@ -50,7 +50,7 @@ export function GameDataButton({ game, graph = true }: { game: GameResult; graph
 export function GameRowStatus({ game, data }: { game: GameResult; data?: boolean; play?: boolean }) {
   if (isSecretGame(game)) {
     return (
-      <span className="scr-activity-row-status scr-activity-row-status-dur scr-activity-row-status-secret" title="숨긴 경기">
+      <span className="scr-feed-row-status scr-feed-row-status-dur scr-feed-row-status-secret" title="숨긴 경기">
         <span>?</span>
       </span>
     );
@@ -64,7 +64,7 @@ export function GameRowStatus({ game, data }: { game: GameResult; data?: boolean
   if (sec == null && !map && !tail) return null;
   return (<>
     {(sec != null || map !== "") && (
-      <span className="scr-activity-row-status scr-activity-row-status-dur" title={full || undefined}>
+      <span className="scr-feed-row-status scr-feed-row-status-dur" title={full || undefined}>
         {map !== "" && <span>{map}</span>}
         {sec != null && <span>{Math.round(sec / 60)}분</span>}
       </span>
@@ -76,7 +76,7 @@ export function GameRowStatus({ game, data }: { game: GameResult; data?: boolean
 const sideOutcome = (result: GameResult["result"], side: 1 | 2): "승" | "무" | "패" | null =>
   (result === "draw" ? "무" : result === "team1" ? (side === 1 ? "승" : "패") : result === "team2" ? (side === 2 ? "승" : "패") : null);
 const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
-  (text ? <span className={text === "패" ? "scr-activity-row-wl is-loss" : text === "승" ? "scr-activity-row-wl is-win" : "scr-activity-row-wl"} aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
+  (text ? <span className={text === "패" ? "scr-feed-row-wl is-loss" : text === "승" ? "scr-feed-row-wl is-win" : "scr-feed-row-wl"} aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
 
 export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   game: GameResult;
@@ -90,17 +90,17 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   const nameOf = (s: GameResultSlot, all: GameResultSlot[]): string =>
     (nameMask ? nameMask(resolveSlotName(s, all, memberOf), s) : resolveSlotName(s, all, memberOf));
   /** 선수 하나 — **왼쪽 종족 글자 배지** + 이름(2026-10-24, 요청: "게임 목록과 그걸 쓰는 화면들(데이터 관리 · 게임 연결 …)에 각 선수 왼쪽 종족 배지") ·
-   *  이 한 벌(GameRowNames)을 게임 목록 · PC 표 · 운영자 재분석 · 삭제된 경기 · 외부 공유 · 리그 세트가 다 쓴다. 배지는 안 줄고 이름만 잘린다(global.css .scr-activity-row-person). */
+   *  이 한 벌(GameRowNames)을 게임 목록 · PC 표 · 운영자 재분석 · 삭제된 경기 · 외부 공유 · 리그 세트가 다 쓴다. 배지는 안 줄고 이름만 잘린다(global.css .scr-feed-row-person). */
   const person = (s: GameResultSlot, all: GameResultSlot[], key: string): ReactNode => (
-    <span className="scr-activity-row-person" key={key}>
-      <RaceBadge race={s.race} size={13} circleLetter className="scr-activity-row-race" />
-      <span className="scr-activity-row-em">{nameOf(s, all)}</span>
+    <span className="scr-feed-row-person" key={key}>
+      <RaceBadge race={s.race} size={13} circleLetter className="scr-feed-row-race" />
+      <span className="scr-feed-row-em">{nameOf(s, all)}</span>
     </span>
   );
   if (isSecretGame(game)) {
     return (
-      <span className="scr-activity-row-names">
-        <span className="scr-activity-row-em scr-activity-row-secret-title">비밀</span>
+      <span className="scr-feed-row-names">
+        <span className="scr-feed-row-em scr-feed-row-secret-title">비밀</span>
       </span>
     );
   }
@@ -122,19 +122,19 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
     const pair = sides.length === 2;
     const nameRow = pair ? 1 : 2;
     return (<>
-      <span className="scr-activity-row-cols" style={{ gridTemplateColumns: cols }}>
+      <span className="scr-feed-row-cols" style={{ gridTemplateColumns: cols }}>
         {sides.flatMap((sd, i) => {
           const col = i * 2 + 1;
           return [
             ...(i > 0 ? [pair ? (
-              <span className="scr-activity-row-arrow scr-activity-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}>
+              <span className="scr-feed-row-arrow scr-feed-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}>
                 <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
                 <span aria-hidden>vs</span>
                 <OutcomeBadge text={sideOutcome(game.result, sd.side)} />
               </span>
-            ) : <span className="scr-activity-row-arrow scr-activity-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 2 }} aria-hidden>vs</span>] : []),
-            ...(pair ? [] : [<span className="scr-activity-row-col-wl" key={`w${i}`} style={{ gridColumn: col, gridRow: 1 }}><OutcomeBadge text={sideOutcome(game.result, sd.side)} /></span>]),
-            <span className="scr-activity-row-col-names" key={`n${i}`} style={{ gridColumn: col, gridRow: nameRow }}>
+            ) : <span className="scr-feed-row-arrow scr-feed-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 2 }} aria-hidden>vs</span>] : []),
+            ...(pair ? [] : [<span className="scr-feed-row-col-wl" key={`w${i}`} style={{ gridColumn: col, gridRow: 1 }}><OutcomeBadge text={sideOutcome(game.result, sd.side)} /></span>]),
+            <span className="scr-feed-row-col-names" key={`n${i}`} style={{ gridColumn: col, gridRow: nameRow }}>
               {sd.slots.map((s, k) => person(s, melee ? all : sd.slots, `p${k}`))}
             </span>,
           ];
@@ -144,18 +144,18 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   }
   const sideNodes = (slots: GameResultSlot[]): ReactNode[] =>
     slots.flatMap((s, i) => [
-      ...(i > 0 ? [<span className="scr-activity-row-slash" key={`s${i}`} aria-hidden>･</span>] : []),
+      ...(i > 0 ? [<span className="scr-feed-row-slash" key={`s${i}`} aria-hidden>･</span>] : []),
       person(s, slots, `n${i}`),
     ]);
   if (isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 })) {
     const all = [...game.team1, ...game.team2];
     return (<>
       <FlatLine>
-        <span className="scr-activity-row-name">
-          <span className="scr-activity-row-name-main">
+        <span className="scr-feed-row-name">
+          <span className="scr-feed-row-name-main">
             {all.flatMap((s, i) => [
               ...(i > 0 ? [(
-                <span className="scr-activity-row-arrow scr-activity-row-vs" key={`v${i}`} aria-hidden>
+                <span className="scr-feed-row-arrow scr-feed-row-vs" key={`v${i}`} aria-hidden>
                   vs
                 </span>
               )] : []),
@@ -169,16 +169,16 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   }
   return (<>
     <FlatLine>
-      <span className="scr-activity-row-name">
-        <span className="scr-activity-row-name-main">{sideNodes(game.team1)}</span>
+      <span className="scr-feed-row-name">
+        <span className="scr-feed-row-name-main">{sideNodes(game.team1)}</span>
       </span>
-      <span className="scr-activity-row-arrow scr-activity-row-vs">
+      <span className="scr-feed-row-arrow scr-feed-row-vs">
         <OutcomeBadge text={sideOutcome(game.result, 1)} />
         <span aria-hidden>vs</span>
         <OutcomeBadge text={sideOutcome(game.result, 2)} />
       </span>
-      <span className="scr-activity-row-name">
-        <span className="scr-activity-row-name-main">{sideNodes(game.team2)}</span>
+      <span className="scr-feed-row-name">
+        <span className="scr-feed-row-name-main">{sideNodes(game.team2)}</span>
       </span>
     </FlatLine>
   </>);
@@ -204,28 +204,28 @@ export function ListRow({ desc, status, top, side, onClick, check, picked, class
 }) {
   const hold = useLongPress(onLongPress);
   return (
-    <div className={cx("scr-activity-row-wrap", !!check && "scr-activity-row-wrap-sel", picked && "is-picked")}>
+    <div className={cx("scr-feed-row-wrap", !!check && "scr-feed-row-wrap-sel", picked && "is-picked")}>
       {check}
       <button
         type="button"
         {...hold}
-        className={cx("scr-activity-row", className, picked && "is-picked")}
+        className={cx("scr-feed-row", className, picked && "is-picked")}
         aria-disabled={disabled ? true : undefined}
         onClick={() => { if (!disabled) onClick(); }}
       >
-        <span className={cx("scr-activity-row-main", !!above && "has-above")}>
-          {above && <span className="scr-activity-row-above">{above}</span>}
+        <span className={cx("scr-feed-row-main", !!above && "has-above")}>
+          {above && <span className="scr-feed-row-above">{above}</span>}
           {status}
           {/* 앞자리(lead)는 **카드 안** 이름 줄의 왼쪽(같은 날 되요청: "카드 안에 넣기") — 이름 칸과 한 줄. */}
           {lead ? (
-            <span className="scr-activity-row-desc has-lead">
-              <span className="scr-activity-row-lead">{lead}</span>
-              <span className="scr-activity-row-desc-body">{desc}</span>
+            <span className="scr-feed-row-desc has-lead">
+              <span className="scr-feed-row-lead">{lead}</span>
+              <span className="scr-feed-row-desc-body">{desc}</span>
             </span>
-          ) : <span className="scr-activity-row-desc">{desc}</span>}
-          <span className="scr-activity-row-badges">
-            <span className="scr-activity-row-badges-top">{top}</span>
-            <span className="scr-activity-row-time">{side}</span>
+          ) : <span className="scr-feed-row-desc">{desc}</span>}
+          <span className="scr-feed-row-badges">
+            <span className="scr-feed-row-badges-top">{top}</span>
+            <span className="scr-feed-row-time">{side}</span>
           </span>
         </span>
       </button>

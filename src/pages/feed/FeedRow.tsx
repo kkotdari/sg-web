@@ -5,17 +5,17 @@ import { cx } from "../../utils/format";
 import { formatAgo } from "../../utils/date";
 import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
-import { GameRowNames, GameRowStatus, ListRow } from "./GameRow";
-import { StartMapCell } from "./GameTable";
-import { GameTableRow, UnhideRequestButton } from "./GameTable";
-import { commentStatOf, subscribeComments } from "./ActivityComments";
-import { PostBadges } from "./PostCard";
+import { GameRowNames, GameRowStatus, ListRow } from "../games/GameRow";
+import { StartMapCell } from "../games/GameTable";
+import { GameTableRow, UnhideRequestButton } from "../games/GameTable";
+import { commentStatOf, subscribeComments } from "./Comments";
+import { PostBadges, postWhenText } from "../board/PostCard";
 import {
   commentTargetOf, namesWithRest, rowFlagsOf, rowKeyOf, type DisplayItem,
-} from "./activityItems";
+} from "./feedItems";
 import type { GameResult, Member } from "../../types";
 
-/* ★ 활동 목록 한 줄 — memo(2026-10-19, 요청: "…목록과 상세등 모두 컴포넌트 분리"). 홈·묶음 목록이 같이 쓴다.
+/* ★ 목록 한 줄 — memo(2026-10-19, 요청: "…목록과 상세등 모두 컴포넌트 분리"). 게임 목록 · 게시판 목록이 같이 쓴다.
    손잡이는 늘 같은 그릇(act)으로 받고 누를 때 그릇 안의 최신 것을 부른다 — 그래서 고르기·새 글 표시·댓글 수처럼 제 것이 바뀔 때만 다시 그린다. */
 
 export interface RowAct {
@@ -42,7 +42,7 @@ function rowStatusOf(item: DisplayItem) {
   if (item.kind === "leagueMatch") {
     const done = item.match.setsWonA !== null && item.match.setsWonB !== null;
     return (
-      <span className={cx("scr-activity-row-status", done && "scr-activity-row-status-faded")}>
+      <span className={cx("scr-feed-row-status", done && "scr-feed-row-status-faded")}>
         {done ? "Finish" : "Ready"}
       </span>
     );
@@ -68,28 +68,24 @@ function rowDesc(item: DisplayItem, view: RowView) {
     );
     return (
       <>
-        <span className="scr-activity-row-name scr-activity-row-name-clip">
-          <span className="scr-activity-row-name-main">{sideText(m.teamA)}</span>
+        <span className="scr-feed-row-name scr-feed-row-name-clip">
+          <span className="scr-feed-row-name-main">{sideText(m.teamA)}</span>
         </span>
-        <span className="scr-activity-row-arrow scr-activity-row-colon" aria-hidden>:</span>
-        <span className="scr-activity-row-name scr-activity-row-name-clip">
-          <span className="scr-activity-row-name-main">{sideText(m.teamB)}</span>
+        <span className="scr-feed-row-arrow scr-feed-row-colon" aria-hidden>:</span>
+        <span className="scr-feed-row-name scr-feed-row-name-clip">
+          <span className="scr-feed-row-name-main">{sideText(m.teamB)}</span>
         </span>
       </>
     );
   }
-  if (item.kind === "schedule") {
-    return (
-      <span className="scr-activity-row-names scr-activity-row-name-clip">
-        <span className="scr-activity-row-em">{item.schedule.title}</span>
-      </span>
-    );
-  }
   if (item.kind === "post") {
     return (
-      <span className="scr-activity-row-names scr-activity-row-name-clip">
+      <span className="scr-feed-row-names scr-feed-row-name-clip">
         <PostBadges post={item.post} />
-        <span className="scr-activity-row-em">{item.post.title}</span>
+        <span className="scr-feed-row-em">{item.post.title}</span>
+        {item.post.category === "schedule" && item.post.scheduledDate && (
+          <span className="scr-post-when">{postWhenText(item.post.scheduledDate, item.post.scheduledTime)}</span>
+        )}
       </span>
     );
   }
@@ -102,12 +98,12 @@ function rowDesc(item: DisplayItem, view: RowView) {
         seen.add(e.memberId); names.push(e.nickname);
       }
     }
-    return <span className="scr-activity-row-names">{namesWithRest(names)}{" 변동"}</span>;
+    return <span className="scr-feed-row-names">{namesWithRest(names)}{" 변동"}</span>;
   }
   return <GameNames game={item.gameResult} memberOf={view.memberOf} mobile={view.isMobile} />;
 }
 
-export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickable, picked, minute, view, act }: {
+export const FeedRow = memo(function FeedRow({ item, flag, notes, pickable, picked, minute, view, act }: {
   item: DisplayItem;
   flag: "new" | "update" | null;
   notes: number;
@@ -129,7 +125,7 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
       onChange={() => act.current.toggle(key)}
     />
   );
-  /* PC 게임 줄은 표 한 줄(GameTable ★★ · 2026-10-19) — 머리 줄은 목록이 단다(ActivityHome · ActivityGroupPage). */
+  /* PC 게임 줄은 표 한 줄(GameTable ★★ · 2026-10-19) — 머리 줄은 목록이 단다(GameListPage). */
   if (!isMobile && item.kind === "gameResult") {
     const lg = item.gameResult.league;
     return (
@@ -155,8 +151,8 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
       )}
       picked={picked}
       className={cx(
-        item.kind === "gameResult" && "scr-activity-row-game scr-gm",
-        secret && "scr-activity-row-secret",
+        item.kind === "gameResult" && "scr-feed-row-game scr-gm",
+        secret && "scr-feed-row-secret",
       )}
       disabled={secret && !(isMobile && selMode)}
       onClick={() => {
@@ -180,11 +176,11 @@ export const ActivityRow = memo(function ActivityRow({ item, flag, notes, pickab
         {rowDesc(item, view)}
         {secret && <UnhideRequestButton game={item.gameResult} inRow />}
         {notes > 0 && (
-          <span className="scr-activity-row-notes" title={`댓글 ${notes}개`}>[{notes}]</span>
+          <span className="scr-feed-row-notes" title={`댓글 ${notes}개`}>[{notes}]</span>
         )}
       </>}
       top={flag && (
-        <span className={cx("scr-activity-row-flag", `scr-activity-row-flag-${flag}`)}>
+        <span className={cx("scr-feed-row-flag", `scr-feed-row-flag-${flag}`)}>
           {flag === "new" ? "NEW" : "UPDATE"}
         </span>
       )}

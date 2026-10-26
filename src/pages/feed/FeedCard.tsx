@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cx } from "../../utils/format";
 
-export function ActivityCard({
+export function FeedCard({
   className, dateLabel, icon, label, timeText, headMeta, actions, bodyClassName, children, comment,
 }: {
   className?: string;
@@ -16,23 +16,23 @@ export function ActivityCard({
   comment?: ReactNode;
 }) {
   return (
-    <div className={cx("scr-activity-card", className)}>
-      <div className="scr-activity-card-head" {...(dateLabel ? { "data-date-label": dateLabel } : {})}>
-        <div className="scr-activity-card-head-title">
+    <div className={cx("scr-feed-card", className)}>
+      <div className="scr-feed-card-head" {...(dateLabel ? { "data-date-label": dateLabel } : {})}>
+        <div className="scr-feed-card-head-title">
           {icon}
-          {label && <span className="scr-activity-card-label">{label}</span>}
+          {label && <span className="scr-feed-card-label">{label}</span>}
         </div>
-        <div className="scr-activity-card-head-meta">
-          {timeText && <span className="scr-activity-card-time">{timeText}</span>}
+        <div className="scr-feed-card-head-meta">
+          {timeText && <span className="scr-feed-card-time">{timeText}</span>}
           {headMeta}
         </div>
       </div>
       {actions}
-      <div className={cx("scr-activity-card-body", bodyClassName)}>
+      <div className={cx("scr-feed-card-body", bodyClassName)}>
         {children}
       </div>
       {comment && (
-        <div className="scr-activity-card-comment" onClick={(e) => e.stopPropagation()}>
+        <div className="scr-feed-card-comment" onClick={(e) => e.stopPropagation()}>
           {comment}
         </div>
       )}

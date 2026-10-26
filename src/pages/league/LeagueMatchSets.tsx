@@ -7,8 +7,8 @@ import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
 import { cleanMapName } from "../../utils/mapName";
 import { gamePlayable } from "../../utils/gamePlayable";
-import { navigateTo, pathOf } from "../../utils/route";
-import { GameRowNames, GameRowStatus, ListRow } from "../activity/GameRow";
+import { gamePath, navigateTo } from "../../utils/route";
+import { GameRowNames, GameRowStatus, ListRow } from "../games/GameRow";
 import { fmt, formatAgo, todayStr } from "../../utils/date";
 import type { GameResult, GameResultSlot, League, LeagueMatch, LeagueMatchSet, LeagueMatchSide } from "../../types";
 
@@ -209,7 +209,7 @@ export function MatchSets({
                       type="button" className="scr-icon-btn scr-league-set-play" aria-label={`${i + 1}세트 게임 보기`} title="게임 재생"
                       onClick={() => {
                         onOpenGame?.();
-                        navigateTo(pathOf({ screen: "activity", group: "gameResult", item: g.matchNo || String(g.id) }));
+                        navigateTo(gamePath(g.matchNo || String(g.id)));
                       }}
                     >
                       <Play size={13} />
@@ -229,15 +229,15 @@ export function MatchSets({
                 )}
                 {!linked && (
                   <div className="scr-league-set-roster scr-league-set-manual">
-                    <span className="scr-activity-row-cols" style={{ gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)" }}>
+                    <span className="scr-feed-row-cols" style={{ gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)" }}>
                       {(["a", "draw", "b"] as const).map((side, k) => {
                         const text = side === "draw" ? "무" : s.winner === null || s.winner === "draw" || s.winner === side ? "승" : "패";
                         const on = s.winner === side;
                         return (
-                          <span className="scr-activity-row-col-wl" key={side} style={{ gridColumn: k + 1, gridRow: 1 }}>
+                          <span className="scr-feed-row-col-wl" key={side} style={{ gridColumn: k + 1, gridRow: 1 }}>
                             <button
                               type="button" disabled={disabled}
-                              className={cx("scr-activity-row-wl scr-league-set-wl", on && "is-win", !on && "is-idle", s.winner !== null && s.winner !== "draw" && !on && side !== "draw" && "is-loss")}
+                              className={cx("scr-feed-row-wl scr-league-set-wl", on && "is-win", !on && "is-idle", s.winner !== null && s.winner !== "draw" && !on && side !== "draw" && "is-loss")}
                               aria-pressed={on}
                               aria-label={side === "a" ? `${nameA} 승` : side === "b" ? `${nameB} 승` : "무승부"}
                               title={side === "a" ? `${nameA} 승` : side === "b" ? `${nameB} 승` : "무승부"}
@@ -309,14 +309,14 @@ export function MatchSets({
                   <div className="scr-league-set-pick-empty">{loadErr || `이 기간에 ${who} 맞선 게임 결과가 없어요.`}</div>
                 ) : (
                   /* 후보 = 폰 게임 목록 꼴(.scr-gm · 2026-10-20, 요청: "리그의 경기결과 입력창의 게임연결창 … 모바일 화면의 게임목록처럼") — A 팀이 왼쪽. */
-                  <div className="scr-activity-rows">
+                  <div className="scr-feed-rows">
                     {games.map((c) => {
                       const taken = used.has(c.id);
                       const oc = oriented(c);
                       return (
                         <ListRow
                           key={c.id}
-                          className={cx("scr-activity-row-game scr-gm", taken && "is-in")}
+                          className={cx("scr-feed-row-game scr-gm", taken && "is-in")}
                           disabled={taken}
                           onClick={() => pick(open, c)}
                           status={<GameRowStatus game={oc} />}
