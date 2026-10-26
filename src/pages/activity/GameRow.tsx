@@ -111,7 +111,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
   /* ★★ **폰은 팀마다 세로 칸**(2026-10-19, 요청: "로스터 형태 변경 …" → 첫 판(2×2 격자)을 보고 "가독성이 오히려 떨어지네 · 이렇게 —
        재생배지 · 맵시간배지 · 타임스탬프 / 1팀 승패배지 · 2팀 승패배지(3팀 있으면 …) / 1팀 로스터(세로) vs 2팀 로스터(3팀 있으면 vs 로스터 …)") —
        윗줄(재생 · 맵 · 시각)은 global.css 가 맞춘다. 여기는 둘째·셋째 줄: 격자 두 줄 × [팀 1fr | vs | 팀 1fr | vs …] — 첫 줄에 팀마다 승패 배지(칸 가운데) ·
-       둘째 줄에 그 팀 이름을 한 사람 한 줄로(칸 가운데) · vs 는 이름 줄의 세로 가운데. 개인전은 사람마다 한 칸. 이름은 칸 폭으로 잘린다(말줄임 없음 · global.css). */
+       둘째 줄에 그 팀 이름을 한 사람 한 줄로(칸 가운데) · vs 는 이름 줄의 세로 가운데. 2026-10-26 부터 두 쪽이면 배지는 vs 양쪽(아래 pair). 개인전은 사람마다 한 칸. 이름은 칸 폭으로 잘린다(말줄임 없음 · global.css). */
   if (mobile) {
     const melee = isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 });
     const all = [...game.team1, ...game.team2];
@@ -119,14 +119,24 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
       ? all.map((s, i) => ({ slots: [s], side: i < game.team1.length ? 1 : 2 }))
       : [{ slots: game.team1, side: 1 }, { slots: game.team2, side: 2 }];
     const cols = sides.map(() => "minmax(0, 1fr)").join(" auto ");
+    /* 두 쪽이면 승패 배지는 **vs 양쪽**(2026-10-26, 요청: "승패 배지를 로스터 위가 아닌 vs 양쪽으로 · 피시도") — 줄 하나 [1팀 | 승 vs 패 | 2팀].
+       세 쪽 넘는 개인전은 옛 꼴(칸 위 배지 줄)이다 — vs 마다 양쪽 배지를 달면 가운데 사람 배지가 둘씩 선다. */
+    const pair = sides.length === 2;
+    const nameRow = pair ? 1 : 2;
     return (<>
       <span className="scr-activity-row-cols" style={{ gridTemplateColumns: cols }}>
         {sides.flatMap((sd, i) => {
           const col = i * 2 + 1;
           return [
-            ...(i > 0 ? [<span className="scr-activity-row-arrow scr-activity-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 2 }} aria-hidden>vs</span>] : []),
-            <span className="scr-activity-row-col-wl" key={`w${i}`} style={{ gridColumn: col, gridRow: 1 }}><OutcomeBadge text={sideOutcome(game.result, sd.side)} /></span>,
-            <span className="scr-activity-row-col-names" key={`n${i}`} style={{ gridColumn: col, gridRow: 2 }}>
+            ...(i > 0 ? [pair ? (
+              <span className="scr-activity-row-arrow scr-activity-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}>
+                <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
+                <span aria-hidden>vs</span>
+                <OutcomeBadge text={sideOutcome(game.result, sd.side)} />
+              </span>
+            ) : <span className="scr-activity-row-arrow scr-activity-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 2 }} aria-hidden>vs</span>] : []),
+            ...(pair ? [] : [<span className="scr-activity-row-col-wl" key={`w${i}`} style={{ gridColumn: col, gridRow: 1 }}><OutcomeBadge text={sideOutcome(game.result, sd.side)} /></span>]),
+            <span className="scr-activity-row-col-names" key={`n${i}`} style={{ gridColumn: col, gridRow: nameRow }}>
               {sd.slots.map((s, k) => person(s, melee ? all : sd.slots, `p${k}`))}
             </span>,
           ];
