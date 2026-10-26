@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>한 프레임도 양보하지 않는다 — STARGATE 백엔드 포트폴리오</title>
+<meta name="description" content="스타크래프트 클랜 경기 기록 플랫폼 STARGATE를 AI와 함께 설계·구현한 백엔드 개발자 포트폴리오">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f6fb; --bg2:#e9eef6; --card:#ffffff; --ink:#0d1726; --body:#2a3647; --muted:#5d6b80; --faint:#8a97aa;
+  --line:#d5deea; --line2:#e4eaf2;
+  --psi:#1f6fff;      /* 프로토스 사이오닉 블루 */
+  --psi2:#00b7e0;     /* 홀로그램 청록 */
+  --gold:#c99a2e;     /* 프로토스 금 */
+  --red:#d81f28;      /* 1팀 */
+  --blue:#2050d0;     /* 2팀 */
+  --zerg:#7a3fc0;
+  --ok:#1d8a5e;
+  --glow:0 0 0 1px rgba(31,111,255,.18), 0 10px 30px -12px rgba(31,111,255,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; color:var(--body); background:var(--bg);
+  font:16px/1.75 "IBM Plex Sans KR",system-ui,sans-serif; letter-spacing:-.005em;
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(1200px 600px at 85% -10%, rgba(0,183,224,.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(31,111,255,.10), transparent 60%),
+    linear-gradient(rgba(31,111,255,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31,111,255,.045) 1px, transparent 1px);
+  background-size:auto, auto, 32px 32px, 32px 32px;
+  background-attachment:fixed, fixed, fixed, fixed;
+}
+img{max-width:100%; display:block}
+a{color:var(--psi)}
+.wrap{max-width:1120px; margin:0 auto; padding:0 24px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+.orb{font-family:Orbitron,"IBM Plex Sans KR",sans-serif; letter-spacing:.04em}
+h1,h2,h3{color:var(--ink); margin:0; text-wrap:balance}
+h2{font-size:clamp(24px,3.2vw,34px); line-height:1.25; letter-spacing:-.02em; font-weight:700}
+h3{font-size:18px; line-height:1.4; font-weight:700}
+p{margin:0}
+strong{color:var(--ink); font-weight:600}
+
+/* ── 상단 줄 ── */
+.top{position:sticky; top:0; z-index:20; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  background:rgba(243,246,251,.82); border-bottom:1px solid var(--line)}
+.top .wrap{display:flex; align-items:center; gap:18px; height:56px}
+.brand{font-family:Orbitron,sans-serif; font-weight:900; font-size:16px; letter-spacing:.18em; color:var(--ink); text-decoration:none; white-space:nowrap}
+.brand b{color:var(--psi)}
+.nav{display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; margin-left:auto}
+.nav::-webkit-scrollbar{display:none}
+.nav a{font:500 12px/1 "IBM Plex Mono",monospace; color:var(--muted); text-decoration:none; padding:8px 9px; border-radius:6px; white-space:nowrap}
+.nav a:hover{color:var(--ink); background:var(--bg2)}
+
+/* ── HUD 테두리(재생기 보기 모드 판의 꺾쇠) ── */
+.hud{position:relative; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--glow)}
+.hud::before,.hud::after{content:""; position:absolute; width:18px; height:18px; border:2px solid var(--psi2); pointer-events:none}
+.hud::before{top:-1px; left:-1px; border-right:0; border-bottom:0; border-radius:14px 0 0 0}
+.hud::after{bottom:-1px; right:-1px; border-left:0; border-top:0; border-radius:0 0 14px 0}
+
+/* ── 표지 ── */
+.hero{padding:72px 0 40px}
+.eyebrow{font:600 12px/1 "IBM Plex Mono",monospace; letter-spacing:.2em; text-transform:uppercase; color:var(--psi)}
+.hero h1{font-size:clamp(36px,6.4vw,72px); line-height:1.08; letter-spacing:-.035em; font-weight:700; margin:18px 0 18px}
+.hero h1 .en{display:block; font-family:Orbitron,sans-serif; font-weight:700; font-size:.36em; letter-spacing:.14em; color:var(--muted); margin-top:16px}
+.grad{background:linear-gradient(92deg,var(--psi) 0%,var(--psi2) 55%,var(--gold) 100%); -webkit-background-clip:text; background-clip:text; color:transparent}
+.lede{font-size:clamp(16px,1.9vw,19px); color:var(--body); max-width:62ch}
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:34px}
+.kpi{padding:16px 18px}
+.kpi .v{font-family:Orbitron,sans-serif; font-weight:700; font-size:clamp(22px,3vw,30px); color:var(--ink); line-height:1.1; font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12.5px; color:var(--muted); margin-top:6px; line-height:1.45}
+
+/* ── 프롬프트 벽 ── */
+.wall{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-top:44px}
+.prompt{position:relative; padding:18px 20px 16px 20px; background:linear-gradient(180deg,#fff, #f7faff); border:1px solid var(--line); border-radius:12px}
+.prompt::before{content:"> PROMPT"; display:block; font:600 10.5px/1 "IBM Plex Mono",monospace; letter-spacing:.18em; color:var(--psi2); margin-bottom:10px}
+.prompt q{quotes:none; display:block; color:var(--ink); font-weight:600; font-size:16.5px; line-height:1.6}
+.prompt .ctx{display:block; margin-top:10px; font-size:12.5px; color:var(--muted); line-height:1.5}
+.prompt.big q{font-size:clamp(18px,2.2vw,22px)}
+
+/* ── 장 ── */
+section.ch{padding:84px 0 20px; scroll-margin-top:56px}
+.chhead{display:grid; grid-template-columns:auto 1fr; gap:22px; align-items:start; margin-bottom:28px}
+.chno{font-family:Orbitron,sans-serif; font-weight:900; font-size:clamp(40px,6vw,64px); line-height:.9; color:transparent; -webkit-text-stroke:1.5px var(--psi); letter-spacing:.02em}
+.chlab{font:600 11.5px/1 "IBM Plex Mono",monospace; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:12px}
+.opener{margin:0 0 30px; padding:22px 26px; border-left:4px solid var(--psi); background:linear-gradient(90deg,rgba(31,111,255,.07),rgba(31,111,255,0)); border-radius:0 12px 12px 0}
+.opener .k{font:600 10.5px/1 "IBM Plex Mono",monospace; letter-spacing:.2em; color:var(--psi); text-transform:uppercase}
+.opener q{quotes:none; display:block; margin-top:10px; font-size:clamp(19px,2.4vw,25px); line-height:1.5; font-weight:700; color:var(--ink); letter-spacing:-.015em}
+.opener .ctx{display:block; margin-top:10px; color:var(--muted); font-size:14px}
+.cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px}
+.card{padding:22px 24px}
+.card h3{display:flex; align-items:center; gap:10px; margin-bottom:10px}
+.card h3 .ic{flex:none; width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:rgba(31,111,255,.1); color:var(--psi); font:700 13px/1 "IBM Plex Mono",monospace}
+.card p + p, .card p + ul, .card ul + p{margin-top:10px}
+.card ul{margin:8px 0 0; padding:0 0 0 18px}
+.card li{margin:4px 0}
+.card li::marker{color:var(--psi2)}
+.tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:14px}
+.tag{font:500 11.5px/1 "IBM Plex Mono",monospace; padding:6px 8px; border-radius:6px; background:var(--bg2); color:var(--body); border:1px solid var(--line2)}
+.tag.p{background:rgba(31,111,255,.08); color:var(--psi); border-color:rgba(31,111,255,.2)}
+.tag.g{background:rgba(201,154,46,.1); color:#8a6514; border-color:rgba(201,154,46,.3)}
+.tag.r{background:rgba(216,31,40,.08); color:#a3141b; border-color:rgba(216,31,40,.22)}
+.tag.z{background:rgba(122,63,192,.08); color:var(--zerg); border-color:rgba(122,63,192,.22)}
+code{font-family:"IBM Plex Mono",monospace; font-size:.86em; background:var(--bg2); padding:.12em .38em; border-radius:4px; color:var(--ink)}
+
+/* ── 그림 ── */
+.shot{margin:0; overflow:hidden; cursor:zoom-in}
+.shot img{width:100%; height:auto; background:#fff}
+.shot figcaption{padding:12px 16px; font-size:13.5px; color:var(--muted); border-top:1px solid var(--line2); line-height:1.55}
+.shot figcaption b{color:var(--ink); font-weight:600}
+.gal{display:grid; gap:16px}
+.gal.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.gal.phones{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.gal.phones .shot img{aspect-ratio:393/852; object-fit:cover; object-position:top}
+.gal.cat{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.gal.cat .shot img{aspect-ratio:1100/1076; object-fit:cover; object-position:top}
+.split{display:grid; grid-template-columns:1.15fr .85fr; gap:20px; align-items:start}
+.split > *, .cols > *, .gal > *, .wall > *, .kpis > *{min-width:0}
+@media (max-width:860px){ .split{grid-template-columns:1fr} }
+
+/* ── 흐름도 ── */
+.arch{padding:18px; overflow-x:auto}
+.arch svg{min-width:860px; width:100%; height:auto; display:block}
+.arch text{font-family:"IBM Plex Sans KR",sans-serif}
+
+/* ── 검증 막대 ── */
+.bars{display:flex; flex-direction:column; gap:8px; margin-top:6px}
+.bar{display:grid; grid-template-columns:64px 1fr 88px; gap:12px; align-items:center; font:500 12px/1 "IBM Plex Mono",monospace; color:var(--muted)}
+.bar .t{height:10px; background:var(--bg2); border-radius:3px; overflow:hidden}
+.bar .f{height:100%; border-radius:3px; background:linear-gradient(90deg,var(--psi),var(--psi2))}
+.bar .n{text-align:right; color:var(--ink); font-variant-numeric:tabular-nums}
+.tally{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:18px}
+.tally div{padding:12px; border-radius:10px; background:var(--bg2); text-align:center}
+.tally b{display:block; font-family:Orbitron,sans-serif; font-size:22px; color:var(--ink)}
+.tally span{font-size:12px; color:var(--muted)}
+.tally .y b{color:var(--ok)} .tally .n b{color:var(--red)} .tally .w b{color:var(--gold)}
+pre{margin:14px 0 0; padding:14px 16px; background:#0e1726; color:#cfe0ff; border-radius:10px; overflow-x:auto; font:12.5px/1.7 "IBM Plex Mono",monospace}
+pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
+
+/* ── 연대표 ── */
+.tl{position:relative; margin-top:10px; padding-left:22px; border-left:2px solid var(--line)}
+.tl .e{position:relative; padding:0 0 22px 10px}
+.tl .e::before{content:""; position:absolute; left:-31px; top:7px; width:14px; height:14px; border-radius:50%; background:var(--card); border:3px solid var(--psi)}
+.tl .d{font:600 12px/1 "IBM Plex Mono",monospace; color:var(--psi); letter-spacing:.06em}
+.tl h3{margin:6px 0 4px; font-size:16.5px}
+
+/* ── 맺음 ── */
+.end{margin:90px 0 0; padding:56px 0 70px; border-top:1px solid var(--line); text-align:center}
+.end .orb{font-size:clamp(20px,3vw,30px); font-weight:900; color:var(--ink); letter-spacing:.2em}
+.end p{color:var(--muted); margin-top:12px}
+
+/* ── 확대 ── */
+.lb{position:fixed; inset:0; z-index:50; background:rgba(9,16,28,.86); display:none; align-items:center; justify-content:center; padding:24px; cursor:zoom-out}
+.lb.on{display:flex}
+.lb img{max-width:100%; max-height:100%; border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,.5)}
+
+@media (max-width:640px){
+  .wrap{padding:0 16px}
+  .hero{padding:44px 0 24px}
+  .chhead{grid-template-columns:1fr; gap:6px}
+  section.ch{padding:60px 0 10px}
+  .opener{padding:18px 18px}
+  .bar{grid-template-columns:54px 1fr 70px}
+  .tally{grid-template-columns:repeat(2,1fr)}
+  .nav{display:none}
+}
+@media print{ .rv{opacity:1 !important; transform:none !important} .top{position:static} }
+@media (prefers-reduced-motion:no-preference){
+  .rv{opacity:0; transform:translateY(12px); transition:opacity .6s ease, transform .6s ease}
+  .rv.in{opacity:1; transform:none}
+}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <a class="brand" href="#top">STAR<b>G</b>ATE</a>
+  <nav class="nav" aria-label="장">
+    <a href="#c1">01 개요</a><a href="#c2">02 구조</a><a href="#c3">03 데이터</a><a href="#c4">04 검증</a>
+    <a href="#c5">05 API</a><a href="#c6">06 설계</a><a href="#c7">07 리그·일정</a><a href="#c8">08 재생기</a><a href="#c9">09 협업</a>
+  </nav>
+</div></header>
+
+<main id="top">
+<div class="wrap">
+
+<!-- ═════════ 표지 ═════════ -->
+<section class="hero">
+  <div class="eyebrow">Backend Developer Portfolio · STARGATE</div>
+  <h1>한 프레임도<br><span class="grad">양보하지 않는다</span><span class="en">UNTIL IT MATCHES THE ORIGINAL</span></h1>
+  <p class="lede">스타크래프트 클랜의 경기 기록·통계·리그·리플레이 재생을 한데 묶은 플랫폼 <strong>STARGATE</strong>를 AI와 짝을 이뤄 설계하고 만들었습니다.
+    리플레이 파일 하나를 받아 <strong>원작 엔진으로 다시 돌리고</strong>, 그 결과를 통계·검색·재생으로 쓸 수 있는 데이터로 바꾸는 백엔드가 중심입니다.
+    원작과 한 프레임이라도 어긋나면 끝까지 쫓았습니다.</p>
+
+  <div class="kpis">
+    <div class="kpi hud"><div class="v">552,929</div><div class="l">원작과 난수 단위로 대조해<br>맞춘 프레임</div></div>
+    <div class="kpi hud"><div class="v">1,442</div><div class="l">세 저장소 커밋<br>(2026.10.04 – 10.26)</div></div>
+    <div class="kpi hud"><div class="v">394</div><div class="l">API 자동 테스트<br>(배포 전 매번 전부 통과)</div></div>
+    <div class="kpi hud"><div class="v">114</div><div class="l">코드로 직접 빚은<br>3D 유닛·건물 모델</div></div>
+    <div class="kpi hud"><div class="v">11,084</div><div class="l">줄의 작업 기록<br>(실측·되물린 값·함정)</div></div>
+  </div>
+
+  <div class="wall">
+    <div class="prompt big rv"><q>처음 일정 만들고 글쓰기할 때 아무 데나 클릭해도 커서가 생겨야 해. (당연히 처음 위치에)</q><span class="ctx">쓰는 사람의 첫 1초까지 설계 대상이었다.</span></div>
+    <div class="prompt big rv"><q>새 DB 칸 필요. 재생용 참값과 통계용 참값 구분.</q><span class="ctx">무거운 재생 데이터를 지워도 통계는 남도록 — 데이터 수명을 갈랐다.</span></div>
+    <div class="prompt big rv"><q>원작을 다시 보니 1팀이 빨강 2팀이 파랑이네. 우린 다 반대로 쓰고 있어. 바로잡아줘.</q><span class="ctx">팀색은 한 상수에 모여 있어 재생기·데이터창·목록이 한 번에 바뀌었다.</span></div>
+    <div class="prompt rv"><q>라이팅 테마는 사실 컬러/투명도/글로우에 관한 거라, 그 외의 형태적인 면은 기본으로 분리하고 싶어. 그래야 나중에 색만 쏙쏙 바꾸기 쉬우니까.</q><span class="ctx">형태와 색의 관심사 분리 — UI에도 같은 설계 감각을 요구했다.</span></div>
+    <div class="prompt rv"><q>아직도 사진 드래그 느려. 내 관찰 결과 — 1. 적은 양의 변화일 땐 괜찮다 2. 7~10개 정도 바뀌기 시작하면 느려짐.</q><span class="ctx">재현 조건을 좁혀 건넨 버그 보고 — 관찰이 곧 실마리였다.</span></div>
+    <div class="prompt rv"><q>이해가 안 돼… 왜 64칸으로 굽지?</q><span class="ctx">숫자 하나에도 근거를 물었다. 설명할 수 없는 값은 남기지 않는다.</span></div>
+  </div>
+</section>
+
+<!-- ═════════ 01 개요 ═════════ -->
+<section class="ch" id="c1">
+  <div class="chhead"><div class="chno">01</div><div>
+    <div class="chlab">Overview</div>
+    <h2>클랜의 모든 경기가 기록되고, 다시 재생되는 곳</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>모든 건물 우클릭 대상으로! 원작이 그럼.</q><span class="ctx">기준은 늘 하나였다 — 원작이 어떻게 하는가.</span></div>
+
+  <div class="split">
+    <figure class="shot hud rv"><img loading="lazy" src="img/home-pc.jpg" alt="STARGATE 홈 — 다가오는 리그 경기, 일정, 게임 목록">
+      <figcaption><b>홈(활동)</b> · 다가오는 리그 경기(D-day 카드), 일정, 최근 경기가 한 화면에. 게임마다 배치 미니맵과 시작 위치가 함께 나온다.</figcaption></figure>
+    <div class="card hud rv">
+      <h3><span class="ic">◆</span>무엇을 하는 서비스인가</h3>
+      <ul>
+        <li><strong>업로더</strong>(데스크톱 앱)가 리플레이를 올리면 경기 결과·참가자·맵·시작 위치가 자동 등록</li>
+        <li>서버가 리플레이를 <strong>원작 엔진(OpenBW)</strong>으로 다시 돌려 유닛 궤적·데미지·자원 같은 <strong>참값</strong>을 뽑음</li>
+        <li>참값으로 <strong>통계·래더·검색·우세도 그래프</strong>를 만들고, 웹에서 <strong>3D 재생·자동 중계</strong></li>
+        <li>리그(대진표·세트), 배치고사(라운드로빈 점수), 일정(노션형 문서), 외부 공유까지</li>
+      </ul>
+      <div class="tags">
+        <span class="tag p">FastAPI</span><span class="tag p">SQLAlchemy 2.0 async</span><span class="tag p">PostgreSQL</span>
+        <span class="tag">JWT</span><span class="tag">Docker multi-stage</span><span class="tag">Railway</span>
+        <span class="tag g">C++ · OpenBW</span><span class="tag z">React · Vite · Vercel</span><span class="tag z">WebGL · Web Worker</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 02 구조 ═════════ -->
+<section class="ch" id="c2">
+  <div class="chhead"><div class="chno">02</div><div>
+    <div class="chlab">Architecture</div>
+    <h2>세 저장소, 하나의 흐름</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>서버에서 구워서 쓰는구먼. 품질 높게 구워서 내리면 되겠다.</q><span class="ctx">무거운 일은 한 번만, 서버나 빌드 시각에. 받는 쪽은 가볍게.</span></div>
+
+  <div class="arch hud rv">
+    <svg viewBox="0 0 1040 360" role="img" aria-label="업로더 → sg-api(OpenBW 덤퍼) → PostgreSQL → sg-web·scplay 흐름도">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1f6fff"/></marker>
+        <linearGradient id="gp" x1="0" x2="1"><stop offset="0" stop-color="#eaf2ff"/><stop offset="1" stop-color="#f4fbff"/></linearGradient>
+      </defs>
+      <g font-size="13" fill="#2a3647">
+        <rect x="20" y="40" width="190" height="96" rx="12" fill="#fff" stroke="#d5deea"/>
+        <text x="40" y="70" font-weight="700" fill="#0d1726" font-size="15">업로더 (데스크톱)</text>
+        <text x="40" y="94">리플레이 감시 · 파싱</text><text x="40" y="114">시작 위치 · 채팅 · 저장자</text>
+
+        <rect x="290" y="20" width="330" height="200" rx="14" fill="url(#gp)" stroke="#1f6fff" stroke-width="1.5"/>
+        <text x="310" y="50" font-weight="700" fill="#1f6fff" font-size="16">sg-api · FastAPI</text>
+        <text x="310" y="76">도메인 10개: 경기 · 리그 · 배치 · 일정 · 공유 …</text>
+        <rect x="310" y="92" width="290" height="58" rx="10" fill="#fff" stroke="#c99a2e"/>
+        <text x="326" y="116" font-weight="700" fill="#8a6514">bwdump (C++ · OpenBW 패치)</text>
+        <text x="326" y="138">리플레이 → 원작 시뮬레이션 → OBWT 참값</text>
+        <text x="310" y="176">참값 → 분당 곡선 · 데미지 · 전술 색인</text>
+        <text x="310" y="198">레이팅(브래들리-테리) · 통계 · 명예의 전당</text>
+
+        <rect x="290" y="262" width="330" height="76" rx="12" fill="#fff" stroke="#d5deea"/>
+        <text x="310" y="292" font-weight="700" fill="#0d1726" font-size="15">PostgreSQL · 파일 저장소</text>
+        <text x="310" y="316">재생용 참값 ↔ 통계용 참값 (수명 분리)</text>
+
+        <rect x="700" y="20" width="320" height="130" rx="14" fill="#fff" stroke="#7a3fc0"/>
+        <text x="720" y="50" font-weight="700" fill="#7a3fc0" font-size="16">sg-web · React</text>
+        <text x="720" y="76">활동 · 게임 · 리그 · 통계 · 일정</text>
+        <text x="720" y="98">한 번의 왕복: 목록에 맵 격자까지</text>
+        <text x="720" y="120">Vercel · 락 고정(npm ci)</text>
+
+        <rect x="700" y="190" width="320" height="148" rx="14" fill="#fff" stroke="#00b7e0"/>
+        <text x="720" y="220" font-weight="700" fill="#0087a8" font-size="16">scplay · 재생기 라이브러리</text>
+        <text x="720" y="246">순수 엔진(시각 t → 프레임) + 워커</text>
+        <text x="720" y="268">WebGL 붓 · 114종 코드 모델</text>
+        <text x="720" y="290">서버 아틀라스(미리 구운 판)</text>
+        <text x="720" y="312">dist 브랜치로 배포 · 주입식 의존</text>
+      </g>
+      <g stroke="#1f6fff" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+        <path d="M210 88 H284"/><path d="M455 220 V256"/><path d="M620 70 H694"/>
+        <path d="M860 150 V184"/><path d="M620 300 C660 300 660 270 694 266"/>
+      </g>
+      <g font-size="11.5" fill="#5d6b80" font-family="IBM Plex Mono, monospace">
+        <text x="222" y="80">POST</text><text x="462" y="244">async</text><text x="632" y="62">JSON</text><text x="868" y="172">import</text><text x="630" y="292">참값 트랙</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ═════════ 03 데이터 ═════════ -->
+<section class="ch" id="c3">
+  <div class="chhead"><div class="chno">03</div><div>
+    <div class="chlab">Data Pipeline · Backend</div>
+    <h2>리플레이 한 개를, 쓸 수 있는 데이터로</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>1로 하되 누가 그 판을 열어도 채우지 않기. 운영자 재분석에 포함시키고, 참값 제거 시 제거 안 되게 주의.</q><span class="ctx">"언제 계산되는가 · 언제 지워지는가"를 먼저 정하고 표를 짰다.</span></div>
+
+  <div class="cols">
+    <div class="card hud rv"><h3><span class="ic">01</span>원작 엔진을 서버에 들이다</h3>
+      <p>OpenBW를 고정 커밋으로 받아 <strong>리마스터 리플레이용 패치(2,455줄)</strong>를 덧대고, 덤퍼 <code>bwdump.cpp</code>(1,821줄)를 함께 빌드하는 <strong>Docker 멀티 스테이지</strong>. 최종 이미지는 Python slim + 바이너리 하나.</p>
+      <div class="tags"><span class="tag g">C++17</span><span class="tag">Docker</span><span class="tag">Railway</span></div></div>
+    <div class="card hud rv"><h3><span class="ic">02</span>참값 트랙 → 분당 곡선</h3>
+      <p>덤퍼가 낸 OBWT 트랙(판 9~13)을 풀어 사람마다 <strong>일꾼 수 · 인구 · 쥔 자원 · 건물 생애 · 테크 시각 · 주고받은 데미지</strong>를 1분 간격으로 굽는다. 게임 그래프·우세도·통계 곡선이 모두 이 표 하나를 읽는다.</p>
+      <div class="tags"><span class="tag p">participant_stats</span><span class="tag">JSON 열</span></div></div>
+    <div class="card hud rv"><h3><span class="ic">03</span>수명이 다른 데이터는 다른 표로</h3>
+      <p>재생용 참값은 크고(수 MB) 지울 수 있어야 하고, 통계용 참값은 작고 영원해야 한다. 한 열에 있던 것을 <strong>새 표로 이관</strong>하고 읽기·쓰기를 전환. DB 용량 문제를 계기로 시작해 <strong>지우기·재분석·마감</strong> 규칙을 표마다 명시했다.</p>
+      <div class="tags"><span class="tag r">이관 배치</span><span class="tag">SQL 파일 배포</span></div></div>
+    <div class="card hud rv"><h3><span class="ic">04</span>전술 색인 · 사람별 검색</h3>
+      <p>"누가 · 누구에게 · 무엇을 · 언제" 행으로 이루어진 <code>game_result_index</code>. 같은 사람의 같은 사건도 시각별로 남겨 "질럿 러시를 한 경기"를 사람 단위로 찾는다. 색인 함수는 재생기와 서버가 <strong>같은 순수 함수</strong>를 쓴다.</p>
+      <div class="tags"><span class="tag p">검색</span><span class="tag">운영자 재분석</span></div></div>
+    <div class="card hud rv"><h3><span class="ic">05</span>채팅 · 저장자 · 팀챗</h3>
+      <p>두 사람의 리플레이를 병합하면 같은 말이 두 번 남는다. 72프레임 안의 같은 줄을 접고, 각 리플레이 <strong>저장자</strong>의 시점으로 전체/팀 채팅을 가른다. 구분 못 하면 배지를 달지 않는다 — 틀린 표시보다 침묵.</p></div>
+    <div class="card hud rv"><h3><span class="ic">06</span>점수와 순위</h3>
+      <p>배치고사는 세트 승패로 맞춘 <strong>브래들리-테리</strong> 점수(1500 기준)와 4단 티어, 리그·래더는 팀 레이팅 엔진. 시즌 이월·팀 크기별 구간·내전만 집계 같은 규칙이 각각 테스트로 묶여 있다.</p></div>
+  </div>
+</section>
+
+<!-- ═════════ 04 검증 ═════════ -->
+<section class="ch" id="c4">
+  <div class="chhead"><div class="chno">04</div><div>
+    <div class="chlab">Verification · 원판과 같아지기</div>
+    <h2>552,929 프레임, 어긋난 난수 0</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>1, 2, 3 중 근본적이고 완벽한 해결책은 뭐야?</q><span class="ctx">땜질 셋을 받으면 되묻는다. 증상이 아니라 원인을 고른다.</span></div>
+
+  <div class="split">
+    <div class="card hud rv">
+      <h3><span class="ic">✓</span>열 판, 끝까지 (2026.08.21 – 08.27)</h3>
+      <p>윈도 기계 없이 진짜 1.16.1을 헤드리스로 돌리는 검증 장치를 세우고, 시뮬레이터를 원작과 <strong>난수 스트림 단위로</strong> 대조했다. 어긋남은 개별 기계어 명령까지 따라갔다.</p>
+      <div class="bars" id="bars"></div>
+      <div class="tally">
+        <div class="y"><b>14</b><span>채택</span></div><div class="n"><b>9</b><span>기각</span></div>
+        <div class="w"><b>2</b><span>되돌림</span></div><div><b>32</b><span>가설</span></div>
+      </div>
+    </div>
+    <div class="card hud rv">
+      <h3><span class="ic">㉕</span>아홉 번의 기각 끝에 — 원작 함수를 통째로 읽다</h3>
+      <p>"태운 화물이 수송선을 따라간다"는 증상에 조건을 하나씩 붙이다 아홉 번 연속 기각됐다. 층층이 쫓기를 멈추고 원작 함수를 역어셈블하자 답은 마지막 줄에 있었다 — 그 함수는 유닛을 옮기지 않고 <strong>이동 목표만 세운다</strong>. 가설 넷이 한 줄로 접혔다.</p>
+<pre>명령 92 EnterTransport → <span class="h">0x4E7CF0</span>
+  ↳ 끝에서 jmp 0x4E78E0   <span class="d">← unit_load_target</span>
+  양 갈래 모두 마지막에 <span class="o">call 0x4EB9F0(화물, 그릇 자리)</span></pre>
+      <p style="margin-top:14px"><strong>㉜ 어디에도 기록된 적 없는 동작</strong> — 리플레이의 마지막 명령 묶음은 실행되지 않는다. 69,138프레임짜리에서 마지막 16프레임에만 드러나는, 참값 없이는 찾을 수 없는 함정.</p>
+      <div class="tags"><span class="tag">해독한 원판 주소 55</span><span class="tag">계측 손잡이 85</span><span class="tag">7일 · 140커밋</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 05 API ═════════ -->
+<section class="ch" id="c5">
+  <div class="chhead"><div class="chno">05</div><div>
+    <div class="chlab">API · Performance</div>
+    <h2>왕복은 줄이고, 계약은 지킨다</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>그리고 게임 목록 조회 시 배치맵도 같이 담겨서 오게. 한 번에.</q><span class="ctx">목록 → 맵 두 번 왕복을 한 번으로. 이미 받은 맵은 클라이언트가 알려 서버가 뺀다.</span></div>
+
+  <div class="split">
+    <figure class="shot hud rv"><img loading="lazy" src="img/games-pc.jpg" alt="PC 게임 목록 — 배치 미니맵 칸, 팀색 칩">
+      <figcaption><b>게임 목록</b> · 배치 칸은 리플레이의 시작 위치(타일)를 서버가 반올림·범위 검사해 저장한 값. 팀전은 1팀 빨강·2팀 파랑 칩, 개인전은 흰 칩.</figcaption></figure>
+    <div class="card hud rv">
+      <h3><span class="ic">⇄</span>이렇게 설계했다</h3>
+      <ul>
+        <li><strong>한 번의 응답</strong>: 활동 목록에 그 쪽 경기의 맵 격자를 싣고 <code>knownMap</code>으로 중복 제외 · 통계는 7개월 추이를 한 응답에</li>
+        <li><strong>하위 호환 배포</strong>: 새 웹 ↔ 옛 서버, 옛 웹 ↔ 새 서버 어느 순서로 올라가도 동작하게 필드를 덧붙이는 방식만 사용</li>
+        <li><strong>DB 변경은 SQL 파일</strong>로 저장소에 남기고 운영자가 직접 실행 → 그다음 서버 배포 (자격증명은 절대 주고받지 않음)</li>
+        <li><strong>입력 검증</strong>: 시작 위치처럼 바깥에서 오는 값은 검증기에서 반올림·범위 밖은 "모름"으로</li>
+        <li><strong>권한·공유</strong>: JWT + 리프레시, 역할 코드, 외부 공유 목록은 별도 패스 헤더 · 손님 모드 가명</li>
+        <li><strong>테스트 394개</strong>: httpx 비동기 클라이언트로 엔드포인트 단위 시나리오 · 린트는 기존 대비 새 경고 0을 관문으로</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 06 설계 ═════════ -->
+<section class="ch" id="c6">
+  <div class="chhead"><div class="chno">06</div><div>
+    <div class="chlab">Reusability · Extensibility · Maintainability</div>
+    <h2>한 곳만 고치면 전부 바뀌게</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>활동과 일정, 너나와, 리그, 게임 목록과 상세 등 모두 컴포넌트 분리.</q><span class="ctx">기능이 늘수록 경계를 먼저 다시 그었다.</span></div>
+
+  <div class="cols">
+    <div class="card hud rv"><h3><span class="ic">R</span>재사용성</h3><ul>
+      <li>재생기를 <strong>별도 라이브러리(scplay)</strong>로 떼고, 앱은 미리 빌드된 <code>dist</code> 커밋만 받는다 — 배포마다 40초 빌드 제거</li>
+      <li>라이브러리는 앱의 API 주소를 모른다: <code>setReplayMapFetcher</code> 같은 <strong>주입</strong>으로만 연결(의존 역전)</li>
+      <li>로스터 한 벌(<code>GameRowNames</code>)을 목록·PC 표·재분석·삭제함·외부 공유·리그 세트 6곳이 공유</li>
+      <li>전술 색인 함수 하나를 재생기 검색과 서버 색인이 함께 쓴다</li></ul></div>
+    <div class="card hud rv"><h3><span class="ic">E</span>확장성</h3><ul>
+      <li>경기 유형은 <code>GAME_TYPES</code> 명세 표 한 곳(팀전 여부·래더·순위 구간) — 새 유형은 한 줄</li>
+      <li>대진표는 경로 문자열(<code>"", "a", "b"…</code>)로 표현해 <strong>임의 크기의 트리</strong>와 부전승을 같은 코드로</li>
+      <li>참값 트랙은 판 번호(9→13)로 버전을 매겨 옛 데이터도 그대로 읽는다</li>
+      <li>기기 프로필 <code>DEV9</code> 표 하나로 폰·PC 성능 단을 조정</li></ul></div>
+    <div class="card hud rv"><h3><span class="ic">M</span>유지보수</h3><ul>
+      <li><strong>11,084줄의 작업 기록</strong>: 되물린 값·함정·실측·확인 명령(🔎)을 손질마다 남겨 같은 실수를 두 번 하지 않는다</li>
+      <li>규약 문서는 40KB 상한 — 늘 지킬 규칙만 남기고 이력은 기록으로</li>
+      <li>자동 관문: 메시 덮임 100%, CSS 가드, 등급표·총구표 재생성 검사, 아틀라스 <code>--check</code></li>
+      <li>기각된 가설도 지우지 않고 손잡이로 남겨 <strong>회귀 검사가 공짜</strong></li></ul></div>
+  </div>
+</section>
+
+<!-- ═════════ 07 리그·일정 ═════════ -->
+<section class="ch" id="c7">
+  <div class="chhead"><div class="chno">07</div><div>
+    <div class="chlab">League · Schedule</div>
+    <h2>어느 클럽이든 쓸 수 있는 운영 도구</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>리그 결과 입력창에서 세트 추가하고, 게임 결과 중 해당 매치 게임을 선택 가능하게.</q><span class="ctx">손으로 적는 결과와 실제 기록을 한 줄로 잇는다.</span></div>
+
+  <div class="gal two">
+    <figure class="shot hud rv"><img loading="lazy" src="img/league-pc.jpg" alt="리그 대진표 — 팀 로스터 카드, 경기 일정, 세트 스코어">
+      <figcaption><b>리그 대진표</b> · 팀/개인 두 방식, 로스터 카드, 경기마다 일정·세트 스코어. 일정을 넣으면 홈에 D-day 카드로 자동 게시.</figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/sched1-pc.jpg" alt="일정 상세 — 노션형 블록 문서">
+      <figcaption><b>일정 문서</b> · 제목·글·목록(단계)·사진·동영상·파일 블록, 들여쓰기·접기·끌어 옮기기. 저장 버전으로 내 고침과 남의 고침을 가른다.</figcaption></figure>
+  </div>
+  <div class="cols" style="margin-top:16px">
+    <div class="card hud rv"><h3><span class="ic">◎</span>보편성</h3>
+      <p>스타크래프트 전용 기능이 아니다. <strong>팀전·개인전</strong>, 임의 인원의 대진표, 회원·손님·컴퓨터가 섞인 참가자 풀, 교체 선수, 라운드로빈 배치고사 — 어떤 종목의 동호회든 그대로 쓸 수 있는 일반화된 모델로 짰다. 일정은 특정 양식이 아니라 블록을 조립하는 문서다.</p></div>
+    <div class="card hud rv"><h3><span class="ic">✦</span>편의성</h3>
+      <p>일정을 등록하면 <strong>곧바로 편집 화면, 커서까지</strong> 선다. 빈 곳 어디를 눌러도 첫 줄이 생긴다. 세트에 실제 게임을 이으면 결과·리플레이·데이터가 따라온다. 케밥 메뉴를 걷고 <strong>늘 보이는 도구줄</strong>로, 사진은 240p 썸네일로 빠르게, 폰에선 사진첩 저장까지.</p></div>
+    <div class="card hud rv"><h3><span class="ic">⚑</span>운영 흐름</h3>
+      <p>대진 확정 → 일정 등록(홈 게시) → 세트 결과 입력/게임 연결 → 승자 자동 진출 → 명예의 전당. 배치고사는 회차별 명단·대진, 세트 승패로 점수와 티어를 즉시 계산하고 사람마다 <strong>전적 총계</strong>를 붙였다.</p></div>
+  </div>
+  <div class="gal phones" style="margin-top:16px">
+    <figure class="shot hud rv"><img loading="lazy" src="img/home-m.jpg" alt="모바일 홈"><figcaption><b>모바일 홈</b></figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/games-m.jpg" alt="모바일 게임 목록"><figcaption><b>모바일 게임 목록</b></figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/league-m.jpg" alt="모바일 리그"><figcaption><b>모바일 리그</b></figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/sched1-m.jpg" alt="모바일 일정"><figcaption><b>모바일 일정</b></figcaption></figure>
+  </div>
+</section>
+
+<!-- ═════════ 08 재생기 ═════════ -->
+<section class="ch" id="c8">
+  <div class="chhead"><div class="chno">08</div><div>
+    <div class="chlab">Replay · 3D Models</div>
+    <h2>데이터가 다시 경기가 되는 순간</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>리콜 캐스팅 효과 아비터 쪽에도 필요. 원작은 부르는 동안 투명 구체들이 막 지글지글거리거든.</q><span class="ctx">관찰한 원작의 질감을 말로 옮기면, 그것을 코드로 다시 옮겼다.</span></div>
+
+  <div class="split">
+    <figure class="shot hud rv"><img loading="lazy" src="img/replay-pc.jpg" alt="PC 재생기 — 3D 유닛, 독(미니맵·인포·로스터), 자동 중계">
+      <figcaption><b>재생기(PC · 홀로그램 테마)</b> · 순수 엔진이 시각 t의 프레임을 계산하고 워커가 지도 전체를 미리 짓는다. 자동 중계 카메라, 상황 자막, 우세도 탐색바.</figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/replay-m.jpg" alt="모바일 재생기 — 메탈 테마"><figcaption><b>모바일(메탈 테마)</b> · 팀 배지 1팀 빨강·2팀 파랑</figcaption></figure>
+  </div>
+
+  <h3 style="margin:34px 0 14px">코드로 빚은 114종 — 이미지 파일 없이, 다각형 하나하나</h3>
+  <div class="gal cat">
+    <figure class="shot hud rv"><img loading="lazy" src="img/cat-t-units.jpg" alt="테란 유닛 도록"><figcaption><b>테란 유닛</b> 14종</figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/cat-p-units.jpg" alt="프로토스 유닛 도록"><figcaption><b>프로토스 유닛</b> 14종</figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/cat-z-units.jpg" alt="저그 유닛 도록"><figcaption><b>저그 유닛</b> 16종</figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/cat-t-bldgs.jpg" alt="테란 건물 도록"><figcaption><b>테란 건물</b> 18종</figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/cat-p-bldgs.jpg" alt="프로토스 건물 도록"><figcaption><b>프로토스 건물</b> 17종</figcaption></figure>
+    <figure class="shot hud rv"><img loading="lazy" src="img/cat-z-bldgs.jpg" alt="저그 건물 도록"><figcaption><b>저그 건물</b> 17종</figcaption></figure>
+  </div>
+  <p style="margin-top:14px; color:var(--muted); font-size:14px">네 방위(45·135·225·315°)를 한 번에 굽는 도록 스크립트가 매 손질의 관문이다. 메시는 요잉 0에서 한 번 굽고 셰이더가 돌린다 — 굽는 시각에 세계를 묻지 않는 규칙.</p>
+</section>
+
+<!-- ═════════ 09 협업 ═════════ -->
+<section class="ch" id="c9">
+  <div class="chhead"><div class="chno">09</div><div>
+    <div class="chlab">Persistence · Human × AI</div>
+    <h2>치열하게 묻고, 끝까지 맞추고, 함께 만든다</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>이미 재분석도 돌렸고, 원본 데이터를 쓸 일이 나중에 있을지도 모르잖아. 그치?</q><span class="ctx">지우기 전에 한 번 더 — 되돌릴 수 없는 일은 사람이 마지막에 판단한다.</span></div>
+
+  <div class="cols">
+    <div class="card hud rv"><h3><span class="ic">✎</span>사람: 방향 · 관찰 · 결정</h3>
+      <p>원작을 직접 보고 차이를 말로 짚는다. 버그는 <strong>재현 조건까지 좁혀</strong> 건넨다. 셋 중 무엇이 근본 해결인지 되묻는다. 그리고 <strong>"배포"라는 말이 있을 때만</strong> 세상에 내보낸다.</p></div>
+    <div class="card hud rv"><h3><span class="ic">⚙</span>AI: 구현 · 검증 · 기록</h3>
+      <p>Claude가 세 저장소를 오가며 구현하고, 내보내기 전 <strong>타입 검사 · 빌드 · 394개 테스트 · 스크린샷</strong>을 스스로 돌린다. 고친 이유와 되물린 값은 기록 파일 끝에 남긴다 — 다음 세션의 AI가 같은 실수를 하지 않도록.</p></div>
+    <div class="card hud rv"><h3><span class="ic">⛨</span>둘 사이의 계약</h3>
+      <ul>
+        <li>요청이 이름 붙인 것만 건드린다</li>
+        <li>DB 자격증명은 주고받지 않는다 — SQL은 사람이 실행</li>
+        <li>해시는 40자리 전체로 보고</li>
+        <li>틀린 경보보다 침묵이 낫다</li></ul></div>
+  </div>
+
+  <div class="card hud rv" style="margin-top:16px">
+    <h3><span class="ic">⏱</span>걸어온 길</h3>
+    <div class="tl">
+      <div class="e"><div class="d">2026.08.21 – 08.27</div><h3>원판과 같아지기</h3><p>헤드리스 1.16.1 검증 장치, 가설 32개, 552,929프레임 일치.</p></div>
+      <div class="e"><div class="d">2026.10.04</div><h3>재생기 라이브러리 분리 (scplay)</h3><p>순수 엔진·워커·WebGL 붓 — 23일간 511커밋.</p></div>
+      <div class="e"><div class="d">2026.10.07</div><h3>웹 · API 새 저장소</h3><p>sg-web 814커밋, sg-api 117커밋 · 테스트 394개.</p></div>
+      <div class="e"><div class="d">2026.10.26</div><h3>오늘도 한 칸</h3><p>팀색을 원작대로 바로잡고, 목록에 맵을 한 번에 싣고, 배치 칩의 크기를 열 번 넘게 다시 맞췄다. 그것이 이 프로젝트의 속도다.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="end">
+  <div class="orb">GG · WELL PLAYED</div>
+  <p>STARGATE · 백엔드 개발자 포트폴리오 · 화면은 로컬에서 시험 데이터로 찍었습니다.</p>
+</footer>
+
+</div>
+</main>
+
+<div class="lb" id="lb" role="dialog" aria-label="이미지 확대"><img alt=""></div>
+
+<script>
+const R=[["253600",28638],["372400",33411],["395500",33415],["480200",34644],["230800",39626],["200000",43808],["230400",44176],["290000",49648],["234709",69138],["232805",176425]];
+const max=Math.max(...R.map(r=>r[1]));
+document.getElementById("bars").innerHTML=R.map(([n,f])=>`<div class="bar"><span>${n}</span><span class="t"><span class="f" style="width:${(f/max*100).toFixed(1)}%"></span></span><span class="n">${f.toLocaleString("en-US")}f</span></div>`).join("");
+const lb=document.getElementById("lb"), lbi=lb.querySelector("img");
+document.querySelectorAll(".shot img").forEach(im=>im.addEventListener("click",()=>{lbi.src=im.src; lbi.alt=im.alt; lb.classList.add("on");}));
+lb.addEventListener("click",()=>lb.classList.remove("on"));
+addEventListener("keydown",e=>{if(e.key==="Escape")lb.classList.remove("on");});
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in"); io.unobserve(e.target);}}),{rootMargin:"0px 0px -8% 0px"});
+document.querySelectorAll(".rv").forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
