@@ -6,7 +6,7 @@ import { shareToKakao } from "../../utils/kakaoShare";
 import { gameResultShareContent } from "./gameShare";
 import { downloadReplay } from "../../utils/replayDownload";
 import { cachedReplayMap, useReplayMap, useReplayMapTick } from "scplay";
-import { renderMinimapCanvas } from "../../utils/minimapExport";
+import { mapThumbDone, mapThumbUrl } from "../../utils/mapThumb";
 import type { ReplayMapGrid } from "../../utils/replayParser";
 import { api } from "../../api/client";
 import { showToast } from "../../components/common/Toast";
@@ -44,19 +44,9 @@ import type { GameResult, Member } from "../../types";
    맵 · 게임길이 · 로스터 · 배치(아래 StartMapCell). */
 const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "게임길이", "로스터", "배치", "데이터", "도구", "추천"];
 
-/** 맵 그림(안개 없음) — 해시마다 한 번 그려 data URL 로 쥔다(같은 맵의 줄이 나눠 쓴다 · 타일당 1px). */
-const thumbCache = new Map<string, Promise<string | null>>();
-/** 다 구운 그림(받은 뒤 다시 뜨는 줄이 빈 판 한 틀을 안 거치게 · 아래 StartMapCell 첫 값). */
-const thumbDone = new Map<string, string | null>();
-function mapThumb(hash: string, grid: ReplayMapGrid): Promise<string | null> {
-  let p = thumbCache.get(hash);
-  if (!p) {
-    p = renderMinimapCanvas(grid, 1).then((cv) => cv.toDataURL("image/png")).catch(() => null)
-      .then((u) => { thumbDone.set(hash, u); return u; });
-    thumbCache.set(hash, p);
-  }
-  return p;
-}
+/** 맵 그림(안개 없음) — 해시마다 한 번 · 일꾼이 굽는다(mapThumb.ts ★ · 같은 맵의 줄이 나눠 쓴다 · 타일당 1px). */
+const mapThumb = mapThumbUrl;
+const thumbDone = mapThumbDone;
 
 /** 배치 칩 글 — 폭 4칸(한글·한자 등 넓은 글자 2칸 · 영문·숫자 1칸) 안에서 앞부터(2026-10-26, 요청: "2글자 정도" → "영어는 4글자"). */
 function shortSpot(name: string): string {
