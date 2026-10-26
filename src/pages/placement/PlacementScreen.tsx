@@ -76,6 +76,8 @@ function RoundRobin({ round, onPick }: { round: PlacementRound; onPick: (a: Plac
             <tr>
               <th className="scr-pl-corner" />
               {people.map((p) => <th key={p.memberId} scope="col"><span>{p.nickname}</span></th>)}
+              {/* 줄마다 그 사람의 전적 총계(2026-10-26, 요청: "배치 표 우측에 각 행별로 그 사람의 전적 총계 표시하는 열 추가") — 세트 승·패·무 · 승률. */}
+              <th scope="col" className="scr-pl-total-h"><span>전적</span></th>
             </tr>
           </thead>
           <tbody>
@@ -102,6 +104,10 @@ function RoundRobin({ round, onPick }: { round: PlacementRound; onPick: (a: Plac
                     </td>
                   );
                 })}
+                <td className="scr-pl-total">
+                  <span className="scr-pl-total-rec">{recordOf(row)}</span>
+                  {row.won + row.lost > 0 && <span className="scr-pl-total-rate">{Math.round((row.won / (row.won + row.lost)) * 100)}%</span>}
+                </td>
               </tr>
             ))}
           </tbody>

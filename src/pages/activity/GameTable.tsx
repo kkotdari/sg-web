@@ -94,7 +94,7 @@ export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (
       {spots.map((sp, i) => (
         <i
           key={i} className="scr-gtab-spot" title={sp.name || undefined}
-          style={{ left: `clamp(12px, ${sp.x * 100}%, calc(100% - 12px))`, top: `clamp(6px, ${sp.y * 100}%, calc(100% - 6px))`, background: sp.color, color: inkOn(sp.color) }}
+          style={{ left: `clamp(16px, ${sp.x * 100}%, calc(100% - 16px))`, top: `clamp(8px, ${sp.y * 100}%, calc(100% - 8px))`, background: sp.color, color: inkOn(sp.color) }}
         >{sp.short}</i>
       ))}
     </span>
