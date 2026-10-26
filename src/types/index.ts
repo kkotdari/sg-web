@@ -167,7 +167,7 @@ export interface RankingShift {
 }
 
 export type ActivityTargetType =
-  | "gameResult" | "rankingShift" | "leagueMatch" | "schedule" | "notice";
+  | "gameResult" | "rankingShift" | "leagueMatch" | "schedule" | "notice" | "post";
 export interface ActivityComment {
   id: number;
   targetType: ActivityTargetType;
@@ -687,6 +687,31 @@ export interface ScheduleWrite {
   files?: (ScheduleFile | { name: string; data: string })[];
 }
 
+/** 자유게시판 꼭지 — 잡담 · 질문 · 공략(2026-10-26, 요청: "꼭지(분류) 고를수있음 잡담 질문 공략"). 공지는 꼭지가 아니라 따로 붙는 속성(notice). */
+export type PostCategory = "chat" | "question" | "guide";
+
+/** 자유게시판 글 — 본문은 일정과 같은 블록 문서(ScheduleBlock). */
+export interface Post {
+  id: number;
+  title: string;
+  /** 안 골랐으면 null(요청: "카테고리 픽은 필수 아닌 선택으로"). */
+  category: PostCategory | null;
+  notice: boolean;
+  blocks: ScheduleBlock[];
+  createdBy: { id: string; nickname: string; avatar: string | null };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PostWrite {
+  title: string;
+  category: PostCategory | null;
+  /** 운영자만 먹는다(서버가 다른 사람의 값은 무시). */
+  notice?: boolean;
+  expectedUpdatedAt?: string;
+  blocks?: ScheduleBlockWrite[];
+}
+
 export interface ActivityNotice {
   id: number;
   kind: string;
@@ -700,10 +725,11 @@ export interface ActivityNotice {
 
 export interface ActivityFeedItem {
   key: string;
-  kind: "gameResultPost" | "leagueMatch" | "schedule" | "notice";
+  kind: "gameResultPost" | "leagueMatch" | "schedule" | "notice" | "post";
   gameResults: GameResult[];
   leagueMatch?: LeagueMatchActivity | null;
   schedule?: Schedule | null;
+  post?: Post | null;
   notice?: ActivityNotice | null;
   comments: ActivityComment[];
 }

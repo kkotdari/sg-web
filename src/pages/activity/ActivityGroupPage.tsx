@@ -94,9 +94,13 @@ export default memo(function ActivityGroupPage({
   const label = GROUP_DEFS.find((g) => g.key === groupKey)?.label ?? "";
   const { feedAll } = useFeedData();
   const minute = useRowClock();
-  const items = useMemo<ActivityItem[]>(
-    () => feedOfTab(feedAll, gameTab, memberOf).filter((it) => groupKeyOf(it) === groupKey),
-    [feedAll, gameTab, memberOf, groupKey]);
+  /* 자유게시판은 공지 글을 맨 위에 세운다(2026-10-26, 요청: "공지는 따로 속성으로 부여") — 공지끼리·나머지끼리는 새 글 순 그대로(sort 는 안정). */
+  const items = useMemo<ActivityItem[]>(() => {
+    const mine = feedOfTab(feedAll, gameTab, memberOf).filter((it) => groupKeyOf(it) === groupKey);
+    if (groupKey !== "board") return mine;
+    const pinned = (it: ActivityItem): number => (it.kind === "post" && it.post.notice ? 0 : 1);
+    return [...mine].sort((a, b) => pinned(a) - pinned(b));
+  }, [feedAll, gameTab, memberOf, groupKey]);
   const searchable = SEARCHABLE_GROUPS.has(groupKey);
   const suggestions = useMemo(() => activeMemberSearchTerms(members), [members]);
   const [searchApplied, setSearchApplied] = useUrlState("u");

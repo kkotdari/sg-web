@@ -10,9 +10,10 @@ import type { ActivityTargetType } from "../../types";
 import ActivityComments from "./ActivityComments";
 import LeagueMatchCard from "./LeagueMatchCard";
 import ScheduleCard from "./ScheduleCard";
+import PostCard from "./PostCard";
 import { GameDetailCloseContext } from "./gameDetailClose";
 import {
-  GROUP_DEFS, GROUP_ITEM_KIND, GROUP_SCREEN_CODE, dateLabelOf, leagueMatchItem, scheduleItem,
+  GROUP_DEFS, GROUP_ITEM_KIND, GROUP_SCREEN_CODE, dateLabelOf, leagueMatchItem, postItem, scheduleItem,
   type ActivityItem,
 } from "./activityItems";
 
@@ -49,6 +50,7 @@ export default memo(function ActivityDetailPage({ group, id, onBack, onClose, on
       .then((row) => {
         if (cancelled) return;
         const made = row.schedule ? scheduleItem(row.schedule)
+            : row.post ? postItem(row.post)
             : row.leagueMatch ? leagueMatchItem(row.leagueMatch) : null;   // 알림(랭킹 변동)은 걷었다(GROUP_DEFS)
         if (made) setItem(made); else onMiss();
       })
@@ -83,6 +85,19 @@ export default memo(function ActivityDetailPage({ group, id, onBack, onClose, on
                   canDelete={!!user && (item.schedule.createdBy.id === user.id || isAdmin)}
                   onDeleted={onClose}
                   footer={<ActivityCardComments targetType="schedule" targetId={item.schedule.id} overModal />}
+                />
+              </div>
+            ) : item.kind === "post" ? (
+              /* 자유게시판 글 — 고치기·지우기는 쓴 사람만(요청: "수정삭제는 본인만") · 운영자는 공지 단추만. */
+              <div className="scr-activity-card-head-off">
+                <PostCard
+                  post={item.post}
+                  timeText={formatWhen(item.time, { clock: item.withClock })}
+                  dateLabel={dateLabelOf(item)}
+                  mine={!!user && item.post.createdBy.id === user.id}
+                  admin={isAdmin}
+                  onDeleted={onClose}
+                  footer={<ActivityCardComments targetType="post" targetId={item.post.id} overModal />}
                 />
               </div>
             ) : item.kind === "leagueMatch" ? (

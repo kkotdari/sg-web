@@ -17,6 +17,7 @@ import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { isPhotoSet, type ScheduleBlock, type SchedulePhoto } from "../../types";
 import { imgSrc } from "../../utils/imgSrc";
 import { canSaveToAlbum, downloadFiles, fetchMedia, isVideoItem, MAX_VIDEO_BYTES, shareToAlbum } from "../../utils/media";
+import { renderTags, useInlineTags, useMemberNames } from "../../components/common/InlineTags";
 
 export type DraftBlock = ScheduleBlock & { key: string };
 /** 제목 요소 — 글 요소 중 제목 줄만 가진 것(노션의 제목 블록). 새로 만든 빈 제목은 heading 표식으로 안다. */
@@ -48,9 +49,10 @@ export const withKeys = (blocks: ScheduleBlock[]): DraftBlock[] => splitTitles(b
 const URL_RE = /(https?:\/\/[^\s<>]+)/g;
 const TRAIL = /[.,;:!?)\]}'"]+$/;
 
-function linkify(text: string): ReactNode[] {
+/** 주소는 고리로, 그 밖의 글은 태그 칩(게임 #번호 · @회원 — InlineTags ★)으로. */
+function linkify(text: string, names: string[] = []): ReactNode[] {
   return text.split(URL_RE).map((part, i) => {
-    if (i % 2 === 0 || !part) return part;
+    if (i % 2 === 0 || !part) return part ? <span key={i}>{renderTags(part, names, `${i}:`)}</span> : part;
     const tail = TRAIL.exec(part)?.[0] ?? "";
     const href = tail ? part.slice(0, -tail.length) : part;
     return (
@@ -192,6 +194,8 @@ function TextBlock({
   const [folded, toggle] = fold ?? ownFold;
   const open = canEdit && editing;
   const ref = useAutoGrow(value, open);
+  const names = useMemberNames();
+  const tags = useInlineTags({ inputRef: ref, value, setValue });
   const caretTo = useRef<number | "end" | null>(null);
   useEffect(() => {
     const f = nav.focus;
@@ -234,8 +238,9 @@ function TextBlock({
             const v = e.target.value;
             setValue(v);
             if (v === "/" && !value) nav.slash(e.currentTarget, heading ? "title" : "body");
+            tags.onInput(v, e.target.selectionStart ?? v.length);
           }}
-          onKeyDown={onEdgeKey}
+          onKeyDown={(e) => { if (!tags.onKeyDown(e)) onEdgeKey(e); }}
           onBlur={() => setEditing(false)}
         />
       ) : value || canEdit ? (
@@ -248,9 +253,10 @@ function TextBlock({
             if (e.key === "Enter") { e.preventDefault(); setEditing(true); }
           } : undefined}
         >
-          {value ? linkify(value) : "\u200b"}
+          {value ? linkify(value, names) : "\u200b"}
         </p>
       ) : null}
+      {open && tags.popover}
       {foldBtn && <div className="scr-sb-fold-corner">{foldBtn}</div>}
       {canEdit && (
         <div className="scr-sb-tools">
@@ -259,6 +265,29 @@ function TextBlock({
         </div>
       )}
     </div>
+  );
+}
+
+/** 목록 한 줄 칸 — 줄마다 제 태그 고르기(/g 게임 · @회원)를 단다. onValue 는 고른 태그를 끼운 새 값. */
+function TagLineInput({ value, onValue, bindRef, onChange, onKeyDown, ...rest }: {
+  value: string;
+  onValue: (next: string) => void;
+  bindRef: (el: HTMLInputElement | null) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "onKeyDown">) {
+  const ref = useRef<HTMLInputElement | null>(null);
+  const tags = useInlineTags({ inputRef: ref, value, setValue: onValue });
+  return (
+    <>
+      <input
+        {...rest} value={value}
+        ref={(el) => { ref.current = el; bindRef(el); }}
+        onChange={(e) => { onChange(e); tags.onInput(e.target.value, e.target.selectionStart ?? e.target.value.length); }}
+        onKeyDown={(e) => { if (!tags.onKeyDown(e)) onKeyDown(e); }}
+      />
+      {tags.popover}
+    </>
   );
 }
 
@@ -284,6 +313,7 @@ function ListBlock({
   };
 
   const rows = useRef(new Map<number, HTMLInputElement>());
+  const names = useMemberNames();
   /* ★ 여러 줄 고르기(PC · 요청: "목록 중간에서도 마우스로 여러 줄 선택") — 한 줄 글자 칸은 이웃 줄과 선택을 나눌 수 없어,
      줄 밖으로 끌어 다른 줄에 닿으면(또는 Shift+클릭) 줄 단위로 고른다. 고른 줄은 Delete·Backspace 로 지우고, Tab·Shift+Tab 으로
      단을 바꾸고, Ctrl/⌘+C·X 로 복사·잘라내기(단은 앞 칸 두 개씩), Esc 로 푼다. */
@@ -483,16 +513,17 @@ function ListBlock({
             >
               <span className="scr-sb-list-dot" aria-hidden />
               {canEdit ? (
-                <input
+                <TagLineInput
                   className="scr-sb-line scr-sb-list-text" value={it}
-                  ref={(el) => { if (el) rows.current.set(i, el); else rows.current.delete(i); }}
+                  bindRef={(el) => { if (el) rows.current.set(i, el); else rows.current.delete(i); }}
+                  onValue={(v) => setItem(i, v)}
                   onChange={(e) => setItem(i, e.target.value, e.currentTarget)}
                   onKeyDown={(e) => onKey(i, e)}
                   onFocus={() => setFocused(i)}
                   onBlur={() => setFocused((f) => (f === i ? null : f))}
                 />
               ) : (
-                <span className="scr-sb-line scr-sb-list-text">{it}</span>
+                <span className="scr-sb-line scr-sb-list-text">{linkify(it, names)}</span>
               )}
               {canEdit && focused === i && i < block.items.length && (
                 <span className="scr-sb-lv-btns" onPointerDown={(e) => e.preventDefault()}>

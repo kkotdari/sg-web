@@ -9,6 +9,7 @@ import { GameRowNames, GameRowStatus, ListRow } from "./GameRow";
 import { StartMapCell } from "./GameTable";
 import { GameTableRow, UnhideRequestButton } from "./GameTable";
 import { commentStatOf, subscribeComments } from "./ActivityComments";
+import { PostBadges } from "./PostCard";
 import {
   commentTargetOf, namesWithRest, rowFlagsOf, rowKeyOf, type DisplayItem,
 } from "./activityItems";
@@ -81,6 +82,14 @@ function rowDesc(item: DisplayItem, view: RowView) {
     return (
       <span className="scr-activity-row-names scr-activity-row-name-clip">
         <span className="scr-activity-row-em">{item.schedule.title}</span>
+      </span>
+    );
+  }
+  if (item.kind === "post") {
+    return (
+      <span className="scr-activity-row-names scr-activity-row-name-clip">
+        <PostBadges post={item.post} />
+        <span className="scr-activity-row-em">{item.post.title}</span>
       </span>
     );
   }

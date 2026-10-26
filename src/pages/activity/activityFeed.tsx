@@ -5,11 +5,11 @@ import { useCursorPagination } from "../../hooks/useCursorPagination";
 import { primeActivityComments } from "./ActivityComments";
 import { pickComingMatches } from "./ComingMatches";
 import {
-  gameResultItem, leagueMatchItem, scheduleItem, sessionDateOf, sortMsOf,
+  gameResultItem, leagueMatchItem, postItem, scheduleItem, sessionDateOf, sortMsOf,
   type ActivityItem,
 } from "./activityItems";
 import { fmt } from "../../utils/date";
-import type { ActivityFeedItem, GameResult, LeagueMatchActivity, Schedule } from "../../types";
+import type { ActivityFeedItem, GameResult, LeagueMatchActivity, Post, Schedule } from "../../types";
 
 /* ★ 활동 피드(홈·묶음 목록이 보는 서버 목록) — 2026-10-19(요청: "활동과 일정 너나와 리그 게임 목록과 상세등 모두 컴포넌트 분리").
    피드는 이 Provider 하나가 들고, 값(FeedData)과 손잡이(FeedActions)를 **다른 문맥**으로 나눠 준다. 목록 화면만 값을 구독하고,
@@ -31,6 +31,7 @@ export interface FeedActions {
   reload: () => void;
   patch: (updater: (prev: ActivityFeedItem[]) => ActivityFeedItem[]) => void;
   upsertSchedule: (s: Schedule) => void;
+  upsertPost: (p: Post) => void;
   /** 목록의 그 게임만 갈아 끼운다(상세가 제 것을 따로 고친다). */
   patchGameResult: (g: GameResult) => void;
 }
@@ -68,6 +69,7 @@ export function FeedProvider({ children }: { children: ReactNode }) {
   const leagueMatches = useMemo(() => feedItems.flatMap((it) => (it.leagueMatch ? [it.leagueMatch] : [])), [feedItems]);
   const comingMatches = useMemo(() => pickComingMatches(leagueMatches), [leagueMatches]);
   const schedules = useMemo(() => feedItems.flatMap((it) => (it.schedule ? [it.schedule] : [])), [feedItems]);
+  const posts = useMemo(() => feedItems.flatMap((it) => (it.post ? [it.post] : [])), [feedItems]);
   useEffect(() => {
     if (feedItems.length === 0) return;
     void primeActivityComments(feedItems.flatMap((it) => it.comments));
@@ -92,9 +94,10 @@ export function FeedProvider({ children }: { children: ReactNode }) {
       ...gameResults.map(gameResultItem),
       ...leagueMatches.map(leagueMatchItem),
       ...schedules.map(scheduleItem),
+      ...posts.map(postItem),
     ];
     return items.sort((a, b) => sortMsOf(b) - sortMsOf(a));
-  }, [gameResults, leagueMatches, schedules]);
+  }, [gameResults, leagueMatches, schedules, posts]);
 
   const reloadRef = useRef(reload);
   reloadRef.current = reload;
@@ -107,6 +110,13 @@ export function FeedProvider({ children }: { children: ReactNode }) {
       }
       reloadRef.current();
       return [{ key: `sc-${updated.id}`, kind: "schedule" as const, schedule: updated, gameResults: [], comments: [] }, ...prev];
+    }),
+    upsertPost: (updated) => patch((prev) => {
+      if (prev.some((it) => it.post?.id === updated.id)) {
+        return prev.map((it) => (it.post?.id === updated.id ? { ...it, post: updated } : it));
+      }
+      reloadRef.current();
+      return [{ key: `po-${updated.id}`, kind: "post" as const, post: updated, gameResults: [], comments: [] }, ...prev];
     }),
     patchGameResult: (updated) => patch((prev) => prev.map((it) => (it.gameResults.some((g) => g.id === updated.id)
       ? { ...it, gameResults: it.gameResults.map((g) => (g.id === updated.id ? updated : g)) }

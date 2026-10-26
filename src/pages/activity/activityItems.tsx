@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { cx } from "../../utils/format";
 import { serverMs } from "../../utils/date";
 import { parseRoute, type ActivityGroupKey } from "../../utils/route";
-import type { ActivityTargetType, GameResult, LeagueMatchActivity, Member, RankingShift, Schedule } from "../../types";
+import type { ActivityTargetType, GameResult, LeagueMatchActivity, Member, Post, RankingShift, Schedule } from "../../types";
 
 /* 활동 화면들(홈·묶음 목록·상세·게임 상세)이 함께 쓰는 항목 꼴과 셈 — 2026-10-19 화면을 컴포넌트로 나누며 ActivityScreen 에서 옮겼다. */
 
@@ -38,8 +38,16 @@ export interface ScheduleItem {
   schedule: Schedule;
 }
 
+/** 자유게시판 글(2026-10-26) — 시각은 쓴 때. */
+export interface PostItem {
+  kind: "post";
+  time: number;
+  withClock: boolean;
+  post: Post;
+}
+
 export type ActivityItem =
-  | GameResultItem | RankingShiftItem | LeagueMatchItem | ScheduleItem;
+  | GameResultItem | RankingShiftItem | LeagueMatchItem | ScheduleItem | PostItem;
 
 export type DisplayItem = ActivityItem;
 
@@ -56,6 +64,10 @@ export function scheduleItem(s: Schedule): ScheduleItem {
     sortTime: at > Date.now() ? Math.max(at, Date.now() + 1) : at,
     schedule: s,
   };
+}
+
+export function postItem(p: Post): PostItem {
+  return { kind: "post", time: serverMs(p.createdAt), withClock: true, post: p };
 }
 
 export function leagueMatchItem(m: LeagueMatchActivity): LeagueMatchItem {
@@ -87,6 +99,7 @@ export function sessionDateOf(it: GameResultItem): string {
 }
 export function detailIdOf(it: DisplayItem): number | null {
   return it.kind === "schedule" ? it.schedule.id
+      : it.kind === "post" ? it.post.id
       : it.kind === "rankingShift" ? it.shift.id
         : it.kind === "leagueMatch" ? it.match.id
           : null;
@@ -94,6 +107,7 @@ export function detailIdOf(it: DisplayItem): number | null {
 
 export function detailGroupOf(it: DisplayItem): ActivityGroupKey | null {
   return it.kind === "schedule" ? "schedule"
+      : it.kind === "post" ? "board"
       : it.kind === "rankingShift" ? "notice"
         : it.kind === "leagueMatch" ? "league"
           : null;
@@ -104,6 +118,7 @@ export const GROUP_ITEM_KIND: Record<ActivityGroupKey, string> = {
   schedule: "schedule",
   league: "leagueMatch",
   gameResult: "gameResult",
+  board: "post",
 };
 
 export function gameParamOf(): string | null {
@@ -113,6 +128,7 @@ export function gameParamOf(): string | null {
 
 export function commentTargetOf(it: DisplayItem): { type: ActivityTargetType; id: number } {
   return it.kind === "schedule" ? { type: "schedule", id: it.schedule.id }
+      : it.kind === "post" ? { type: "post", id: it.post.id }
       : it.kind === "rankingShift" ? { type: "rankingShift", id: it.shift.id }
         : it.kind === "leagueMatch" ? { type: "leagueMatch", id: it.match.id }
           : { type: "gameResult", id: it.gameResult.id };
@@ -122,9 +138,11 @@ export function rowKeyOf(it: DisplayItem): string {
   return it.kind === "rankingShift" ? `rs-${it.shift.id}`
       : it.kind === "leagueMatch" ? `lm-${it.match.id}`
         : it.kind === "schedule" ? `sc-${it.schedule.id}`
+        : it.kind === "post" ? `po-${it.post.id}`
           : `m-${it.gameResult.id}`;
 }
 
+/* 글은 쓴 사람만 지운다(운영자도 못 지운다 — 요청: "수정삭제는 본인만") — 그래서 묶어 고르기에서 빠진다. */
 export function deletableOf(it: DisplayItem): boolean {
   return it.kind === "gameResult" || it.kind === "schedule";
 }
@@ -171,6 +189,7 @@ export const GROUP_DEFS: { key: ActivityGroupKey; label: string }[] = [
   { key: "schedule", label: "일정" },
   { key: "league", label: "리그" },
   { key: "gameResult", label: "게임" },
+  { key: "board", label: "자유게시판" },
 ];
 
 export const GROUP_SCREEN_CODE: Record<ActivityGroupKey, string> = {
@@ -178,12 +197,14 @@ export const GROUP_SCREEN_CODE: Record<ActivityGroupKey, string> = {
   schedule: "activity_schedule",
   league: "activity_league",
   gameResult: "activity_game",
+  board: "activity_board",
 };
 
 export function groupKeyOf(item: ActivityItem): ActivityGroupKey {
   return item.kind === "gameResult" ? "gameResult"
     : item.kind === "leagueMatch" ? "league"
     : item.kind === "schedule" ? "schedule"
+    : item.kind === "post" ? "board"
     : "notice";
 }
 
@@ -251,6 +272,7 @@ export function touchMsOf(it: DisplayItem): number {
   if (it.kind === "schedule") {
     return Math.max(serverMs(it.schedule.createdAt), serverMs(it.schedule.updatedAt));
   }
+  if (it.kind === "post") return Math.max(serverMs(it.post.createdAt), serverMs(it.post.updatedAt));
   if (it.kind === "rankingShift") return serverMs(it.shift.createdAt);
   return it.time;
 }
@@ -266,9 +288,10 @@ export function rowFlagsOf(it: DisplayItem): ("new" | "update")[] {
     if (updated - posted > TOUCHED_SLACK_MS && fresh(updated)) flags.push("update");
     return flags;
   }
-  if (it.kind === "schedule") {
-    const created = serverMs(it.schedule.createdAt);
-    const updated = serverMs(it.schedule.updatedAt);
+  if (it.kind === "schedule" || it.kind === "post") {
+    const doc = it.kind === "schedule" ? it.schedule : it.post;
+    const created = serverMs(doc.createdAt);
+    const updated = serverMs(doc.updatedAt);
     const flags: ("new" | "update")[] = [];
     if (fresh(created)) flags.push("new");
     if (updated - created > TOUCHED_SLACK_MS && fresh(updated)) flags.push("update");

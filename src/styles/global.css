@@ -8113,3 +8113,48 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-activity-row-game.scr-gm > .scr-activity-row-main:has(> .scr-activity-row-desc.has-lead):has(> .scr-activity-row-above) > .scr-activity-row-status,
 .scr-activity-row-game.scr-gm > .scr-activity-row-main:has(> .scr-activity-row-desc.has-lead):has(> .scr-activity-row-above) > .scr-activity-row-badges { grid-row: 2; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main:has(> .scr-activity-row-desc.has-lead) > .scr-activity-row-data-wrap { order: 6; }
+
+/* ★ 자유게시판(2026-10-26, 요청: "자유게시판 만들어줘 … 꼭지(분류) 고를수있음 잡담 질문 공략 · 공지는 따로 속성으로 부여").
+   꼭지 고르기는 줄 탭(.scr-line-tab-btn)과 같은 음영 직사각형 · 배지는 리그 배지(.scr-league-tag)와 같은 크기 · 공지는 진 붉은 겹. */
+.scr-post-cats { display: inline-flex; align-items: stretch; gap: 0; width: fit-content; }
+.scr-post-cat {
+  background: none; border: none; border-radius: 0; cursor: pointer; font-family: inherit;
+  padding: 2px 8px; line-height: 1.3; font-size: var(--fs-caption); font-weight: 700; color: var(--muted);
+  -webkit-tap-highlight-color: transparent;
+}
+.scr-post-cat.is-on { color: var(--btn-fill-text); background: var(--btn-fill-bg); }
+@media (hover: hover) { .scr-post-cat:hover:not(.is-on) { color: var(--text); } }
+.scr-post-head-line { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.scr-post-badge {
+  display: inline-flex; align-items: center; flex: 0 0 auto; border-radius: 4px; white-space: nowrap;
+  font-size: var(--fs-micro); font-weight: 700; padding: 2px 5px 1px; line-height: 1.3;
+  background: color-mix(in srgb, var(--muted) 16%, transparent); color: var(--muted);
+}
+.scr-post-badge.is-question { background: color-mix(in srgb, #5b9bd8 18%, transparent); color: #5b9bd8; }
+.scr-post-badge.is-guide { background: color-mix(in srgb, #4caf7a 18%, transparent); color: #4caf7a; }
+.scr-post-badge.is-notice { background: color-mix(in srgb, #d8525b 20%, transparent); color: #e0646c; }
+html.scr-light-theme .scr-post-badge.is-question { color: #1d5fa8; }
+html.scr-light-theme .scr-post-badge.is-guide { color: #1f7a4a; }
+html.scr-light-theme .scr-post-badge.is-notice { color: #b3262f; }
+.scr-activity-row-names > .scr-post-badge { margin-right: 6px; vertical-align: 1px; }
+.scr-activity-row-names > .scr-post-badge + .scr-post-badge { margin-left: -2px; }
+.scr-post-notice-check { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-caption); font-weight: 700; cursor: pointer; }
+@media (max-width: 960px) {
+  .scr-post-badge { font-size: var(--fs-11); padding: 2px 4px; }
+}
+
+/* ★ 글 속 태그(2026-10-26, 요청: "/g 로 언제든 게임목록 불러와서 게임 태그 가능하게(게임번호) @는 유저태그") — InlineTags.
+   게임 칩은 그 게임 상세로 가는 고리 · 회원 칩은 댓글의 회원 태그와 같은 파랑. 고르기 목록은 댓글 회원 목록(.scr-pv-drop)과 같은 틀. */
+.scr-tag-game {
+  display: inline-flex; align-items: center; gap: 3px; vertical-align: baseline;
+  padding: 0 5px; margin: 0 1px; border-radius: 4px; text-decoration: none; white-space: nowrap;
+  font-weight: 700; font-size: 0.92em; font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--lighting-accent, #ecb665) 16%, transparent); color: var(--lighting-accent, #ecb665);
+}
+html.scr-light-theme .scr-tag-game { color: color-mix(in srgb, var(--lighting-accent, #5c9df5) 70%, #000); }
+@media (hover: hover) { .scr-tag-game:hover { text-decoration: underline; } }
+.scr-sb-text .scr-comment-mention, .scr-sb-list-text .scr-comment-mention { color: #5b9bd8; font-weight: 700; top: 0; margin: 0; vertical-align: baseline; }
+html.scr-light-theme .scr-sb-text .scr-comment-mention, html.scr-light-theme .scr-sb-list-text .scr-comment-mention { color: #1d4ed8; }
+.scr-tag-game-opt { display: flex; align-items: baseline; gap: 8px; min-width: 0; text-align: left; }
+.scr-tag-game-no { flex: 0 0 auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+.scr-tag-game-desc { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }

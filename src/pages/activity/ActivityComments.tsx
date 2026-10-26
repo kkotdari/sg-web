@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CornerDownLeft, X, Trash2 } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
@@ -9,7 +9,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { cx } from "../../utils/format";
-import { attachPopover } from "../../utils/popover";
+import { mentionIdsOf, renderTags, useInlineTags } from "../../components/common/InlineTags";
 import { formatWhen, serverMs } from "../../utils/date";
 
 const COMMENT_NEW_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -21,40 +21,9 @@ import type { Member, ActivityComment, ActivityTargetType } from "../../types";
 
 const MESSAGE_MAX_LENGTH = 50;
 
-function extractMentionIds(text: string, members: Member[]): string[] {
-  const active = members.filter((m) => m.status === "active" && m.nickname);
-  const sorted = active.slice().sort((a, b) => b.nickname.length - a.nickname.length);
-  if (sorted.length === 0) return [];
-  const byName = new Map(sorted.map((m) => [m.nickname, m.id]));
-  const esc = sorted.map((m) => m.nickname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const re = new RegExp(`@(${esc.join("|")})`, "g");
-  const ids = new Set<string>();
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    const id = byName.get(m[1]);
-    if (id) ids.add(id);
-  }
-  return Array.from(ids);
-}
-
+/* 회원 태그 뽑기·칩 그리기는 글 속 태그(InlineTags · 2026-10-26)와 같은 한 벌이다 — 댓글엔 게임 태그(/g → #게임번호)도 함께 선다. */
 function renderInline(text: string, mentions: { nickname: string }[]) {
-  const names = mentions.map((t) => t.nickname).filter(Boolean);
-  if (names.length === 0) return text;
-  const esc = names
-    .slice()
-    .sort((a, b) => b.length - a.length)
-    .map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const re = new RegExp(`@(${esc.join("|")})`, "g");
-  const out: React.ReactNode[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    if (m.index > last) out.push(<span key={`t${last}`}>{text.slice(last, m.index)}</span>);
-    out.push(<span key={`c${m.index}`} className="scr-comment-mention">@{m[1]}</span>);
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) out.push(<span key={`t${last}`}>{text.slice(last)}</span>);
-  return out;
+  return renderTags(text, mentions.map((t) => t.nickname));
 }
 
 function NoteComposer({
@@ -75,101 +44,26 @@ function NoteComposer({
   submitLabel: React.ReactNode;
 }) {
   const [text, setText] = useState(initialText);
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
+  const tags = useInlineTags({ inputRef, value: text, setValue: setText, maxLength: MESSAGE_MAX_LENGTH });
 
-  const candidates = useMemo(() => {
-    const q = (mentionQuery ?? "").toLowerCase();
-    return members
-      .filter((m) => m.status === "active")
-      .filter((m) => !q || m.nickname.toLowerCase().includes(q) || m.id.toLowerCase().includes(q))
-      .sort((a, b) => a.nickname.localeCompare(b.nickname, "ko"))
-      .slice(0, 50);
-  }, [members, mentionQuery]);
-  const mentionShown = mentionQuery !== null && candidates.length > 0;
-
-  useEffect(() => { setHighlight(0); }, [candidates]);
-  useEffect(() => {
-    dropRef.current?.querySelector(".scr-pv-opt-active")?.scrollIntoView({ block: "nearest" });
-  }, [highlight]);
-  useLayoutEffect(() => {
-    if (!mentionShown || !inputRef.current || !dropRef.current) return;
-    return attachPopover(inputRef.current, dropRef.current, { matchAnchor: true });
-  }, [mentionShown]);
-  useEffect(() => {
-    if (!mentionShown) return;
-    const closeOnOutside = (e: Event) => {
-      const t = e.target as Node | null;
-      if (inputRef.current?.contains(t) || dropRef.current?.contains(t)) return;
-      setMentionQuery(null);
-    };
-    const closeOnScroll = (e: Event) => {
-      const t = e.target as Node | null;
-      if (t && dropRef.current?.contains(t)) return;
-      setMentionQuery(null);
-    };
-    document.addEventListener("pointerdown", closeOnOutside, true);
-    window.addEventListener("scroll", closeOnScroll, true);
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutside, true);
-      window.removeEventListener("scroll", closeOnScroll, true);
-    };
-  }, [mentionShown]);
-
-  const detectQuery = (value: string, cursor: number) => {
-    const before = value.slice(0, cursor);
-    const m = before.match(/@([^\s@]*)$/);
-    setMentionQuery(m ? m[1] : null);
-  };
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     if (v.length > MESSAGE_MAX_LENGTH) return;
     setText(v);
-    detectQuery(v, e.target.selectionStart ?? v.length);
-  };
-  const insertMention = (member: Member) => {
-    const el = inputRef.current;
-    const cursor = el?.selectionStart ?? text.length;
-    const before = text.slice(0, cursor);
-    const after = text.slice(cursor);
-    const m = before.match(/@([^\s@]*)$/);
-    const start = m ? cursor - m[0].length : cursor;
-    const token = `@${member.nickname} `;
-    const next = text.slice(0, start) + token + after;
-    if (next.length > MESSAGE_MAX_LENGTH) return;
-    setText(next);
-    setMentionQuery(null);
-    const pos = start + token.length;
-    requestAnimationFrame(() => {
-      const e = inputRef.current;
-      if (e) { e.focus(); e.setSelectionRange(pos, pos); }
-    });
+    tags.onInput(v, e.target.selectionStart ?? v.length);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
-    if (e.key === "Escape") {
-      if (mentionShown) { setMentionQuery(null); return; }
-      onCancel?.();
-      return;
-    }
-    if (!mentionShown) {
-      if (e.key === "Enter") { e.preventDefault(); doSubmit(); }
-      return;
-    }
-    if (e.key === "ArrowDown") { e.preventDefault(); setHighlight((h) => (h + 1) % candidates.length); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setHighlight((h) => (h - 1 + candidates.length) % candidates.length); }
-    else if (e.key === "Enter" || e.key === "Tab") {
-      e.preventDefault();
-      insertMention(candidates[Math.min(highlight, candidates.length - 1)]);
-    }
+    if (tags.onKeyDown(e)) return;
+    if (e.key === "Escape") { onCancel?.(); return; }
+    if (e.key === "Enter") { e.preventDefault(); doSubmit(); }
   };
 
   const doSubmit = () => {
     const trimmed = text.trim();
     if (!trimmed || submitting) return;
-    onSubmit(trimmed, extractMentionIds(trimmed, members));
+    onSubmit(trimmed, mentionIdsOf(trimmed, members));
   };
 
   const isEmpty = text === "";
@@ -177,7 +71,7 @@ function NoteComposer({
 
   const clear = () => {
     setText("");
-    setMentionQuery(null);
+    tags.close();
     inputRef.current?.focus();
   };
 
@@ -212,23 +106,7 @@ function NoteComposer({
             <X size={14} />
           </button>
         )}
-        {mentionShown && createPortal(
-          <div className="scr-pv-drop scr-scroll" ref={dropRef}>
-            {candidates.map((m, i) => (
-              <button
-                key={m.id} type="button"
-                className={cx("scr-pv-opt scr-mention-opt", i === highlight && "scr-pv-opt-active")}
-                onMouseEnter={() => setHighlight(i)}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => insertMention(m)}
-              >
-                <Avatar member={m} size={22} />
-                <span className="scr-mention-name">{m.nickname}</span>
-              </button>
-            ))}
-          </div>,
-          document.body,
-        )}
+        {tags.popover}
       </div>
       {onCancel && (
         <button
@@ -572,7 +450,7 @@ export default function ActivityComments({ targetType, targetId, overModal = fal
       initialText=""
       submitting={busy}
       onSubmit={(text, ids) => void create(text, ids)}
-      placeholder="댓글 남기기 (@로 유저 태그)"
+      placeholder="댓글 남기기 (@ 유저 · /g 게임 태그)"
       submitLabel={<CornerDownLeft size={14} />}
     />
   );

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { CalendarPlus, PenLine, Upload } from "lucide-react";
+import { CalendarPlus, PenLine, SquarePen, Upload } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import ReplayReviewModal from "../../modals/ReplayReviewModal";
 import ScheduleFormModal from "../../modals/ScheduleFormModal";
+import PostFormModal from "../../modals/PostFormModal";
 import GameResultManualModal from "../../modals/GameResultManualModal";
-import { focusFirstLineOnOpen } from "./ScheduleCard";
+import { focusFirstLineOnOpen } from "./BlockDocCard";
 import { SCENE_LINK_KEYS9 } from "scplay";
 import { useAppStore } from "../../store/appStore";
 import { isAdminRole } from "../../constants/roles";
@@ -31,7 +32,7 @@ import type { RowAct, RowView } from "./ActivityRow";
 import { FeedProvider, useFeedActions, useRecentLeague } from "./activityFeed";
 import {
   GROUP_DEFS, GROUP_ITEM_KIND, GROUP_SCREEN_CODE, HIDE_FORMS, bulkDeleteMessageOf, deletableOf,
-  detailGroupOf, detailIdOf, leagueMatchItem, scheduleItem, type DisplayItem, type GameTab,
+  detailGroupOf, detailIdOf, leagueMatchItem, postItem, scheduleItem, type DisplayItem, type GameTab,
 } from "./activityItems";
 
 export { GameResultCard } from "./GameResultCard";
@@ -195,7 +196,8 @@ function ActivityRouter() {
   const memberOf = useAppStore((s) => s.memberOf);
   const members = useAppStore((s) => s.members);
   const sel = useSelection();
-  const selection = user && groupKey ? sel : null;
+  /* 자유게시판엔 고르기가 없다 — 글은 쓴 사람만 지운다(묶어 지우기 대상이 아니다). */
+  const selection = user && groupKey && groupKey !== "board" ? sel : null;
   const selClear = sel.clear;   // 일괄 지우기·숨기기 뒤 — 고른 것만 풀고 선택 모드는 둔다
   const selExit = sel.exit;
   useEffect(() => { selExit(); }, [selExit, viewKey]);
@@ -240,10 +242,12 @@ function ActivityRouter() {
   const [reviewDrafts, setReviewDrafts] = useState<ReplayDraft[] | null>(null);
   const pendingNoticeRef = useRef<{ text: string; kind: "success" | "error" } | null>(null);
   const [scheduleFormOpen, setScheduleFormOpen] = useState(false);
+  const [postFormOpen, setPostFormOpen] = useState(false);
   const [error, setError] = useState("");
   /* 게임 목록의 등록은 메뉴(리플레이 등록 · 수기 입력 · 2026-10-23, 요청: "경기결과 수기 입력 폼 필요") — 옛: 곧바로 리플레이 고르기. */
   const directAdd: (() => void) | null =
-    groupKey === "schedule" ? () => setScheduleFormOpen(true) : null;
+    groupKey === "schedule" ? () => setScheduleFormOpen(true)
+      : groupKey === "board" ? () => setPostFormOpen(true) : null;
   const [manualOpen, setManualOpen] = useState(false);
 
   const handleReplayFilesChosen = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -466,6 +470,14 @@ function ActivityRouter() {
                   <CalendarPlus size={14} aria-hidden /> 일정 등록
                 </button>
               )}
+              {view.kind === "home" && (
+                <button
+                  type="button" role="menuitem"
+                  onClick={() => { setAddMenuOpen(false); setPostFormOpen(true); }}
+                >
+                  <SquarePen size={14} aria-hidden /> 자유게시판 글쓰기
+                </button>
+              )}
             </div>
           </>
         )}
@@ -519,7 +531,16 @@ function ActivityRouter() {
           initial={null}
           onClose={() => setScheduleFormOpen(false)}
           /* 등록하면 그 일정의 상세(늘 편집 상태)로 바로 간다(2026-10-20, 요청: "등록하면 바로 상세 편집으로 · 지금은 목록이 나오네"). */
-          onSaved={(s) => { feed.upsertSchedule(s); focusFirstLineOnOpen(s.id); openItem(scheduleItem(s)); }}
+          onSaved={(s) => { feed.upsertSchedule(s); focusFirstLineOnOpen("schedule", s.id); openItem(scheduleItem(s)); }}
+        />
+      )}
+
+      {postFormOpen && (
+        <PostFormModal
+          admin={isAdmin}
+          onClose={() => setPostFormOpen(false)}
+          /* 일정처럼 등록하면 그 글의 상세(쓴 사람에겐 늘 편집 상태)로 바로 가 첫 줄에 커서를 둔다. */
+          onSaved={(p) => { feed.upsertPost(p); focusFirstLineOnOpen("post", p.id); openItem(postItem(p)); }}
         />
       )}
 

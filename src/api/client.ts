@@ -7,7 +7,7 @@ import type { GameCurve,
   ReplayNameClassificationEntry, ReplayNameKind, ReplayNameMappingEntry, ReplayNameMappingKind,
   League, LeagueListItem, LeagueCreatePayload, LeagueUpdatePayload,
   LeagueMatchSide, LeagueMatchSet, PlacementRound, PlacementRoundBrief, LeaguePoolKind, LeagueTeamCompositionEntry,
-  Schedule, ScheduleWrite,
+  Schedule, ScheduleWrite, Post, PostWrite,
   ExtShareList, ExtShareAddResult,
   DeletedGameResult,
   GameUnhideRequest,
@@ -694,6 +694,20 @@ export const api = {
   },
   async deleteSchedule(id: number): Promise<void> {
     await request<void>(`/api/schedules/${id}`, { method: "DELETE" });
+  },
+
+  /* 자유게시판(2026-10-26) — 고치기·지우기는 쓴 사람만(서버가 가른다) · 공지는 운영자만. */
+  async getPost(id: number): Promise<Post> {
+    return request<Post>(`/api/posts/${id}`);
+  },
+  async createPost(payload: PostWrite): Promise<Post> {
+    return request<Post>("/api/posts", { method: "POST", body: JSON.stringify(payload) });
+  },
+  async updatePost(id: number, payload: PostWrite): Promise<Post> {
+    return request<Post>(`/api/posts/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+  },
+  async deletePost(id: number): Promise<void> {
+    await request<void>(`/api/posts/${id}`, { method: "DELETE" });
   },
 
   async listActivityComments(targetType: ActivityTargetType, targetId: number): Promise<ActivityComment[]> {
