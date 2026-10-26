@@ -8079,7 +8079,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   background: #eceef2; color: #1f232a;   /* 톤다운(같은 날 "흰색 유저칩 톤다운 필요" · 옛 #fff · #16181d · 테 0.6) → 반투명 회백(0.78)은 "너무 다운됨" — 불투명 연회백 · 테 0.45 */
   position: absolute; transform: translate(-50%, -50%); height: 12px; padding: 0 2px; box-sizing: border-box; border-radius: 3px;
   display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 8px; font-weight: 800; line-height: 1; white-space: nowrap;   /* 12/8 → 15/10(맵 72 → 100 따라 · 2026-10-26) → 14/9(한 단 줄임 · 같은 날 요청) → 12/8(맵 80 · 한 단 더) */
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);   /* 테두리 없이 음영만(같은 날 요청 · 옛 0 0 0 1px 테) */
 }
 /* 폰 게임 줄의 배치 미니맵(2026-10-26, 요청: "모바일에도 미니맵 배치 · 왼쪽에 자리" → "카드 안에 넣기") — ListRow lead · 카드(줄 몸) 안 이름 줄의 왼쪽. */
 .scr-activity-row-desc.has-lead { display: flex; align-items: center; gap: 10px; min-width: 0; }
