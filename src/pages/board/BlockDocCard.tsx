@@ -633,8 +633,9 @@ function BlockDocCardInner<D extends BlockDoc, W>({
           onChange={onBlocks}
         />
 
-        {/* 누가 올렸는지 또렷이(2026-10-20, 요청: "등록자도 누구 등록으로 명확하게") — 옛 "— 정구". */}
-        <div className="scr-schedule-by">{spec.byline(doc)}</div>
+        {/* 누가 올렸는지 또렷이(2026-10-20, 요청: "등록자도 누구 등록으로 명확하게") — 옛 "— 정구".
+            글쓰기(아직 없는 글)에는 안 띄운다(2026-10-26, 요청: "이건 없어도 됨 누구 작성" — 쓰는 사람이 저다). */}
+        {!spec.draft && <div className="scr-schedule-by">{spec.byline(doc)}</div>}
       </div>
       {shield && createPortal(
         <div className="scr-save-shield">
