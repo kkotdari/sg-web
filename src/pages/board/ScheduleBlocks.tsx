@@ -209,15 +209,16 @@ function TextBlock({
     placeCaret(ref.current, caretTo.current);
     caretTo.current = null;
   }, [open]);
-  /* 노션처럼(요청: "완전 유연화") — Enter 는 커서 자리에서 나누고(Shift+Enter 는 줄바꿈), 맨 앞 Backspace 는 위 요소에 잇는다.
-     Tab 은 요소째 들여 쓴다(딸린 하위 요소도 함께). */
+  /* 노션처럼(요청: "완전 유연화") — 맨 앞 Backspace 는 위 요소에 잇는다 · Tab 은 요소째 들여 쓴다(딸린 하위 요소도 함께).
+     ★ 글 요소의 Enter 는 **줄바꿈**이다(2026-10-26, 요청: "엔터치면 다른 요소로 분리되는데 그러면 안돼 글 요소안에는 엔터가 포함돼") —
+     옛 판은 커서 자리에서 요소를 나눴다(Shift+Enter 가 줄바꿈). 한 줄짜리 제목 요소만 Enter 로 나눈다. */
   const onEdgeKey = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (composing(e)) return;
     const el = e.currentTarget;
     const s0 = el.selectionStart ?? 0;
     const s1 = el.selectionEnd ?? s0;
     if (e.key === "Tab") { e.preventDefault(); nav.indent(e.shiftKey ? -1 : 1); return; }
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && heading) {
       e.preventDefault();
       nav.split(el.value.slice(0, s0), el.value.slice(s1));
       return;
