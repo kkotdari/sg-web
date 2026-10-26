@@ -46,7 +46,7 @@ export default function MonthCalendar({
 
   useEffect(() => {
     if (!open || !ref.current || !popRef.current) return;
-    return attachPopover(ref.current, popRef.current, { maxWidth: 248 });
+    return attachPopover(ref.current, popRef.current, { maxWidth: 248, simple: true });   // 단추 바로 아래(popover simple ★ · 아이폰 앱에서 위로 뒤집히던 것)
   }, [open]);
 
   useEffect(() => {

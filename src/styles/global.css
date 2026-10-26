@@ -1054,6 +1054,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-v2-toolbar-month { flex: none; }
 /* 통계 기간 셋(2026-10-26 · 월 선택 · 전체기간 · 오늘 — 배타 · 켜진 것만 채움) */
 .scr-stats-period { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+/* 셋은 같은 키(2026-10-26, 지적: "월선택만 액티브시 버튼이 큼" — 달력 아이콘(14) 때문에 월 단추만 2px 높았다) */
+.scr-stats-period .scr-compact-rect-btn { height: 24px; }
 
 .scr-clan-dash {
   display: flex; flex-direction: column; gap: 12px;
