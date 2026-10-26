@@ -98,6 +98,10 @@ const TL = {
 const AXIS_DROP = 6;
 /** 전체화면 2열 — 판 폭 이만큼이면 탭의 두 판을 나란히(한 판 ≈ 650) · 판 사이. 건설 줄은 온 폭. */
 const FULL_TWO_COL = 1340;
+/* ★ 전체화면도 창모드와 **같은 구성**(2026-10-26, 요청: "데이터창 전체화면도 창모드랑 똑같은 구성으로 변경(크기만 키운 꼴)") — 탭 넷에서 한 종류 · 크기는 몸 FULL_ZOOM9 배
+   (global.css .is-full > .scr-modal-body zoom 과 같은 값). 옛 전체화면 꼴(건설 줄 온 폭 + 두 판 반반 · 2026-10-22)은 FULL_OWN9 로 남긴다. */
+const FULL_OWN9 = false as boolean;
+const FULL_ZOOM9 = 1.5;
 const FULL_COL_GAP = 40;
 /** 닉네임 칩 글 — 폭으로 자른다(칩 글자 6.5 자 폭 · 2026-10-21, 요청: "닉네임 칩 가로폭 봐서 적절히 글자수 제한"). 끝 칩 · 테크 줄 앞머리가 같이 쓴다. */
 const shortName = (s: string, fs: number): string => fitText(s, fs, fs * 6.5);
@@ -770,7 +774,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       void modalRef.current?.requestFullscreen?.().catch(() => {});
     }
   };
-  const twoCol = full && box.w >= FULL_TWO_COL;
+  const twoCol = FULL_OWN9 && full && box.w >= FULL_TWO_COL;
   const colW = twoCol ? Math.floor((box.w - FULL_COL_GAP) / 2) : box.w;
   useLayoutEffect(() => {
     const el = boxRef.current;
@@ -781,7 +785,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       const w = Math.floor(el.clientWidth);
       setBox({
         w,
-        h: full && w >= FULL_TWO_COL ? Math.max(240, Math.floor((window.innerHeight - 330) / 2)) : Math.max(216, Math.floor((window.innerHeight - 330) / 3)),
+        h: FULL_OWN9 && full && w >= FULL_TWO_COL ? Math.max(240, Math.floor((window.innerHeight - 330) / 2))
+          : Math.max(216, Math.floor((window.innerHeight / (full ? FULL_ZOOM9 : 1) - 330) / 3)),   // 전체화면은 몸이 1.5배라 그 자(로컬 px)로 나눈다
       });
     };
     measure();
@@ -920,7 +925,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const rsModeEl = miniTabs(rsNow, setRsNow, "누적", "순간");
   /* ★ **한 종류만 보이기**(2026-10-25, 요청: "모바일 및 PC 창모드 그래프 탭을 테크 인구 데미지 자원으로 통합해서 한 종류만 보이게 · 스티키 내에 순서 그래프 · 유저 · 색깔") —
      폰·PC 창모드는 탭 넷(테크 = 건설 줄)에서 고른 하나만 그리고, 탭 · 볼 사람 · 개인/팀별이 그 차례로 맨 위에 붙는다(.scr-gc-top). PC 전체화면은 종전(건설 줄 온 폭 + 탭 셋의 두 판 반반). */
-  const oneKind9 = !full;
+  const oneKind9 = !(FULL_OWN9 && full);
   const tab: GroupTab = !oneKind9 && tabRaw === "bl" ? "sp" : tabRaw;
   const pair: [ReactNode, ReactNode] | null = tab === "sp" ? [spEl, wkEl]
     : tab === "rs" ? (rsNow ? [chartOf("rm", "미네랄", { titleExtra: rsModeEl }), rgEl]
