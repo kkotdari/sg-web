@@ -682,7 +682,6 @@ export interface PostWrite {
   notice?: boolean;
   scheduledDate?: string | null;
   scheduledTime?: string | null;
-  expectedUpdatedAt?: string;
   blocks?: ScheduleBlockWrite[];
 }
 

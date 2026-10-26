@@ -141,14 +141,13 @@ function postSpec({ admin, draft }: {
     }),
     serverKeyOf: (p) => JSON.stringify([p.title, p.category, p.scheduledDate, p.scheduledTime, p.blocks ?? []]),
     ready: (h) => !!h.title.trim() && (h.category !== "schedule" || !!h.date),
-    writeOf: (h, blocks, expectedUpdatedAt) => {
+    writeOf: (h, blocks) => {
       const category = asCategory(h.category);
       const when = category === "schedule" ? { scheduledDate: h.date || null, scheduledTime: h.time || null } : {};
       return draft
         ? { title: h.title.trim(), category, ...when, blocks, ...(admin && h.notice === "1" ? { notice: true } : {}) }
-        : { title: h.title.trim(), category, ...when, expectedUpdatedAt, blocks };
+        : { title: h.title.trim(), category, ...when, blocks };
     },
-    get: (id) => api.getPost(id),
     update: draft
       ? async (_id, payload) => { const p = await api.createPost(payload); draft.onCreated(p); return p; }
       : (id, payload) => api.updatePost(id, payload),

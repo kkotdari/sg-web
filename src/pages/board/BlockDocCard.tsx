@@ -8,16 +8,18 @@ import { type KakaoShareContent } from "../../utils/kakaoShare";
 import { pad } from "../../utils/date";
 import { LoadingMark } from "../../components/common/Feedback";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
-import { apiStatusOf } from "../../api/client";
 import { readAsDataUrl } from "../../utils/image";
+import { releaseKeyboardHold } from "../../utils/keyboardHold";
 import { showAlert } from "../../components/common/AlertDialog";
 import { isPhotoSet, type ScheduleBlock, type SchedulePhoto, type ScheduleBlockWrite } from "../../types";
 import { FeedCard } from "../feed/FeedCard";
 import ScheduleBlocks, { NEW_PREFIX, sortingNow, splitTitles, withKeys, type DraftBlock } from "./ScheduleBlocks";
 
 /* ★ 블록 문서 카드(2026-10-26, 요청: "자유게시판 만들어줘 · 일정 폼 재사용(공통화)") — 일정 카드(ScheduleCard)의 늘 편집 상태 ·
-   저장 단추 · 남의 고침 받아 합치기(8초) · 사진 올리기 가림막 · 요소 편집(ScheduleBlocks)을 여기로 옮겼다. 문서 종류마다 다른 것은
-   머리 칸(제목 + 일시 · 꼭지 …) · 저장 꼴 · 서버 길 · 공유 · 지우기 글귀뿐이라 그것만 DocSpec 으로 받는다(일정 ScheduleCard · 글 PostCard). */
+   저장 단추 · 사진 올리기 가림막 · 요소 편집(ScheduleBlocks)을 여기로 옮겼다. 문서 종류마다 다른 것은
+   머리 칸(제목 + 일시 · 꼭지 …) · 저장 꼴 · 서버 길 · 공유 · 지우기 글귀뿐이라 그것만 DocSpec 으로 받는다(글 PostCard).
+   ★ 공동 편집은 걷었다(2026-10-26, 요청: "일정 공동편집 제거하고 다른 글들과 똑같이 취급") — 옛 일정은 누구나 고쳐 남의 고침을 8초마다 받아
+   내 고침과 합쳤다(묻기 · 합치기 · 그새 바뀜 409). 글은 쓴 사람만 고치므로 서버 판은 늘 내 판이다 — 저장 응답만 받는다. */
 
 /** 머리 칸 — 제목과 그 문서 종류의 글자 칸들(일정: date·time · 글: category). 값은 모두 글자. */
 export type DocHead = { title: string; [key: string]: string };
@@ -42,8 +44,7 @@ export interface DocSpec<D extends BlockDoc, W> {
   serverKeyOf: (doc: D) => string;
   /** 저장해도 되는 머리인가(제목 · 일정은 날짜까지). */
   ready: (head: DocHead) => boolean;
-  writeOf: (head: DocHead, blocks: ScheduleBlockWrite[], expectedUpdatedAt: string) => W;
-  get: (id: number) => Promise<D>;
+  writeOf: (head: DocHead, blocks: ScheduleBlockWrite[]) => W;
   update: (id: number, payload: W) => Promise<D>;
   remove: (id: number) => Promise<void>;
   share: (doc: D) => KakaoShareContent;
@@ -58,7 +59,7 @@ export interface DocSpec<D extends BlockDoc, W> {
   /** 블록 앞에 그리는 옛 본문(일정의 옛 글·링크·첨부). */
   legacy?: (doc: D) => ReactNode;
   /** 아직 서버에 없는 새 문서(글쓰기 · 2026-10-26, 요청: "등록시 바로 등록폼으로 가고 제목과 분류같은거도 거기서 입력") —
-   *  도구 줄(공유·삭제)·남의 고침 받기를 걷고, 저장 단추는 등록 · 취소는 onDiscard(글쓰기를 떠난다) · 제목에 커서. */
+   *  도구 줄(공유·삭제)을 걷고, 저장 단추는 등록 · 취소는 onDiscard(글쓰기를 떠난다) · 제목에 커서. */
   draft?: { saveLabel: string; onDiscard: () => void };
 }
 
@@ -95,7 +96,7 @@ function DocHeadRow<D extends BlockDoc, W>({
         {editing ? (
           <input
             className="scr-schedule-title scr-sb-line" value={head.title} placeholder="제목"
-            autoFocus={!!draft}
+            ref={draft ? focusTitle : undefined}
             onChange={(e) => onChange({ title: e.target.value })}
             onClick={(e) => e.stopPropagation()}
           />
@@ -134,6 +135,14 @@ function DocHeadRow<D extends BlockDoc, W>({
       </div>
     </>
   );
+}
+
+/** 글쓰기 제목 칸 — 그려지자마자 커서를 둔다(2026-10-26, 요청: "글쓰기 누르면 자동으로 제목에 커서 포커스").
+ *  글쓰기 단추가 누름 안에서 붙든 자판(utils/keyboardHold)을 넘겨받고 임시 칸을 걷는다. */
+function focusTitle(el: HTMLInputElement | null): void {
+  if (!el || document.activeElement === el) return;
+  el.focus();
+  releaseKeyboardHold();
 }
 
 /* 문서 도구 — 늘 보이는 단추 줄(2026-10-22, 요청: "케밥 메뉴 쓰는 곳을 전부 항시 노출 버튼 툴박스로") · 옛 ⋯ 메뉴(공유 · 삭제)를 펼친 꼴. */
@@ -188,18 +197,6 @@ function DocTools<D extends BlockDoc, W>({ spec, doc, canDelete, onDeleted, adop
   );
 }
 
-/* 남의 고침을 묻는 간격 4 → 8초(2026-10-18, 지적: "드래그 앤 드롭도 너무 느려 · 서버에서 계속 갱신해서 조회하는 거 때문인가") —
-   보이는 카드마다 4초마다 받아 와 목록 전체를 다시 그렸다. 이제 바뀐 게 없으면 아무것도 안 하고, 끌거나 치는 동안은 묻지 않는다. */
-const REFRESH_MS = 8000;
-
-const NO_KEYBOARD = new Set(["checkbox", "radio", "button", "submit", "reset", "file", "range", "color", "image"]);
-function typingNow(): boolean {
-  const box = (document.activeElement as HTMLElement | null)
-    ?.closest<HTMLElement>("input, textarea, [contenteditable]:not([contenteditable=false])");
-  if (!box) return false;
-  return !(box instanceof HTMLInputElement) || !NO_KEYBOARD.has(box.type);
-}
-
 type Draft = { head: DocHead; blocks: DraftBlock[] };
 
 const draftOf = <D extends BlockDoc, W>(spec: DocSpec<D, W>, s: D, prev: DraftBlock[] = []): Draft => {
@@ -213,8 +210,6 @@ const sameBlock = (a: ScheduleBlock, b: ScheduleBlock): boolean =>
   && a.photos.length === b.photos.length && a.photos.every((x, i) => x.id === b.photos[i].id)
   && !!a.collapsed === !!b.collapsed && (a.indent ?? 0) === (b.indent ?? 0)
   && levelsOf(a).every((x, i) => x === levelsOf(b)[i]);
-const startsWith = (xs: string[], prefix: string[]): boolean =>
-  prefix.length <= xs.length && prefix.every((x, i) => x === xs[i]);
 const normBlock = (b: ScheduleBlock): ScheduleBlock => {
   const lv = levelsOf(b);
   const kept = b.items.map((x, i) => [x.trim(), lv[i]] as const).filter(([x]) => x);
@@ -223,7 +218,6 @@ const normBlock = (b: ScheduleBlock): ScheduleBlock => {
     items: kept.map(([x]) => x), levels: kept.map(([, n]) => n),
   };
 };
-const equivalent = (mine: ScheduleBlock, server: ScheduleBlock): boolean => sameBlock(normBlock(mine), server);
 const isEphemeral = (b: ScheduleBlock): boolean =>
   (b.kind === "text" && !b.text.trim() && !b.title.trim()) || (b.kind === "list" && !b.title.trim() && !b.items.some((x) => x.trim()))
   || (isPhotoSet(b) && b.photos.length === 0);
@@ -350,63 +344,6 @@ function adoptServerMedia(mine: Draft, server: Draft): Draft | null {
   return changed ? { ...mine, blocks } : null;
 }
 
-/** 머리 칸 합치기 — 제목은 내 글이 서버와 (앞뒤 빈칸 빼고) 같거나 내가 고친 것이면 내 것, 나머지 칸은 내가 고친 것만 내 것. */
-function headMerge(keys: readonly string[], server: DocHead, mine: DocHead, touched: Set<string> | null): DocHead {
-  const out: DocHead = { ...server };
-  for (const k of keys) {
-    if (k === "title") out.title = touched?.has("title") || mine.title.trim() === server.title ? mine.title : server.title;
-    else if (touched?.has(k)) out[k] = mine[k];
-  }
-  return out;
-}
-
-function keepLocal(keys: readonly string[], server: Draft, mine: Draft): Draft {
-  const local = new Map(mine.blocks.map((b) => [b.key, b]));
-  const blocks: DraftBlock[] = server.blocks.map((s) => {
-    const l = local.get(s.key);
-    return l && equivalent(l, s) ? { ...l, id: s.id } : s;
-  });
-  mine.blocks.forEach((b, i) => {
-    if (isNew(b.id) && isEphemeral(b)) blocks.splice(Math.min(i, blocks.length), 0, b);
-  });
-  return { head: headMerge(keys, server.head, mine.head, null), blocks };
-}
-
-function merge(
-  keys: readonly string[], server: Draft, mine: Draft, touched: Set<string>, removed: Set<string>, base: Map<string, DraftBlock>,
-): Draft {
-  const theirs = new Map(server.blocks.map((b) => [b.key, b]));
-  const blocks: DraftBlock[] = [];
-  for (const b of mine.blocks) {
-    const t = theirs.get(b.key);
-    if (!touched.has(b.key)) {
-      if (t) blocks.push(equivalent(b, t) ? { ...b, id: t.id } : t);
-      else if (isNew(b.id)) blocks.push(b);
-      continue;
-    }
-    if (t && b.kind === "list") {
-      const old = base.get(b.key)?.items ?? [];
-      if (t.items.length > old.length && startsWith(t.items, old)) {
-        blocks.push({
-          ...b, items: [...b.items, ...t.items.slice(old.length)],
-          levels: [...levelsOf(b), ...levelsOf(t).slice(old.length)],
-        });
-        continue;
-      }
-    }
-    blocks.push(b);
-  }
-  let pos = -1;
-  for (const t of server.blocks) {
-    const at = blocks.findIndex((b) => b.key === t.key);
-    if (at >= 0) { pos = at; continue; }
-    if (removed.has(t.id)) continue;
-    blocks.splice(pos + 1, 0, t);
-    pos += 1;
-  }
-  return { head: headMerge(keys, server.head, mine.head, touched), blocks };
-}
-
 export type BlockDocCardProps<D extends BlockDoc, W> = {
   spec: DocSpec<D, W>;
   doc: D;
@@ -478,19 +415,13 @@ function BlockDocCardInner<D extends BlockDoc, W>({
   const draftRef = useRef<Draft | null>(null);
   const setDraft = (d: Draft | null): void => { draftRef.current = d; setDraftState(d); };
 
-  const touched = useRef(new Set<string>());
-  const removed = useRef(new Set<string>());
-  const base = useRef(new Map<string, DraftBlock>());
   const editVer = useRef(0);
   const savedSnap = useRef("");
   const savedVer = useRef(0);
   const saving = useRef(false);
-  const lastRefreshAt = useRef(0);
   const lastKey = useRef("");
-  const baseUpdatedAt = useRef("");
-  /* ★ 내가 저장해 만든 판(서버 updatedAt)을 기억한다(요청: "일정 저장 버전을 만들어서 내가 수정한 버전이면 업데이트 안 하게") —
-     저장 응답이나 다시 묻기(refresh)로 돌아온 판이 이 값이면 내 판이니, 비교 기준(lastKey·base)만 맞추고 화면의 글·차례는
-     그대로 둔다. 여태는 내 저장도 서버 꼴로 다시 갈아 끼워 커서·고침이 흔들렸다. 남이 고쳐 판이 바뀐 때만 받아 합친다. */
+  /* 내가 저장해 만든 판(서버 updatedAt) — 저장 응답으로 돌아온 판이면 화면의 글·차례는 그대로 두고 비교 기준만 맞춘다
+     (서버 꼴로 갈아 끼우면 커서·저장 중 고침이 흔들린다). */
   const mineAt = useRef("");
   const lastServer = useRef<D | null>(null);
   const latest = useRef({ doc });
@@ -517,20 +448,16 @@ function BlockDocCardInner<D extends BlockDoc, W>({
 
   const absorb = (s: D): void => {
     lastServer.current = s;
-    baseUpdatedAt.current = s.updatedAt;
     const key = spec.serverKeyOf(s);
     if (key === lastKey.current) return;
     lastKey.current = key;
     const d = draftRef.current;
     if (!d) return;
     const server = draftOf(spec, s, d.blocks);
-    const own = !!mineAt.current && s.updatedAt === mineAt.current;
-    if (!own) setDraft(dirty() ? merge(keys, server, d, touched.current, removed.current, base.current) : keepLocal(keys, server, d));
-    else {
+    if (!!mineAt.current && s.updatedAt === mineAt.current) {
       const media = adoptServerMedia(d, server);
       if (media) setDraft(media);
-    }
-    base.current = new Map(server.blocks.map((b) => [b.key, b]));
+    } else if (!dirty()) setDraft(server);   // 다른 창(같은 사람)에서 고친 판 — 손에 든 고침이 없을 때만 갈아 끼운다
     savedSnap.current = snapOf(keys, server);
   };
 
@@ -545,16 +472,11 @@ function BlockDocCardInner<D extends BlockDoc, W>({
     lastServer.current = from;
     const d = draftOf(spec, from);
     savedSnap.current = snapOf(keys, d);
-    touched.current.clear();
-    removed.current.clear();
-    base.current = new Map(d.blocks.map((b) => [b.key, b]));
     editVer.current = 0;
     savedVer.current = 0;
     contentDirty.current = false;
     foldQueued.current = false;
-    lastRefreshAt.current = Date.now();
     lastKey.current = spec.serverKeyOf(from);
-    baseUpdatedAt.current = from.updatedAt;
     setSaveState("saved");
     setSavedAt(from.updatedAt);
     setDraft(d);
@@ -569,8 +491,7 @@ function BlockDocCardInner<D extends BlockDoc, W>({
   const edit = (part: Partial<DocHead>): void => {
     const d = draftRef.current;
     if (!d) return;
-    let changed = false;
-    for (const k of keys) if (part[k] !== undefined && part[k] !== d.head[k]) { touched.current.add(k); changed = true; }
+    const changed = keys.some((k) => part[k] !== undefined && part[k] !== d.head[k]);
     const next = { ...d, head: { ...d.head, ...part } as DocHead };
     if (changed) markContent(next);
     setDraft(next);
@@ -580,13 +501,8 @@ function BlockDocCardInner<D extends BlockDoc, W>({
     const d = draftRef.current;
     if (!d) return;
     const prev = new Map(d.blocks.map((b) => [b.key, b]));
-    let changed = next.length !== d.blocks.length || next.some((b, i) => b.key !== d.blocks[i].key);
-    for (const b of next) {
-      const p = prev.get(b.key);
-      if (!p || !sameBlock(p, b)) { touched.current.add(b.key); changed = true; }
-    }
-    const kept = new Set(next.map((b) => b.key));
-    for (const p of d.blocks) if (!kept.has(p.key) && !isNew(p.id)) removed.current.add(p.id);
+    const changed = next.length !== d.blocks.length || next.some((b, i) => b.key !== d.blocks[i].key)
+      || next.some((b) => { const p = prev.get(b.key); return !p || !sameBlock(p, b); });
     // 접기·펴기만 바뀌었나(같은 차례 · 접힘 말고는 같음) — 그러면 저장 단추를 안 띄운다.
     const foldOnly = next.length === d.blocks.length && next.every((b, i) => {
       const p = d.blocks[i];
@@ -616,7 +532,7 @@ function BlockDocCardInner<D extends BlockDoc, W>({
     if (uploadTotal.current > 0) setShield({ done: uploadTotal.current - pending, total: uploadTotal.current });
     try {
       const { blocks, deferred } = await blocksPayloadOf(d);
-      const saved = await spec.update(latest.current.doc.id, spec.writeOf(d.head, blocks, baseUpdatedAt.current));
+      const saved = await spec.update(latest.current.doc.id, spec.writeOf(d.head, blocks));
       mineAt.current = saved.updatedAt;
       setSavedAt(saved.updatedAt);
       if (deferred.size === 0) { uploadTotal.current = 0; setShield(null); }
@@ -628,36 +544,17 @@ function BlockDocCardInner<D extends BlockDoc, W>({
       if (cur) {
         const adopted = adoptIds(sent.blocks, saved.blocks ?? [], deferred);
         if (adopted.size > 0) setDraft({ ...cur, blocks: applyAdopted(cur.blocks, adopted) });
-        const now = draftRef.current!;
-        for (const k of keys) if (now.head[k] === sent.head[k]) touched.current.delete(k);
-        for (const b of sent.blocks) {
-          const c = now.blocks.find((x) => x.key === b.key);
-          if (c && sameBlock(c, b) && !b.photos.some((p) => deferred.has(p.id))) touched.current.delete(b.key);
-        }
       }
-      removed.current.clear();
       if (editVer.current === ver && deferred.size === 0) {
         savedVer.current = ver;
         contentDirty.current = false;
         setSaveState("saved");
       } else if (deferred.size === 0) setSaveState(contentDirty.current ? "dirty" : "saved");
-      base.current = new Map(draftRef.current?.blocks.map((b) => [b.key, b]) ?? []);
-      for (const b of sent.blocks) if (!base.current.has(b.key)) base.current.set(b.key, b);
       absorb(saved);
       return true;
     } catch (e) {
       uploadTotal.current = 0;
       setShield(null);
-      if (apiStatusOf(e) === 409) {
-        try {
-          const s = await spec.get(latest.current.doc.id);
-          absorb(s);
-        } catch { }
-        if (contentDirty.current) showAlert("그새 다른 사람이 고쳐서 그 고침을 합쳤어요. 확인하고 다시 저장해 주세요.");
-        else foldQueued.current = true;
-        setSaveState(contentDirty.current ? "dirty" : "saved");
-        return false;
-      }
       showAlert(e instanceof Error ? e.message : "저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.");
       setSaveState("failed");
       return false;
@@ -670,25 +567,6 @@ function BlockDocCardInner<D extends BlockDoc, W>({
     }
   };
 
-  const refresh = async (): Promise<void> => {
-    /* 저장 안 한 고침이 있어도 남의 고침은 꾸준히 받아 내 고침과 합친다(absorb → merge · 2026-10-20, 요청: "변경 사항 불러오기는 꾸준히") —
-       저장이 단추로만 가니 고침을 쥔 채 오래 머문다. 치거나 끄는 도중·보내는 중에만 건너뛴다. */
-    if (saving.current || sortingNow() || typingNow() || spec.draft) return;
-    lastRefreshAt.current = Date.now();
-    try {
-      const s = await spec.get(latest.current.doc.id);
-      if (!draftRef.current || sortingNow()) return;
-      // 같은 내용이거나 내가 저장한 그 판이면 끝.
-      if (spec.serverKeyOf(s) === lastKey.current || s.updatedAt === mineAt.current) {
-        baseUpdatedAt.current = s.updatedAt;
-        lastKey.current = spec.serverKeyOf(s);
-        return;
-      }
-      absorb(s);
-    } catch {
-    }
-  };
-
   /* 편집 모드는 따로 없다(2026-10-18, 요청: "편집 모드 없이 항상 편집 모드로") — 고칠 수 있는 사람에게는 카드가 늘 편집 상태다.
      저장은 단추로만(2026-10-20 · 위 DocHeadRow ★) — 옛 자동 저장(쉼 2초 · 최대 15초 · 사진 넣자마자 · 화면 숨김·떠날 때)은 걷었다. */
   useEffect(() => { if (canEdit && !editing) enter(); }, [canEdit]);
@@ -698,37 +576,16 @@ function BlockDocCardInner<D extends BlockDoc, W>({
     if ((draftRef.current?.blocks.length ?? 0) > 0) return;
     requestAnimationFrame(() => cardRef.current?.querySelector<HTMLElement>(".scr-sb-composer")?.click());
   }, [editing]);
-  /* 늘 편집 상태라 목록의 카드마다 남의 고침을 4초마다 물어 왔다 — 화면에 보이는 카드만 묻는다. 저장은 보이든 말든 한다. */
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const onScreen = useRef(false);
-  useEffect(() => {
-    const el = cardRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") { onScreen.current = true; return undefined; }
-    const io = new IntersectionObserver(([en]) => { onScreen.current = !!en?.isIntersecting; });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   useEffect(() => { if (editing) absorb(given); }, [given, editing]);
 
   useEffect(() => {
     if (!editing) return undefined;
-    const tick = (): void => {
-      if (saving.current) return;
-      const now = Date.now();
-      if (onScreen.current && now - lastRefreshAt.current >= REFRESH_MS) void refresh();
-    };
-    const timer = window.setInterval(tick, 1000);
-    const onVisibility = (): void => { if (!document.hidden) lastRefreshAt.current = 0; };
-    document.addEventListener("visibilitychange", onVisibility);
     // 저장 안 한 고침이 있는데 창을 닫거나 새로 고치면 브라우저가 묻는다.
     const onLeave = (e: BeforeUnloadEvent): void => { if (contentDirty.current) { e.preventDefault(); e.returnValue = ""; } };
     window.addEventListener("beforeunload", onLeave);
-    return () => {
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("beforeunload", onLeave);
-    };
+    return () => window.removeEventListener("beforeunload", onLeave);
   }, [editing]);
 
   const head = draft?.head ?? spec.headOf(doc);

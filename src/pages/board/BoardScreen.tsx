@@ -11,6 +11,7 @@ import { FeedProvider, useFeedActions, useFeedData } from "../feed/feed";
 import { rowFlagsOf, type FeedItem } from "../feed/feedItems";
 import PostDetailPage, { NEW_POST_ITEM } from "./PostDetailPage";
 import { BoardHead, BoardRow } from "./BoardRow";
+import { holdKeyboard } from "../../utils/keyboardHold";
 
 /* ★ 게시판 화면(2026-10-26, 요청: "일정과 게시판을 합치고 · 활동 화면 제거 · 게임 게시판 두개의 메뉴로" ·
    "보드와 게임은 자체 컴포넌트로 분리 · 보드는 꼭지구분없이 전체 섞여서 시간순 표시").
@@ -61,6 +62,7 @@ function BoardRouter() {
     pushed.current = true;
   };
   const openNew = (): void => {
+    holdKeyboard();   // 누름 안에서 자판을 띄워 둔다 — 제목 칸이 넘겨받는다(utils/keyboardHold ★)
     rememberListScroll();
     go(pathOf({ screen: "board", item: NEW_POST_ITEM }));
     pushed.current = true;
