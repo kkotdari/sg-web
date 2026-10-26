@@ -83,11 +83,14 @@ export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (
     return () => { dead = true; };
   }, [grid, game.mapHash]);
   if (!grid || !url) return <span className="scr-gtab-dim">-</span>;
-  const spots = [...game.team1, ...game.team2]
-    .filter((p) => !p.observer && p.startX != null && p.startY != null)
-    .map((p) => {
+  /* 팀전이면 칩 바탕을 연한 팀색으로(2026-10-26, 요청: "팀전만 너무 튀지 않게" → 후보 A "연한 팀색 바탕 · 조금씩 진하게") — 1팀 빨강 · 2팀 파랑(원작 · scplay TEAM_COLOR).
+     개인전(밀리)은 흰 칩 그대로. */
+  const melee = isMeleeGame({ matchType: game.matchType, team1: game.team1, team2: game.team2 });
+  const spots = [...game.team1.map((p) => ({ p, t: 1 })), ...game.team2.map((p) => ({ p, t: 2 }))]
+    .filter(({ p }) => !p.observer && p.startX != null && p.startY != null)
+    .map(({ p, t }) => {
       const name = memberOf(p.memberId)?.nickname ?? p.rawName ?? "";
-      return { name, short: shortSpot(name),
+      return { name, short: shortSpot(name), team: melee ? 0 : t,
         ex: edgeSnap((p.startX as number) / grid.width), ey: edgeSnap((p.startY as number) / grid.height) };
     });
   return (
@@ -95,7 +98,7 @@ export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (
       <img src={url} alt="" draggable={false} />
       {spots.map((sp, i) => (
         <i
-          key={i} className="scr-gtab-spot" title={sp.name || undefined}
+          key={i} className={cx("scr-gtab-spot", sp.team === 1 && "is-team1", sp.team === 2 && "is-team2")} title={sp.name || undefined}
           style={{
             left: `calc(2px + ${sp.ex} * (100% - 4px))`, top: `calc(1px + ${sp.ey} * (100% - 2px))`,
             transform: `translate(${-sp.ex * 100}%, ${-sp.ey * 100}%)`,
