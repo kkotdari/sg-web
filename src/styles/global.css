@@ -8087,8 +8087,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-gtab-spot.is-team2 { background: #c3d0f2; color: #0a1a4d; }
 /* 폰 게임 줄의 배치 미니맵(2026-10-26, 요청: "모바일에도 미니맵 배치 · 왼쪽에 자리" → "카드 안에 넣기") — ListRow lead · 카드(줄 몸) 안 이름 줄의 왼쪽. */
 .scr-activity-row-desc.has-lead { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.scr-activity-row-desc.has-lead > .scr-activity-row-lead { flex: none; width: 78px; }
-.scr-activity-row-desc.has-lead > .scr-activity-row-lead .scr-gtab-startmap { max-width: 78px; max-height: 78px; margin: 0; }   /* 56 → 78(+40% · 2026-10-26 요청) · PC 72 → 100 → 90(−10% · 같은 날) → 80(같은 날 "맵 더 줄이고") */
+.scr-activity-row-desc.has-lead > .scr-activity-row-lead { flex: none; width: 98px; }
+.scr-activity-row-desc.has-lead > .scr-activity-row-lead .scr-gtab-startmap { max-width: 98px; max-height: 98px; margin: 0; }   /* 56 → 78(+40% · 2026-10-26 요청) → 98(+25% · 같은 날) · PC 72 → 100 → 90(−10% · 같은 날) → 80(같은 날 "맵 더 줄이고") */
 .scr-activity-row-desc.has-lead > .scr-activity-row-desc-body { flex: 1 1 auto; min-width: 0; }
 .scr-activity-row-lead .scr-gtab-spot { height: 11px; font-size: 7px; }   /* 11/7.5 → 13/9(맵 56 → 78 따라) → 12/8(한 단 줄임) → 11/7(한 단 더) */
 /* ★ 폰 게임 줄의 미니맵은 로스터 **오른쪽** · 맵 배지는 미니맵 **위 가운데**(2026-10-26, 요청: "로스터 왼쪽 맵을 오른쪽으로 하고 맵배지는 맵위에 중앙 맞추기") —
@@ -8098,7 +8098,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc.has-lead { display: contents; }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc.has-lead > .scr-activity-row-desc-body {
   grid-column: 1; order: 4; margin: 6px 0;
-  padding-right: 10px; border-right: 1px solid var(--line-faint);   /* 로스터 | 미니맵 사이 연한 세로 줄 · 틈 6 → 10 + 줄 + 12(2026-10-26 요청: "간격 띄우고 연하게 | 구분선") */
+  padding-right: 10px; border-right: 1px solid var(--line-faint);
+  /* 로스터 칸을 미니맵 키만큼 세로로 늘리고 이름은 그 가운데(같은 날 요청: "맵 25% 키우고 로스터 높이도 그에 맞게 · 남는 공간은 여백") — 세로 줄도 맵 키만큼. */
+  align-self: stretch; display: flex; flex-direction: column; justify-content: center;   /* 로스터 | 미니맵 사이 연한 세로 줄 · 틈 6 → 10 + 줄 + 12(2026-10-26 요청: "간격 띄우고 연하게 | 구분선") */
 }
 .scr-activity-row-game.scr-gm > .scr-activity-row-main > .scr-activity-row-desc.has-lead > .scr-activity-row-lead { grid-column: 2; order: 5; justify-self: center; margin: 6px 0; }   /* 헤더(시각·맵 배지) · 푸터(추천·데이터) 줄을 뺀 가운데 줄의 세로 가운데(같은 날 되요청 — 잠깐 8 내렸다 걷음) */
 /* 맵이 없는 판(StartMapCell 이 아무것도 안 세움)은 미니맵 칸·세로 줄을 걷는다(2026-10-26 "없으면 비우기"). */
