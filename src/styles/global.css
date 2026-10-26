@@ -5842,6 +5842,8 @@ input.scr-schedule-title { font-weight: 800; }
   font-size: var(--fs-subhead); font-weight: 800; line-height: 1.35; padding-right: 1ch;
 }
 .scr-doc-by { flex: none; font-size: var(--fs-caption); font-weight: 600; color: var(--dim); white-space: nowrap; }
+.scr-doc-date { margin-left: 6px; font-weight: 500; }
+.scr-doc-date::before { content: "·"; margin-right: 6px; }
 .scr-schedule-edit-btn {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px;
   min-height: 26px; padding: 3px 9px; border-radius: 999px;

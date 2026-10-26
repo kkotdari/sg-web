@@ -1,11 +1,10 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Trash2 } from "lucide-react";
-import { useIsMobile } from "../../hooks/useIsMobile";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import KakaoShareButton from "../../components/common/KakaoShareButton";
 import { type KakaoShareContent } from "../../utils/kakaoShare";
-import { pad } from "../../utils/date";
+import { boardDateText } from "./BoardRow";
 import { cx } from "../../utils/format";
 import { LoadingMark } from "../../components/common/Feedback";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
@@ -30,6 +29,7 @@ export interface BlockDoc {
   title: string;
   blocks?: ScheduleBlock[];
   createdBy: { nickname: string };
+  createdAt?: string;
   updatedAt: string;
 }
 
@@ -66,15 +66,9 @@ export interface DocSpec<D extends BlockDoc, W> {
 
 /* saved = 서버와 같음 · dirty = 저장 안 한 고침 · saving = 보내는 중 · failed = 보냈는데 실패. */
 type SaveState = "saved" | "dirty" | "saving" | "failed";
-const savedAtText = (iso: string): string => {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  return d.toDateString() === new Date().toDateString() ? time : `${d.getMonth() + 1}/${d.getDate()} ${time}`;
-};
 
 function DocHeadRow<D extends BlockDoc, W>({
-  spec, doc, head, canEdit, editing, saveState, savedAt, menu, onChange, onSave, onDiscard,
+  spec, doc, head, canEdit, editing, saveState, menu, onChange, onSave, onDiscard,
 }: {
   spec: DocSpec<D, W>;
   doc: D;
@@ -82,13 +76,11 @@ function DocHeadRow<D extends BlockDoc, W>({
   canEdit: boolean;
   editing: boolean;
   saveState: SaveState;
-  savedAt: string;
   menu: ReactNode;
   onChange: (part: Partial<DocHead>) => void;
   onSave: () => void;
   onDiscard: () => void;
 }) {
-  const mobile = useIsMobile();
   const HeadLine = spec.HeadLine;
   const draft = spec.draft;
   return (
@@ -109,16 +101,18 @@ function DocHeadRow<D extends BlockDoc, W>({
           ) : (
             <h3 className="scr-schedule-title scr-sb-line">{head.title}</h3>
           )}
-          {!draft && <span className="scr-doc-by">{spec.byline(doc)}</span>}
+          {/* 작성일은 목록과 같은 꼴로 간단히(오늘이면 시각 · 올해면 월.일 · 그 밖은 연.월.일 · 2026-10-26, 요청: "마지막 저장 말고 작성일 간단히 표시"). */}
+          {!draft && (
+            <span className="scr-doc-by">
+              {spec.byline(doc)}
+              {doc.createdAt && <span className="scr-doc-date">{boardDateText(doc.createdAt)}</span>}
+            </span>
+          )}
         </div>
         {/* ★ 저장은 단추로(2026-10-20, 요청: "수정 시 저장 버튼 눌러야 서버에 반영") — 고친 게 있으면 [취소 | 저장], 없으면 마지막 저장 시각.
             취소는 저장 안 한 고침을 버리고 마지막 저장 판으로 돌아간다(옛 요청 "방금 전으로 되돌리기"의 몫).
-            폰은 마지막 저장 시각을 안 띄운다(2026-10-23, 요청: "모바일에서 일정 마지막 저장 표시 X"). */}
-        {canEdit && editing && (saveState === "saved" && !draft ? (mobile ? null : (
-          <span className="scr-schedule-save-state" role="status" aria-live="polite">
-            마지막 저장: {savedAtText(savedAt)}
-          </span>
-        )) : (
+            폰은 마지막 저장 시각을 안 띄운다(2026-10-23, 요청: "모바일에서 일정 마지막 저장 표시 X") → PC 도 걷고 제목 옆에 작성일(2026-10-26, 요청: "마지막 저장 말고 작성일"). */}
+        {canEdit && editing && (saveState === "saved" && !draft ? null : (
           <span className="scr-schedule-save-btns" role="group" aria-label="저장">
             {saveState === "failed" && <span className="scr-schedule-save-state scr-schedule-save-state-failed" role="status">저장 안 됨</span>}
             <button
@@ -389,7 +383,6 @@ function BlockDocCardInner<D extends BlockDoc, W>({
 
   const [editing, setEditing] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
-  const [savedAt, setSavedAt] = useState(doc.updatedAt);
   const [shield, setShield] = useState<{ done: number; total: number } | null>(null);
   const uploadTotal = useRef(0);
   const shielding = shield !== null;
@@ -486,7 +479,6 @@ function BlockDocCardInner<D extends BlockDoc, W>({
     foldQueued.current = false;
     lastKey.current = spec.serverKeyOf(from);
     setSaveState("saved");
-    setSavedAt(from.updatedAt);
     setDraft(d);
     setEditing(true);
   };
@@ -542,7 +534,6 @@ function BlockDocCardInner<D extends BlockDoc, W>({
       const { blocks, deferred } = await blocksPayloadOf(d);
       const saved = await spec.update(latest.current.doc.id, spec.writeOf(d.head, blocks));
       mineAt.current = saved.updatedAt;
-      setSavedAt(saved.updatedAt);
       if (deferred.size === 0) { uploadTotal.current = 0; setShield(null); }
       else {
         setShield({ done: uploadTotal.current - deferred.size, total: uploadTotal.current });
@@ -618,7 +609,7 @@ function BlockDocCardInner<D extends BlockDoc, W>({
         }}
       >
         <DocHeadRow
-          spec={spec} doc={doc} head={head} canEdit={canEdit} editing={editing} saveState={saveState} savedAt={savedAt}
+          spec={spec} doc={doc} head={head} canEdit={canEdit} editing={editing} saveState={saveState}
           onSave={() => { void save(); }} onDiscard={discard}
           menu={<DocTools spec={spec} doc={doc} canDelete={canDelete} onDeleted={(id) => latestDeleted.current(id)} adopt={adopt} />}
           onChange={edit}
