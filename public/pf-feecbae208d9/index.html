@@ -150,6 +150,18 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
 .tl .d{font:600 12px/1 "IBM Plex Mono",monospace; color:var(--psi); letter-spacing:.06em}
 .tl h3{margin:6px 0 4px; font-size:16.5px}
 
+/* ── 지시서 ── */
+.brief{padding:26px 28px; background:linear-gradient(180deg,#fff,#f6f9ff)}
+.brief .bh{display:flex; justify-content:space-between; align-items:center; gap:12px; padding-bottom:14px; margin-bottom:14px; border-bottom:1px dashed var(--line)}
+.brief .bh .k{font:600 11px/1 "IBM Plex Mono",monospace; letter-spacing:.2em; text-transform:uppercase; color:var(--psi2)}
+.brief .bh .mono{font-size:12px; color:var(--faint)}
+.brief ol{margin:0; padding:0 0 0 26px; display:flex; flex-direction:column; gap:10px; counter-reset:b}
+.brief li{line-height:1.7}
+.brief li::marker{font:600 13px "IBM Plex Mono",monospace; color:var(--psi)}
+.brief li b{color:var(--psi); font-weight:700}
+.brief .note{margin-top:18px; padding:14px 16px; border-radius:10px; background:var(--bg2); color:var(--body); font-size:14.5px}
+@media (max-width:640px){ .brief{padding:20px 18px} .brief ol{padding-left:22px} }
+
 /* ── 맺음 ── */
 .end{margin:90px 0 0; padding:56px 0 70px; border-top:1px solid var(--line); text-align:center}
 .end .orb{font-size:clamp(20px,3vw,30px); font-weight:900; color:var(--ink); letter-spacing:.2em}
@@ -183,7 +195,7 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
   <a class="brand" href="#top">STAR<b>G</b>ATE</a>
   <nav class="nav" aria-label="장">
     <a href="#c1">01 개요</a><a href="#c2">02 구조</a><a href="#c3">03 데이터</a><a href="#c4">04 검증</a>
-    <a href="#c5">05 API</a><a href="#c6">06 설계</a><a href="#c7">07 리그·일정</a><a href="#c8">08 재생기</a><a href="#c9">09 협업</a>
+    <a href="#c5">05 API</a><a href="#c6">06 설계</a><a href="#c7">07 리그·일정</a><a href="#c8">08 재생기</a><a href="#c9">09 협업</a><a href="#c10">10 지시서</a>
   </nav>
 </div></header>
 
@@ -495,6 +507,32 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
       <div class="e"><div class="d">2026.10.07</div><h3>웹 · API 새 저장소</h3><p>sg-web 814커밋, sg-api 117커밋 · 테스트 394개.</p></div>
       <div class="e"><div class="d">2026.10.26</div><h3>오늘도 한 칸</h3><p>팀색을 원작대로 바로잡고, 목록에 맵을 한 번에 싣고, 배치 칩의 크기를 열 번 넘게 다시 맞췄다. 그것이 이 프로젝트의 속도다.</p></div>
     </div>
+  </div>
+</section>
+
+<!-- ═════════ 맺음 · 이 페이지의 프롬프트 ═════════ -->
+<section class="ch" id="c10">
+  <div class="chhead"><div class="chno">10</div><div>
+    <div class="chlab">Made with AI · The Brief</div>
+    <h2>이 포트폴리오도 AI로 제작되었으며, 프롬프트는 다음과 같습니다</h2>
+  </div></div>
+  <p class="lede" style="margin-bottom:22px">대화로 여러 번에 나누어 건넨 요청을, 의도가 드러나도록 하나의 작업 지시서로 정리했습니다.</p>
+
+  <div class="brief hud rv">
+    <div class="bh"><span class="k">&gt; prompt</span><span class="mono">portfolio.brief</span></div>
+    <ol>
+      <li><b>자료</b> — 검증 일지(원판과 같아지기)와 그동안의 작업 기록·커밋·대화를 <strong>전부</strong> 읽고, 과장 없이 사실과 수치로만 쓴다.</li>
+      <li><b>분량과 배포</b> — 한 번에 읽히는 <strong>적당한 분량</strong>으로 만들어 sg-web에 배포한다. 메뉴·링크 없이 <strong>주소를 아는 사람만</strong> 들어오게 하고, 검색엔진에도 노출하지 않는다.</li>
+      <li><b>테마</b> — <strong>밝고 미래적</strong>이되, 스타크래프트의 정체성(사이오닉 블루, 홀로그램 HUD, 종족 색)이 느껴지게.</li>
+      <li><b>주인공</b> — <strong>백엔드 개발자로서의 강점</strong>: 데이터 파이프라인, 데이터 수명 설계, API 계약, 검증과 테스트.</li>
+      <li><b>태도</b> — <strong>치열한 고민과 노력, 끈기</strong>, 그리고 <strong>AI와의 협업</strong> 방식을 이야기의 중심에 둔다.</li>
+      <li><b>설계 관점</b> — <strong>재사용성 · 확장성 · 유지보수</strong>를 구체적인 사례로 보여준다.</li>
+      <li><b>리그 · 일정 화면</b> — 그 특징과 함께, 어느 클럽에서나 쓸 수 있는 <strong>보편성</strong>과 쓰는 사람의 <strong>편의성</strong>을 강조한다.</li>
+      <li><b>시각자료</b> — 말보다 그림이 많게. 홈페이지, 3D 모델 도록, 재생기를 직접 캡처해 넣는다.</li>
+      <li><b>목소리</b> — 내가 실제로 건넨 프롬프트 중 멋진 것을 골라 <strong>맨 위</strong>에 걸고, 제목은 멋지게. <strong>각 장의 시작도 프롬프트로</strong> 연다.</li>
+      <li><b>맺음</b> — 이 지시서 자체를 마지막에 남겨, 이 페이지가 어떻게 만들어졌는지도 보여준다.</li>
+    </ol>
+    <p class="note">사람은 방향과 기준을 정하고, AI는 자료를 읽어 구조를 세우고 · 화면을 찍고 · 쓰고 · 검증해 배포했다. 이 페이지 역시 그 방식의 결과물이다.</p>
   </div>
 </section>
 
