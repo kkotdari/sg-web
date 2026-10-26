@@ -59,6 +59,7 @@ export function PostBadges({ post }: { post: Pick<Post, "category" | "notice"> }
 }
 
 function headLineOf(admin: boolean, draft: boolean) {
+  /* 분류 줄 · 일정이면 일시 줄(BlockDocCard DocHeadRow ★ — 이름표 폭이 같아 값이 한 세로줄에 선다). */
   return function PostHeadLine({ doc, head, editing, onChange }: {
     doc: Post; head: DocHead; editing: boolean; onChange: (part: Partial<DocHead>) => void;
   }) {
@@ -66,34 +67,52 @@ function headLineOf(admin: boolean, draft: boolean) {
     const notice = draft ? head.notice === "1" : doc.notice;
     if (!editing) {
       return (
-        <span className="scr-post-head-line">
-          {notice && <span className="scr-post-badge is-notice">공지</span>}
-          {cat && <span className={cx("scr-post-badge", `is-${cat}`)}>{categoryLabel(cat)}</span>}
-          {cat === "schedule" && <span className="scr-post-when">{postWhenText(head.date || null, head.time || null)}</span>}
-        </span>
+        <>
+          <div className="scr-doc-field">
+            <span className="scr-doc-label">분류</span>
+            <span className="scr-doc-value scr-post-head-line">
+              {notice && <span className="scr-post-badge is-notice">공지</span>}
+              {cat ? <span className={cx("scr-post-badge", `is-${cat}`)}>{categoryLabel(cat)}</span> : !notice && <span className="scr-doc-none">없음</span>}
+            </span>
+          </div>
+          {cat === "schedule" && (
+            <div className="scr-doc-field">
+              <span className="scr-doc-label">일시</span>
+              <span className="scr-doc-value">{postWhenText(head.date || null, head.time || null)}</span>
+            </div>
+          )}
+        </>
       );
     }
     return (
-      <span className="scr-post-head-line" onClick={(e) => e.stopPropagation()} role="presentation">
-        {notice && !draft && <span className="scr-post-badge is-notice">공지</span>}
-        <CategoryPicker
-          value={cat}
-          /* 일정을 고르면 날짜를 오늘로 채워 둔다(날짜는 꼭 있어야 한다). */
-          onChange={(next) => onChange(next === "schedule" && !head.date ? { category: next, date: todayStr() } : { category: next ?? "" })}
-        />
-        {cat === "schedule" && (
-          <span className="scr-schedule-when-edit">
-            <input className="scr-sb-line" type="date" value={head.date} onChange={(e) => onChange({ date: e.target.value })} aria-label="날짜" />
-            <input className="scr-sb-line" type="time" value={head.time} onChange={(e) => onChange({ time: e.target.value })} aria-label="시간" />
+      <>
+        <div className="scr-doc-field" onClick={(e) => e.stopPropagation()} role="presentation">
+          <span className="scr-doc-label">분류</span>
+          <span className="scr-doc-value scr-post-head-line">
+            {notice && !draft && <span className="scr-post-badge is-notice">공지</span>}
+            <CategoryPicker
+              value={cat}
+              /* 일정을 고르면 날짜를 오늘로 채워 둔다(날짜는 꼭 있어야 한다). */
+              onChange={(next) => onChange(next === "schedule" && !head.date ? { category: next, date: todayStr() } : { category: next ?? "" })}
+            />
+            {draft && admin && (
+              <label className="scr-post-notice-check">
+                <input type="checkbox" checked={notice} onChange={(e) => onChange({ notice: e.target.checked ? "1" : "" })} />
+                <span>공지</span>
+              </label>
+            )}
           </span>
+        </div>
+        {cat === "schedule" && (
+          <div className="scr-doc-field" onClick={(e) => e.stopPropagation()} role="presentation">
+            <span className="scr-doc-label">일시</span>
+            <span className="scr-doc-value scr-schedule-when-edit">
+              <input className="scr-sb-line" type="date" value={head.date} onChange={(e) => onChange({ date: e.target.value })} aria-label="날짜" />
+              <input className="scr-sb-line" type="time" value={head.time} onChange={(e) => onChange({ time: e.target.value })} aria-label="시간" />
+            </span>
+          </div>
         )}
-        {draft && admin && (
-          <label className="scr-post-notice-check">
-            <input type="checkbox" checked={notice} onChange={(e) => onChange({ notice: e.target.checked ? "1" : "" })} />
-            <span>공지</span>
-          </label>
-        )}
-      </span>
+      </>
     );
   };
 }
@@ -165,7 +184,7 @@ function postSpec({ admin, draft }: {
     toolsLabel: "글 도구",
     deleteTitle: "글 삭제",
     deleteMessage: "이 글을 삭제할까요? 달린 댓글과 첨부파일도 함께 사라져요.",
-    byline: (p) => `${p.createdBy.nickname} 작성`,
+    author: (p) => p.createdBy.nickname,
     HeadLine: headLineOf(admin, !!draft),
     ...(admin && !draft ? { extraTools: ({ doc, adopt }) => <NoticeToggle doc={doc} adopt={adopt} /> } : {}),
     ...(draft ? { draft: { saveLabel: "등록", onDiscard: draft.onCancel } } : {}),

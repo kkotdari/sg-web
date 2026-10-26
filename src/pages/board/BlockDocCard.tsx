@@ -5,7 +5,6 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import KakaoShareButton from "../../components/common/KakaoShareButton";
 import { type KakaoShareContent } from "../../utils/kakaoShare";
 import { boardDateText } from "./BoardRow";
-import { cx } from "../../utils/format";
 import { LoadingMark } from "../../components/common/Feedback";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { readAsDataUrl } from "../../utils/image";
@@ -52,8 +51,9 @@ export interface DocSpec<D extends BlockDoc, W> {
   toolsLabel: string;
   deleteTitle: string;
   deleteMessage: string;
-  byline: (doc: D) => string;
-  /** 제목 아래 한 줄(일정: 일시 · 글: 꼭지·공지). */
+  /** 작성자 이름(머리의 '작성자' 줄). */
+  author: (doc: D) => string;
+  /** 머리의 이름표 줄들(글: 분류 · 일정이면 일시) — 줄마다 `scr-doc-field` 에 `scr-doc-label` + 값. */
   HeadLine: (p: { doc: D; head: DocHead; editing: boolean; onChange: (part: Partial<DocHead>) => void }) => ReactNode;
   /** 도구 줄의 앞 단추(글: 운영자 공지). adopt 는 그 단추가 서버에서 받은 새 판을 카드에 싣는다. */
   extraTools?: (p: { doc: D; adopt: (saved: D) => void }) => ReactNode;
@@ -81,59 +81,59 @@ function DocHeadRow<D extends BlockDoc, W>({
 }) {
   const HeadLine = spec.HeadLine;
   const draft = spec.draft;
+  const saveBtns = canEdit && editing && (saveState !== "saved" || !!draft);
+  /* ★ 머리는 줄마다 하나(2026-10-26, 요청: "제목 / 작성일·작성자 / 저장·취소와 기본 단추 / 분류 / 일시 — 줄 나누고 들여쓰기 맞춰 · 에디팅모드도") —
+     옛 판은 제목 옆에 작성자·작성일, 오른쪽 끝에 단추가 한 줄로 섰고 꼭지·일시가 그 아래 한 줄이었다. 이제 줄마다 같은 왼쪽 선에서 시작하고
+     이름표 줄(작성일·작성자·분류·일시)은 이름표 폭이 같아 값이 한 세로줄에 선다. 읽기·고치기·글쓰기가 같은 줄 차례다(글쓰기는 작성일·작성자 줄이 없다). */
   return (
-    <>
-      <div className="scr-schedule-title-row">
-        {/* 작성자는 제목 옆에(2026-10-26, 요청: "올라간 글도 작성자를 제목 옆에" — 옛: 본문 아래 오른쪽 "OO 작성") · 글쓰기(draft)는 안 띄운다(쓰는 사람이 저다). */}
-        <div className="scr-doc-title-wrap">
-          {editing ? (
-            /* 칸은 글만큼(뒤의 숨은 글자가 폭을 잡는다) — 작성자가 제목 바로 뒤에 붙게. 글쓰기는 남는 폭을 다 쓴다. */
-            <span className={cx("scr-doc-title-fit", draft && "is-draft")} data-v={head.title || "제목"}>
-              <input
-                className="scr-schedule-title scr-sb-line" value={head.title} placeholder="제목" size={1}
-                ref={draft ? focusTitle : undefined}
-                onChange={(e) => onChange({ title: e.target.value })}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </span>
-          ) : (
-            <h3 className="scr-schedule-title scr-sb-line">{head.title}</h3>
+    <div className="scr-doc-head">
+      <div className="scr-doc-title-line">
+        {editing ? (
+          <input
+            className="scr-schedule-title scr-sb-line scr-doc-title-input" value={head.title} placeholder="제목"
+            ref={draft ? focusTitle : undefined}
+            onChange={(e) => onChange({ title: e.target.value })}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <h3 className="scr-schedule-title scr-sb-line">{head.title}</h3>
+        )}
+      </div>
+      {/* 작성일은 목록과 같은 꼴로 간단히(오늘이면 시각 · 올해면 월.일 · 그 밖은 연.월.일 · 2026-10-26, 요청: "마지막 저장 말고 작성일 간단히 표시"). */}
+      {!draft && (
+        <div className="scr-doc-field scr-doc-meta">
+          {doc.createdAt && (
+            <span className="scr-doc-pair"><span className="scr-doc-label">작성일</span><span className="scr-doc-value">{boardDateText(doc.createdAt)}</span></span>
           )}
-          {/* 작성일은 목록과 같은 꼴로 간단히(오늘이면 시각 · 올해면 월.일 · 그 밖은 연.월.일 · 2026-10-26, 요청: "마지막 저장 말고 작성일 간단히 표시"). */}
-          {!draft && (
-            <span className="scr-doc-by">
-              {spec.byline(doc)}
-              {doc.createdAt && <span className="scr-doc-date">{boardDateText(doc.createdAt)}</span>}
-            </span>
-          )}
+          <span className="scr-doc-pair"><span className="scr-doc-label">작성자</span><span className="scr-doc-value">{spec.author(doc)}</span></span>
         </div>
-        {/* ★ 저장은 단추로(2026-10-20, 요청: "수정 시 저장 버튼 눌러야 서버에 반영") — 고친 게 있으면 [취소 | 저장], 없으면 마지막 저장 시각.
-            취소는 저장 안 한 고침을 버리고 마지막 저장 판으로 돌아간다(옛 요청 "방금 전으로 되돌리기"의 몫).
-            폰은 마지막 저장 시각을 안 띄운다(2026-10-23, 요청: "모바일에서 일정 마지막 저장 표시 X") → PC 도 걷고 제목 옆에 작성일(2026-10-26, 요청: "마지막 저장 말고 작성일"). */}
-        {canEdit && editing && (saveState === "saved" && !draft ? null : (
-          <span className="scr-schedule-save-btns" role="group" aria-label="저장">
-            {saveState === "failed" && <span className="scr-schedule-save-state scr-schedule-save-state-failed" role="status">저장 안 됨</span>}
-            <button
-              type="button" className="scr-compact-rect-btn is-secondary" disabled={saveState === "saving"}
-              onClick={(e) => { e.stopPropagation(); if (draft) draft.onDiscard(); else onDiscard(); }}
-            >
-              취소
-            </button>
-            <button
-              type="button" className="scr-compact-rect-btn" disabled={saveState === "saving" || (!!draft && !spec.ready(head))}
-              onClick={(e) => { e.stopPropagation(); onSave(); }}
-            >
-              {saveState === "saving" ? "저장 중…" : draft?.saveLabel ?? "저장"}
-            </button>
-          </span>
-        ))}
-        {!draft && menu}
-      </div>
-
-      <div className="scr-schedule-when-line">
-        <HeadLine doc={doc} head={head} editing={editing} onChange={onChange} />
-      </div>
-    </>
+      )}
+      {/* ★ 저장은 단추로(2026-10-20, 요청: "수정 시 저장 버튼 눌러야 서버에 반영") — 고친 게 있으면 [취소 | 저장](글쓰기는 늘 [취소 | 등록]).
+          취소는 저장 안 한 고침을 버리고 마지막 저장 판으로 돌아간다. 그 뒤에 늘 보이는 도구(공지 · 공유 · 삭제). */}
+      {(saveBtns || !draft) && (
+        <div className="scr-doc-tools-line">
+          {saveBtns && (
+            <span className="scr-schedule-save-btns" role="group" aria-label="저장">
+              <button
+                type="button" className="scr-compact-rect-btn is-secondary" disabled={saveState === "saving"}
+                onClick={(e) => { e.stopPropagation(); if (draft) draft.onDiscard(); else onDiscard(); }}
+              >
+                취소
+              </button>
+              <button
+                type="button" className="scr-compact-rect-btn" disabled={saveState === "saving" || (!!draft && !spec.ready(head))}
+                onClick={(e) => { e.stopPropagation(); onSave(); }}
+              >
+                {saveState === "saving" ? "저장 중…" : draft?.saveLabel ?? "저장"}
+              </button>
+              {saveState === "failed" && <span className="scr-schedule-save-state scr-schedule-save-state-failed" role="status">저장 안 됨</span>}
+            </span>
+          )}
+          {!draft && menu}
+        </div>
+      )}
+      <HeadLine doc={doc} head={head} editing={editing} onChange={onChange} />
+    </div>
   );
 }
 
