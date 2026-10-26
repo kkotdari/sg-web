@@ -11,7 +11,7 @@ import BlockDocCard, { type DocHead, type DocSpec } from "./BlockDocCard";
 
 /* ★ 게시판 글 카드 = 블록 문서 카드(BlockDocCard) + 꼭지(2026-10-26, 요청: "자유게시판 만들어줘 · 일정 폼 재사용(공통화) ·
    댓글달수있음 · 수정삭제는 본인만" · "꼭지(분류) 고를수있음 잡담 질문 공략" · "공지는 따로 속성으로 부여" ·
-   "일정도 하나의 글로 취급"). 쓴 사람에게만 늘 편집 상태다(canEdit) · 꼭지 '일정'을 고르면 일시 칸이 선다(날짜는 꼭) ·
+   "일정도 하나의 글로 취급"). 쓴 사람은 [수정] 단추로 고치기에 들어간다(canEdit · 2026-10-26 기본은 읽기) · 꼭지 '일정'을 고르면 일시 칸이 선다(날짜는 꼭) ·
    공지는 꼭지가 아니라 운영자가 켜고 끄는 속성이다(글쓰기에선 머리 줄의 체크 · 쓴 뒤엔 도구 줄의 단추 — 서버도 운영자 것만 받는다). */
 
 export const POST_CATEGORIES: { value: PostCategory; label: string }[] = [
@@ -101,6 +101,11 @@ function headLineOf(admin: boolean, draft: boolean) {
                 <span>공지</span>
               </label>
             )}
+            {/* 익명으로 쓰기(2026-10-26, 요청: "글쓸때 익명으로 쓰기 체크박스 추가(글쓴이를 익명으로 표시)") — 고칠 때도 켜고 끈다(서버가 쓴 사람 것만 받는다). */}
+            <label className="scr-post-notice-check">
+              <input type="checkbox" checked={head.anon === "1"} onChange={(e) => onChange({ anon: e.target.checked ? "1" : "" })} />
+              <span>익명으로 쓰기</span>
+            </label>
           </span>
         </div>
         {cat === "schedule" && (
@@ -154,18 +159,20 @@ function postSpec({ admin, draft }: {
     kind: "post",
     icon: <MessagesSquare size={16} aria-hidden />,
     label: "게시판",
-    headKeys: ["title", "category", "date", "time", "notice"],
+    headKeys: ["title", "category", "date", "time", "notice", "anon"],
     headOf: (p) => ({
       title: p.title, category: p.category ?? "", date: p.scheduledDate ?? "", time: p.scheduledTime ?? "", notice: p.notice ? "1" : "",
+      anon: p.anonymous ? "1" : "",
     }),
-    serverKeyOf: (p) => JSON.stringify([p.title, p.category, p.scheduledDate, p.scheduledTime, p.blocks ?? []]),
+    serverKeyOf: (p) => JSON.stringify([p.title, p.category, p.scheduledDate, p.scheduledTime, !!p.anonymous, p.blocks ?? []]),
     ready: (h) => !!h.title.trim() && (h.category !== "schedule" || !!h.date),
     writeOf: (h, blocks) => {
       const category = asCategory(h.category);
       const when = category === "schedule" ? { scheduledDate: h.date || null, scheduledTime: h.time || null } : {};
+      const anonymous = h.anon === "1";
       return draft
-        ? { title: h.title.trim(), category, ...when, blocks, ...(admin && h.notice === "1" ? { notice: true } : {}) }
-        : { title: h.title.trim(), category, ...when, blocks };
+        ? { title: h.title.trim(), category, ...when, anonymous, blocks, ...(admin && h.notice === "1" ? { notice: true } : {}) }
+        : { title: h.title.trim(), category, ...when, anonymous, blocks };
     },
     update: draft
       ? async (_id, payload) => { const p = await api.createPost(payload); draft.onCreated(p); return p; }

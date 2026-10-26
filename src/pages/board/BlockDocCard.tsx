@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import KakaoShareButton from "../../components/common/KakaoShareButton";
 import { type KakaoShareContent } from "../../utils/kakaoShare";
@@ -66,7 +66,7 @@ export interface DocSpec<D extends BlockDoc, W> {
 type SaveState = "saved" | "dirty" | "saving" | "failed";
 
 function DocHeadRow<D extends BlockDoc, W>({
-  spec, doc, head, canEdit, editing, saveState, menu, onChange, onSave, onDiscard,
+  spec, doc, head, canEdit, editing, saveState, menu, onChange, onSave, onDiscard, onEdit,
 }: {
   spec: DocSpec<D, W>;
   doc: D;
@@ -78,10 +78,15 @@ function DocHeadRow<D extends BlockDoc, W>({
   onChange: (part: Partial<DocHead>) => void;
   onSave: () => void;
   onDiscard: () => void;
+  /** 읽기 → 고치기(쓴 사람의 [수정] 단추 · 2026-10-26). */
+  onEdit: () => void;
 }) {
   const HeadLine = spec.HeadLine;
   const draft = spec.draft;
-  const saveBtns = canEdit && editing && (saveState !== "saved" || !!draft);
+  /* ★ 기본은 읽기(2026-10-26, 요청: "글쓴이도 수정버튼으로 수정모드 들어가게 기본은 읽기모드") — 옛: 쓴 사람에겐 늘 편집 상태(2026-10-18)이고 고친 게 있을 때만
+     [취소 | 저장]이 떴다. 이제 쓴 사람은 [수정]으로 들어가고, 들어가면 늘 [취소 | 저장] — 취소는 고침을 버리고 읽기로 · 저장하면 읽기로. 글쓰기(draft)는 그대로 처음부터 쓰기. */
+  const saveBtns = canEdit && editing;
+  const editBtn = canEdit && !editing && !draft;
   /* ★ 머리는 줄마다 하나(2026-10-26, 요청: "제목 / 작성일·작성자 / 저장·취소와 기본 단추 / 분류 / 일시 — 줄 나누고 들여쓰기 맞춰 · 에디팅모드도") —
      옛 판은 제목 옆에 작성자·작성일, 오른쪽 끝에 단추가 한 줄로 섰고 꼭지·일시가 그 아래 한 줄이었다. 이제 줄마다 같은 왼쪽 선에서 시작하고
      이름표 줄(작성일·작성자·분류·일시)은 이름표 폭이 같아 값이 한 세로줄에 선다. 읽기·고치기·글쓰기가 같은 줄 차례다(글쓰기는 작성일·작성자 줄이 없다). */
@@ -128,6 +133,12 @@ function DocHeadRow<D extends BlockDoc, W>({
               </button>
               {saveState === "failed" && <span className="scr-schedule-save-state scr-schedule-save-state-failed" role="status">저장 안 됨</span>}
             </span>
+          )}
+          {editBtn && (
+            <button type="button" className="scr-compact-rect-btn is-secondary" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+              <Pencil size={13} aria-hidden />
+              수정
+            </button>
           )}
           {!draft && menu}
         </div>
@@ -485,6 +496,15 @@ function BlockDocCardInner<D extends BlockDoc, W>({
     if (saving.current) return;
     enter(lastServer.current ?? doc);
   };
+  /* 읽기로 돌아간다(취소 · 저장 끝 · 2026-10-26 기본은 읽기) — 마지막 서버 판(저장한 판)을 보이고 고침 판을 걷는다. */
+  const leave = (): void => {
+    if (saving.current) return;
+    if (lastServer.current) setTaken(lastServer.current);
+    contentDirty.current = false;
+    setSaveState("saved");
+    setDraft(null);
+    setEditing(false);
+  };
 
   const edit = (part: Partial<DocHead>): void => {
     const d = draftRef.current;
@@ -566,7 +586,8 @@ function BlockDocCardInner<D extends BlockDoc, W>({
 
   /* 편집 모드는 따로 없다(2026-10-18, 요청: "편집 모드 없이 항상 편집 모드로") — 고칠 수 있는 사람에게는 카드가 늘 편집 상태다.
      저장은 단추로만(2026-10-20 · 위 DocHeadRow ★) — 옛 자동 저장(쉼 2초 · 최대 15초 · 사진 넣자마자 · 화면 숨김·떠날 때)은 걷었다. */
-  useEffect(() => { if (canEdit && !editing) enter(); }, [canEdit]);
+  /* (2026-10-26) 기본은 읽기 — 스스로 고치기에 드는 것은 글쓰기(draft)뿐 · 쓴 사람은 [수정](DocHeadRow onEdit). */
+  useEffect(() => { if (canEdit && spec.draft && !editing) enter(); }, [canEdit]);
   useEffect(() => {
     if (!editing || focusFirstLineOf !== `${spec.kind}:${doc.id}`) return;
     focusFirstLineOf = null;
@@ -608,7 +629,9 @@ function BlockDocCardInner<D extends BlockDoc, W>({
       >
         <DocHeadRow
           spec={spec} doc={doc} head={head} canEdit={canEdit} editing={editing} saveState={saveState}
-          onSave={() => { void save(); }} onDiscard={discard}
+          onSave={() => { void save().then((ok) => { if (ok && !spec.draft && !contentDirty.current && uploadTotal.current === 0) leave(); }); }}
+          onDiscard={() => { if (spec.draft) discard(); else leave(); }}
+          onEdit={() => enter()}
           menu={<DocTools spec={spec} doc={doc} canDelete={canDelete} onDeleted={(id) => latestDeleted.current(id)} adopt={adopt} />}
           onChange={edit}
         />

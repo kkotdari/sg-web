@@ -4110,6 +4110,9 @@ input.scr-schedule-title { font-weight: 800; }
    그만큼(1px + 4px) 왼쪽으로 내어 글자가 그 선에 맞는다 — 칸 상자는 밖으로 나가고 글은 줄과 같은 자리(제목 칸은 여백이 없어 그대로). */
 .scr-doc-head { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .scr-doc-title-line { min-width: 0; }
+/* 연한 구분선 두 줄(2026-10-26, 요청: "제목/글쓴이 일시 분류등/콘텐츠부간 연하게 구분선 넣기") — 제목 밑 · 머리(작성일·작성자 · 단추 · 분류 · 일시) 밑 = 본문 위. */
+.scr-doc-title-line { padding-bottom: 8px; border-bottom: 1px solid var(--line-hair); }
+.scr-doc-head { padding-bottom: 12px; border-bottom: 1px solid var(--line-hair); }
 .scr-doc-field {
   display: flex; align-items: center; flex-wrap: wrap; row-gap: 6px; min-height: 26px; min-width: 0;
   font-size: var(--fs-caption); font-weight: 700; color: color-mix(in srgb, var(--text) 84%, transparent);

@@ -612,6 +612,9 @@ export interface Post {
   /** 안 골랐으면 null(요청: "카테고리 픽은 필수 아닌 선택으로"). */
   category: PostCategory | null;
   notice: boolean;
+  /** 익명 글(2026-10-26) — createdBy 는 서버가 '익명'(id "")으로 가려 준다 · mine 은 보는 사람이 쓴 글인가(익명이어도 고치기). */
+  anonymous?: boolean;
+  mine?: boolean;
   /** 꼭지 '일정' 글의 일시(YYYY-MM-DD · HH:MM) — 그 밖의 글은 null. */
   scheduledDate: string | null;
   scheduledTime: string | null;
@@ -626,6 +629,8 @@ export interface PostWrite {
   category: PostCategory | null;
   /** 운영자만 먹는다(서버가 다른 사람의 값은 무시). */
   notice?: boolean;
+  /** 익명으로 쓰기(2026-10-26) — 없으면 고칠 때 그대로. */
+  anonymous?: boolean;
   scheduledDate?: string | null;
   scheduledTime?: string | null;
   blocks?: ScheduleBlockWrite[];
