@@ -5348,11 +5348,11 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 /* ★★ PC 게임 표(GameTable.tsx ★★ · 2026-10-19, 요청: "피시는 배지들 제거하고 완전 그리드 형태(헤더로우도) · 로스터는 모바일과 같은 형태") —
    머리 줄·줄이 한 열 틀(--gtab-cols)을 쓴다. 칸 사이 세로 줄 · 로스터 칸만 늘고 나머지는 제 글 폭. 폰은 옛 줄(이 규칙은 PC 에서만 선다). */
 .scr-gtab-list {
-  --gtab-cols: 96px 72px 112px 72px minmax(220px, 1fr) 118px 64px 132px 60px;   /* 2026-10-26: 맵 · 게임길이 · 로스터 · 배치 차례(요청) · 배치 84 → 116(같은 날 "배치 컬럼 더 키우고 맵 40%") → 106(미니맵 −10%) → 118(좌우 여백 14 · 같은 날 "배치 컬럼 좌우 여백좀") · 맵 140 → 112(같은 날 "맵 이름 컬럼 폭 줄여도됨") */   /* 2026-10-21: 시작일시 · 유형 · 맵 · 로스터 · 게임길이 차례(요청) */   /* 2026-10-21: 맵 칸은 140 고정(두 줄 접힘 · 요청: "맵 컬럼이 쓸데없이 넓어 다른 컬럼에 나눠줘") · 남는 폭은 로스터 · 나머지 칸도 숨 · 데이터 칸 64 · 링크 132 */   /* 2026-10-20: 게임번호 뺌 · 맵 1fr → 112 */
+  --gtab-cols: 96px 72px 112px 72px minmax(220px, 1fr) 116px 64px 132px 60px;   /* 2026-10-26: 맵 · 게임길이 · 로스터 · 배치 차례(요청) · 배치 84 → 116(같은 날 "배치 컬럼 더 키우고 맵 40%") → 106(미니맵 −10%) → 118(좌우 여백 14 · 같은 날 "배치 컬럼 좌우 여백좀") → 116(맵 80 + 사방 여백 18 · "맵 더 줄이고 셀 사방 여백 더") · 맵 140 → 112(같은 날 "맵 이름 컬럼 폭 줄여도됨") */   /* 2026-10-21: 시작일시 · 유형 · 맵 · 로스터 · 게임길이 차례(요청) */   /* 2026-10-21: 맵 칸은 140 고정(두 줄 접힘 · 요청: "맵 컬럼이 쓸데없이 넓어 다른 컬럼에 나눠줘") · 남는 폭은 로스터 · 나머지 칸도 숨 · 데이터 칸 64 · 링크 132 */   /* 2026-10-20: 게임번호 뺌 · 맵 1fr → 112 */
 }
 /* 리그 탭 — 둘째 칸에 리그(112) 를 끼운다(GameTable COLS). */
 .scr-gtab-list.has-league {
-  --gtab-cols: 84px 176px 100px 60px minmax(200px, 1fr) 114px 60px 124px 52px;   /* 2026-10-26: 게임길이를 맵 다음 · 배치 80 → 112 → 102 → 114(좌우 여백) · 맵 120 → 100 */   /* 2026-10-21: 유형 칸을 경기 정보(옛 리그) 칸 끝 괄호로 합쳤다(요청) */   /* 리그 칸이 있어 다른 칸은 조금씩 덜 연다(맵 120) */   /* 리그 160 → 176(+10% · 2026-10-20) */   /* 리그 112 → 160(2026-10-20, 요청: "리그 컬럼 너비 좀 더 확보") */
+  --gtab-cols: 84px 176px 100px 60px minmax(200px, 1fr) 116px 60px 124px 52px;   /* 2026-10-26: 게임길이를 맵 다음 · 배치 80 → 112 → 102 → 114(좌우 여백) → 116(맵 80 · 사방 18) · 맵 120 → 100 */   /* 2026-10-21: 유형 칸을 경기 정보(옛 리그) 칸 끝 괄호로 합쳤다(요청) */   /* 리그 칸이 있어 다른 칸은 조금씩 덜 연다(맵 120) */   /* 리그 160 → 176(+10% · 2026-10-20) */   /* 리그 112 → 160(2026-10-20, 요청: "리그 컬럼 너비 좀 더 확보") */
 }
 .scr-gtab {
   display: grid; grid-template-columns: var(--gtab-cols); align-items: stretch; width: 100%;
@@ -8072,8 +8072,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-trend-band.is-sub { fill: var(--muted); }
 
 /* ★ 배치 칸(2026-10-26, 요청: "로스터 다음에 배치 컬럼 — 미니맵 안개 없는 버전에 각 유저 스타팅 위치 · 종족" · GameTable StartMapCell) — 맵 그림 위 시작 자리 점(종족 글자 · 팀색 테두리). */
-.scr-gtab-start { justify-content: center; padding-left: 14px; padding-right: 14px; }   /* 좌우 6 → 14(2026-10-26 요청) — 칸 폭도 그만큼 늘려 맵은 90 그대로 */
-.scr-gtab-startmap { position: relative; display: block; width: 100%; max-width: 90px; max-height: 90px; margin: 0 auto; border-radius: 4px; overflow: hidden; box-shadow: 0 0 0 1px var(--line-faint); }
+.scr-gtab-start { justify-content: center; padding: 18px; }   /* 좌우 6 → 14 → 사방 18(2026-10-26 요청 둘) — 칸 폭 116 = 맵 80 + 18·2 */
+.scr-gtab-startmap { position: relative; display: block; width: 100%; max-width: 80px; max-height: 80px; margin: 0 auto; border-radius: 4px; overflow: hidden; box-shadow: 0 0 0 1px var(--line-faint); }
 .scr-gtab-startmap > img { display: block; width: 100%; height: 100%; object-fit: fill; image-rendering: auto; }
 .scr-gtab-spot {   /* 닉네임 앞 두 글자 칩(2026-10-26 · 바탕 = 개인색 · 글자색은 JSX inkOn) */
   position: absolute; transform: translate(-50%, -50%); height: 14px; padding: 0 3px; box-sizing: border-box; border-radius: 3px;
@@ -8083,7 +8083,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 폰 게임 줄의 배치 미니맵(2026-10-26, 요청: "모바일에도 미니맵 배치 · 왼쪽에 자리" → "카드 안에 넣기") — ListRow lead · 카드(줄 몸) 안 이름 줄의 왼쪽. */
 .scr-activity-row-desc.has-lead { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .scr-activity-row-desc.has-lead > .scr-activity-row-lead { flex: none; width: 78px; }
-.scr-activity-row-desc.has-lead > .scr-activity-row-lead .scr-gtab-startmap { max-width: 78px; max-height: 78px; margin: 0; }   /* 56 → 78(+40% · 2026-10-26 요청) · PC 72 → 100 → 90(−10% · 같은 날) */
+.scr-activity-row-desc.has-lead > .scr-activity-row-lead .scr-gtab-startmap { max-width: 78px; max-height: 78px; margin: 0; }   /* 56 → 78(+40% · 2026-10-26 요청) · PC 72 → 100 → 90(−10% · 같은 날) → 80(같은 날 "맵 더 줄이고") */
 .scr-activity-row-desc.has-lead > .scr-activity-row-desc-body { flex: 1 1 auto; min-width: 0; }
 .scr-activity-row-lead .scr-gtab-spot { height: 12px; font-size: 8px; }   /* 11/7.5 → 13/9(맵 56 → 78 따라) → 12/8(한 단 줄임) */
 /* ★ 폰 게임 줄의 미니맵은 로스터 **오른쪽** · 맵 배지는 미니맵 **위 가운데**(2026-10-26, 요청: "로스터 왼쪽 맵을 오른쪽으로 하고 맵배지는 맵위에 중앙 맞추기") —
