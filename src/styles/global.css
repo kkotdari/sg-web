@@ -2162,7 +2162,13 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-modal-graph .scr-gc-wait { height: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; }
 /* 폰은 화면 가득 · 불투명 바탕 · 세 판은 기기 화면 폭(2026-10-21, 요청: "모바일에서도 볼 수 있게" → "아니 모바일 기기 화면폭"). */
 @media (max-width: 960px) {
+  /* 화면 가득은 폰 모달 공통 규칙(.scr-modal:not(…):not(…) · 뒤쪽)이 한다 — 여기선 좌우 여백만 좁게(2026-10-21, 요청: "왼쪽 패딩 줄이고 · 오른쪽도 패딩 줄여").
+     공통 규칙보다 세게 쓴다. 아래 여백은 창 몸(아래)이 갖는다. (2026-10-26 걷기에서 함께 지워져 2026-10-27 되살림) */
+  .scr-modal.scr-modal.scr-modal-graph:not(.scr-modal-confirm):not(.scr-modal-fit) { padding-left: 10px; padding-right: 10px; padding-bottom: 0; }
   /* 아래 여백 넉넉히(요청) — 폰 모달 공통 몸 규칙(.scr-modal:not(…):not(…) > .scr-modal-body · 뒤쪽)이 패딩을 0 16 으로 덮어 그보다 세게 쓴다. */
+  .scr-modal.scr-modal-graph:not(.scr-modal-confirm):not(.scr-modal-fit) > .scr-modal-body {
+    margin: 0 -10px; padding: 4px 10px calc(56px + env(safe-area-inset-bottom, 0px));
+  }
   .scr-modal-graph .scr-rc-title { font-size: 13px; }
 }
 /* 판 사이를 띄워 가른다(요청: "그래프간 줄간격좀 띄워서 구분") — 판마다 위 가는 줄. */
@@ -4139,6 +4145,20 @@ input.scr-schedule-title { font-weight: 800; }
 /* 저장 단추 묶음(2026-10-20 · 저장은 단추로) — 글 머리의 단추 줄 맨 앞(DocHeadRow ★). */
 .scr-schedule-save-btns { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; }
 .scr-schedule-save-btns .scr-compact-rect-btn { padding: 4px 10px; }
+
+/* 폰 모달은 화면 가득(확인·알림 창만 가운데 카드) — ★ 2026-10-26 '옛 길·죽은 코드 걷기'(3487da4)에서 함께 지워져 되살림(2026-10-27, 지적: "폰에서 왜 전체 모달창이 아니지").
+   데이터 창(.scr-modal-graph) 등이 이 규칙에 기대 '폰은 화면 가득'이다. */
+@media (max-width: 960px) {
+  .scr-modal.scr-modal:not(.scr-modal-confirm):not(.scr-modal-fit) {
+    inset: 0; transform: none;
+    width: auto; max-width: none; height: auto; max-height: none;
+    border-radius: 0;
+    padding: calc(10px + var(--safe-top)) 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    box-shadow: none;
+  }
+  .scr-modal:not(.scr-modal-confirm):not(.scr-modal-fit)::before { border-radius: 0; }
+  .scr-modal:not(.scr-modal-confirm):not(.scr-modal-fit) > .scr-modal-body { margin: 0 -16px; padding: 0 16px; }
+}
 
 @media (max-width: 960px) {
   .scr-feed-add-fab-wrap-hidden { visibility: hidden; pointer-events: none; }
