@@ -57,6 +57,35 @@ function todayRange(): { from: string; to: string } {
   const hm = `${String(TODAY_CUT_H).padStart(2, "0")}:00`;
   return { from: `${d(kst)}T${hm}`, to: `${d(next)}T${hm}` };
 }
+/** 열쇠에 든 '오늘' 시작에서 [시작, 끝) — 불러오는 범위가 열쇠와 어긋나지 않게(경계 바로 앞에 누른 질의가 디바운스 뒤 경계를 넘어도 같은 하루). */
+function todayRangeFrom(from: string): { from: string; to: string } {
+  const [day, hm] = from.split("T");
+  const next = new Date(Date.parse(`${day}T00:00:00Z`) + 24 * 3600_000).toISOString().slice(0, 10);
+  return { from, to: `${next}T${hm}` };
+}
+/** 지금의 '오늘' 시작(todayRange().from) — 경계(정오)를 넘으면 저절로 바뀐다(2026-10-27, 요청: "현재 시간 기준으로 정오가 지나면 오늘 정오~내일 정오로 바뀌어야해").
+ *  옛: 범위를 [오늘]을 누른 때 한 번만 셌다 — 화면을 연 채 정오를 넘기면 어제 정오~오늘 정오가 그대로 남았다. 이제 다음 경계에 맞춘 타이머와
+ *  탭이 다시 보일 때(폰은 잠자는 동안 타이머가 늦는다) 다시 센다 · 값이 바뀌면 질의 열쇠가 바뀌어 다시 불러온다. */
+function useTodayFrom(on: boolean): string {
+  const [from, setFrom] = useState(() => todayRange().from);
+  useEffect(() => {
+    if (!on) return undefined;
+    let timer = 0;
+    const sync = (): void => {
+      const r = todayRange();
+      setFrom(r.from);
+      window.clearTimeout(timer);
+      const ms = Date.parse(`${r.to}:00+09:00`) - Date.now();
+      timer = window.setTimeout(sync, Math.max(1000, Math.min(ms + 1000, 6 * 3600_000)));
+    };
+    const onVis = (): void => { if (document.visibilityState === "visible") sync(); };
+    sync();
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    return () => { window.clearTimeout(timer); document.removeEventListener("visibilitychange", onVis); window.removeEventListener("focus", onVis); };
+  }, [on]);
+  return from;
+}
 
 /** 정렬 자 이름 — 정렬 줄("정렬: 전체 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid · 2026-10-22, 요청: "정렬은 머리 터치로 변경" →
  *  "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개") — 옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
@@ -141,16 +170,19 @@ export default function ClanStatsScreen() {
       `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
     );
   }, []);
+  const todayFrom = useTodayFrom(period === PERIOD_TODAY);
   const queryKey = useMemo(
     () => ({
       /* 서버엔 늘 클랜원 전부 — 클랜원 전체 줄·종족구성별 전적이 유저 검색에 안 흔들리게(2026-10-21, 요청: "유저 필터가 들어가도 클랜원 전체 데이터는
          그거에 무관해야"). 검색은 아래 줄만 거른다(viewMembers) · 그래서 칩을 바꿔도 다시 안 불러온다. */
       memberIds: activeMembers.map((m) => m.id).sort().join(","),
       period,
+      /* [오늘]이면 그 '오늘'의 시작도 열쇠에 — 정오를 넘으면 다시 불러온다(위 useTodayFrom ★). */
+      day: period === PERIOD_TODAY ? todayFrom : "",
       size,
       map: mapTab,
     }),
-    [activeMembers, period, size, mapTab],
+    [activeMembers, period, todayFrom, size, mapTab],
   );
   const queryKeySignature = useMemo(() => JSON.stringify(queryKey), [queryKey]);
   const debouncedSignature = useDebouncedValue(queryKeySignature, 300);
@@ -182,7 +214,7 @@ export default function ClanStatsScreen() {
     };
     const qRange = debouncedQuery.period === PERIOD_ALL
       ? { from: "", to: "" }
-      : debouncedQuery.period === PERIOD_TODAY ? todayRange()
+      : debouncedQuery.period === PERIOD_TODAY ? todayRangeFrom(debouncedQuery.day || todayRange().from)
       : monthPeriodToRange(MONTH_PERIOD_RE.test(debouncedQuery.period) ? debouncedQuery.period : currentMonthValue());
     if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null, trendClan: null }); return; }
     let cancelled = false;
