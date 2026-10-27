@@ -5010,6 +5010,18 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   overflow: hidden; border-radius: var(--radius-sm);   /* 활동 목록과 같은 곡률(PC 8 · 폰 3 — 2026-10-22, 요청: "통계 · 게임 목록 테두리 둥글게 활동 목록처럼") · 바깥 테두리는 걷었다(같은 날 "테두리만 빼기로" — 게임 목록 표처럼 머리 칠이 시작을 말한다) */
   font-size: var(--fs-caption); color: var(--text);
 }
+/* 팀전 티어 칸(StatGrid TierCell · 2026-10-27, 요청: "팀전 티어 · 컬럼은 유저 옆") — 유저 칸 바로 뒤 64px. */
+.scr-sg.has-tier { grid-template-columns: minmax(210px, 2fr) 64px 104px 84px 96px 60px repeat(3, minmax(60px, .8fr) minmax(58px, .7fr)); }
+.scr-sg-tierbtn { display: inline-flex; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.scr-sg-tier {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 22px; padding: 0 6px; border-radius: 11px;
+  font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1;
+  background: rgba(var(--overlay-rgb), 0.08); color: var(--muted);
+}
+.scr-sg-tier.is-t1 { background: #e9b949; color: #2a1d00; }
+.scr-sg-tier.is-t2 { background: #b9c3cf; color: #1d2530; }
+.scr-sg-tier.is-t3 { background: #c98a5a; color: #2b1607; }
+.scr-infotip-bubble.scr-sg-tier-tip { max-width: min(320px, 88vw); padding: 10px 12px; white-space: normal; }
 .scr-sg-row { display: contents; }
 .scr-sg-c {
   display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0;
@@ -5109,6 +5121,11 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
    "APM 230 1.4 0.8"(그 줄 폭을 유저 칸이 먼저 가졌다) · 그 전엔 [유저 | 전적] 세로 쌓기. APM 34 · 데미지 38 고정 · 전적 넷은 36px 부터(1fr) ·
    유저 칸은 닉네임 다섯 글자가 늘 보이는 폭(min-content — 이름 최소 5em · 아래 .scr-sg-name)부터 1.6fr 로 는다(요청: "최소 다섯 글자는 나와야 해 닉네임"). */
 .scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(min-content, 1.6fr) repeat(6, minmax(34px, 1fr));   /* 유저 밖 여섯 칸 같은 폭(2026-10-22, 요청: "모바일 유저 제외 모든 컬럼 폭 동일하게" — 옛: APM 34 · 데미지 38 · 전적 넷 minmax(36px, 1fr)) */ font-size: var(--fs-11); }
+/* 폰 티어 칸(2026-10-27, 요청: "모바일 유저칸 너비 줄이고") — 유저 칸 1.6fr → 1.2fr · 닉네임 최소 5em → 4em · 티어 30px. */
+.scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.2fr) 30px repeat(6, minmax(32px, 1fr)); }
+.scr-sg.is-m.has-tier .scr-sg-name { min-width: 4em; }
+.scr-sg.is-m .scr-sg-tier-c { padding-left: 2px; padding-right: 2px; }
+.scr-sg.is-m .scr-sg-tier { min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; }
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
 .scr-sg.is-m .scr-sg-who { justify-content: flex-start; gap: 4px; padding-left: 6px; padding-right: 2px; }

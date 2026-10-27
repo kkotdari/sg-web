@@ -10,7 +10,7 @@ const EDGE = 8;
 export default function InfoTip(
   { text, label, size = 12, trigger, triggerClassName, bubbleClassName }:
   /** text — 글 한 줄이거나 그림이 든 덩이(통계 표 도움말 · 2026-10-22). bubbleClassName — 그런 덩이의 말풍선 폭·여백. */
-  { text: ReactNode; label?: string; size?: number; trigger?: string; triggerClassName?: string; bubbleClassName?: string },
+  { text: ReactNode; label?: string; size?: number; trigger?: ReactNode; triggerClassName?: string; bubbleClassName?: string },
 ) {
   const [pos, setPos] = useState<{ top: number; left: number; anchorTop: number } | null>(null);
   const ref = useRef<HTMLSpanElement>(null);

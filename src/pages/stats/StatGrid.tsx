@@ -7,7 +7,7 @@ import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
-import type { BaseRace, Member, MemberStats } from "../../types";
+import type { BaseRace, Member, MemberStats, TierEntry } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
    C 의 승률 막대를 얹어(요청: "A에 C의 그래프를 시각적으로 도입")).
@@ -19,7 +19,7 @@ const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
 const CLAN_LABEL = "평균";
 /** 정렬 자 — 표 머리를 눌러 고른다(2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추" → "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개").
  *  APM · 데미지 · 전체(rate · plays) · 종족별("테란:rate" · "테란:plays" …). */
-export type StatSortKey = "rate" | "plays" | "dmg" | "apm" | `${BaseRace}:rate` | `${BaseRace}:plays`;
+export type StatSortKey = "tier" | "rate" | "plays" | "dmg" | "apm" | `${BaseRace}:rate` | `${BaseRace}:plays`;
 type SortProps = {
   sortKeys: readonly StatSortKey[]; onSortKeys: (next: StatSortKey[]) => void;
   /** 복수 기준 정렬(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 꺼져 있으면(기본) 머리를 누른 자 **하나**로 갈아탄다. */
@@ -58,6 +58,33 @@ export interface StatGridRow {
   member: Member;
   stats: MemberStats;
   byRace?: Partial<Record<BaseRace, MemberStats>>;
+  /** 팀전 티어(팀전 조회에서만 · 아래 TierCell). */
+  tier?: TierEntry | null;
+}
+
+/* ★ 팀전 티어 칸(2026-10-27, 요청: "통계에 검색한 조건이 팀전 종류인 경우 팀전 티어 · 컬럼은 유저 옆 · 모바일 유저칸 너비 줄이고") — 셈은 서버(sg-api tier.py):
+   팀원·상대·종족 조합을 걷어낸 보정 승률 · 판 평균 대비 데미지·일꾼·채집·인구 · 판수 신뢰도를 묶은 점수를 **군집**(자연 구간)으로 나눈 무리. 1 이 가장 높다.
+   칸은 숫자 배지 하나 · 누르면 근거 말풍선. 판이 다섯 미만이면 "-"(신뢰도 부족). */
+const xOf = (v: number | null | undefined): string => (typeof v === "number" ? `${v.toFixed(2)}배` : "-");
+function TierCell({ t }: { t?: TierEntry | null }) {
+  if (!t) return <span className="scr-sg-c scr-sg-tier-c"><Dash /></span>;
+  if (t.tier === null) return <span className="scr-sg-c scr-sg-tier-c" title={`${t.plays}판 — 다섯 판부터 티어가 나와요`}><Dash /></span>;
+  return (
+    <span className="scr-sg-c scr-sg-tier-c">
+      <InfoTip
+        label={`${t.tier}티어`} triggerClassName="scr-sg-tierbtn" bubbleClassName="scr-sg-tier-tip"
+        trigger={<b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b>}
+        text={(
+          <span className="scr-sg-help-list">
+            <span><b>{t.tier}티어</b> · 이 조건의 {t.tiers}무리 중</span>
+            <span>조합 보정 승률 {t.win ?? "-"}% — 같이·상대한 사람과 종족 구성의 유불리를 걷어낸 값</span>
+            <span>판 평균 대비 — 데미지 {xOf(t.dmg)} · 일꾼 {xOf(t.wk)} · 채집 {xOf(t.res)} · 인구 {xOf(t.sup)}</span>
+            <span>{t.plays}판 — 판이 적을수록 평균 쪽으로 눌려요</span>
+          </span>
+        )}
+      />
+    </span>
+  );
 }
 
 const Dash = () => <span className="scr-sg-dim">-</span>;
@@ -169,7 +196,7 @@ function RaceCells({ s, race, member }: { s?: MemberStats; race: BaseRace; membe
   );
 }
 
-function PcRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
+function PcRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; games?: number; tier?: boolean }) {
   const s = row.stats;
   /* ★ 평균 줄도 변화 그래프(2026-10-25, 요청: "통계의 평균행에도 상세 팝업 붙여야지") — 값이 있는 칸(게임수 = 경기 수 · APM · 종족 게임수·승률)만. 승률·데미지 칸은 "-" 라 손잡이 없음.
      평균 줄의 회원은 빈 id(StatTrend CLAN_MEMBER_ID) — 그래프가 clanByMonth 에서 줄을 찾는다. 자료(trend.clanByMonth)가 없으면 TCell 이 보통 칸. */
@@ -179,6 +206,7 @@ function PcRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?:
         <span className="scr-sg-c scr-sg-who">
           {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <Who member={row.member} />}
         </span>
+        {tier && <TierCell t={clan ? null : row.tier} />}
         <TCell member={who} metric={statMetric(clan ? "games" : "plays")}>
           {clan
             /* 평균 줄 = **경기 수만**(2026-10-22, 요청: "평균 게임수 괄호 없애고 게임수만 표시" · 옛 "1,180 (212경기)" — 사람 몫을 다 더한 전적 + 괄호 경기 수). */
@@ -208,7 +236,7 @@ function MCell({ s, games, noRate, member, race = null }: { s?: MemberStats; gam
   );
 }
 
-function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; games?: number }) {
+function MobileRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; games?: number; tier?: boolean }) {
   const s = row.stats;
   const who = row.member;   // 평균 줄도 변화 그래프(위 PcRow ★ · 데미지 칸만 손잡이 없음)
   return (
@@ -216,6 +244,7 @@ function MobileRow({ row, clan, games }: { row: StatGridRow; clan?: boolean; gam
       <span className="scr-sg-c scr-sg-who">
         {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <WhoPlain member={row.member} />}
       </span>
+      {tier && <TierCell t={clan ? null : row.tier} />}
       {/* APM · 데미지(초록 딜 위 · 빨강 피해 아래)는 제 칸(2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 닉네임 아래 한 줄 "APM 230 1.4 0.8".
           클랜원 전체는 데미지가 없다. */}
       <TCell member={clan ? undefined : who} metric={statMetric("dmg")} className="scr-sg-mnum">{clan ? <Dash /> : <Dmg s={s} compact />}</TCell>
@@ -244,6 +273,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span className="scr-sg-help-list">
             <span>데미지 — <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
             <span>APM — 분당 행동 수 평균</span>
+            <span>티어(팀전) — 같이·상대한 사람과 종족 구성의 유불리를 걷어낸 승률 · 판 평균 대비 데미지·일꾼·채집·인구 · 판수(신뢰도)를 묶어 비슷한 사람끼리 무리 지은 것. 1이 가장 높아요 · 누르면 근거</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
             <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
             <span>값을 누르면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
@@ -253,6 +283,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
         <span className="scr-sg-help-list">
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
           <span>APM — 분당 행동 수 평균</span>
+          <span>티어(팀전 조회에서만) — 같이·상대한 사람과 종족 구성의 유불리를 걷어낸 승률 · 판 평균 대비 데미지·일꾼·채집·인구 · 판수(신뢰도)를 묶은 점수를 비슷한 사람끼리 무리 지은 것(사람 수를 등분하지 않는다). 1이 가장 높아요 · 누르면 근거 · 다섯 판 미만은 -</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
           <span>값에 마우스를 얹으면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
@@ -262,7 +293,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
   );
 }
 
-export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys, multi, trend }: SortProps & {
+export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>> } | null;
   clanGames: number;
@@ -270,6 +301,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   mobile: boolean;
   /** 일곱 달 변화 자료(StatTrend) — 없으면 칸에 손잡이가 없다. */
   trend: StatTrendData | null;
+  /** 팀전 티어 칸(유저 옆 · 팀전 조회에서만 — 위 TierCell ★). */
+  tier?: boolean;
 }) {
   /* 변화 그래프 팝오버(위 TrendCtx ★) — PC 는 떠난 뒤 POP_LINGER 뒤 닫힘 · 폰은 밖 누름·스크롤에 닫힘. */
   const [pop, setPop] = useState<TrendAnchor | null>(null);
@@ -315,18 +348,19 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   if (mobile) {
     return (
       <TrendCtx.Provider value={ctx}>
-      <div className="scr-sg is-m" role="table" aria-label="통계">
+      <div className={cx("scr-sg is-m", tier && "has-tier")} role="table" aria-label="통계">
         {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 · 전적은 전체·종족 넷을 덮는다. 뜻 풀이는 정렬 줄의 도움말 단추(StatHelp)로 옮겼다(2026-10-22, 요청: "헤더 설명 다 제거 · 도움말 아이콘 툴팁에 표 모양과 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
+          {tier && <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...toggle("tier")}>티어</SortHead></span>}
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...toggle("dmg")}>데미지</SortHead></span>
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...toggle("apm")}>APM</SortHead></span>
           <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
           <span className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle("rate", "plays")}>전체</SortHead></span>
           {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle(`${r}:rate`, `${r}:plays`)}>{r}</SortHead></span>)}
         </div>
-        {clanRow && <MobileRow row={clanRow} clan games={clanGames} />}
-        {rows.map((r) => <MobileRow key={r.member.id} row={r} />)}
+        {clanRow && <MobileRow row={clanRow} clan games={clanGames} tier={tier} />}
+        {rows.map((r) => <MobileRow key={r.member.id} row={r} tier={tier} />)}
       </div>
       {popEl}
       </TrendCtx.Provider>
@@ -334,10 +368,11 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   }
   return (
     <TrendCtx.Provider value={ctx}>
-    <div className="scr-sg" role="table" aria-label="통계">
+    <div className={cx("scr-sg", tier && "has-tier")} role="table" aria-label="통계">
       {/* 머리는 두 줄 — 종족 이름이 [게임수 | 승률] 두 칸을 덮고(PC 머리 "경기"·"전적" → "게임수" · 2026-10-22), 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
+        {tier && <span className="scr-sg-c scr-sg-h2"><SortHead {...pcToggle("tier")}>티어</SortHead></span>}
         {([["게임수", "plays"], ["승률", "rate"], ["데미지", "dmg"], ["APM", "apm"]] as const).map(([h, k]) => (
           <span key={h} className="scr-sg-c scr-sg-h2"><SortHead {...pcToggle(k)}>{h}</SortHead></span>
         ))}
@@ -349,8 +384,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
           </Fragment>
         ))}
       </div>
-      {clanRow && <PcRow row={clanRow} clan games={clanGames} />}
-      {rows.map((r) => <PcRow key={r.member.id} row={r} />)}
+      {clanRow && <PcRow row={clanRow} clan games={clanGames} tier={tier} />}
+      {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} />)}
     </div>
     {popEl}
     </TrendCtx.Provider>

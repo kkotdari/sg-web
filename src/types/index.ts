@@ -306,6 +306,21 @@ export interface MemberStatsEntry {
   sigma: number | null;
   ratingGames: number | null;
   provisional: boolean | null;
+  /** 팀전 티어(sg-api tier.py · 2026-10-27) — 팀전 조회에서만 · 1 이 가장 높다. */
+  tier?: TierEntry | null;
+}
+
+/** 팀전 티어 — tier/score 는 판이 다섯 미만이면 null(신뢰도 부족). win = 팀원·상대·종족 조합을 걷어낸 보정 승률(%) · 나머지는 그 판 참가자 평균 대비 배수. */
+export interface TierEntry {
+  tier: number | null;
+  tiers: number;
+  score: number | null;
+  plays: number;
+  win: number | null;
+  dmg: number | null;
+  wk: number | null;
+  res: number | null;
+  sup: number | null;
 }
 
 export interface ClanBreakdownEntry {

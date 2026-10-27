@@ -91,6 +91,7 @@ function useTodayFrom(on: boolean): string {
  *  "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개") — 옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
 const sortLabel = (k: StatSortKey): string => {
   if (k === "apm") return "APM";
+  if (k === "tier") return "티어";
   if (k === "dmg") return "데미지";
   const [who, what] = k.includes(":") ? k.split(":") : ["전체", k];
   return `${who} ${what === "rate" ? "승률" : "게임수"}`;
@@ -296,6 +297,12 @@ export default function ClanStatsScreen() {
     const dirSign = -1;
     type DataKey = StatSortKey | "cmd";
     const compareData = (key: DataKey, a: Card, b: Card): number => {
+      /* 팀전 티어(2026-10-27) — 1 이 위 · 같은 티어는 점수 높은 쪽 · 티어 없는 사람(다섯 판 미만 · 1:1 조회)은 뒤로. */
+      if (key === "tier") {
+        const at = a.entry?.tier; const bt = b.entry?.tier;
+        const am = typeof at?.tier !== "number"; const bm = typeof bt?.tier !== "number";
+        return missingLast(am, bm) || (am ? 0 : (at!.tier! - bt!.tier!) || ((bt!.score ?? 0) - (at!.score ?? 0)));
+      }
       if (key === "dmg") {
         const ad = a.stats.dmgDealtRel; const bd = b.stats.dmgDealtRel;
         return missingLast(typeof ad !== "number", typeof bd !== "number") || dirSign * ((ad ?? 0) - (bd ?? 0));
@@ -431,7 +438,8 @@ export default function ClanStatsScreen() {
           <StatGrid
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace } : null}
             clanGames={clanGames}
-            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace }))}
+            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, tier: c.entry?.tier }))}
+            tier={size !== "1"}
             mobile={isMobile}
             sortKeys={sortKeys}
             onSortKeys={setSortKeys}
