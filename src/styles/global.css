@@ -5014,7 +5014,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg.has-tier { grid-template-columns: minmax(210px, 2fr) 64px 104px 84px 96px 60px repeat(3, minmax(60px, .8fr) minmax(58px, .7fr)); }
 .scr-sg-tierbtn { display: inline-flex; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .scr-sg-tier {
-  display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 22px; padding: 0 6px; border-radius: 11px;
+  display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border-radius: 5px;   /* 정사각 둥근 네모(2026-10-27, 요청: "티어 배지는 둥근네모로 정사각") */
   font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1;
   background: rgba(var(--overlay-rgb), 0.08); color: var(--muted);
 }
@@ -5125,7 +5125,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.2fr) 30px repeat(6, minmax(32px, 1fr)); }
 .scr-sg.is-m.has-tier .scr-sg-name { min-width: 4em; }
 .scr-sg.is-m .scr-sg-tier-c { padding-left: 2px; padding-right: 2px; }
-.scr-sg.is-m .scr-sg-tier { min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; }
+.scr-sg.is-m .scr-sg-tier { width: 20px; height: 20px; border-radius: 4px; font-size: 11px; }
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
 .scr-sg.is-m .scr-sg-who { justify-content: flex-start; gap: 4px; padding-left: 6px; padding-right: 2px; }
