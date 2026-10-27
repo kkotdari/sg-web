@@ -101,11 +101,6 @@ function headLineOf(admin: boolean, draft: boolean) {
                 <span>공지</span>
               </label>
             )}
-            {/* 익명으로 쓰기(2026-10-26, 요청: "글쓸때 익명으로 쓰기 체크박스 추가(글쓴이를 익명으로 표시)") — 고칠 때도 켜고 끈다(서버가 쓴 사람 것만 받는다). */}
-            <label className="scr-post-notice-check">
-              <input type="checkbox" checked={head.anon === "1"} onChange={(e) => onChange({ anon: e.target.checked ? "1" : "" })} />
-              <span>익명으로 쓰기</span>
-            </label>
           </span>
         </div>
         {cat === "schedule" && (
@@ -159,20 +154,18 @@ function postSpec({ admin, draft }: {
     kind: "post",
     icon: <MessagesSquare size={16} aria-hidden />,
     label: "게시판",
-    headKeys: ["title", "category", "date", "time", "notice", "anon"],
+    headKeys: ["title", "category", "date", "time", "notice"],
     headOf: (p) => ({
       title: p.title, category: p.category ?? "", date: p.scheduledDate ?? "", time: p.scheduledTime ?? "", notice: p.notice ? "1" : "",
-      anon: p.anonymous ? "1" : "",
     }),
-    serverKeyOf: (p) => JSON.stringify([p.title, p.category, p.scheduledDate, p.scheduledTime, !!p.anonymous, p.blocks ?? []]),
+    serverKeyOf: (p) => JSON.stringify([p.title, p.category, p.scheduledDate, p.scheduledTime, p.blocks ?? []]),
     ready: (h) => !!h.title.trim() && (h.category !== "schedule" || !!h.date),
     writeOf: (h, blocks) => {
       const category = asCategory(h.category);
       const when = category === "schedule" ? { scheduledDate: h.date || null, scheduledTime: h.time || null } : {};
-      const anonymous = h.anon === "1";
       return draft
-        ? { title: h.title.trim(), category, ...when, anonymous, blocks, ...(admin && h.notice === "1" ? { notice: true } : {}) }
-        : { title: h.title.trim(), category, ...when, anonymous, blocks };
+        ? { title: h.title.trim(), category, ...when, blocks, ...(admin && h.notice === "1" ? { notice: true } : {}) }
+        : { title: h.title.trim(), category, ...when, blocks };
     },
     update: draft
       ? async (_id, payload) => { const p = await api.createPost(payload); draft.onCreated(p); return p; }

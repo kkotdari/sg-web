@@ -81,7 +81,7 @@ export default memo(function PostDetailPage({ item: itemText, onBack, onClose, o
                   post={item.post}
                   timeText={formatWhen(item.time, { clock: item.withClock })}
                   dateLabel={dateLabelOf(item)}
-                  mine={!!user && (item.post.mine ?? item.post.createdBy.id === user.id)}   /* 익명 글은 createdBy 가 가려져 서버의 mine 으로(2026-10-26) */
+                  mine={!!user && (item.post.mine ?? item.post.createdBy.id === user.id)}
                   admin={isAdmin}
                   onDeleted={onClose}
                   footer={<CardComments targetType="post" targetId={item.post.id} overModal />}
