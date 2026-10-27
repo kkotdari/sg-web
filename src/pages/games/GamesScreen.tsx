@@ -307,6 +307,27 @@ function GamesRouter() {
   };
 
   const listShown = view.kind === "list";
+  /* PC 등록 단추(타이틀 아래 줄 · 라이팅 기본 네모 = 채움) — 누르면 아래로 펼치는 같은 차림표(게임결과 등록 · 수기 입력). 선택 끝내기는 폰 선택 모드 것이라 없다. */
+  const pcAdd = useMemo(() => (isMobile ? undefined : (
+    <div className="scr-title-action">
+      <button type="button" className="scr-rect-btn" onClick={() => setAddMenuOpen((v) => !v)} aria-expanded={addMenuOpen}>
+        {parsingReplays ? <Spinner size={14} /> : "등록"}
+      </button>
+      {addMenuOpen && (
+        <>
+          <div className="scr-feed-add-backdrop" onClick={() => setAddMenuOpen(false)} aria-hidden />
+          <div className="scr-feed-add-menu scr-feed-add-menu-right" role="menu">
+            <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); replayInputRef.current?.click(); }}>
+              <Upload size={14} aria-hidden /> 게임결과 등록
+            </button>
+            <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); setManualOpen(true); }}>
+              <PenLine size={14} aria-hidden /> 게임결과 수기 입력
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )), [isMobile, addMenuOpen, parsingReplays]);
 
   return (
     <div className="scr-screen scr-feed-screen">
@@ -328,9 +349,12 @@ function GamesRouter() {
           onDeleteItems={askBulkDelete}
           onHideItems={askBulkHide}
           refreshKey={groupRefreshKey}
+          titleAction={pcAdd}
         />
       )}
-      {listShown && (
+      {/* ★ PC 는 둥근 등록 단추(FAB) 대신 타이틀 아래 줄의 네모 단추(2026-10-27, 요청: "피시에서 게임, 게시판, 리그의 등록/생성 플로팅 버튼을 제거하고 타이틀 아래줄
+         고정 버튼으로 변경(라이팅테마 기본 네모 버튼)") — 위 pcAdd(GameListPage titleAction). 폰은 FAB 그대로. */}
+      {listShown && isMobile && (
       <div className={cx(
         "scr-feed-add-fab-wrap scr-feed-add-wrap",
         fabHidden && "scr-feed-add-fab-wrap-hidden",

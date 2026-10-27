@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import { LoadingMark } from "../../components/common/Feedback";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
@@ -72,7 +72,7 @@ export const tabQuery = (tab: GameTab) => (tab === "fame" ? { fameOnly: true } :
 export default memo(function GameListPage({
   members, view, act,
   gameTab, onGameTabChange,
-  selection, canPick, onDeleteItems, onHideItems, refreshKey,
+  selection, canPick, onDeleteItems, onHideItems, refreshKey, titleAction,
 }: {
   members: Member[];
   view: RowView;
@@ -84,6 +84,8 @@ export default memo(function GameListPage({
   refreshKey: number;
   gameTab: GameTab;
   onGameTabChange: (next: GameTab) => void;
+  /** 타이틀 아래 줄(PC 등록 단추 · GamesScreen) — 없으면 줄도 없다. */
+  titleAction?: ReactNode;
 }) {
   const memberOf = view.memberOf;
   const { feedAll } = useFeedData();
@@ -208,6 +210,7 @@ export default memo(function GameListPage({
           <h1 className="scr-title scr-v2-toolbar-title">게임</h1>
         </div>
       </div>
+      {titleAction && <div className="scr-title-actions">{titleAction}</div>}
       <GameSearchForm
         value={gameForm}
         onApply={(next) => setFormRaw(encodeGameSearch(next))}

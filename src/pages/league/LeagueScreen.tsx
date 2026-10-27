@@ -10,6 +10,7 @@ import LeaguePresentView from "./LeaguePresentView";
 import LeagueComing from "./LeagueComing";
 import { useAppStore } from "../../store/appStore";
 import { useEditableFocused } from "../../hooks/useEditableFocused";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { isAdminRole } from "../../constants/roles";
 import { api } from "../../api/client";
 import { cx } from "../../utils/format";
@@ -29,6 +30,7 @@ export default function LeagueScreen() {
   const user = useAppStore((s) => s.user);
   const isAdmin = isAdminRole(user?.roles ?? []);
   const fabHidden = useEditableFocused();
+  const isMobile = useIsMobile();
   const [editMode, setEditMode] = useState(false);
   const canEdit = isAdmin && editMode;
   const [leagues, setLeagues] = useState<LeagueListItem[]>([]);
@@ -197,12 +199,16 @@ export default function LeagueScreen() {
           </div>
         </div>
       )}
+      {isAdmin && selectedId === null && !isMobile && (
+        <div className="scr-title-actions"><button type="button" className="scr-rect-btn" onClick={() => setCreating(true)}>생성</button></div>
+      )}
 
       {error && <div className="scr-err">{error}</div>}
 
       {selectedId === null && <LeagueComing onOpenLeague={openLeague} />}
 
-      {isAdmin && selectedId === null && (
+      {/* PC 는 FAB 대신 타이틀 아래 줄의 네모 단추(2026-10-27 · 위 toolbar 뒤 scr-title-actions) — 폰만 FAB. */}
+      {isAdmin && selectedId === null && isMobile && (
         <div className={cx("scr-feed-add-fab-wrap scr-feed-add-wrap", fabHidden && "scr-feed-add-fab-wrap-hidden")}>
           <button type="button" className="scr-feed-add-fab scr-circle-btn" onClick={() => setCreating(true)}>
             생성

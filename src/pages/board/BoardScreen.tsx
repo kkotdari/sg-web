@@ -82,6 +82,7 @@ function BoardRouter() {
   openRef.current = open;
   const onOpen = useCallback((p: Post) => openRef.current(p), []);
   const fabHidden = useEditableFocused();
+  const isMobile = useIsMobile();
 
   if (view.kind === "detail") {
     return (
@@ -95,16 +96,19 @@ function BoardRouter() {
   }
   return (
     <div className="scr-screen scr-board-screen">
-      <BoardList onOpen={onOpen} />
+      {/* PC 는 FAB 대신 타이틀 아래 줄의 네모 단추(2026-10-27, 요청: "피시에서 게임, 게시판, 리그의 등록/생성 플로팅 버튼을 제거하고 타이틀 아래줄 고정 버튼으로 변경") — BoardList onNew. */}
+      <BoardList onOpen={onOpen} onNew={isMobile ? undefined : openNew} />
+      {isMobile && (
       <div className={cx("scr-feed-add-fab-wrap scr-feed-add-wrap", fabHidden && "scr-feed-add-fab-wrap-hidden")}>
         {/* 라벨은 '글쓰기' 한 줄(2026-10-26, 요청: "게시판 등록 라벨을 새글쓰기로" → "글쓰기로 한줄"). */}
         <button type="button" className="scr-feed-add-fab scr-circle-btn" onClick={openNew}>글쓰기</button>
       </div>
+      )}
     </div>
   );
 }
 
-const BoardList = memo(function BoardList({ onOpen }: { onOpen: (p: Post) => void }) {
+const BoardList = memo(function BoardList({ onOpen, onNew }: { onOpen: (p: Post) => void; onNew?: () => void }) {
   const { feedAll, loading, loadingMore, hasMore, loadMore } = useFeedData();
   const isMobile = useIsMobile();
   const minute = useRowClock();
@@ -141,6 +145,7 @@ const BoardList = memo(function BoardList({ onOpen }: { onOpen: (p: Post) => voi
           <h1 className="scr-title scr-v2-toolbar-title">게시판</h1>
         </div>
       </div>
+      {onNew && <div className="scr-title-actions"><button type="button" className="scr-rect-btn" onClick={onNew}>글쓰기</button></div>}
       {loading ? <LoadingMark /> : (
         <div className="scr-bbs" role="table" aria-label="게시판 글">
           {!isMobile && <BoardHead />}

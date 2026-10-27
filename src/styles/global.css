@@ -4087,6 +4087,11 @@ html.scr-light-theme .scr-feed-card-comment .scr-comment-mention { color: #1d4ed
 .scr-feed-add-menu.scr-feed-add-menu-up {
   top: auto; bottom: calc(100% + 8px); left: 0; transform: none;
 }
+/* PC 등록·글쓰기·생성 단추 줄(2026-10-27, 요청: "피시에서 게임, 게시판, 리그의 등록/생성 플로팅 버튼을 제거하고 타이틀 아래줄 고정 버튼으로 변경(라이팅테마 기본 네모 버튼)") —
+   툴바(타이틀 줄 · 밑 여백 28) 바로 아래 오른쪽 끝 · 단추는 .scr-rect-btn(채움). 게임의 차림표는 단추 아래로 · 오른쪽 끝에 맞춘다(scr-feed-add-menu-right). */
+.scr-title-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: -16px 0 12px; }
+.scr-title-action { position: relative; display: inline-flex; }
+.scr-feed-add-menu.scr-feed-add-menu-right { left: auto; right: 0; transform: none; }
 .scr-feed-add-menu > button {
   display: flex; align-items: center; gap: 8px;
   background: transparent; border: none; color: var(--text);
