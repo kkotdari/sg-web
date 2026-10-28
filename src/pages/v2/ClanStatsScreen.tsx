@@ -160,15 +160,18 @@ export default function ClanStatsScreen() {
   const [period, setPeriod] = useUrlState("period", currentMonthValue());
   const [sizeRaw, setSize] = useUrlState("size", "team");
   const size = sizeTabOf(sizeRaw);
-  /** 실제로 쓰는 정렬 — 1:1 조회엔 티어 칸이 없어 티어를 빼고, 남는 게 없으면 전체 승률. */
-  const shownSort = useMemo<StatSortKey[]>(() => {
-    if (size !== "1") return sortKeys;
-    const rest = sortKeys.filter((k) => k !== "tier");
-    return rest.length > 0 ? rest : ["rate"];
-  }, [sortKeys, size]);
-  const sortDefault: StatSortKey = size === "1" ? "rate" : "tier";
   const [mapRaw, setMap] = useUrlState("map", MAP_DEFAULT);
   const mapTab = mapTabOf(mapRaw);
+  /* ★ 티어(와 보정교환비)는 **팀전 전체 · 맵 전체**일 때만(2026-10-28, 요청: "티어는 맵 전체일 때만 표시 · 팀전 전체 맵 전체일 때만") — 티어는 전체 맵 팀전 판으로
+     매기므로 그 조회에서만 칸의 게임수 · 승률과 같은 판을 본다. 옛: 1:1 이 아니면 늘. */
+  const showTier = size === "team" && mapTab === "all";
+  /** 실제로 쓰는 정렬 — 티어 칸이 없는 조회엔 티어를 빼고, 남는 게 없으면 전체 승률. */
+  const shownSort = useMemo<StatSortKey[]>(() => {
+    if (showTier) return sortKeys;
+    const rest = sortKeys.filter((k) => k !== "tier");
+    return rest.length > 0 ? rest : ["rate"];
+  }, [sortKeys, showTier]);
+  const sortDefault: StatSortKey = showTier ? "tier" : "rate";
   useEffect(() => () => {
     const q = new URLSearchParams(window.location.search);
     if (!q.has("period") && !q.has("size") && !q.has("map")) return;
@@ -319,7 +322,7 @@ export default function ClanStatsScreen() {
       }
       if (key === "ex") {
         /* 팀전은 보정 교환비(StatGrid Ex ★ · 칸에 보이는 값). */
-        const exv = (c: Card) => (size !== "1" ? (typeof c.entry?.tier?.ex === "number" ? c.entry.tier.ex : null) : exOf(c.stats));
+        const exv = (c: Card) => (showTier ? (typeof c.entry?.tier?.ex === "number" ? c.entry.tier.ex : null) : exOf(c.stats));
         const ax = exv(a); const bx = exv(b);
         return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
       }
@@ -350,7 +353,7 @@ export default function ClanStatsScreen() {
       return nicknameTiebreak(a, b);
     });
     return sorted;
-  }, [viewMembers, view, shownSort, size]);
+  }, [viewMembers, view, shownSort, showTier]);
 
 
   return (
@@ -427,7 +430,7 @@ export default function ClanStatsScreen() {
 
       <div className="scr-stats-sort">
         <span className="scr-stats-sort-label">정렬:</span>
-        <span className="scr-stats-sort-chain">{shownSort.length > 0 ? shownSort.map((k: StatSortKey) => sortLabel(k, size !== "1")).join(" › ") : "기본"}</span>
+        <span className="scr-stats-sort-chain">{shownSort.length > 0 ? shownSort.map((k: StatSortKey) => sortLabel(k, showTier)).join(" › ") : "기본"}</span>
         {/* 복수 기준 토글(위 multiSort ★) — 켜지면 머리를 누른 차례대로 기준이 쌓인다. PC·폰 둘 다. */}
         <button type="button" role="switch" aria-checked={multiSort} className={cx("scr-stats-sort-multi", multiSort && "is-on")} onClick={toggleMulti}
           title={multiSort ? "복수 기준 정렬 끄기 — 머리를 누르면 그 기준 하나로" : "복수 기준 정렬 켜기 — 머리를 누른 차례대로 기준이 쌓여요"}>
@@ -435,7 +438,7 @@ export default function ClanStatsScreen() {
         </button>
         {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(티어 · 1:1 은 전체 승률 하나)과 다를 때만 선다 · PC 만. */}
         {!isMobile && !(shownSort.length === 1 && shownSort[0] === sortDefault) && (
-          <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["tier"])} title={`정렬을 처음 값(${sortLabel(sortDefault, size !== "1")})으로`}>
+          <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["tier"])} title={`정렬을 처음 값(${sortLabel(sortDefault, showTier)})으로`}>
             <RotateCcw size={12} aria-hidden /> 초기화
           </button>
         )}
@@ -459,7 +462,7 @@ export default function ClanStatsScreen() {
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace } : null}
             clanGames={clanGames}
             rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, tier: c.entry?.tier }))}
-            tier={size !== "1"}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다 · 1:1 조회엔 없다) */
+            tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */
             mobile={isMobile}
             sortKeys={shownSort}
             onSortKeys={setSortKeys}
