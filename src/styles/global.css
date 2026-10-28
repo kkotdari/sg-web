@@ -5021,6 +5021,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-tier.is-t1 { background: #e9b949; color: #2a1d00; }
 .scr-sg-tier.is-t2 { background: #b9c3cf; color: #1d2530; }
 .scr-sg-tier.is-t3 { background: #c98a5a; color: #2b1607; }
+.scr-sg-tier.is-t4 { background: rgba(var(--overlay-rgb), 0.14); color: var(--muted); }   /* 4등급(2026-10-27 · 4등급 고정) */
 .scr-infotip-bubble.scr-sg-tier-tip { max-width: min(320px, 88vw); padding: 10px 12px; white-space: normal; }
 .scr-sg-row { display: contents; }
 .scr-sg-c {
