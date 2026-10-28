@@ -326,6 +326,9 @@ export interface TierEntry {
   skill?: number | null;
   /** 전투 교환비(준 ÷ 입은 데미지) — 같은 편 동료 대비 배수 · 점수는 데미지 양 대신 이것(2026-10-28). */
   cbt?: number | null;
+  /** 판 평균 APM · 점수에 더한 APM 가점(0 ~ 0.15 · 깎지는 않음 · 2026-10-28). */
+  apm?: number | null;
+  apmBonus?: number | null;
 }
 
 export interface ClanBreakdownEntry {
