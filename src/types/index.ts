@@ -310,7 +310,7 @@ export interface MemberStatsEntry {
   tier?: TierEntry | null;
 }
 
-/** 팀전 티어(sg-api tier.py · 2026-10-28 처음부터 다시) — tier/score 는 판이 열 미만이면 null. 인분 = 그 기간 EAPM ÷ 120 × 교환비 보정(cbt) × 누적 승패 보정(adj). 옛 모형의 칸(dmg · wk · res · sup · prod · skill · eco · arm · expWin · level)은 늘 null. */
+/** 팀전 티어(sg-api tier.py · 2026-10-28 처음부터 다시) — tier/score 는 판이 열 미만이면 null. 인분 = 그 기간 EAPM ÷ 120 × 교환비 보정(cbt) × 승패 보정(adj · 그 기간 판으로). 옛 모형의 칸(dmg · wk · res · sup · prod · skill · eco · arm · expWin · level)은 늘 null. */
 export interface TierEntry {
   tier: number | null;
   tiers: number;
