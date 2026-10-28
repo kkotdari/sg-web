@@ -5006,12 +5006,13 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   display: grid; width: 100%;
   /* 종족마다 [전적(N회) | 승률] 두 칸(2026-10-20). 데미지 칸 196 → 96px(숫자만 · 2026-10-22). 같은 날 데미지 · APM 차례를 바꾸고("APM 데미지 위치 교환")
      유저 칸 minmax(150px, 1.3fr) → minmax(210px, 2fr)("피시 유저 컬럼 더 넓게"). */
-  grid-template-columns: minmax(210px, 2fr) 104px 84px 96px 60px repeat(3, minmax(60px, .8fr) minmax(58px, .7fr));
+  /* 교환비 칸 72px(데미지 뒤 · 2026-10-28). */
+  grid-template-columns: minmax(210px, 2fr) 104px 84px 96px 72px 60px repeat(3, minmax(60px, .8fr) minmax(58px, .7fr));
   overflow: hidden; border-radius: var(--radius-sm);   /* 활동 목록과 같은 곡률(PC 8 · 폰 3 — 2026-10-22, 요청: "통계 · 게임 목록 테두리 둥글게 활동 목록처럼") · 바깥 테두리는 걷었다(같은 날 "테두리만 빼기로" — 게임 목록 표처럼 머리 칠이 시작을 말한다) */
   font-size: var(--fs-caption); color: var(--text);
 }
 /* 팀전 티어 칸(StatGrid TierCell · 2026-10-27, 요청: "팀전 티어 · 컬럼은 유저 옆") — 유저 칸 바로 뒤 64px. */
-.scr-sg.has-tier { grid-template-columns: minmax(210px, 2fr) 64px 104px 84px 96px 60px repeat(3, minmax(60px, .8fr) minmax(58px, .7fr)); }
+.scr-sg.has-tier { grid-template-columns: minmax(210px, 2fr) 64px 104px 84px 96px 72px 60px repeat(3, minmax(60px, .8fr) minmax(58px, .7fr)); }
 .scr-sg-tierbtn { display: inline-flex; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .scr-sg-tier {
   display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border-radius: 5px;   /* 정사각 둥근 네모(2026-10-27, 요청: "티어 배지는 둥근네모로 정사각") */
@@ -5078,6 +5079,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-dmg > b { font-weight: 400; }
 .scr-sg-dmg > b.is-dealt { color: var(--win, #16a34a); }
 .scr-sg-dmg > b.is-taken { color: var(--loss, #dc2626); }
+.scr-sg-dmg > b.is-ex { font-weight: 600; color: var(--text); }   /* 폰 데미지 칸 맨 위 교환비(2026-10-28) */
 .scr-sg-dmg > .scr-sg-dim { margin: 0 2px; }
 
 /* ★ 분당 선 그래프 판(RaceCurves.tsx Chart · 게임 데이터 창) — 세로선 자리의 값만 선 색 글자(.scr-rc-val · 바탕색 테두리)이고 나머지 글자는 본문·흐린 잉크.

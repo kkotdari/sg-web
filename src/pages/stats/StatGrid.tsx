@@ -1,7 +1,7 @@
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ArrowDownWideNarrow, ArrowUpDown } from "lucide-react";
-import { StatTrendPop, statMetric, type StatMetric, type StatTrendData, type TrendAnchor } from "./StatTrend";
+import { StatTrendPop, exOf, statMetric, type StatMetric, type StatTrendData, type TrendAnchor } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
@@ -19,7 +19,7 @@ const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
 const CLAN_LABEL = "평균";
 /** 정렬 자 — 표 머리를 눌러 고른다(2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추" → "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개").
  *  APM · 데미지 · 전체(rate · plays) · 종족별("테란:rate" · "테란:plays" …). */
-export type StatSortKey = "tier" | "rate" | "plays" | "dmg" | "apm" | `${BaseRace}:rate` | `${BaseRace}:plays`;
+export type StatSortKey = "tier" | "rate" | "plays" | "dmg" | "ex" | "apm" | `${BaseRace}:rate` | `${BaseRace}:plays`;
 type SortProps = {
   sortKeys: readonly StatSortKey[]; onSortKeys: (next: StatSortKey[]) => void;
   /** 복수 기준 정렬(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 꺼져 있으면(기본) 머리를 누른 자 **하나**로 갈아탄다. */
@@ -138,14 +138,24 @@ function Rate({ s }: { s?: MemberStats }) {
   );
 }
 
+/** 교환비 칸(PC · 2026-10-28, 요청: "통계에 교환비 컬럼을 추가") — 준 ÷ 입은 데미지 · 1 보다 크면 초록 · 작으면 빨강. */
+function Ex({ s }: { s: MemberStats }) {
+  const x = exOf(s);
+  if (x === null) return <Dash />;
+  return <span className="scr-sg-dmg" title="준 데미지 ÷ 입은 데미지(1.00 = 주고받은 양이 같음)"><b className={x >= 1 ? "is-dealt" : "is-taken"}>{x.toFixed(2)}</b></span>;
+}
+
 function Dmg({ s, compact }: { s: MemberStats; compact?: boolean }) {
   const d = s.dmgDealtRel, t = s.dmgTakenRel;
   if (typeof d !== "number" || typeof t !== "number") return <Dash />; // 폰도 "데미지 -"(이름표만 덩그러니 남지 않게)
+  /* ★ 폰은 교환비를 데미지와 **한 칸**에(2026-10-28, 요청: "모바일은 교환비 데미지를 같이 표시 · 한 셀에") — 맨 위 교환비(굵게) · 그 아래 딜 · 피해. */
+  const x = compact ? exOf(s) : null;
   /* 폰은 칸이 좁아 배수만 — 이름표("딜" · "피해")도 없이 초록 딜 · 빨강 피해 숫자 둘(2026-10-22, 요청: "딜 피해 라벨 제거" — 뜻은 도움말 StatHelp 가 같은 색으로 말한다).
      옛: "딜 1.4 피해 0.8"(2026-10-20). */
   if (compact) {
     return (
-      <span className="scr-sg-dmg" title="준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)">
+      <span className="scr-sg-dmg" title="교환비(준 ÷ 입은) · 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)">
+        <b className="is-ex">{x === null ? "-" : x.toFixed(2)}</b>
         <b className="is-dealt">{(d / 100).toFixed(1)}</b>
         <b className="is-taken">{(t / 100).toFixed(1)}</b>
       </span>
@@ -219,6 +229,8 @@ function PcRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; g
         <TCell member={clan ? undefined : who} metric={statMetric("rate")}>{clan ? <Dash /> : <Rate s={s} />}</TCell>
         {/* 데미지 · APM 차례(2026-10-22, 요청: "APM 데미지 위치 교환" — 옛: APM · 데미지) */}
         <TCell member={clan ? undefined : who} metric={statMetric("dmg")}>{clan ? <Dash /> : <Dmg s={s} />}</TCell>
+        {/* 교환비는 데미지 바로 뒤(2026-10-28) · 평균 줄은 늘 1 근처라 "-". */}
+        <TCell member={clan ? undefined : who} metric={statMetric("ex")}>{clan ? <Dash /> : <Ex s={s} />}</TCell>
         <TCell member={who} metric={statMetric("apm")}><Num v={s.avgApm} /></TCell>
         {RACES.map((r) => <RaceCells key={r} s={row.byRace?.[r]} race={r} member={who} />)}
       </div>
@@ -269,12 +281,13 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span className="scr-sg-help-mock" aria-hidden>
             <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">데미지</span><span className="scr-sg-help-h">APM</span><span className="scr-sg-help-h">전체</span>
             <span className="scr-sg-help-who"><b>닉네임</b></span>
-            <span className="scr-sg-help-rec"><b className="is-dealt">1.4</b><b className="is-taken">0.8</b></span>
+            <span className="scr-sg-help-rec"><b>1.25</b><b className="is-dealt">1.4</b><b className="is-taken">0.8</b></span>
             <span className="scr-sg-help-rec"><b>230</b></span>
             <span className="scr-sg-help-rec"><b>68</b><i>54</i></span>
           </span>
           <span className="scr-sg-help-list">
-            <span>데미지 — <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
+            <span>데미지 — <b>1.25</b> 교환비(준 ÷ 입은 데미지 · 1보다 크면 주고받기에서 이김) · <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
+            <span>데미지 머리는 교환비 → 데미지(딜) → 끔 차례로 정렬</span>
             <span>APM — 분당 행동 수 평균</span>
             <span>티어(팀전) — 같이·상대한 사람의 유불리와 부종족으로 한 판을 걷어낸 승률 · 같은 편 동료 대비 전투(준 ÷ 입은 데미지 교환비)·생산·일꾼·채집·인구를 묶어 1~4 등급 — 점수가 뭉친 사람끼리 같은 등급이고 인원을 4등분하지 않아서 빈 등급도 있어요. 1이 가장 높아요 · 누르면 근거</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
@@ -285,10 +298,11 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
       ) : (
         <span className="scr-sg-help-list">
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
+          <span>교환비 — 준 데미지 ÷ 입은 데미지(1.00 보다 크면 주고받기에서 이김)</span>
           <span>APM — 분당 행동 수 평균</span>
           <span>티어(팀전 조회에서만) — 같이·상대한 사람의 유불리와 부종족으로 한 판을 걷어낸 승률 · 같은 편 동료 대비 전투(준 ÷ 입은 데미지 교환비)·생산·일꾼·채집·인구를 묶은 점수의 1~4 등급 — 점수가 뭉친 사람끼리 같은 등급이고 인원을 4등분하지 않아서 빈 등급도 있어요. 1이 가장 높아요 · 누르면 근거 · 스무 판 미만은 -</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
-          <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
+          <span>머리(게임수 · 승률 · 데미지 · 교환비 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
           <span>값에 마우스를 얹으면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
         </span>
       )}
@@ -359,7 +373,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
           {tier && <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("tier")}>티어</SortHead></span>}
-          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("dmg")}>데미지</SortHead></span>
+          {/* 교환비 · 데미지 한 칸(위 Dmg ★) — 머리는 교환비 → 데미지 → 끔(전적 머리와 같은 cycle). */}
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...cycle("ex", "dmg")}>데미지</SortHead></span>
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("apm")}>APM</SortHead></span>
           <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
           <span className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle("rate", "plays")}>전체</SortHead></span>
@@ -379,7 +394,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
         {tier && <span className="scr-sg-c scr-sg-h2"><SortHead {...pcToggle("tier")}>티어</SortHead></span>}
-        {([["게임수", "plays"], ["승률", "rate"], ["데미지", "dmg"], ["APM", "apm"]] as const).map(([h, k]) => (
+        {([["게임수", "plays"], ["승률", "rate"], ["데미지", "dmg"], ["교환비", "ex"], ["APM", "apm"]] as const).map(([h, k]) => (
           <span key={h} className="scr-sg-c scr-sg-h2"><SortHead {...pcToggle(k)}>{h}</SortHead></span>
         ))}
         {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hgroup">{r}</span>)}

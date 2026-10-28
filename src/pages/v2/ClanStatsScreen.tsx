@@ -6,7 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
-import { statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
+import { exOf, statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -93,6 +93,7 @@ const sortLabel = (k: StatSortKey): string => {
   if (k === "apm") return "APM";
   if (k === "tier") return "티어";
   if (k === "dmg") return "데미지";
+  if (k === "ex") return "교환비";
   const [who, what] = k.includes(":") ? k.split(":") : ["전체", k];
   return `${who} ${what === "rate" ? "승률" : "게임수"}`;
 };
@@ -302,6 +303,10 @@ export default function ClanStatsScreen() {
         const at = a.entry?.tier; const bt = b.entry?.tier;
         const am = typeof at?.tier !== "number"; const bm = typeof bt?.tier !== "number";
         return missingLast(am, bm) || (am ? 0 : (at!.tier! - bt!.tier!) || ((bt!.score ?? 0) - (at!.score ?? 0)));
+      }
+      if (key === "ex") {
+        const ax = exOf(a.stats); const bx = exOf(b.stats);
+        return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
       }
       if (key === "dmg") {
         const ad = a.stats.dmgDealtRel; const bd = b.stats.dmgDealtRel;

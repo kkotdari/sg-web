@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { Fragment, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, X } from "lucide-react";
 import { TEAM_COLOR } from "scplay";
@@ -24,12 +24,20 @@ import type { GameCurve, GameResult } from "../types";
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
-type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "cm" | "cg" | "dd" | "dt";
+type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "cm" | "cg" | "dd" | "dt" | "ex";
 /** 인구 · 데미지 · 자원 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환" → "인구 데미지 자원 세 개구나 탭이"). */
 type GroupTab = "bl" | "sp" | "dmg" | "rs";
 /** 탭 — bl(건설 줄 · 2026-10-25 "테크가 아니라 건설")은 **한 종류만 보이기**(폰 · PC 창모드)에서만 탭이다(2026-10-25 · 아래 oneKind9 ★). PC 전체화면은 건설 줄이 늘 위에 · 탭은 셋. */
 const GROUP_TABS: [GroupTab, string][] = [["bl", "건설"], ["sp", "인구"], ["dmg", "데미지"], ["rs", "자원"]];
 const cumsum = (a: readonly number[]): number[] => { let s = 0; return a.map((v) => (s += v)); };
+/** 교환비 줄(2026-10-28, 요청: "데이터 그래프의 데미지 맨 위에 교환비 그래프") — 분마다 준 ÷ 입은(누적이면 누적끼리 · 분당이면 그 분끼리).
+ *  둘 다 작은 때 튀지 않게 양쪽에 max(EX_E, 두 값 평균의 5%)를 더하고(sg-api 티어 전투와 같은 꼴) · 판이 한눈에 들게 EX_CAP 에서 자른다. */
+const EX_E = 100;
+const EX_CAP = 5;
+const exLine = (dd: readonly number[], dt: readonly number[]): number[] => Array.from({ length: Math.min(dd.length, dt.length) }, (_, m) => {
+  const e = Math.max(EX_E, 0.05 * (dd[m] + dt[m]) / 2);
+  return Math.min(EX_CAP, (dd[m] + e) / (dt[m] + e));
+});
 /** 건설 칩의 시간축 처지(얹은 칩의 때보다 늦은 칩 숨김 · 이미 사라진 칩 딤 · 그 칩으로 가는 선 숨김) — 껐다(2026-10-26, 요청: "건물의 시간축 효과 제거해 줘") · 코드만 남김. */
 const TIME_FX9 = false;
 const VIEW_MODES: [ViewMode, string][] = [["player", "유저별(개인색)"], ["teamColor", "유저별(팀색)"], ["teamSum", "팀별 합산"]];
@@ -707,6 +715,11 @@ const teamNo = (team: string): 1 | 2 => (team === "team2" ? 2 : 1);
 const LANE_PX_MIN = 44;
 
 /** 0 부터 v 를 덮는 둥근 눈금(간격 1 · 2 · 2.5 · 5 × 10ⁿ · 칸 수 ≤ n) — 끝 눈금이 판의 세로 끝이다. */
+/** 교환비 눈금 — 0.5 칸(최대 2 면 0 · 0.5 · 1 · 1.5 · 2) · 그 위는 1 칸. 1(맞교환)이 늘 눈금에 선다. */
+function exTicks(v: number): number[] {
+  const step = v <= 2 ? 0.5 : 1;
+  return Array.from({ length: Math.ceil(v / step) + 1 }, (_, i) => i * step);
+}
 function niceTicks(v: number, n = 5): number[] {
   const top = Math.max(1, v);
   const p = 10 ** Math.floor(Math.log10(top / n));
@@ -861,13 +874,14 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 자원 = 그 분에 쥔 미네랄(rm) · 가스(rg) — 판을 나눈다(PC · 2026-10-21, 요청: "자원 그래프 추가" → "미네랄 가스 분리"). */
   const series = useMemo((): ({ key: string; p: GameCurve | null; team: 1 | 2 } & Record<CurveKey, number[]>)[] => {
     const dm = (a: number[] | undefined): number[] => (dmgMin ? a ?? [] : cumsum(a ?? []));
-    const ps = shown.map((p) => ({ p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg, cm: cumsum(p.cm ?? []), cg: cumsum(p.cg ?? []), dd: dm(p.dd), dt: dm(p.dt) }));
+    const ps = shown.map((p) => { const dd = dm(p.dd); const dt = dm(p.dt); return { p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg, cm: cumsum(p.cm ?? []), cg: cumsum(p.cg ?? []), dd, dt, ex: exLine(dd, dt) }; });
     if (!teamOn) return ps.map((q) => ({ key: q.p.playerName, team: teamNo(q.p.team), ...q }));
     const sum = (ms: typeof ps, k: CurveKey): number[] =>
       Array.from({ length: Math.max(0, ...ms.map((q) => q[k].length)) }, (_, m) => ms.reduce((a, q) => a + (q[k][m] ?? 0), 0));
     return ([1, 2] as const).map((t) => {
       const ms = ps.filter((q) => teamNo(q.p.team) === t);
-      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg"), cm: sum(ms, "cm"), cg: sum(ms, "cg"), dd: sum(ms, "dd"), dt: sum(ms, "dt") };
+      const dd = sum(ms, "dd"); const dt = sum(ms, "dt");   // 팀 교환비 = 팀 합끼리
+      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg"), cm: sum(ms, "cm"), cg: sum(ms, "cg"), dd, dt, ex: exLine(dd, dt) };
     });
   }, [shown, teamOn, dmgMin]);
   /* 가로 끝 = 곡선 끝과 건물 · 테크 기록 끝 중 늦은 쪽(2026-10-23, 지적: "끝에 줄 맞춰 나오는 거 — 동시에 저렇게 많은 건물을 착공할 리가 없는데") —
@@ -881,7 +895,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
     const ticks = (k: CurveKey): number[] => niceTicks(Math.max(0, ...series.flatMap((s) => s[k])));
     /* 준 · 입은 데미지는 한 자(둘 중 큰 쪽)를 같이 쓴다 — 두 판을 나란히 견준다. */
     const dmg = niceTicks(Math.max(0, ...series.flatMap((s) => [...s.dd, ...s.dt])));
-    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg"), cm: ticks("cm"), cg: ticks("cg"), dd: dmg, dt: dmg };
+    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg"), cm: ticks("cm"), cg: ticks("cg"), dd: dmg, dt: dmg, ex: exTicks(Math.max(1, ...series.flatMap((s) => s.ex))) };
   }, [series, lastEventMin]);
   const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s) => (s[key].length < 2 ? [] : [s.p
     ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p), ys: s[key] }
@@ -933,10 +947,11 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
      폰·PC 창모드는 탭 넷(테크 = 건설 줄)에서 고른 하나만 그리고, 탭 · 볼 사람 · 개인/팀별이 그 차례로 맨 위에 붙는다(.scr-gc-top). PC 전체화면은 종전(건설 줄 온 폭 + 탭 셋의 두 판 반반). */
   const oneKind9 = !(FULL_OWN9 && full);
   const tab: GroupTab = !oneKind9 && tabRaw === "bl" ? "sp" : tabRaw;
-  const pair: [ReactNode, ReactNode] | null = tab === "sp" ? [spEl, wkEl]
+  const pair: ReactNode[] | null = tab === "sp" ? [spEl, wkEl]
     : tab === "rs" ? (rsNow ? [chartOf("rm", "미네랄", { titleExtra: rsModeEl }), rgEl]
       : hasGather ? [chartOf("cm", "미네랄", { titleExtra: rsModeEl }), chartOf("cg", "가스")] : null)
-    : hasDmg ? [chartOf("dd", "준 데미지", { titleExtra: miniTabs(dmgMin, setDmgMin, "누적", "분당") }), chartOf("dt", "입은 데미지")] : null;
+    /* 데미지 탭 맨 위 = 교환비(2026-10-28) — 누적 · 분당 작은 탭은 맨 위 판 제목 옆으로 옮겼다(세 판이 같이 따른다). */
+    : hasDmg ? [chartOf("ex", "교환비(준 ÷ 입은)", { titleExtra: miniTabs(dmgMin, setDmgMin, "누적", "분당") }), chartOf("dd", "준 데미지"), chartOf("dt", "입은 데미지")] : null;
   const tabsEl = (
     <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label={oneKind9 ? "건설 · 인구 · 데미지 · 자원" : "인구 · 데미지 · 자원"}>
       {GROUP_TABS.filter(([k]) => oneKind9 || k !== "bl").map(([k, label]) => (
@@ -972,11 +987,14 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
         </div>
       )
         : twoCol ? (
-          <div className="scr-gc-cols">
-            <div className="scr-gc-col" style={{ width: colW }}>{pair[0]}</div>
-            <div className="scr-gc-col" style={{ width: colW }}>{pair[1]}</div>
-          </div>
-        ) : <>{pair[0]}{pair[1]}</>}
+          <>
+            {pair.length > 2 && pair[0]}
+            <div className="scr-gc-cols">
+              <div className="scr-gc-col" style={{ width: colW }}>{pair[pair.length - 2]}</div>
+              <div className="scr-gc-col" style={{ width: colW }}>{pair[pair.length - 1]}</div>
+            </div>
+          </>
+        ) : <>{pair.map((el, i) => <Fragment key={i}>{el}</Fragment>)}</>}
     </>
   );
 
