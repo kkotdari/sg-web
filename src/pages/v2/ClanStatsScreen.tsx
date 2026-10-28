@@ -38,7 +38,7 @@ const MAP_TABS = [
   { value: "all", label: "전체" },
 ] as const;
 type MapTab = (typeof MAP_TABS)[number]["value"];
-const MAP_DEFAULT: MapTab = "fastest";
+const MAP_DEFAULT: MapTab = "all";   // 기본 = 전체(2026-10-28, 요청: "응 전체로 변경" — 티어가 팀전 전체 · 맵 전체에서만 보여서 · 옛: 빨무)
 const mapTabOf = (v: string): MapTab => (MAP_TABS.some((t) => t.value === v) ? v as MapTab : MAP_DEFAULT);
 const PERIOD_ALL = "all";
 /* 기간은 달 단위뿐이다 — [어제] [오늘] 하루 고르기는 걷었다(2026-10-22, 요청: "아예 달 단위로 통일 · 오늘 어제 일자 조회 다 제거" — 마감한 달은
