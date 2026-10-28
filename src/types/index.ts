@@ -310,7 +310,7 @@ export interface MemberStatsEntry {
   tier?: TierEntry | null;
 }
 
-/** 팀전 티어(sg-api tier.py · 2026-10-28 처음부터 다시) — tier/score 는 판이 열 미만이면 null. 인분 = 그 기간 EAPM ÷ 120 × 누적 승패 보정. 옛 모형의 칸(dmg · wk · res · sup · prod · skill · cbt · eco · arm · expWin · level)은 늘 null. */
+/** 팀전 티어(sg-api tier.py · 2026-10-28 처음부터 다시) — tier/score 는 판이 열 미만이면 null. 인분 = 그 기간 EAPM ÷ 120 × 교환비 보정(cbt) × 누적 승패 보정(adj). 옛 모형의 칸(dmg · wk · res · sup · prod · skill · eco · arm · expWin · level)은 늘 null. */
 export interface TierEntry {
   tier: number | null;
   tiers: number;
@@ -324,7 +324,7 @@ export interface TierEntry {
   /** 생산 값(병력 미네랄+가스) · 스킬 쓴 횟수 — 같은 편 동료 대비 배수(sg-api tier.py · 2026-10-28). */
   prod?: number | null;
   skill?: number | null;
-  /** 전투 교환비(준 ÷ 입은 데미지) — 같은 편 동료 대비 배수 · 점수는 데미지 양 대신 이것(2026-10-28). */
+  /** 교환비 보정 배수(그 기간 · 티어 팝업의 근거값 · 인분 = EAPM ÷ 120 × cbt × adj · 2026-10-28). */
   cbt?: number | null;
   /** 생산·인구 한 항목(티어 점수 칸) — 같은 편 동료 대비 배수(2026-10-28). */
   eco?: number | null;

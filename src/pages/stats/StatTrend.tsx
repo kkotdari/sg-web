@@ -87,7 +87,7 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "rec"
   const gamesOf = (e: TrendEntry) => { const g = n(e.games); return g !== null && g > 0 ? g : null; };
   if (kind === "games") return { key: "games", label: "경기 수", series: [{ label: "경기 수", cls: "", pick: gamesOf, fmt: int }], mode: "single" };
   /* ★ 팀전 티어(2026-10-28, 요청: "티어 팝업을 다른 항목처럼 변화 그래프 팝업으로 · 그래프의 값 라벨은 배지로 안 하고 다른 그래프들처럼 텍스트로") — 달마다 그 달의 판으로 셈한
-     티어(sg-api get_stats_trend · 그 달 EAPM × 그 달 끝까지의 누적 승패 보정 · 판 열부터). 티어는 1 이 위에 오도록 부호를 뒤집어 그리고 글자는 "2티어". 인분은 안 그린다(같은 날, 요청: "팝업에 인분 표시 안 하고"). */
+     티어(sg-api get_stats_trend · 그 달 EAPM × 교환비 보정 × 그 달 끝까지의 누적 승패 보정 · 판 열부터). 티어는 1 이 위에 오도록 부호를 뒤집어 그리고 글자는 "2티어". 인분은 안 그린다(같은 날, 요청: "팝업에 인분 표시 안 하고"). */
   if (kind === "tier") {
     return {
       key: "tier", label: "팀전 티어",

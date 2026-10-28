@@ -64,7 +64,8 @@ export interface StatGridRow {
 }
 
 /* ★ 팀전 티어 칸(2026-10-27, 요청: "통계에 검색한 조건이 팀전 종류인 경우 팀전 티어 · 컬럼은 유저 옆 · 모바일 유저칸 너비 줄이고") — 셈은 서버(sg-api tier.py · 2026-10-28 처음부터 다시):
-   **몇 인분** = 그 기간 EAPM ÷ 120 × 누적 승패 보정(같은 편 · 상대 편 EAPM 으로 예상한 결과와 꾸준히 다를 때만 천천히 움직인다 · 기간 뒤 판은 안 써서 지난 달 티어가 고정).
+   **몇 인분** = 그 기간 EAPM ÷ 120 × 교환비 보정 × 누적 승패 보정(같은 편 · 상대 편으로 예상한 결과와 꾸준히 다를 때만 천천히 움직인다 · 편의 힘은 센 사람에게
+   무게를 더 준 q 제곱 평균 · 기간 뒤 판은 안 써서 지난 달 티어가 고정).
    1.5 / 1.00 / 0.80 인분 기준선에 바로 댄다(절대 기준 · 빈 등급 있음). 1 이 가장 높다.
    칸은 숫자 배지 하나 · 얹거나 누르면 달별 티어 변화 그래프. 머리로 정렬하면 인분 내림차순. 판이 열 미만이면 "-". */
 function TierCell({ t, member }: { t?: TierEntry | null; member?: Member }) {
@@ -80,15 +81,15 @@ function TierCell({ t, member }: { t?: TierEntry | null; member?: Member }) {
   );
 }
 
-/* ★ 티어 근거값 둘(2026-10-28, 요청: "티어 팝업에 그래프 위에 현재 보는 티어의 근거값 두 개 표시 — eapm 과 상대승률") — 인분 = EAPM ÷ 120 × 승패 보정 이라
-   그 둘: 이 기간 평균 EAPM · 승패 보정(같은 편·상대 편 EAPM 으로 예상한 것보다 더/덜 이긴 정도 · 기간 끝까지 누적 · EAPM 대비 %). 인분은 안 쓴다(같은 날 요청: "팝업에 인분 표시 안 하고"). */
+/* ★ 티어 근거값(2026-10-28, 요청: "티어 팝업에 그래프 위에 현재 보는 티어의 근거값 두 개 표시 — eapm 과 상대승률" · 교환비를 넣으며 셋) — 인분 = EAPM ÷ 120 ×
+   교환비 보정 × 승패 보정 이라 그 셋: 이 기간 평균 EAPM · 교환비 보정(싸움에서 남기고 밑진 정도 · 센 상대 몫 뺌 · %) · 승패 보정(같은 편·상대 편으로 예상한 것보다
+   더/덜 이긴 정도 · 기간 끝까지 누적 · %). 인분은 안 쓴다(같은 날 요청: "팝업에 인분 표시 안 하고"). */
+const pctOf = (x: number): string => { const p = Math.round((x - 1) * 100); return p > 0 ? `+${p}%` : p < 0 ? `−${-p}%` : "±0%"; };
 function tierFacts(t: TierEntry): TrendFact[] {
   const out: TrendFact[] = [];
   if (typeof t.eapm === "number") out.push({ label: "EAPM", value: String(Math.round(t.eapm)) });
-  if (typeof t.adj === "number") {
-    const p = Math.round((t.adj - 1) * 100);
-    out.push({ label: "승패 보정", value: p > 0 ? `+${p}%` : p < 0 ? `−${-p}%` : "±0%" });
-  }
+  if (typeof t.cbt === "number") out.push({ label: "교환비 보정", value: pctOf(t.cbt) });
+  if (typeof t.adj === "number") out.push({ label: "승패 보정", value: pctOf(t.adj) });
   return out;
 }
 
