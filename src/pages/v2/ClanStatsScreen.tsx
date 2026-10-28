@@ -31,11 +31,12 @@ type SizeTab = (typeof SIZE_TABS)[number]["value"];
 const sizeTabOf = (v: string): SizeTab => (SIZE_TABS.some((t) => t.value === v) ? v as SizeTab : "team");
 /* 맵 탭(2026-10-20, 요청: "팀전 필터 밑에 맵 필터" → "기본은 빨무 · 빨무 헌터 투혼 전체 순 · 대표맵 빨무 헌터 투혼은 이미 만들어져 있음 · 그 외는 없애기")
    — 서버 mapGroup: 그 대표맵(map_canon)에 묶인 맵의 판(sg-api repository MAP_GROUP_LIKES). 전체 = 맵을 안 가림. */
+/* 전체를 맨 앞으로(2026-10-28, 요청: "전체를 맨 앞으로" — 기본값도 전체 · 옛: 빨무 헌터 투혼 전체). */
 const MAP_TABS = [
+  { value: "all", label: "전체" },
   { value: "fastest", label: "빨무" },
   { value: "hunter", label: "헌터" },
   { value: "spirit", label: "투혼" },
-  { value: "all", label: "전체" },
 ] as const;
 type MapTab = (typeof MAP_TABS)[number]["value"];
 const MAP_DEFAULT: MapTab = "all";   // 기본 = 전체(2026-10-28, 요청: "응 전체로 변경" — 티어가 팀전 전체 · 맵 전체에서만 보여서 · 옛: 빨무)
