@@ -5122,8 +5122,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
    "APM 230 1.4 0.8"(그 줄 폭을 유저 칸이 먼저 가졌다) · 그 전엔 [유저 | 전적] 세로 쌓기. APM 34 · 데미지 38 고정 · 전적 넷은 36px 부터(1fr) ·
    유저 칸은 닉네임 다섯 글자가 늘 보이는 폭(min-content — 이름 최소 5em · 아래 .scr-sg-name)부터 1.6fr 로 는다(요청: "최소 다섯 글자는 나와야 해 닉네임"). */
 .scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(min-content, 1.6fr) repeat(6, minmax(34px, 1fr));   /* 유저 밖 여섯 칸 같은 폭(2026-10-22, 요청: "모바일 유저 제외 모든 컬럼 폭 동일하게" — 옛: APM 34 · 데미지 38 · 전적 넷 minmax(36px, 1fr)) */ font-size: var(--fs-11); }
-/* 폰 티어 칸(2026-10-27, 요청: "모바일 유저칸 너비 줄이고") — 유저 칸 1.6fr → 1.2fr · 닉네임 최소 5em → 4em · 티어 30px. */
-.scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.2fr) 30px repeat(6, minmax(32px, 1fr)); }
+/* 폰 티어 칸(2026-10-27, 요청: "모바일 유저칸 너비 줄이고") — 유저 칸 1.6fr → 1.2fr · 닉네임 최소 5em → 4em.
+   티어 칸도 다른 칸과 같은 폭(2026-10-28, 요청: "모바일에서 티어칸도 다른 칸과 너비 같게" — 옛: 30px 고정). */
+.scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.2fr) repeat(7, minmax(32px, 1fr)); }
 .scr-sg.is-m.has-tier .scr-sg-name { min-width: 4em; }
 .scr-sg.is-m .scr-sg-tier-c { padding-left: 2px; padding-right: 2px; }
 .scr-sg.is-m .scr-sg-tier { width: 20px; height: 20px; border-radius: 4px; font-size: 11px; }
