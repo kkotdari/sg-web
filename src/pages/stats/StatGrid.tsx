@@ -64,11 +64,11 @@ export interface StatGridRow {
 
 /* ★ 팀전 티어 칸(2026-10-27, 요청: "통계에 검색한 조건이 팀전 종류인 경우 팀전 티어 · 컬럼은 유저 옆 · 모바일 유저칸 너비 줄이고") — 셈은 서버(sg-api tier.py):
    팀원·상대·종족 조합을 걷어낸 보정 승률 · 같은 편 동료 대비 데미지·일꾼·채집·인구 배수(sg-api fit_contrib · 2026-10-28 — 이긴 편의 넉넉함·묻어 감을 걷는다)를 묶은 점수로(판수 신뢰도 보정은 걷음 · 2026-10-28) **1~4 등급 자리**에 — 점수가 뭉친 무리를 찾아 무리 가운데 점수를 고정 기준선에 댄다(4 등분 아님 · 그 수준이 없으면 그 등급은 빈다 · 2026-10-27 "없는 티어 있을 수 있음"). 1 이 가장 높다.
-   칸은 숫자 배지 하나 · 누르면 근거 말풍선. 판이 다섯 미만이면 "-"(신뢰도 부족). */
+   칸은 숫자 배지 하나 · 누르면 근거 말풍선. 판이 스물 미만이면 "-"(묻어 간 것과 잘한 것을 못 가른다 · 2026-10-28 5 → 20). */
 const xOf = (v: number | null | undefined): string => (typeof v === "number" ? `${v.toFixed(2)}배` : "-");
 function TierCell({ t }: { t?: TierEntry | null }) {
   if (!t) return <span className="scr-sg-c scr-sg-tier-c"><Dash /></span>;
-  if (t.tier === null) return <span className="scr-sg-c scr-sg-tier-c" title={`${t.plays}판 — 다섯 판부터 티어가 나와요`}><Dash /></span>;
+  if (t.tier === null) return <span className="scr-sg-c scr-sg-tier-c" title={`${t.plays}판 — 스무 판부터 티어가 나와요`}><Dash /></span>;
   return (
     <span className="scr-sg-c scr-sg-tier-c">
       <InfoTip
@@ -283,7 +283,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
         <span className="scr-sg-help-list">
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
           <span>APM — 분당 행동 수 평균</span>
-          <span>티어(팀전 조회에서만) — 같이·상대한 사람과 종족 구성의 유불리를 걷어낸 승률 · 같은 편 동료 대비 데미지·일꾼·채집·인구를 묶은 점수의 1~4 등급 — 점수가 뭉친 사람끼리 같은 등급이고 인원을 4등분하지 않아서 빈 등급도 있어요. 1이 가장 높아요 · 누르면 근거 · 다섯 판 미만은 -</span>
+          <span>티어(팀전 조회에서만) — 같이·상대한 사람과 종족 구성의 유불리를 걷어낸 승률 · 같은 편 동료 대비 데미지·일꾼·채집·인구를 묶은 점수의 1~4 등급 — 점수가 뭉친 사람끼리 같은 등급이고 인원을 4등분하지 않아서 빈 등급도 있어요. 1이 가장 높아요 · 누르면 근거 · 스무 판 미만은 -</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
           <span>값에 마우스를 얹으면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
