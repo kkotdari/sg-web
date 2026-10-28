@@ -1,7 +1,7 @@
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ArrowDownWideNarrow, ArrowUpDown } from "lucide-react";
-import { StatTrendPop, exOf, statMetric, type StatMetric, type StatTrendData, type TrendAnchor } from "./StatTrend";
+import { StatTrendPop, exOf, statMetric, type StatMetric, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
@@ -71,12 +71,25 @@ function TierCell({ t, member }: { t?: TierEntry | null; member?: Member }) {
   /* 근거 말풍선 → 달별 변화 그래프(2026-10-28, 요청: "티어 팝업을 다른 항목처럼 변화 그래프 팝업으로") — 다른 칸과 같은 손잡이(TCell). 칸은 배지 그대로. */
   const metric = statMetric("tier");
   if (!t) return <TCell member={member} metric={metric} className="scr-sg-tier-c"><Dash /></TCell>;
-  if (t.tier === null) return <TCell member={member} metric={metric} className="scr-sg-tier-c"><Dash /></TCell>;
+  const facts = tierFacts(t);
+  if (t.tier === null) return <TCell member={member} metric={metric} facts={facts} className="scr-sg-tier-c"><Dash /></TCell>;
   return (
-    <TCell member={member} metric={metric} className="scr-sg-tier-c">
+    <TCell member={member} metric={metric} facts={facts} className="scr-sg-tier-c">
       <b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b>
     </TCell>
   );
+}
+
+/* ★ 티어 근거값 둘(2026-10-28, 요청: "티어 팝업에 그래프 위에 현재 보는 티어의 근거값 두 개 표시 — eapm 과 상대승률") — 인분 = EAPM ÷ 120 × 승패 보정 이라
+   그 둘: 이 기간 평균 EAPM · 승패 보정(같은 편·상대 편 EAPM 으로 예상한 것보다 더/덜 이긴 정도 · 기간 끝까지 누적 · EAPM 대비 %). 인분은 안 쓴다(같은 날 요청: "팝업에 인분 표시 안 하고"). */
+function tierFacts(t: TierEntry): TrendFact[] {
+  const out: TrendFact[] = [];
+  if (typeof t.eapm === "number") out.push({ label: "EAPM", value: String(Math.round(t.eapm)) });
+  if (typeof t.adj === "number") {
+    const p = Math.round((t.adj - 1) * 100);
+    out.push({ label: "승패 보정", value: p > 0 ? `+${p}%` : p < 0 ? `−${-p}%` : "±0%" });
+  }
+  return out;
 }
 
 const Dash = () => <span className="scr-sg-dim">-</span>;
@@ -87,23 +100,23 @@ const Dash = () => <span className="scr-sg-dim">-</span>;
 interface TrendCtxValue {
   mobile: boolean;
   activeKey: string | null;
-  enter: (member: Member, metric: StatMetric, el: HTMLElement) => void;
-  tap: (member: Member, metric: StatMetric, el: HTMLElement) => void;
+  enter: (member: Member, metric: StatMetric, el: HTMLElement, facts?: TrendFact[]) => void;
+  tap: (member: Member, metric: StatMetric, el: HTMLElement, facts?: TrendFact[]) => void;
   leave: () => void;
 }
 const TrendCtx = createContext<TrendCtxValue | null>(null);
 const trendKey = (m: Member, k: StatMetric) => `${m.id}|${k.key}`;
 
-function TCell({ member, metric, className, children }: { member?: Member; metric: StatMetric; className?: string; children: ReactNode }) {
+function TCell({ member, metric, facts, className, children }: { member?: Member; metric: StatMetric; facts?: TrendFact[]; className?: string; children: ReactNode }) {
   const ctx = useContext(TrendCtx);
   if (!ctx || !member) return <span className={cx("scr-sg-c", className)}>{children}</span>;
   const hot = ctx.activeKey === trendKey(member, metric);
   return (
     <span
       className={cx("scr-sg-c scr-sg-tcell", className, hot && "is-hot")}
-      onPointerEnter={ctx.mobile ? undefined : (e) => { if (e.pointerType === "mouse") ctx.enter(member, metric, e.currentTarget); }}
+      onPointerEnter={ctx.mobile ? undefined : (e) => { if (e.pointerType === "mouse") ctx.enter(member, metric, e.currentTarget, facts); }}
       onPointerLeave={ctx.mobile ? undefined : ctx.leave}
-      onClick={ctx.mobile ? (e) => ctx.tap(member, metric, e.currentTarget) : undefined}
+      onClick={ctx.mobile ? (e) => ctx.tap(member, metric, e.currentTarget, facts) : undefined}
       role={ctx.mobile ? "button" : undefined} tabIndex={ctx.mobile ? 0 : undefined}
       aria-label={ctx.mobile ? `${member.nickname} ${metric.label} 변화 보기` : undefined}
     >
@@ -319,8 +332,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   const ctx: TrendCtxValue | null = trend ? {
     mobile,
     activeKey: pop ? trendKey(pop.member, pop.metric) : null,
-    enter: (member, metric, el) => { popCancel(); setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? cur : { member, metric, rect: rectOf(el) })); },
-    tap: (member, metric, el) => { setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? null : { member, metric, rect: rectOf(el) })); },
+    enter: (member, metric, el, facts) => { popCancel(); setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? cur : { member, metric, rect: rectOf(el), facts })); },
+    tap: (member, metric, el, facts) => { setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? null : { member, metric, rect: rectOf(el), facts })); },
     leave: popLeave,
   } : null;
   useEffect(() => () => popCancel(), []);

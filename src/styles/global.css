@@ -5445,6 +5445,12 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-trend-pop:not(.is-m) .scr-sg-trend-head b { font-size: var(--fs-body); }
 .scr-sg-trend-pop:not(.is-m) .scr-sg-trend-legend { font-size: var(--fs-micro); gap: 10px; }
 .scr-sg-trend-head b { font-size: var(--fs-caption); font-weight: 700; color: var(--text); }
+/* 티어 근거값 줄(2026-10-28, 요청: "티어 팝업에 그래프 위에 현재 보는 티어의 근거값 두 개") — 머리 아래 · 그래프 위 · 이름(옅게) 값(굵게) 짝. */
+.scr-sg-trend-facts { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: -2px 0 6px; font-size: var(--fs-11); }
+.scr-sg-trend-facts span { display: inline-flex; align-items: baseline; gap: 5px; }
+.scr-sg-trend-facts i { font-style: normal; color: var(--muted); }
+.scr-sg-trend-facts b { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.scr-sg-trend-pop:not(.is-m) .scr-sg-trend-facts { margin: -2px 0 8px; font-size: var(--fs-caption); }
 .scr-sg-trend-legend { margin-left: auto; display: inline-flex; gap: 8px; font-size: var(--fs-9); }
 .scr-sg-trend-legend i { font-style: normal; font-weight: 700; color: var(--text); }
 .scr-sg-trend-legend i.is-dealt, .scr-sg-trend-line.is-dealt, .scr-sg-trend-dot.is-dealt, .scr-sg-trend-val.is-dealt { color: var(--win, #16a34a); stroke: var(--win, #16a34a); }

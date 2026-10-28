@@ -195,7 +195,9 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
   );
 }
 
-export interface TrendAnchor { member: Member; metric: StatMetric; rect: { left: number; top: number; width: number; height: number } }
+/** 팝오버 머리 아래의 근거값 한 칸(2026-10-28, 요청: "티어 팝업에 그래프 위에 현재 보는 티어의 근거값 두 개") — 지금 보는 기간의 값이다(그래프의 달별 값과 별개). */
+export interface TrendFact { label: string; value: string }
+export interface TrendAnchor { member: Member; metric: StatMetric; rect: { left: number; top: number; width: number; height: number }; facts?: TrendFact[] }
 
 const POP_W = 340;
 /** PC 팝오버 폭(2026-10-25, 요청: "통계 팝오버 그래프창 크기 키우고 글자들 요소들도 다 키우기") — 그래프는 옛 자(CHART_VB_W)로 그려 폭만 늘어나므로 선·점·글자가 함께 커진다. */
@@ -233,6 +235,11 @@ export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
           <span className="scr-sg-trend-legend">{anchor.metric.series.map((s) => <i key={s.label} className={s.cls}>{s.label}</i>)}</span>
         )}
       </div>
+      {anchor.facts && anchor.facts.length > 0 && (
+        <div className="scr-sg-trend-facts">
+          {anchor.facts.map((f) => <span key={f.label}><i>{f.label}</i><b>{f.value}</b></span>)}
+        </div>
+      )}
       <StatTrendChart data={data} member={anchor.member} metric={anchor.metric} chartW={mobile ? w - 24 : CHART_VB_W} />
     </div>
   );

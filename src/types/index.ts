@@ -332,6 +332,8 @@ export interface TierEntry {
   arm?: number | null;
   /** 승패 보정 몫(인분 − EAPM 인분) · 옛 조합 예상 승률(늘 null). */
   ops?: number | null;
+  /** 승패 보정 배수(인분 = EAPM 인분 × adj · 티어 팝업의 근거값 · 2026-10-28). */
+  adj?: number | null;
   expWin?: number | null;
   /** 그 기간 평균 EAPM(인분의 바탕). */
   eapm?: number | null;
