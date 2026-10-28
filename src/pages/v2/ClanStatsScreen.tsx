@@ -4,7 +4,7 @@ import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
-import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
+import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange, shiftMonthValue } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
 import { exOf, statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -155,7 +155,8 @@ export default function ClanStatsScreen() {
     return activeMembers.filter((m) => terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t)));
   }, [activeMembers, users]);
 
-  const [period, setPeriod] = useUrlState("period", currentMonthValue());
+  /* 기간 기본값 = 최근 3개월(이번 달 포함 · 2026-10-28, 요청: "통계 화면 기간 기본값을 최근 3개월로" — 옛: 이번 달). */
+  const [period, setPeriod] = useUrlState("period", `${shiftMonthValue(currentMonthValue(), -2)}~${currentMonthValue()}`);
   const [sizeRaw, setSize] = useUrlState("size", "team");
   const size = sizeTabOf(sizeRaw);
   const [mapRaw, setMap] = useUrlState("map", MAP_DEFAULT);
