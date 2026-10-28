@@ -66,34 +66,16 @@ export interface StatGridRow {
 /* ★ 팀전 티어 칸(2026-10-27, 요청: "통계에 검색한 조건이 팀전 종류인 경우 팀전 티어 · 컬럼은 유저 옆 · 모바일 유저칸 너비 줄이고") — 셈은 서버(sg-api tier.py · 2026-10-28 다시 세움):
    **몇 인분**(평균 참가자 1.00) — 편의 힘 = 인분의 합 · 1팀 승률 = σ(6·ln(합₁/합₂)) 를 승패로 맞춘다(지표 무게 · 결과 몫 · 부종족 몫도 함께 · 손 무게 없음).
    그래서 이 표의 인분을 더해 편을 짜면 그 예상이 곧 모형의 예상이다. 1.25 / 1.00 / 0.80 인분 기준선에 바로 댄다(4 등분 아님 · 빈 등급 있음). 1 이 가장 높다.
-   칸은 숫자 배지 하나 · 누르면 근거 말풍선. 판이 스물 미만이면 "-"(묻어 간 것과 잘한 것을 못 가른다). */
-const xOf = (v: number | null | undefined): string => (typeof v === "number" ? `${v.toFixed(2)}배` : "-");
-const pct = (v: number | null | undefined): string => (typeof v === "number" ? `${Math.round(v)}%` : "-");
-const ib = (v: number | null | undefined): string => (typeof v === "number" ? v.toFixed(2) : "-");
-const ibd = (v: number | null | undefined): string => (typeof v === "number" ? `${v > 0 ? "+" : ""}${v.toFixed(2)}` : "-");
-function TierCell({ t }: { t?: TierEntry | null }) {
-  if (!t) return <span className="scr-sg-c scr-sg-tier-c"><Dash /></span>;
-  if (t.tier === null) return <span className="scr-sg-c scr-sg-tier-c" title={`${t.plays}판 — 스무 판부터 티어가 나와요`}><Dash /></span>;
+   칸은 숫자 배지 하나 · 얹거나 누르면 달별 변화 그래프(티어 · 인분). 판이 스물 미만이면 "-"(묻어 간 것과 잘한 것을 못 가른다). */
+function TierCell({ t, member }: { t?: TierEntry | null; member?: Member }) {
+  /* 근거 말풍선 → 달별 변화 그래프(2026-10-28, 요청: "티어 팝업을 다른 항목처럼 변화 그래프 팝업으로") — 다른 칸과 같은 손잡이(TCell). 칸은 배지 그대로. */
+  const metric = statMetric("tier");
+  if (!t) return <TCell member={member} metric={metric} className="scr-sg-tier-c"><Dash /></TCell>;
+  if (t.tier === null) return <TCell member={member} metric={metric} className="scr-sg-tier-c"><Dash /></TCell>;
   return (
-    <span className="scr-sg-c scr-sg-tier-c">
-      <InfoTip
-        label={`${t.tier}티어`} triggerClassName="scr-sg-tierbtn" bubbleClassName="scr-sg-tier-tip" hover
-        trigger={<b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b>}
-        text={(
-          /* 근거는 짧게(2026-10-28, 요청: "간단하게 · N티어 / 보정승률 / 데미지 이정도만" → "팝업에 생산량과 스킬활용도 넣고" → "스킬 활용을 점수에서 빼자 · 데미지도 전투 점수로" — 데미지 양 대신 전투 교환비 · 스킬은 점수 밖 참고값) — 배수는 같은 편 동료 대비 · 셈의 풀이는 표 도움말(StatHelp)에. */
-          <span className="scr-sg-help-list">
-            <b>{t.tier}티어</b>
-            {/* 몇 인분(2026-10-28, 되짚음: "티어는 이 사람이 보통 몇 인분을 하느냐" · sg-api tier.py) — 지표만으로 본 인분 · 승패가 더한 몫(결과). */}
-            <span>{ib(t.inbun)}인분{typeof t.statInbun === "number" ? ` (지표 ${ib(t.statInbun)} · 결과 ${ibd(t.ops)})` : ""}</span>
-            {/* 조합 예상 — 이 사람을 평균 한 명으로 바꿔 둔 그 판들의 예상 승률(편 유불리 · 처음 요청 "불리한 팀이어서면 보정"). */}
-            <span>승률: 실제 {pct(t.win)} · 조합 예상 {pct(t.expWin)}</span>
-            <span>전투: {xOf(t.cbt)} · 병력 유지: {xOf(t.arm)}</span>
-            <span>EAPM: {t.eapm ?? "-"}</span>
-            <span>생산·인구 {xOf(t.eco)} · 스킬 {xOf(t.skill)} (참고)</span>
-          </span>
-        )}
-      />
-    </span>
+    <TCell member={member} metric={metric} className="scr-sg-tier-c">
+      <b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b>
+    </TCell>
   );
 }
 
@@ -226,7 +208,7 @@ function PcRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; g
         <span className="scr-sg-c scr-sg-who">
           {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <Who member={row.member} />}
         </span>
-        {tier && <TierCell t={clan ? null : row.tier} />}
+        {tier && <TierCell t={clan ? null : row.tier} member={clan ? undefined : who} />}
         <TCell member={who} metric={statMetric(clan ? "games" : "plays")}>
           {clan
             /* 평균 줄 = **경기 수만**(2026-10-22, 요청: "평균 게임수 괄호 없애고 게임수만 표시" · 옛 "1,180 (212경기)" — 사람 몫을 다 더한 전적 + 괄호 경기 수). */
@@ -266,7 +248,7 @@ function MobileRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolea
       <span className="scr-sg-c scr-sg-who">
         {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <WhoPlain member={row.member} />}
       </span>
-      {tier && <TierCell t={clan ? null : row.tier} />}
+      {tier && <TierCell t={clan ? null : row.tier} member={clan ? undefined : who} />}
       {/* APM · 데미지(초록 딜 위 · 빨강 피해 아래)는 제 칸(2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 닉네임 아래 한 줄 "APM 230 1.4 0.8".
           클랜원 전체는 데미지가 없다. */}
       <TCell member={clan ? undefined : who} metric={statMetric("dmg")} className="scr-sg-mnum">{clan ? <Dash /> : <Dmg s={s} compact />}</TCell>
@@ -296,7 +278,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span>데미지 — <b>1.25</b> 교환비(준 ÷ 입은 데미지 · 1보다 크면 주고받기에서 이김) · <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
             <span>데미지 머리는 교환비 → 데미지(딜) → 끔 차례로 정렬</span>
             <span>APM — 분당 행동 수 평균</span>
-            <span>티어(팀전) — 이 사람이 보통 몇 인분을 하나(평균 1.00인분)로 매기는 1~4 등급 — 편의 힘은 인분의 합이라 합이 같은 두 편은 반반이고, 합이 다르면 그만큼 기울어요 · 같이 뛴 동료·상대의 인분을 따져 승패로 맞추고, 전투 교환비·병력 유지(같은 편 동료 대비)·EAPM이 얼마나 무거운지도 승패가 정해요 · 판이 적으면 지표 쪽 · 판이 쌓이면 실제 승패 쪽 · 어쩌다 한 종족 판은 덜 셈 · 1.25인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어. 남과 나눠 먹지 않아서 빈 등급도 있어요 · 누르면 근거</span>
+            <span>티어(팀전) — 이 사람이 보통 몇 인분을 하나(평균 1.00인분)로 매기는 1~4 등급 — 편의 힘은 인분의 합이라 합이 같은 두 편은 반반이고, 합이 다르면 그만큼 기울어요 · 같이 뛴 동료·상대의 인분을 따져 승패로 맞추고, 전투 교환비·병력 유지(같은 편 동료 대비)·EAPM이 얼마나 무거운지도 승패가 정해요 · 판이 적으면 지표 쪽 · 판이 쌓이면 실제 승패 쪽 · 어쩌다 한 종족 판은 덜 셈 · 1.25인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어. 남과 나눠 먹지 않아서 빈 등급도 있어요 · 얹거나 누르면 달별 변화</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
             <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
             <span>값을 누르면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
@@ -307,7 +289,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
           <span>교환비 — 준 데미지 ÷ 입은 데미지(1.00 보다 크면 주고받기에서 이김)</span>
           <span>APM — 분당 행동 수 평균</span>
-          <span>티어(팀전 조회에서만) — 이 사람이 보통 몇 인분을 하나(평균 1.00인분)로 매기는 1~4 등급 — 편의 힘은 인분의 합이라 합이 같은 두 편은 반반이고, 합이 다르면 그만큼 기울어요 · 같이 뛴 동료·상대의 인분을 따져 승패로 맞추고, 전투 교환비·병력 유지(같은 편 동료 대비)·EAPM이 얼마나 무거운지도 승패가 정해요 · 판이 적으면 지표 쪽 · 판이 쌓이면 실제 승패 쪽 · 어쩌다 한 종족 판은 덜 셈 · 1.25인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어. 남과 나눠 먹지 않아서 빈 등급도 있어요 · 누르면 근거 · 스무 판 미만은 -</span>
+          <span>티어(팀전 조회에서만) — 이 사람이 보통 몇 인분을 하나(평균 1.00인분)로 매기는 1~4 등급 — 편의 힘은 인분의 합이라 합이 같은 두 편은 반반이고, 합이 다르면 그만큼 기울어요 · 같이 뛴 동료·상대의 인분을 따져 승패로 맞추고, 전투 교환비·병력 유지(같은 편 동료 대비)·EAPM이 얼마나 무거운지도 승패가 정해요 · 판이 적으면 지표 쪽 · 판이 쌓이면 실제 승패 쪽 · 어쩌다 한 종족 판은 덜 셈 · 1.25인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어. 남과 나눠 먹지 않아서 빈 등급도 있어요 · 얹거나 누르면 달별 변화 · 스무 판 미만은 -</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · 교환비 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
           <span>값에 마우스를 얹으면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>

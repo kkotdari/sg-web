@@ -80,12 +80,24 @@ export function exOf(s: MemberStats | undefined | null): number | null {
 }
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "rec" | "games" | "crec", race: BaseRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "rec" | "games" | "crec" | "tier", race: BaseRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
   const gamesOf = (e: TrendEntry) => { const g = n(e.games); return g !== null && g > 0 ? g : null; };
   if (kind === "games") return { key: "games", label: "경기 수", series: [{ label: "경기 수", cls: "", pick: gamesOf, fmt: int }], mode: "single" };
+  /* ★ 팀전 티어(2026-10-28, 요청: "티어 팝업을 다른 항목처럼 변화 그래프 팝업으로 · 그래프의 값 라벨은 배지로 안 하고 다른 그래프들처럼 텍스트로") — 달마다 그 달의 판으로 셈한
+     티어(sg-api get_stats_trend · 판 스물부터)와 몇 인분. 티어는 1 이 위에 오도록 부호를 뒤집어 그리고 글자는 "2티어". */
+  if (kind === "tier") {
+    return {
+      key: "tier", label: "팀전 티어",
+      series: [
+        { label: "티어", cls: "", pick: (e) => { const v = e.tier?.tier; return typeof v === "number" ? -v : null; }, fmt: (v) => `${-v}티어` },
+        { label: "인분", cls: "is-sub", pick: (e) => n(e.tier?.inbun), fmt: (v) => v.toFixed(2) },
+      ],
+      mode: "stacked",
+    };
+  }
   if (kind === "crec") {
     return {
       key: "crec", label: "전체 전적",
