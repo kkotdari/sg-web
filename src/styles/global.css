@@ -5077,7 +5077,6 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-dmg > b { font-weight: 400; }
 .scr-sg-dmg > b.is-dealt { color: var(--win, #16a34a); }
 .scr-sg-dmg > b.is-taken { color: var(--loss, #dc2626); }
-.scr-sg-dmg > b.is-ex { font-weight: 600; color: var(--text); }   /* 폰 데미지 칸 맨 위 교환비(2026-10-28) */
 .scr-sg-dmg > .scr-sg-dim { margin: 0 2px; }
 
 /* ★ 분당 선 그래프 판(RaceCurves.tsx Chart · 게임 데이터 창) — 세로선 자리의 값만 선 색 글자(.scr-rc-val · 바탕색 테두리)이고 나머지 글자는 본문·흐린 잉크.
@@ -5149,6 +5148,14 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-mrate { font-size: 10px; font-weight: 400; color: var(--dim); opacity: 0.85; line-height: 1; }   /* 괄호 없이 더 옅게(2026-10-22, 요청: "승률 괄호 제거하고 연하게") */
 /* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름. 뜻 풀이는 도움말 말풍선(.scr-sg-help). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; }
+/* ★ 보통 폰 너비에선 전적을 전체 하나로(2026-10-28, 요청: "전적도 일반적 폰 너비에서는 전체 전적만 판수와 승률로 표시 종족 구분 없이") — 종족 칸(scr-sg-mrace)을
+   숨기고 칸 수를 줄인다. 600px 넘는 폰 가로 · 태블릿은 종족 칸 그대로. */
+@media (max-width: 600px) {
+  .scr-sg.is-m { grid-template-columns: minmax(min-content, 1.6fr) repeat(3, minmax(44px, 1fr)); }
+  .scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.4fr) repeat(4, minmax(40px, 1fr)); }
+  .scr-sg.is-m .scr-sg-mrace { display: none; }
+  .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 1; }
+}
 /* 폰 표 도움말(StatHelp · 2026-10-22) — 정렬 줄 오른끝 단추 · 말풍선에 한 줄짜리 표 그림(.scr-sg-help-mock)과 풀이 목록. */
 .scr-sg-help-btn { margin-left: auto; padding: 0 2px; }
 .scr-infotip-bubble.scr-sg-help { max-width: min(300px, 88vw); padding: 10px 12px; white-space: normal; }
@@ -5463,6 +5470,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-trend-area { aspect-ratio: 320 / 150; }   /* 실제 비는 StatTrendChart 가 꼴(single · shared · stacked)마다 inline 으로 */
 .scr-sg-trend-band { font-size: var(--fs-9); font-weight: 700; fill: var(--text); text-anchor: start; }
 .scr-sg-trend-band.is-sub { fill: var(--muted); }
+.scr-sg-trend-band.is-dealt { fill: var(--win, #16a34a); }   /* 한 판 두 선의 이름(딜 · 피해 · 2026-10-28) */
+.scr-sg-trend-band.is-taken { fill: var(--loss, #dc2626); }
 
 /* ★ 배치 칸(2026-10-26, 요청: "로스터 다음에 배치 컬럼 — 미니맵 안개 없는 버전에 각 유저 스타팅 위치 · 종족" · GameTable StartMapCell) — 맵 그림 위 시작 자리 점(종족 글자 · 팀색 테두리). */
 .scr-gtab-start { justify-content: center; padding: 18px; }   /* 좌우 6 → 14 → 사방 18(2026-10-26 요청 둘) — 칸 폭 116 = 맵 80 + 18·2 */

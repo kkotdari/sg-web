@@ -148,22 +148,10 @@ function Ex({ s }: { s: MemberStats }) {
   return <span className="scr-sg-dmg" title="준 데미지 ÷ 입은 데미지(1.00 = 주고받은 양이 같음)"><b className={x >= 1 ? "is-dealt" : "is-taken"}>{x.toFixed(2)}</b></span>;
 }
 
-function Dmg({ s, compact }: { s: MemberStats; compact?: boolean }) {
+function Dmg({ s }: { s: MemberStats }) {
   const d = s.dmgDealtRel, t = s.dmgTakenRel;
-  if (typeof d !== "number" || typeof t !== "number") return <Dash />; // 폰도 "데미지 -"(이름표만 덩그러니 남지 않게)
-  /* ★ 폰은 교환비를 데미지와 **한 칸**에(2026-10-28, 요청: "모바일은 교환비 데미지를 같이 표시 · 한 셀에") — 맨 위 교환비(굵게) · 그 아래 딜 · 피해. */
-  const x = compact ? exOf(s) : null;
-  /* 폰은 칸이 좁아 배수만 — 이름표("딜" · "피해")도 없이 초록 딜 · 빨강 피해 숫자 둘(2026-10-22, 요청: "딜 피해 라벨 제거" — 뜻은 도움말 StatHelp 가 같은 색으로 말한다).
-     옛: "딜 1.4 피해 0.8"(2026-10-20). */
-  if (compact) {
-    return (
-      <span className="scr-sg-dmg" title="교환비(준 ÷ 입은) · 준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)">
-        <b className="is-ex">{x === null ? "-" : x.toFixed(2)}</b>
-        <b className="is-dealt">{(d / 100).toFixed(1)}</b>
-        <b className="is-taken">{(t / 100).toFixed(1)}</b>
-      </span>
-    );
-  }
+  if (typeof d !== "number" || typeof t !== "number") return <Dash />;
+  /* 폰 칸(옛 compact — 교환비 위 · 딜 · 피해 아래)은 걷었다(2026-10-28, 요청: "모바일 데미지 → 이름 바꾸고 교환비만" — 폰은 Ex 칸 · 딜 · 피해는 팝업). */
   /* PC 도 숫자만 — 초록 딜 / 빨강 피해(2026-10-22, 요청: "데미지도 간단히 숫자만 표시" · 옛: "평균의 1.4배 딜 / 0.8배 피해"). */
   return (
     <span className="scr-sg-dmg" title="준·입은 데미지가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)">
@@ -242,14 +230,15 @@ function PcRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; g
 
 /** 폰 전적 칸 — 위 판수 "N" · 아래 작고 옅은 승률 "N"(2026-10-22, 요청: "모바일 통계 단위 제거하고 전적은 N / (N%) 승률이 좀 작게" → "%도 제거" → "괄호 제거하고 연하게" — 머리에 "전적 게임수(승률)" 설명이 선다).
  *  그 종족 판이 없으면 "-". 클랜원 전체의 전체 칸은 아래가 경기 수(내전이라 승률은 늘 반반). 옛: "N전" · 이름표 "승률" · "N%". */
-function MCell({ s, games, noRate, member, race = null }: { s?: MemberStats; games?: number; noRate?: boolean; member?: Member; race?: BaseRace | null }) {
-  if (!s || s.plays === 0) return <span className="scr-sg-c scr-sg-mrec"><Dash /></span>;
+function MCell({ s, games, noRate, member, race = null, className }: { s?: MemberStats; games?: number; noRate?: boolean; member?: Member; race?: BaseRace | null; className?: string }) {
+  if (!s || s.plays === 0) return <span className={cx("scr-sg-c scr-sg-mrec", className)}><Dash /></span>;
+  /* 승률에 % 를 붙인다(2026-10-28, 요청: "전적은 승률만 퍼센트 붙여 표시(팝업은 그대로)" · 옛: 숫자만 — 2026-10-22 "%도 제거"). 종족 칸(scr-sg-mrace)은 보통 폰 너비에서 숨는다(CSS). */
   return (
-    <TCell member={member} metric={statMetric(games !== undefined ? "crec" : "rec", race)} className="scr-sg-mrec">
+    <TCell member={member} metric={statMetric(games !== undefined ? "crec" : "rec", race)} className={cx("scr-sg-mrec", className)}>
       <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b></span>
       {games !== undefined
         ? <span className="scr-sg-mrate">{games.toLocaleString()}</span>
-        : noRate ? <Dash /> : <span className="scr-sg-mrate">{s.winRate}</span>}
+        : noRate ? <Dash /> : <span className="scr-sg-mrate">{s.winRate}%</span>}
     </TCell>
   );
 }
@@ -265,10 +254,11 @@ function MobileRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolea
       {tier && <TierCell t={clan ? null : row.tier} member={clan ? undefined : who} />}
       {/* APM · 데미지(초록 딜 위 · 빨강 피해 아래)는 제 칸(2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 닉네임 아래 한 줄 "APM 230 1.4 0.8".
           클랜원 전체는 데미지가 없다. */}
-      <TCell member={clan ? undefined : who} metric={statMetric("dmg")} className="scr-sg-mnum">{clan ? <Dash /> : <Dmg s={s} compact />}</TCell>
+      {/* 교환비 칸(2026-10-28, 요청: "모바일 데미지 → 이름 바꾸고 교환비만 표시 · 팝업엔 교환비와 딜 피해") — 칸엔 교환비만(PC 교환비 칸과 같은 색) · 팝업은 위 교환비 · 아래 딜 · 피해. */}
+      <TCell member={clan ? undefined : who} metric={statMetric("exdmg")} className="scr-sg-mnum">{clan ? <Dash /> : <Ex s={s} />}</TCell>
       <TCell member={who} metric={statMetric("apm")} className="scr-sg-mnum">{s.avgApm ?? <Dash />}</TCell>
       <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} member={who} />
-      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} member={who} race={r} />)}
+      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} member={who} race={r} className="scr-sg-mrace" />)}
     </div>
   );
 }
@@ -282,18 +272,17 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
       text={mobile ? (
         <>
           <span className="scr-sg-help-mock" aria-hidden>
-            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">데미지</span><span className="scr-sg-help-h">APM</span><span className="scr-sg-help-h">전체</span>
+            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">교환비</span><span className="scr-sg-help-h">APM</span><span className="scr-sg-help-h">전체</span>
             <span className="scr-sg-help-who"><b>닉네임</b></span>
-            <span className="scr-sg-help-rec"><b>1.25</b><b className="is-dealt">1.4</b><b className="is-taken">0.8</b></span>
+            <span className="scr-sg-help-rec"><b>1.25</b></span>
             <span className="scr-sg-help-rec"><b>230</b></span>
-            <span className="scr-sg-help-rec"><b>68</b><i>54</i></span>
+            <span className="scr-sg-help-rec"><b>68</b><i>54%</i></span>
           </span>
           <span className="scr-sg-help-list">
-            <span>데미지 — <b>1.25</b> 교환비(준 ÷ 입은 데미지 · 1보다 크면 주고받기에서 이김) · <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
-            <span>데미지 머리는 교환비 → 데미지(딜) → 끔 차례로 정렬</span>
+            <span>교환비 — <b>1.25</b> 준 ÷ 입은 데미지(1보다 크면 주고받기에서 이김) · 누르면 교환비와 <b className="is-dealt">딜</b> · <b className="is-taken">피해</b>(그 경기 참가자 평균 데미지 대비 · 1.0 = 평균) 변화</span>
             <span>APM — 분당 행동 수 평균</span>
-            <span>티어(팀전) — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 — 인분은 그 판들 안의 값이라, 개인 능력치(EAPM·일꾼·채집·병력)로 그 판들의 수준을 재서 같은 조건 전체 기간의 평균 참가자를 1.00인분으로 하는 기준 인분으로 바꿔 매겨요 · 편의 힘은 인분의 합이라 합이 같은 두 편은 반반이고, 합이 다르면 그만큼 기울어요 · 같이 뛴 동료·상대의 인분을 따져 승패로 맞추고, 전투 교환비·병력 유지(같은 편 동료 대비)·EAPM이 얼마나 무거운지도 승패가 정해요 · 판이 적으면 지표 쪽 · 판이 쌓이면 실제 승패 쪽 · 어쩌다 한 종족 판은 덜 셈 · 1.5인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어. 남과 나눠 먹지 않아서 빈 등급도 있어요 · 얹거나 누르면 달별 변화</span>
-            <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
+            <span>티어(팀전) — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 · 인분 = EAPM ÷ 120 × 교환비 보정(센 상대에게 밑진 몫은 덜 깎음) × 승패 보정(같은 편·상대 편으로 예상한 것보다 꾸준히 더/덜 이긴 만큼 · 그 기간 끝까지 쌓아 천천히) · 편의 힘은 센 사람에게 무게를 더 줘서 1티어 한 명이 크게 쳐요 · 1.5인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어(절대 기준이라 빈 등급도 있어요) · 지난 달 티어는 뒤 판에 안 바뀌어요 · 얹거나 누르면 달별 변화와 근거값 · 열 판 미만은 -</span>
+            <span><b>68</b> 게임수 · <i>54%</i> 승률 — 전체(넓은 화면은 종족별도)</span>
             <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
             <span>값을 누르면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
           </span>
@@ -303,7 +292,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
           <span>교환비 — 준 데미지 ÷ 입은 데미지(1.00 보다 크면 주고받기에서 이김)</span>
           <span>APM — 분당 행동 수 평균</span>
-          <span>티어(팀전 조회에서만) — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 — 인분은 그 판들 안의 값이라, 개인 능력치(EAPM·일꾼·채집·병력)로 그 판들의 수준을 재서 같은 조건 전체 기간의 평균 참가자를 1.00인분으로 하는 기준 인분으로 바꿔 매겨요 · 편의 힘은 인분의 합이라 합이 같은 두 편은 반반이고, 합이 다르면 그만큼 기울어요 · 같이 뛴 동료·상대의 인분을 따져 승패로 맞추고, 전투 교환비·병력 유지(같은 편 동료 대비)·EAPM이 얼마나 무거운지도 승패가 정해요 · 판이 적으면 지표 쪽 · 판이 쌓이면 실제 승패 쪽 · 어쩌다 한 종족 판은 덜 셈 · 1.5인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어. 남과 나눠 먹지 않아서 빈 등급도 있어요 · 얹거나 누르면 달별 변화 · 스무 판 미만은 -</span>
+          <span>티어(팀전 조회에서만) — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 · 인분 = EAPM ÷ 120 × 교환비 보정(센 상대에게 밑진 몫은 덜 깎음) × 승패 보정(같은 편·상대 편으로 예상한 것보다 꾸준히 더/덜 이긴 만큼 · 그 기간 끝까지 쌓아 천천히) · 편의 힘은 센 사람에게 무게를 더 줘서 1티어 한 명이 크게 쳐요 · 1.5인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어(절대 기준이라 빈 등급도 있어요) · 지난 달 티어는 뒤 판에 안 바뀌어요 · 얹거나 누르면 달별 변화와 근거값 · 열 판 미만은 -</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · 교환비 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
           <span>값에 마우스를 얹으면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
@@ -376,12 +365,12 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
           {tier && <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("tier")}>티어</SortHead></span>}
-          {/* 교환비 · 데미지 한 칸(위 Dmg ★) — 머리는 교환비 → 데미지 → 끔(전적 머리와 같은 cycle). */}
-          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...cycle("ex", "dmg")}>데미지</SortHead></span>
+          {/* 교환비 칸(MobileRow ★) — 머리도 "교환비" · 교환비로 정렬(2026-10-28 · 옛: "데미지" · 교환비 → 데미지 → 끔). */}
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("ex")}>교환비</SortHead></span>
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("apm")}>APM</SortHead></span>
           <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
           <span className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle("rate", "plays")}>전체</SortHead></span>
-          {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle(`${r}:rate`, `${r}:plays`)}>{r}</SortHead></span>)}
+          {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head scr-sg-mrace"><SortHead {...cycle(`${r}:rate`, `${r}:plays`)}>{r}</SortHead></span>)}
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} tier={tier} />}
         {rows.map((r) => <MobileRow key={r.member.id} row={r} tier={tier} />)}
