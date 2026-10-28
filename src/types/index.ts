@@ -310,7 +310,7 @@ export interface MemberStatsEntry {
   tier?: TierEntry | null;
 }
 
-/** 팀전 티어 — tier/score 는 판이 다섯 미만이면 null(신뢰도 부족). win = 팀원·상대·종족 조합을 걷어낸 보정 승률(%) · 나머지는 그 판 참가자 평균 대비 배수. */
+/** 팀전 티어(sg-api tier.py · 2026-10-28 처음부터 다시) — tier/score 는 판이 열 미만이면 null. 인분 = 그 기간 EAPM ÷ 120 × 누적 승패 보정. 옛 모형의 칸(dmg · wk · res · sup · prod · skill · cbt · eco · arm · expWin · level)은 늘 null. */
 export interface TierEntry {
   tier: number | null;
   tiers: number;
@@ -330,15 +330,15 @@ export interface TierEntry {
   eco?: number | null;
   /** 병력 유지(분마다 일꾼 뺀 인구 평균) — 같은 편 동료 대비 배수(2026-10-28). */
   arm?: number | null;
-  /** 결과 몫(인분 · 승패가 지표 위에 더한 몫) · 조합 예상 승률(% · 이 사람을 평균 한 명으로 바꿔 둔 그 판들의 예상) — sg-api tier.py 2026-10-28. */
+  /** 승패 보정 몫(인분 − EAPM 인분) · 옛 조합 예상 승률(늘 null). */
   ops?: number | null;
   expWin?: number | null;
-  /** 판 평균 EAPM(참고 · 모형 지표의 하나). */
+  /** 그 기간 평균 EAPM(인분의 바탕). */
   eapm?: number | null;
-  /** 몇 인분(평균 참가자 1.00 · 티어의 잣대 · 편의 힘은 인분의 합) · 지표만으로 본 인분. */
+  /** 몇 인분(티어의 잣대 · 편의 힘은 인분의 합) · EAPM 만으로 본 인분(EAPM ÷ 120). */
   inbun?: number | null;
   statInbun?: number | null;
-  /** 기준 인분(티어의 잣대) = 인분 × 판 수준 · 판 수준 — 이 판들의 평균 참가자가 기준(같은 조건 전체 기간의 평균 참가자)의 몇 인분인가(개인 절대 능력치로 잼). */
+  /** = inbun(정렬이 쓴다) · 옛 판 수준(늘 null). */
   stdInbun?: number | null;
   level?: number | null;
 }
