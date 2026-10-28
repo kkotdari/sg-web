@@ -155,8 +155,8 @@ export default function ClanStatsScreen() {
     return activeMembers.filter((m) => terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t)));
   }, [activeMembers, users]);
 
-  /* 기간 기본값 = 최근 3개월(이번 달 포함 · 2026-10-28, 요청: "통계 화면 기간 기본값을 최근 3개월로" — 옛: 이번 달). */
-  const [period, setPeriod] = useUrlState("period", `${shiftMonthValue(currentMonthValue(), -2)}~${currentMonthValue()}`);
+  /* 기간 기본값 = 최근 2개월(이번 달 포함 · 2026-10-28, 요청: "통계 화면 기간 기본값을 최근 3개월로" → 같은 날 "최근 2개월로" — 옛: 이번 달). */
+  const [period, setPeriod] = useUrlState("period", `${shiftMonthValue(currentMonthValue(), -1)}~${currentMonthValue()}`);
   const [sizeRaw, setSize] = useUrlState("size", "team");
   const size = sizeTabOf(sizeRaw);
   const [mapRaw, setMap] = useUrlState("map", MAP_DEFAULT);
