@@ -299,11 +299,14 @@ export default function ClanStatsScreen() {
     const dirSign = -1;
     type DataKey = StatSortKey | "cmd";
     const compareData = (key: DataKey, a: Card, b: Card): number => {
-      /* 팀전 티어(2026-10-27) — 1 이 위 · 같은 티어는 점수 높은 쪽 · 티어 없는 사람(다섯 판 미만 · 1:1 조회)은 뒤로. */
+      /* 팀전 티어 — **인분 내림차순**(2026-10-28, 요청: "티어로 정렬시 인분 내림차순") · 티어 없는 사람(스무 판 미만)은 뒤로 몰고 그 안에서도 인분 순 ·
+         인분도 없는 사람(1:1 조회 · 팀전 판 없음)은 맨 뒤. 티어는 인분 기준선으로 매기므로 인분 순이 곧 티어 순이다. */
       if (key === "tier") {
         const at = a.entry?.tier; const bt = b.entry?.tier;
-        const am = typeof at?.tier !== "number"; const bm = typeof bt?.tier !== "number";
-        return missingLast(am, bm) || (am ? 0 : (at!.tier! - bt!.tier!) || ((bt!.score ?? 0) - (at!.score ?? 0)));
+        const ai = at?.inbun; const bi = bt?.inbun;
+        return missingLast(typeof at?.tier !== "number", typeof bt?.tier !== "number")
+          || missingLast(typeof ai !== "number", typeof bi !== "number")
+          || dirSign * ((ai ?? 0) - (bi ?? 0));
       }
       if (key === "ex") {
         const ax = exOf(a.stats); const bx = exOf(b.stats);
