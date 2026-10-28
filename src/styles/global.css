@@ -5120,10 +5120,10 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 폰 — [유저 | APM | 데미지 | 전체 | 테란 | 프로토스 | 저그](2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 유저 칸 아래 한 줄
    "APM 230 1.4 0.8"(그 줄 폭을 유저 칸이 먼저 가졌다) · 그 전엔 [유저 | 전적] 세로 쌓기. APM 34 · 데미지 38 고정 · 전적 넷은 36px 부터(1fr) ·
    유저 칸은 닉네임 다섯 글자가 늘 보이는 폭(min-content — 이름 최소 5em · 아래 .scr-sg-name)부터 1.6fr 로 는다(요청: "최소 다섯 글자는 나와야 해 닉네임"). */
-.scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(min-content, 1.6fr) repeat(6, minmax(34px, 1fr));   /* 유저 밖 여섯 칸 같은 폭(2026-10-22, 요청: "모바일 유저 제외 모든 컬럼 폭 동일하게" — 옛: APM 34 · 데미지 38 · 전적 넷 minmax(36px, 1fr)) */ font-size: var(--fs-11); }
+.scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(min-content, 2fr) repeat(10, minmax(30px, 1fr));   /* 유저 밖 칸 같은 폭(2026-10-22, 요청: "모바일 유저 제외 모든 컬럼 폭 동일하게") · 넓은 폰은 교환비 · APM · 게임수 · 승률 + 종족마다 게임수 · 승률(2026-10-28, 요청: "넓은 폰도 게임수 승률 나누기" — 옛 여섯 칸: 전적 넷이 한 칸에 둘) */ font-size: var(--fs-11); }
 /* 폰 티어 칸(2026-10-27, 요청: "모바일 유저칸 너비 줄이고") — 유저 칸 1.6fr → 1.2fr · 닉네임 최소 5em → 4em.
    티어 칸도 다른 칸과 같은 폭(2026-10-28, 요청: "모바일에서 티어칸도 다른 칸과 너비 같게" — 옛: 30px 고정). */
-.scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.2fr) repeat(7, minmax(32px, 1fr)); }
+.scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 2fr) repeat(11, minmax(28px, 1fr)); }
 .scr-sg.is-m.has-tier .scr-sg-name { min-width: 4em; }
 .scr-sg.is-m .scr-sg-tier-c { padding-left: 2px; padding-right: 2px; }
 .scr-sg.is-m .scr-sg-tier { width: 20px; height: 20px; border-radius: 4px; font-size: 11px; }
@@ -5141,24 +5141,13 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 표 머리는 PC·폰 모두 칸 가운데(2026-10-20, 요청: "통계 그리드 헤더 가운데 정렬"). */
 .scr-sg .scr-sg-row.scr-sg-head > .scr-sg-c { justify-content: center; text-align: center; padding-left: 8px; padding-right: 8px; }
 .scr-sg.is-m .scr-sg-row.scr-sg-head > .scr-sg-c.scr-sg-race-head { padding-left: 2px; padding-right: 2px; }
-/* 폰 전적 칸 — 위 "N전" · 아래 승률(가운데). */
-.scr-sg.is-m .scr-sg-row > .scr-sg-c.scr-sg-mrec { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: 12px; font-variant-numeric: tabular-nums; }
-.scr-sg-mrec > .scr-sg-v:first-child > b { color: var(--text); } /* 전수도 본문색(승률과 같게 · 요청) */
-/* 폰 전적 칸 아래 승률 · 클랜 경기 수 — 판수보다 작게(괄호 없음)(2026-10-22, 요청: "승률이 좀 작게"). */
-.scr-sg-mrate { font-size: 10px; font-weight: 400; color: var(--dim); opacity: 0.85; line-height: 1; }   /* 괄호 없이 더 옅게(2026-10-22, 요청: "승률 괄호 제거하고 연하게") */
-.scr-sg-mrate.is-rate { color: var(--text); opacity: 1; }   /* 승률(%)은 본문색(2026-10-28, 요청: "모바일 승률 퍼센트 색 기본색") */
-/* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름. 뜻 풀이는 도움말 말풍선(.scr-sg-help). */
-.scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; }
-/* ★ 좁은 폰(600px 이하)은 종족 구분 없이 게임수 · 승률 두 칸(2026-10-28, 요청: "전적도 일반적 폰 너비에서는 전체 전적만 · 종족 구분 없이" →
-   "좁은 폰의 경우 게임수와 승률 두 칸으로 나눠서") — 넓은 폰 칸(scr-sg-mwide · 전적 묶음 · 종족)을 숨기고 좁은 폰 칸(scr-sg-mnarrow)을 세운다.
-   600px 넘는 폰 가로 · 태블릿은 거꾸로. */
+/* 옛 폰 전적 칸(한 칸에 위 판수 · 아래 승률 · .scr-sg-mrec · .scr-sg-mrate)과 전적 묶음 머리(.scr-sg-hgroup4)는 걷었다(2026-10-28 — 게임수 · 승률 칸이 따로). */
+/* ★ 좁은 폰(600px 이하)은 종족 구분 없이 전체 게임수 · 승률만(2026-10-28, 요청: "전적도 일반적 폰 너비에서는 전체 전적만 · 종족 구분 없이" →
+   "좁은 폰의 경우 게임수와 승률 두 칸으로 나눠서") — 종족 칸(scr-sg-mwide)을 숨기고 칸 수를 줄인다. 600px 넘는 폰 가로 · 태블릿은 종족 칸까지. */
 @media (max-width: 600px) {
   .scr-sg.is-m { grid-template-columns: minmax(min-content, 1.6fr) repeat(4, minmax(40px, 1fr)); }
   .scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.7fr) repeat(5, minmax(34px, 1fr)); }
   .scr-sg.is-m .scr-sg-mwide { display: none; }
-}
-@media (min-width: 601px) {
-  .scr-sg.is-m .scr-sg-mnarrow { display: none; }
 }
 /* 폰 표 도움말(StatHelp · 2026-10-22) — 정렬 줄 오른끝 단추 · 말풍선에 한 줄짜리 표 그림(.scr-sg-help-mock)과 풀이 목록. */
 .scr-sg-help-btn { margin-left: auto; padding: 0 2px; }

@@ -80,7 +80,7 @@ export function exOf(s: MemberStats | undefined | null): number | null {
 }
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "rec" | "games" | "crec" | "tier", race: BaseRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "games" | "tier", race: BaseRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
@@ -95,35 +95,18 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "rec"
       mode: "single",
     };
   }
-  if (kind === "crec") {
-    return {
-      key: "crec", label: "전체 전적",
-      series: [{ label: "참여", cls: "", pick: playsOf(null), fmt: int }, { label: "경기 수", cls: "is-sub", pick: gamesOf, fmt: int }],
-      mode: "stacked",
-    };
-  }
   if (kind === "plays") return { key: `${race ?? ""}:plays`, label: `${who}게임수`, series: [{ label: "게임수", cls: "", pick: playsOf(race), fmt: int }], mode: "single" };
   if (kind === "rate") return { key: `${race ?? ""}:rate`, label: `${who}승률`, series: [{ label: "승률", cls: "", pick: rateOf(race), fmt: pct }], mode: "single" };
   if (kind === "apm") return { key: "apm", label: "APM", series: [{ label: "APM", cls: "", pick: (e) => n(e.overall.avgApm), fmt: int }], mode: "single" };
   if (kind === "ex") return { key: "ex", label: "교환비(준 ÷ 입은 데미지)", series: [{ label: "교환비", cls: "", pick: (e) => exOf(e.overall), fmt: x2 }], mode: "single" };
-  if (kind === "dmg") {
-    return {
-      key: "dmg", label: "데미지(평균 대비 배수)",
-      series: [
-        { label: "딜", cls: "is-dealt", pick: (e) => n(e.overall.dmgDealtRel), fmt: x100 },
-        { label: "피해", cls: "is-taken", pick: (e) => n(e.overall.dmgTakenRel), fmt: x100 },
-      ],
-      mode: "shared",
-    };
-  }
-  /* 폰 전적 칸 — 게임수 · 승률 둘. */
+  /* 데미지(kind "dmg") — 딜 · 피해 두 선. 옛 폰 전적 칸(게임수 · 승률 위아래 · "rec" · "crec")은 걷었다(2026-10-28 — 폰도 게임수 · 승률 칸이 따로). */
   return {
-    key: `${race ?? ""}:rec`, label: `${who || "전체 "}전적`,
+    key: "dmg", label: "데미지(평균 대비 배수)",
     series: [
-      { label: "게임수", cls: "", pick: playsOf(race), fmt: int },
-      { label: "승률", cls: "is-sub", pick: rateOf(race), fmt: pct },
+      { label: "딜", cls: "is-dealt", pick: (e) => n(e.overall.dmgDealtRel), fmt: x100 },
+      { label: "피해", cls: "is-taken", pick: (e) => n(e.overall.dmgTakenRel), fmt: x100 },
     ],
-    mode: "stacked",
+    mode: "shared",
   };
 }
 
