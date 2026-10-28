@@ -39,14 +39,15 @@ const cycled = (keys: readonly StatSortKey[], rate: StatSortKey, plays: StatSort
 };
 /** 머리 정렬 단추 — 고른 자는 머리 글자가 본문색으로 진해진다(폰 전적 머리 아래 "승률" · "게임수" 작은 글은 걷었다 · 2026-10-22, 요청: "굳이 헤더에 승률 전적 표시는 안 해도 돼").
  *  ★ PC 는 **정렬 아이콘**(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 글자 옆에 표 정렬 아이콘: 안 고른 머리는 옅은 ↕(ArrowUpDown),
- *  고른 머리는 본문색 ↓(ArrowDownWideNarrow) 에 여럿이면 차례 숫자. 옛 '고른 머리를 칠하기'(.is-on 바탕색)는 걷었다. 폰은 글자색만(그대로 · 아이콘 없음). */
-function SortHead({ on, order, onClick, children }: { on: boolean; order?: number; onClick: () => void; children: React.ReactNode }) {
+ *  고른 머리는 본문색 ↓(ArrowDownWideNarrow) 에 여럿이면 차례 숫자. 옛 '고른 머리를 칠하기'(.is-on 바탕색)는 걷었다.
+ *  ★ 폰도 아이콘(2026-10-28, 요청: "모바일 통계에서 정렬 적용된건지 잘 안보여서 아이콘 추가 · 헤더 글자 크기 줄여야 할 수도") — 같은 아이콘을 작게(10px) 글자 뒤에. */
+function SortHead({ on, order, onClick, children, ic = 13 }: { on: boolean; order?: number; onClick: () => void; children: React.ReactNode; ic?: number }) {
   return (
     <button type="button" className={cx("scr-sg-sort", on && "is-on")} aria-pressed={on} onClick={onClick}>
       {children}
       {order !== undefined && (
         <span className="scr-sg-sort-ic" aria-hidden>
-          {on ? <ArrowDownWideNarrow size={13} /> : <ArrowUpDown size={13} />}
+          {on ? <ArrowDownWideNarrow size={ic} /> : <ArrowUpDown size={ic} />}
           {on && order > 0 && <i>{order}</i>}
         </span>
       )}
@@ -340,10 +341,13 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   const toggle = (k: StatSortKey) => ({ on: sortKeys.includes(k), onClick: () => onSortKeys(toggled(sortKeys, k, multi)) });
   /** PC 머리 — 아이콘 차례(여럿일 때만 숫자 · 하나면 0 = 숫자 없음). 폰은 order 를 안 줘 아이콘이 없다. */
   const pcToggle = (k: StatSortKey) => ({ ...toggle(k), order: sortKeys.length > 1 ? sortKeys.indexOf(k) + 1 : 0 });
-  /** 폰 전적 머리(전체 · 종족) — 승률 → 게임수 → 끔. */
-  const cycle = (rate: StatSortKey, plays: StatSortKey) => ({
-    on: sortKeys.includes(rate) || sortKeys.includes(plays), onClick: () => onSortKeys(cycled(sortKeys, rate, plays, multi)),
-  });
+  /** 폰 전적 머리(전체 · 종족) — 승률 → 게임수 → 끔. 아이콘·차례 숫자는 PC 와 같은 자(폰 아이콘 10px · 2026-10-28). */
+  const cycle = (rate: StatSortKey, plays: StatSortKey) => {
+    const at = sortKeys.includes(rate) ? sortKeys.indexOf(rate) : sortKeys.indexOf(plays);
+    return { on: at >= 0, onClick: () => onSortKeys(cycled(sortKeys, rate, plays, multi)), order: sortKeys.length > 1 && at >= 0 ? at + 1 : 0, ic: 10 };
+  };
+  /** 폰 단일 머리(티어 · 데미지 · APM) — 아이콘 10px. */
+  const mToggle = (k: StatSortKey) => ({ ...pcToggle(k), ic: 10 });
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace } : null;
   if (mobile) {
     return (
@@ -352,9 +356,9 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
         {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 · 전적은 전체·종족 넷을 덮는다. 뜻 풀이는 정렬 줄의 도움말 단추(StatHelp)로 옮겼다(2026-10-22, 요청: "헤더 설명 다 제거 · 도움말 아이콘 툴팁에 표 모양과 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
-          {tier && <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...toggle("tier")}>티어</SortHead></span>}
-          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...toggle("dmg")}>데미지</SortHead></span>
-          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...toggle("apm")}>APM</SortHead></span>
+          {tier && <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("tier")}>티어</SortHead></span>}
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("dmg")}>데미지</SortHead></span>
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("apm")}>APM</SortHead></span>
           <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
           <span className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle("rate", "plays")}>전체</SortHead></span>
           {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle(`${r}:rate`, `${r}:plays`)}>{r}</SortHead></span>)}

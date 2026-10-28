@@ -5171,6 +5171,11 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 좁은 칸 머리(APM · 데미지 · 종족)는 11px(데미지가 38px 칸에 들게) · 종족은 10px · 자간 좁게(프로토스가 36px 칸에 들게). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-race-head, .scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-hnarrow { font-size: 11px; padding-left: 1px; padding-right: 1px; }
 .scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-race-head { font-size: 10px; letter-spacing: -0.05em; }
+/* 폰 머리 정렬 아이콘(2026-10-28, 요청: "모바일 통계에서 정렬 적용된건지 잘 안보여서 아이콘 추가") — 좁은 칸(36~38px)이라 글자 **아래**에 10px 아이콘을 둔다
+   (옆에 두면 "데미지"·"프로토스"가 칸을 넘는다). 안 고른 머리는 옅은 ↕ · 고른 머리는 본문색 ↓ + 여럿이면 차례 숫자(PC 와 같은 SortHead). */
+.scr-sg.is-m .scr-sg-sort { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.1; }
+.scr-sg.is-m .scr-sg-sort-ic { gap: 0; }
+.scr-sg.is-m .scr-sg-sort-ic i { font-size: 9px; }
 @media (max-width: 400px) {
   .scr-sg.is-m .scr-sg-race-head { font-size: var(--fs-10); letter-spacing: -0.04em; }
 }

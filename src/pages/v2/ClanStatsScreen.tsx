@@ -16,8 +16,6 @@ import { cx } from "../../utils/format";
 import type { BaseRace, ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 const CLAN_TYPE: GameType = "0102";
-/** ★ 팀전 티어는 **주소 파라미터로만**(2026-10-27, 요청: "일단 주소창 파라미터로만 볼 수 있게") — `?tier=1`(또는 `#tier=1`) 이면 표에 티어 칸을 세운다(서버는 팀전 조회마다 늘 셈해 싣는다). */
-const TIER_ON9 = typeof location !== "undefined" && (/(^|[?&])tier=1(&|$)/.test(location.search) || /(^|[#&,])tier=1/.test(location.hash));
 const SOLO_TYPE: GameType = "0101";
 
 /* ★ 화면 전체 탭(2026-10-20, 요청: "종족구성별 전적의 4:4 · 3:3 · 2:2 를 전체 페이지에 영향을 주는 탭으로 맨 위로 · 그에 따라 모든 데이터가 달라지게 ·
@@ -441,7 +439,7 @@ export default function ClanStatsScreen() {
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace } : null}
             clanGames={clanGames}
             rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, tier: c.entry?.tier }))}
-            tier={TIER_ON9 && size !== "1"}
+            tier={size !== "1"}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다 · 1:1 조회엔 없다) */
             mobile={isMobile}
             sortKeys={sortKeys}
             onSortKeys={setSortKeys}
