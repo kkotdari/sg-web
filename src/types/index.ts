@@ -331,7 +331,7 @@ export interface TierEntry {
   /** 운영 — 능력치로 짠 예상 승률 대비 실제 편차 중 제 몫(%p) · 제 판들의 예상 승률 평균(%) · win 은 이제 실제 승률(2026-10-28). */
   ops?: number | null;
   expWin?: number | null;
-  /** 판 평균 EAPM · 점수에 더한 EAPM 가점(0 ~ 0.825 · 깎지는 않음 · 2026-10-28 · 처음 APM → 같은 날 EAPM). */
+  /** 판 평균 EAPM · 점수에 더한 EAPM 가점(0 ~ 0.75 · 깎지는 않음 · 2026-10-28 · 처음 APM → 같은 날 EAPM). */
   eapm?: number | null;
   eapmBonus?: number | null;
 }
