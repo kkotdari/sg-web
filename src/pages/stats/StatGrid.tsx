@@ -19,7 +19,7 @@ const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
 const CLAN_LABEL = "평균";
 /** 정렬 자 — 표 머리를 눌러 고른다(2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추" → "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개").
  *  APM · 데미지 · 전체(rate · plays) · 종족별("테란:rate" · "테란:plays" …). */
-export type StatSortKey = "tier" | "rate" | "plays" | "dmg" | "ex" | "apm" | `${BaseRace}:rate` | `${BaseRace}:plays`;
+export type StatSortKey = "tier" | "rate" | "plays" | "dmg" | "ex" | "apm" | "eapm" | `${BaseRace}:rate` | `${BaseRace}:plays`;
 type SortProps = {
   sortKeys: readonly StatSortKey[]; onSortKeys: (next: StatSortKey[]) => void;
   /** 복수 기준 정렬(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 꺼져 있으면(기본) 머리를 누른 자 **하나**로 갈아탄다. */
@@ -218,6 +218,8 @@ function PcRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; g
         {/* 교환비는 데미지 바로 뒤(2026-10-28) · 평균 줄은 늘 1 근처라 "-". */}
         <TCell member={clan ? undefined : who} metric={statMetric("ex")}>{clan ? <Dash /> : <Ex t={row.tier} />}</TCell>
         <TCell member={who} metric={statMetric("apm")}><Num v={s.avgApm} /></TCell>
+        {/* EAPM 칸(2026-10-28, 요청: "피시에는 EAPM 컬럼 추가 · 모바일은 EAPM 컬럼만") — APM 바로 뒤. */}
+        <TCell member={who} metric={statMetric("eapm")}><Num v={s.avgEapm} /></TCell>
         {RACES.map((r) => <RaceCells key={r} s={row.byRace?.[r]} race={r} member={who} />)}
       </div>
   );
@@ -236,7 +238,8 @@ function MobileRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolea
           클랜원 전체는 데미지가 없다. */}
       {/* 교환비 칸(2026-10-28, 요청: "모바일 데미지 → 이름 바꾸고 교환비만 표시" → "팝업에서 딜 피해 제거") — 칸도 팝업도 교환비만(PC 교환비 칸과 같은 색 · 같은 그래프). */}
       <TCell member={clan ? undefined : who} metric={statMetric("ex")} className="scr-sg-mnum">{clan ? <Dash /> : <Ex t={row.tier} />}</TCell>
-      <TCell member={who} metric={statMetric("apm")} className="scr-sg-mnum">{s.avgApm ?? <Dash />}</TCell>
+      {/* 폰은 APM 대신 EAPM(2026-10-28, 요청: "모바일은 EAPM 컬럼만" — 옛: APM). */}
+      <TCell member={who} metric={statMetric("eapm")} className="scr-sg-mnum">{s.avgEapm ?? <Dash />}</TCell>
       {/* ★ 전적은 게임수 · 승률 **두 칸**(2026-10-28, 요청: "좁은 폰의 경우 게임수와 승률 두 칸으로 나눠서 표시 · 팝업도" → "넓은 폰도 게임수 승률 나누기") — 팝업도
           칸마다(PC 게임수 · 승률 칸과 같은 그래프). 평균 줄은 게임수 = 경기 수 · 승률은 "-"(PC 평균 줄과 같게). 넓은 폰(600px 넘게)은 종족마다 [게임수 | 승률]도
           (PC RaceCells 와 같게 · scr-sg-mwide) — 좁은 폰은 종족 칸이 숨는다(CSS). 옛: 한 칸에 위 판수 · 아래 승률(MCell). */}
@@ -269,7 +272,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
       text={mobile ? (
         <>
           <span className="scr-sg-help-mock" aria-hidden>
-            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">보정교환비</span><span className="scr-sg-help-h">APM</span><span className="scr-sg-help-h">전체</span>
+            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">보정교환비</span><span className="scr-sg-help-h">EAPM</span><span className="scr-sg-help-h">전체</span>
             <span className="scr-sg-help-who"><b>닉네임</b></span>
             <span className="scr-sg-help-rec"><b>1.25</b></span>
             <span className="scr-sg-help-rec"><b>230</b></span>
@@ -277,7 +280,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           </span>
           <span className="scr-sg-help-list">
             <span>보정교환비 — <b>1.25</b> 준 ÷ 입은 데미지에서 종족 차이 · 센 상대에게 밑진 몫을 뺀 값(1보다 크면 주고받기에서 이김 · 티어가 쓰는 값) · 누르면 변화</span>
-            <span>APM — 분당 행동 수 평균</span>
+            <span>EAPM — 분당 유효 행동 수 평균(같은 명령 연타 · 헛클릭을 뺀 APM)</span>
             <span>티어(팀전) — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 · 인분 = EAPM ÷ 120 × 교환비 보정(센 상대에게 밑진 몫은 덜 깎고 · 종족 차이는 빼고) × 승패 보정(같은 편·상대 편으로 예상한 것보다 더/덜 이긴 만큼 · 그 기간 판으로) · 편의 힘은 센 사람에게 무게를 더 줘서 1티어 한 명이 크게 쳐요 · 1.6인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어(절대 기준이라 빈 등급도 있어요) · 팀전 전체 · 맵 전체 조회에서만 보여요 · 그 기간 판만 써서 지난 달 티어는 뒤 판에 안 바뀌어요 · 얹거나 누르면 달별 변화와 근거값 · 열 판 미만은 -</span>
             <span><b>68</b> 게임수 · <i>54%</i> 승률 — 전체(넓은 화면은 종족별 게임수 · 승률도)</span>
             <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
@@ -288,10 +291,10 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
         <span className="scr-sg-help-list">
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
           <span>보정교환비 — 준 데미지 ÷ 입은 데미지에서 종족 차이 · 센 상대에게 밑진 몫을 뺀 값(1.00 보다 크면 주고받기에서 이김 · 티어가 쓰는 값)</span>
-          <span>APM — 분당 행동 수 평균</span>
+          <span>APM — 분당 행동 수 평균 · EAPM — 그중 유효 행동(같은 명령 연타 · 헛클릭을 뺌)</span>
           <span>티어 — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 · 인분 = EAPM ÷ 120 × 교환비 보정(센 상대에게 밑진 몫은 덜 깎고 · 종족 차이는 빼고) × 승패 보정(같은 편·상대 편으로 예상한 것보다 더/덜 이긴 만큼 · 그 기간 판으로) · 편의 힘은 센 사람에게 무게를 더 줘서 1티어 한 명이 크게 쳐요 · 1.6인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어(절대 기준이라 빈 등급도 있어요) · 팀전 전체 · 맵 전체 조회에서만 보여요 · 그 기간 판만 써서 지난 달 티어는 뒤 판에 안 바뀌어요 · 얹거나 누르면 달별 변화와 근거값 · 열 판 미만은 -</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
-          <span>머리(게임수 · 승률 · 데미지 · 보정교환비 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
+          <span>머리(게임수 · 승률 · 데미지 · 보정교환비 · APM · EAPM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
           <span>값에 마우스를 얹으면 다섯 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 다섯 달)</span>
         </span>
       )}
@@ -359,7 +362,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
           {tier && <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("tier")}>티어</SortHead></span>}
           {/* 교환비 칸(MobileRow ★) — 머리도 "교환비" · 교환비로 정렬(2026-10-28 · 옛: "데미지" · 교환비 → 데미지 → 끔). */}
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("ex")}><span>보정<br />교환비</span></SortHead></span>
-          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("apm")}>APM</SortHead></span>
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("eapm")}>EAPM</SortHead></span>
           {/* 게임수 · 승률 두 머리(MobileRow ★) · 넓은 폰은 종족 이름이 [게임수 | 승률] 두 칸을 덮는다(PC 머리와 같게 · 좁은 폰은 숨음). */}
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("plays")}>게임수</SortHead></span>
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("rate")}>승률</SortHead></span>
@@ -385,7 +388,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
         {tier && <span className="scr-sg-c scr-sg-h2"><SortHead {...pcToggle("tier")}>티어</SortHead></span>}
-        {([["게임수", "plays"], ["승률", "rate"], ["데미지", "dmg"], ["보정교환비", "ex"], ["APM", "apm"]] as const).map(([h, k]) => (
+        {([["게임수", "plays"], ["승률", "rate"], ["데미지", "dmg"], ["보정교환비", "ex"], ["APM", "apm"], ["EAPM", "eapm"]] as const).map(([h, k]) => (
           <span key={h} className="scr-sg-c scr-sg-h2"><SortHead {...pcToggle(k)}>{h}</SortHead></span>
         ))}
         {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hgroup">{r}</span>)}

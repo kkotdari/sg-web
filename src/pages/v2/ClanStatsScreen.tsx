@@ -92,6 +92,7 @@ function useTodayFrom(on: boolean): string {
  *  "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개") — 옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
 const sortLabel = (k: StatSortKey): string => {
   if (k === "apm") return "APM";
+  if (k === "eapm") return "EAPM";
   if (k === "tier") return "티어";
   if (k === "dmg") return "데미지";
   if (k === "ex") return "보정교환비";
@@ -331,8 +332,8 @@ export default function ClanStatsScreen() {
         const ad = a.stats.dmgDealtRel; const bd = b.stats.dmgDealtRel;
         return missingLast(typeof ad !== "number", typeof bd !== "number") || dirSign * ((ad ?? 0) - (bd ?? 0));
       }
-      if (key === "apm" || key === "cmd") {
-        const f = key === "apm" ? "avgApm" : "avgCmd";
+      if (key === "apm" || key === "eapm" || key === "cmd") {
+        const f = key === "apm" ? "avgApm" : key === "eapm" ? "avgEapm" : "avgCmd";
         return missingLast(a.stats[f] === null, b.stats[f] === null) || dirSign * ((a.stats[f] ?? 0) - (b.stats[f] ?? 0));
       }
       /* 전적 — 전체(plays · rate) 또는 종족별("테란:plays" …)의 판 수 · 승률. 판이 없으면 뒤로. */
