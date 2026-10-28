@@ -300,10 +300,11 @@ export default function ClanStatsScreen() {
     type DataKey = StatSortKey | "cmd";
     const compareData = (key: DataKey, a: Card, b: Card): number => {
       /* 팀전 티어 — **인분 내림차순**(2026-10-28, 요청: "티어로 정렬시 인분 내림차순") · 티어 없는 사람(스무 판 미만)은 뒤로 몰고 그 안에서도 인분 순 ·
-         인분도 없는 사람(1:1 조회 · 팀전 판 없음)은 맨 뒤. 티어는 인분 기준선으로 매기므로 인분 순이 곧 티어 순이다. */
+         인분도 없는 사람(1:1 조회 · 팀전 판 없음)은 맨 뒤. 인분은 **기준 인분**(티어의 잣대 · 같은 날 "개인 능력치 기반 현재 장의 실력") — 한 조회 안에서는
+         판 수준이 모두 같아 그 판의 인분 순과 같다. */
       if (key === "tier") {
         const at = a.entry?.tier; const bt = b.entry?.tier;
-        const ai = at?.inbun; const bi = bt?.inbun;
+        const ai = at?.stdInbun ?? at?.inbun; const bi = bt?.stdInbun ?? bt?.inbun;
         return missingLast(typeof at?.tier !== "number", typeof bt?.tier !== "number")
           || missingLast(typeof ai !== "number", typeof bi !== "number")
           || dirSign * ((ai ?? 0) - (bi ?? 0));

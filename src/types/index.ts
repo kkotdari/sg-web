@@ -338,6 +338,9 @@ export interface TierEntry {
   /** 몇 인분(평균 참가자 1.00 · 티어의 잣대 · 편의 힘은 인분의 합) · 지표만으로 본 인분. */
   inbun?: number | null;
   statInbun?: number | null;
+  /** 기준 인분(티어의 잣대) = 인분 × 판 수준 · 판 수준 — 이 판들의 평균 참가자가 기준(같은 조건 전체 기간의 평균 참가자)의 몇 인분인가(개인 절대 능력치로 잼). */
+  stdInbun?: number | null;
+  level?: number | null;
 }
 
 export interface ClanBreakdownEntry {
