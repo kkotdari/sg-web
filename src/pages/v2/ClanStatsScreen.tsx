@@ -89,11 +89,11 @@ function useTodayFrom(on: boolean): string {
 
 /** 정렬 자 이름 — 정렬 줄("정렬: 전체 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid · 2026-10-22, 요청: "정렬은 머리 터치로 변경" →
  *  "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개") — 옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
-const sortLabel = (k: StatSortKey): string => {
+const sortLabel = (k: StatSortKey, team = false): string => {
   if (k === "apm") return "APM";
   if (k === "tier") return "티어";
   if (k === "dmg") return "데미지";
-  if (k === "ex") return "교환비";
+  if (k === "ex") return team ? "보정교환비" : "교환비";
   const [who, what] = k.includes(":") ? k.split(":") : ["전체", k];
   return `${who} ${what === "rate" ? "승률" : "게임수"}`;
 };
@@ -318,7 +318,9 @@ export default function ClanStatsScreen() {
           || dirSign * ((ai ?? 0) - (bi ?? 0));
       }
       if (key === "ex") {
-        const ax = exOf(a.stats); const bx = exOf(b.stats);
+        /* 팀전은 보정 교환비(StatGrid Ex ★ · 칸에 보이는 값). */
+        const exv = (c: Card) => (size !== "1" ? (typeof c.entry?.tier?.ex === "number" ? c.entry.tier.ex : null) : exOf(c.stats));
+        const ax = exv(a); const bx = exv(b);
         return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
       }
       if (key === "dmg") {
@@ -348,7 +350,7 @@ export default function ClanStatsScreen() {
       return nicknameTiebreak(a, b);
     });
     return sorted;
-  }, [viewMembers, view, shownSort]);
+  }, [viewMembers, view, shownSort, size]);
 
 
   return (
@@ -425,7 +427,7 @@ export default function ClanStatsScreen() {
 
       <div className="scr-stats-sort">
         <span className="scr-stats-sort-label">정렬:</span>
-        <span className="scr-stats-sort-chain">{shownSort.length > 0 ? shownSort.map(sortLabel).join(" › ") : "기본"}</span>
+        <span className="scr-stats-sort-chain">{shownSort.length > 0 ? shownSort.map((k: StatSortKey) => sortLabel(k, size !== "1")).join(" › ") : "기본"}</span>
         {/* 복수 기준 토글(위 multiSort ★) — 켜지면 머리를 누른 차례대로 기준이 쌓인다. PC·폰 둘 다. */}
         <button type="button" role="switch" aria-checked={multiSort} className={cx("scr-stats-sort-multi", multiSort && "is-on")} onClick={toggleMulti}
           title={multiSort ? "복수 기준 정렬 끄기 — 머리를 누르면 그 기준 하나로" : "복수 기준 정렬 켜기 — 머리를 누른 차례대로 기준이 쌓여요"}>
@@ -433,7 +435,7 @@ export default function ClanStatsScreen() {
         </button>
         {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(티어 · 1:1 은 전체 승률 하나)과 다를 때만 선다 · PC 만. */}
         {!isMobile && !(shownSort.length === 1 && shownSort[0] === sortDefault) && (
-          <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["tier"])} title={`정렬을 처음 값(${sortLabel(sortDefault)})으로`}>
+          <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["tier"])} title={`정렬을 처음 값(${sortLabel(sortDefault, size !== "1")})으로`}>
             <RotateCcw size={12} aria-hidden /> 초기화
           </button>
         )}

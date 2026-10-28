@@ -342,6 +342,8 @@ export interface TierEntry {
   statInbun?: number | null;
   /** = inbun(정렬이 쓴다) · 옛 판 수준(늘 null). */
   stdInbun?: number | null;
+  /** 보정 교환비(그 기간 · 표의 교환비 칸 · 2026-10-28) — 종족 몫 · 상대 세기 몫을 뺀 교환비(1 = 보통 · 맵 탭과 상관없이 전체 맵 팀전 판). */
+  ex?: number | null;
   level?: number | null;
 }
 
