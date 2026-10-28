@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Spinner } from "../../components/common/Feedback";
 import { shiftMonthValue } from "../../utils/date";
-import type { BaseRace, Member, MemberStatsEntry, MemberStats } from "../../types";
+import type { BaseRace, Member, MemberStatsEntry } from "../../types";
 
 /* ★ 통계 칸의 **5개월 변화 그래프**(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" → "7개월로 통일하자") ─────────────────────────
    표의 값 칸(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률 · 폰 전적 칸)에 PC 는 마우스를 얹으면, 폰은 누르면 그 사람 · 그 값의 다섯 달
@@ -71,16 +71,9 @@ const int = (v: number) => Math.round(v).toLocaleString();
 const pct = (v: number) => `${Math.round(v)}%`;
 const x100 = (v: number) => (v / 100).toFixed(1);
 const x2 = (v: number) => v.toFixed(2);
-/** 교환비 = 준 ÷ 입은 데미지(유닛 + 건물 합 · 2026-10-28, 요청: "통계에 교환비 컬럼을 추가") — 둘 중 하나라도 없으면 null. */
-export function exOf(s: MemberStats | undefined | null): number | null {
-  if (!s) return null;
-  const d = (s.dmgDealtUnit ?? 0) + (s.dmgDealtBldg ?? 0);
-  const t = (s.dmgTakenUnit ?? 0) + (s.dmgTakenBldg ?? 0);
-  return s.dmgPlays && d > 0 && t > 0 ? d / t : null;
-}
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exa" | "apm" | "games" | "tier", race: BaseRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "games" | "tier", race: BaseRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
@@ -98,9 +91,8 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exa" | "apm"
   if (kind === "plays") return { key: `${race ?? ""}:plays`, label: `${who}게임수`, series: [{ label: "게임수", cls: "", pick: playsOf(race), fmt: int }], mode: "single" };
   if (kind === "rate") return { key: `${race ?? ""}:rate`, label: `${who}승률`, series: [{ label: "승률", cls: "", pick: rateOf(race), fmt: pct }], mode: "single" };
   if (kind === "apm") return { key: "apm", label: "APM", series: [{ label: "APM", cls: "", pick: (e) => n(e.overall.avgApm), fmt: int }], mode: "single" };
-  if (kind === "ex") return { key: "ex", label: "교환비(준 ÷ 입은 데미지)", series: [{ label: "교환비", cls: "", pick: (e) => exOf(e.overall), fmt: x2 }], mode: "single" };
-  /* 보정 교환비(팀전 · 2026-10-28, 요청: "그리드 교환비 표시가 보정 전이라 헷갈림 — 라벨을 보정교환비로 바꾸고 보정값 표시") — 달마다 그 달 판으로 셈한 티어의 ex. */
-  if (kind === "exa") return { key: "exa", label: "보정교환비(종족 · 상대 세기 뺌)", series: [{ label: "보정교환비", cls: "", pick: (e) => n(e.tier?.ex), fmt: x2 }], mode: "single" };
+  /* 보정 교환비(2026-10-28, 요청: "그리드 교환비 표시가 보정 전이라 헷갈림 — 라벨을 보정교환비로 바꾸고 보정값 표시") — 달마다 그 달 판으로 셈한 sg-api tier.ex. */
+  if (kind === "ex") return { key: "ex", label: "보정교환비(종족 · 상대 세기 뺌)", series: [{ label: "보정교환비", cls: "", pick: (e) => n(e.tier?.ex), fmt: x2 }], mode: "single" };
   /* 데미지(kind "dmg") — 딜 · 피해 두 선. 옛 폰 전적 칸(게임수 · 승률 위아래 · "rec" · "crec")은 걷었다(2026-10-28 — 폰도 게임수 · 승률 칸이 따로). */
   return {
     key: "dmg", label: "데미지(평균 대비 배수)",
