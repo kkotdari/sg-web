@@ -76,7 +76,7 @@ function TierCell({ t, member }: { t?: TierEntry | null; member?: Member }) {
 
 /* ★ 티어 근거값(2026-10-28, 요청: "티어 팝업에 그래프 위에 현재 보는 티어의 근거값 두 개 표시 — eapm 과 상대승률" · 교환비를 넣으며 셋) — 인분 = EAPM ÷ 120 ×
    교환비 보정 × 승패 보정 이라 그 셋: 이 기간 평균 EAPM · 교환비 보정(싸움에서 남기고 밑진 정도 · 센 상대 몫 뺌 · %) · 승패 보정(같은 편·상대 편으로 예상한 것보다
-   더/덜 이긴 정도 · 기간 끝까지 누적 · %). 인분은 안 쓴다(같은 날 요청: "팝업에 인분 표시 안 하고"). */
+   더/덜 이긴 정도 · 그 기간 판으로 · %). 인분은 안 쓴다(같은 날 요청: "팝업에 인분 표시 안 하고"). */
 const pctOf = (x: number): string => { const p = Math.round((x - 1) * 100); return p > 0 ? `+${p}%` : p < 0 ? `−${-p}%` : "±0%"; };
 function tierFacts(t: TierEntry): TrendFact[] {
   const out: TrendFact[] = [];
