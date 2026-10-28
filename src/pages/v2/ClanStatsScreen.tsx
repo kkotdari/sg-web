@@ -4,7 +4,7 @@ import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
-import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange, shiftMonthValue } from "../../utils/date";
+import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
 import { exOf, statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -143,7 +143,8 @@ export default function ClanStatsScreen() {
      머리를 눌러 고르고(요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") 고른 차례는 정렬 줄 "정렬: 전체 승률 › APM" 에 하나씩 붙고 빠진다(요청: "누르면 '정렬:' 옆에 하나씩 나오고 없어짐").
      다 빼면 기본 차례만(줄에 "기본"). 머리를 누르는 셈(켜고 끄기 · 폰 전적 머리의 승률 → 게임수 → 끔)은 StatGrid 가 한다.
      한때(같은 날): 정렬 탭 · 탭 옆 "승률순 × > 참여순 × 적용중" 줄 · 탭 앞/위 차례 숫자. 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
-  const [sortKeys, setSortKeys] = useState<StatSortKey[]>(["rate"]);
+  /* 기본 정렬 = 티어(2026-10-28, 요청: "기본정렬 티어순" · 옛: 전체 승률) — 티어 칸이 없는 1:1 조회에선 티어를 빼고 본다(아래 shownSort). */
+  const [sortKeys, setSortKeys] = useState<StatSortKey[]>(["tier"]);
   /* 복수 기준 토글(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 기본은 하나(머리를 누르면 그 자로 갈아탐).
      끄는 순간 여럿이 쌓여 있었으면 첫 자(맨 먼저 누른 것)만 남긴다. */
   const [multiSort, setMultiSort] = useState(false);
@@ -155,10 +156,17 @@ export default function ClanStatsScreen() {
     return activeMembers.filter((m) => terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t)));
   }, [activeMembers, users]);
 
-  /* 기간 기본값 = 최근 2개월(이번 달 포함 · 2026-10-28, 요청: "통계 화면 기간 기본값을 최근 3개월로" → 같은 날 "최근 2개월로" — 옛: 이번 달). */
-  const [period, setPeriod] = useUrlState("period", `${shiftMonthValue(currentMonthValue(), -1)}~${currentMonthValue()}`);
+  /* 기간 기본값 = 이번 달(2026-10-28, 요청: "조회 최근달로 변경" · 같은 날 "최근 3개월로" → "최근 2개월로"를 거쳐 돌아옴). */
+  const [period, setPeriod] = useUrlState("period", currentMonthValue());
   const [sizeRaw, setSize] = useUrlState("size", "team");
   const size = sizeTabOf(sizeRaw);
+  /** 실제로 쓰는 정렬 — 1:1 조회엔 티어 칸이 없어 티어를 빼고, 남는 게 없으면 전체 승률. */
+  const shownSort = useMemo<StatSortKey[]>(() => {
+    if (size !== "1") return sortKeys;
+    const rest = sortKeys.filter((k) => k !== "tier");
+    return rest.length > 0 ? rest : ["rate"];
+  }, [sortKeys, size]);
+  const sortDefault: StatSortKey = size === "1" ? "rate" : "tier";
   const [mapRaw, setMap] = useUrlState("map", MAP_DEFAULT);
   const mapTab = mapTabOf(mapRaw);
   useEffect(() => () => {
@@ -331,7 +339,7 @@ export default function ClanStatsScreen() {
     };
     /** 고른 자들(누른 차례)을 맨 앞에 두고, 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드)로 가린다. */
     const BASE_ORDER: DataKey[] = ["plays", "rate", "apm", "cmd"];
-    const DATA_ORDER: DataKey[] = [...sortKeys, ...BASE_ORDER.filter((k) => !(sortKeys as DataKey[]).includes(k))];
+    const DATA_ORDER: DataKey[] = [...shownSort, ...BASE_ORDER.filter((k) => !(shownSort as DataKey[]).includes(k))];
     sorted.sort((a, b) => {
       for (const key of DATA_ORDER) {
         const c = compareData(key, a, b);
@@ -340,7 +348,7 @@ export default function ClanStatsScreen() {
       return nicknameTiebreak(a, b);
     });
     return sorted;
-  }, [viewMembers, view, sortKeys]);
+  }, [viewMembers, view, shownSort]);
 
 
   return (
@@ -417,15 +425,15 @@ export default function ClanStatsScreen() {
 
       <div className="scr-stats-sort">
         <span className="scr-stats-sort-label">정렬:</span>
-        <span className="scr-stats-sort-chain">{sortKeys.length > 0 ? sortKeys.map(sortLabel).join(" › ") : "기본"}</span>
+        <span className="scr-stats-sort-chain">{shownSort.length > 0 ? shownSort.map(sortLabel).join(" › ") : "기본"}</span>
         {/* 복수 기준 토글(위 multiSort ★) — 켜지면 머리를 누른 차례대로 기준이 쌓인다. PC·폰 둘 다. */}
         <button type="button" role="switch" aria-checked={multiSort} className={cx("scr-stats-sort-multi", multiSort && "is-on")} onClick={toggleMulti}
           title={multiSort ? "복수 기준 정렬 끄기 — 머리를 누르면 그 기준 하나로" : "복수 기준 정렬 켜기 — 머리를 누른 차례대로 기준이 쌓여요"}>
           복수 기준
         </button>
-        {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(전체 승률 하나)과 다를 때만 선다 · PC 만. */}
-        {!isMobile && !(sortKeys.length === 1 && sortKeys[0] === "rate") && (
-          <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["rate"])} title="정렬을 처음 값(전체 승률)으로">
+        {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(티어 · 1:1 은 전체 승률 하나)과 다를 때만 선다 · PC 만. */}
+        {!isMobile && !(shownSort.length === 1 && shownSort[0] === sortDefault) && (
+          <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["tier"])} title={`정렬을 처음 값(${sortLabel(sortDefault)})으로`}>
             <RotateCcw size={12} aria-hidden /> 초기화
           </button>
         )}
@@ -451,7 +459,7 @@ export default function ClanStatsScreen() {
             rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, tier: c.entry?.tier }))}
             tier={size !== "1"}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다 · 1:1 조회엔 없다) */
             mobile={isMobile}
-            sortKeys={sortKeys}
+            sortKeys={shownSort}
             onSortKeys={setSortKeys}
             multi={multiSort}
             trend={trend}
