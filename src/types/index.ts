@@ -321,6 +321,9 @@ export interface TierEntry {
   wk: number | null;
   res: number | null;
   sup: number | null;
+  /** 생산 값(병력 미네랄+가스) · 스킬 쓴 횟수 — 같은 편 동료 대비 배수(sg-api tier.py · 2026-10-28). */
+  prod?: number | null;
+  skill?: number | null;
 }
 
 export interface ClanBreakdownEntry {

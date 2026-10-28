@@ -76,11 +76,13 @@ function TierCell({ t }: { t?: TierEntry | null }) {
         label={`${t.tier}티어`} triggerClassName="scr-sg-tierbtn" bubbleClassName="scr-sg-tier-tip" hover
         trigger={<b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b>}
         text={(
-          /* 근거는 세 줄만(2026-10-28, 요청: "간단하게 · N티어 / 보정승률 / 데미지 이정도만") — 셈의 풀이는 표 도움말(StatHelp)에. */
+          /* 근거는 짧게(2026-10-28, 요청: "간단하게 · N티어 / 보정승률 / 데미지 이정도만" → "팝업에 생산량과 스킬활용도 넣고") — 배수는 같은 편 동료 대비 · 셈의 풀이는 표 도움말(StatHelp)에. */
           <span className="scr-sg-help-list">
             <b>{t.tier}티어</b>
             <span>보정승률: {t.win ?? "-"}%</span>
             <span>데미지: {xOf(t.dmg)}</span>
+            <span>생산량: {xOf(t.prod)}</span>
+            <span>스킬 활용: {xOf(t.skill)}</span>
           </span>
         )}
       />
@@ -274,7 +276,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span className="scr-sg-help-list">
             <span>데미지 — <b className="is-dealt">1.4</b> 딜 · <b className="is-taken">0.8</b> 피해: 그 경기 참가자 평균 데미지 대비 비율(1.0 = 평균)</span>
             <span>APM — 분당 행동 수 평균</span>
-            <span>티어(팀전) — 같이·상대한 사람의 유불리와 부종족으로 한 판을 걷어낸 승률 · 같은 편 동료 대비 데미지·일꾼·채집·인구를 묶어 1~4 등급 — 점수가 뭉친 사람끼리 같은 등급이고 인원을 4등분하지 않아서 빈 등급도 있어요. 1이 가장 높아요 · 누르면 근거</span>
+            <span>티어(팀전) — 같이·상대한 사람의 유불리와 부종족으로 한 판을 걷어낸 승률 · 같은 편 동료 대비 데미지·생산·스킬·일꾼·채집·인구를 묶어 1~4 등급 — 점수가 뭉친 사람끼리 같은 등급이고 인원을 4등분하지 않아서 빈 등급도 있어요. 1이 가장 높아요 · 누르면 근거</span>
             <span><b>68</b> 게임수 · <i>54</i> 승률(%) — 전체 · 종족별</span>
             <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
             <span>값을 누르면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
@@ -284,7 +286,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
         <span className="scr-sg-help-list">
           <span>데미지 — 준 데미지(<b className="is-dealt">딜</b>) · 받은 데미지(<b className="is-taken">피해</b>)가 그 경기 참가자 평균의 몇 배인가(1.0배 = 평균)</span>
           <span>APM — 분당 행동 수 평균</span>
-          <span>티어(팀전 조회에서만) — 같이·상대한 사람의 유불리와 부종족으로 한 판을 걷어낸 승률 · 같은 편 동료 대비 데미지·일꾼·채집·인구를 묶은 점수의 1~4 등급 — 점수가 뭉친 사람끼리 같은 등급이고 인원을 4등분하지 않아서 빈 등급도 있어요. 1이 가장 높아요 · 누르면 근거 · 스무 판 미만은 -</span>
+          <span>티어(팀전 조회에서만) — 같이·상대한 사람의 유불리와 부종족으로 한 판을 걷어낸 승률 · 같은 편 동료 대비 데미지·생산·스킬·일꾼·채집·인구를 묶은 점수의 1~4 등급 — 점수가 뭉친 사람끼리 같은 등급이고 인원을 4등분하지 않아서 빈 등급도 있어요. 1이 가장 높아요 · 누르면 근거 · 스무 판 미만은 -</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
           <span>값에 마우스를 얹으면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
