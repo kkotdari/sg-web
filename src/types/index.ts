@@ -330,14 +330,14 @@ export interface TierEntry {
   eco?: number | null;
   /** 병력 유지(분마다 일꾼 뺀 인구 평균) — 같은 편 동료 대비 배수(2026-10-28). */
   arm?: number | null;
-  /** 결과 몫(%p · 실력 중 승패가 지표 위에 더한 몫) · 조합 예상 승률(% · 이 사람을 평균 한 명으로 바꿔 둔 그 판들의 예상) — sg-api tier.py 2026-10-28. */
+  /** 결과 몫(인분 · 승패가 지표 위에 더한 몫) · 조합 예상 승률(% · 이 사람을 평균 한 명으로 바꿔 둔 그 판들의 예상) — sg-api tier.py 2026-10-28. */
   ops?: number | null;
   expWin?: number | null;
   /** 판 평균 EAPM(참고 · 모형 지표의 하나). */
   eapm?: number | null;
-  /** 실력(%) — 평균 한 명 대신 이 사람이 들어간 편이 이길 확률(티어의 잣대) · 지표만으로 본 실력(%). */
-  power?: number | null;
-  statPower?: number | null;
+  /** 몇 인분(평균 참가자 1.00 · 티어의 잣대 · 편의 힘은 인분의 합) · 지표만으로 본 인분. */
+  inbun?: number | null;
+  statInbun?: number | null;
 }
 
 export interface ClanBreakdownEntry {
