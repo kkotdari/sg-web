@@ -324,6 +324,8 @@ export interface TierEntry {
   /** 생산 값(병력 미네랄+가스) · 스킬 쓴 횟수 — 같은 편 동료 대비 배수(sg-api tier.py · 2026-10-28). */
   prod?: number | null;
   skill?: number | null;
+  /** 전투 교환비(준 ÷ 입은 데미지) — 같은 편 동료 대비 배수 · 점수는 데미지 양 대신 이것(2026-10-28). */
+  cbt?: number | null;
 }
 
 export interface ClanBreakdownEntry {
