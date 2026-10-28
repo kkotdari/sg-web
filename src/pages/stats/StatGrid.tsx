@@ -239,7 +239,7 @@ function MobileRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolea
       {/* 교환비 칸(2026-10-28, 요청: "모바일 데미지 → 이름 바꾸고 교환비만 표시" → "팝업에서 딜 피해 제거") — 칸도 팝업도 교환비만(PC 교환비 칸과 같은 색 · 같은 그래프). */}
       <TCell member={clan ? undefined : who} metric={statMetric("ex")} className="scr-sg-mnum">{clan ? <Dash /> : <Ex t={row.tier} />}</TCell>
       {/* 폰은 APM 대신 EAPM(2026-10-28, 요청: "모바일은 EAPM 컬럼만" — 옛: APM). */}
-      <TCell member={who} metric={statMetric("eapm")} className="scr-sg-mnum">{s.avgEapm ?? <Dash />}</TCell>
+      <TCell member={who} metric={statMetric("eapmApm")} className="scr-sg-mnum">{s.avgEapm ?? <Dash />}</TCell>
       {/* ★ 전적은 게임수 · 승률 **두 칸**(2026-10-28, 요청: "좁은 폰의 경우 게임수와 승률 두 칸으로 나눠서 표시 · 팝업도" → "넓은 폰도 게임수 승률 나누기") — 팝업도
           칸마다(PC 게임수 · 승률 칸과 같은 그래프). 평균 줄은 게임수 = 경기 수 · 승률은 "-"(PC 평균 줄과 같게). 넓은 폰(600px 넘게)은 종족마다 [게임수 | 승률]도
           (PC RaceCells 와 같게 · scr-sg-mwide) — 좁은 폰은 종족 칸이 숨는다(CSS). 옛: 한 칸에 위 판수 · 아래 승률(MCell). */}
