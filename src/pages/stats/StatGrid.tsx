@@ -76,16 +76,15 @@ function TierCell({ t }: { t?: TierEntry | null }) {
         label={`${t.tier}티어`} triggerClassName="scr-sg-tierbtn" bubbleClassName="scr-sg-tier-tip" hover
         trigger={<b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b>}
         text={(
-          /* 근거는 짧게(2026-10-28, 요청: "간단하게 · N티어 / 보정승률 / 데미지 이정도만" → "팝업에 생산량과 스킬활용도 넣고" → "스킬 활용을 점수에서 빼자 · 데미지도 전투 점수로" — 데미지 양 대신 전투 교환비 · 스킬은 점수 밖 참고값) — 배수는 같은 편 동료 대비 · 셈의 풀이는 표 도움말(StatHelp)에. */
+          /* 근거는 짧게(2026-10-28, 요청: "간단하게 · N티어 / 보정승률 / 데미지 이정도만" → "팝업에 생산량과 스킬활용도 넣고" → "스킬 활용을 점수에서 빼자 · 데미지도 전투 점수로" — 데미지 양 대신 전투 교환비 · 스킬은 점수 밖 참고값) — 배수는 같은 편 동료 대비 · 셈의 풀이는 표 도움말(StatHelp)에.
+             티어 셈에 드는 것만(같은 날, 요청: "팝업에서 티어 계산과 무관한 내용 모두 제거") — 운영 · 전투 · EAPM. 생산·인구 · 스킬은 걷었다. */
           <span className="scr-sg-help-list">
             <b>{t.tier}티어</b>
             {/* 운영(2026-10-28 · sg-api fit_ops) — 능력치(교환비·EAPM)로 짠 예상 승률 대비 실제의 편차 중 이 사람이 끼면 쏠리는 몫. 옛 "보정승률". */}
             <span>운영: {typeof t.ops === "number" ? `${t.ops > 0 ? "+" : ""}${t.ops.toFixed(1)}%p` : "-"}{typeof t.expWin === "number" && typeof t.win === "number" ? ` (예상 ${Math.round(t.expWin)}% · 실제 ${Math.round(t.win)}%)` : ""}</span>
             <span>전투: {xOf(t.cbt)}</span>
-            <span>생산·인구: {xOf(t.eco)}</span>
             {/* APM 가점(2026-10-28, 요청: "apm 도 가점으로 조금") — 판 평균 APM · 점수에 더한 몫. */}
             <span>EAPM: {t.eapm ?? "-"}{typeof t.eapmBonus === "number" && t.eapmBonus > 0 ? ` (+${t.eapmBonus.toFixed(2)})` : ""}</span>
-            <span>스킬 활용(점수 제외): {xOf(t.skill)}</span>
           </span>
         )}
       />
