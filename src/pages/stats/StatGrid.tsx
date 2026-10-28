@@ -254,8 +254,8 @@ function MobileRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolea
       {tier && <TierCell t={clan ? null : row.tier} member={clan ? undefined : who} />}
       {/* APM · 데미지(초록 딜 위 · 빨강 피해 아래)는 제 칸(2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 닉네임 아래 한 줄 "APM 230 1.4 0.8".
           클랜원 전체는 데미지가 없다. */}
-      {/* 교환비 칸(2026-10-28, 요청: "모바일 데미지 → 이름 바꾸고 교환비만 표시 · 팝업엔 교환비와 딜 피해") — 칸엔 교환비만(PC 교환비 칸과 같은 색) · 팝업은 위 교환비 · 아래 딜 · 피해. */}
-      <TCell member={clan ? undefined : who} metric={statMetric("exdmg")} className="scr-sg-mnum">{clan ? <Dash /> : <Ex s={s} />}</TCell>
+      {/* 교환비 칸(2026-10-28, 요청: "모바일 데미지 → 이름 바꾸고 교환비만 표시" → "팝업에서 딜 피해 제거") — 칸도 팝업도 교환비만(PC 교환비 칸과 같은 색 · 같은 그래프). */}
+      <TCell member={clan ? undefined : who} metric={statMetric("ex")} className="scr-sg-mnum">{clan ? <Dash /> : <Ex s={s} />}</TCell>
       <TCell member={who} metric={statMetric("apm")} className="scr-sg-mnum">{s.avgApm ?? <Dash />}</TCell>
       <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} member={who} />
       {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} member={who} race={r} className="scr-sg-mrace" />)}
@@ -279,7 +279,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span className="scr-sg-help-rec"><b>68</b><i>54%</i></span>
           </span>
           <span className="scr-sg-help-list">
-            <span>교환비 — <b>1.25</b> 준 ÷ 입은 데미지(1보다 크면 주고받기에서 이김) · 누르면 교환비와 <b className="is-dealt">딜</b> · <b className="is-taken">피해</b>(그 경기 참가자 평균 데미지 대비 · 1.0 = 평균) 변화</span>
+            <span>교환비 — <b>1.25</b> 준 ÷ 입은 데미지(1보다 크면 주고받기에서 이김) · 누르면 교환비 변화</span>
             <span>APM — 분당 행동 수 평균</span>
             <span>티어(팀전) — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 · 인분 = EAPM ÷ 120 × 교환비 보정(센 상대에게 밑진 몫은 덜 깎음) × 승패 보정(같은 편·상대 편으로 예상한 것보다 꾸준히 더/덜 이긴 만큼 · 그 기간 끝까지 쌓아 천천히) · 편의 힘은 센 사람에게 무게를 더 줘서 1티어 한 명이 크게 쳐요 · 1.5인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어(절대 기준이라 빈 등급도 있어요) · 지난 달 티어는 뒤 판에 안 바뀌어요 · 얹거나 누르면 달별 변화와 근거값 · 열 판 미만은 -</span>
             <span><b>68</b> 게임수 · <i>54%</i> 승률 — 전체(넓은 화면은 종족별도)</span>

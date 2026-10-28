@@ -51,8 +51,6 @@ export interface TrendSeries {
   cls: string;
   pick: (e: TrendEntry) => number | null;
   fmt: (v: number) => string;
-  /** stacked 에서 그릴 판(0 = 위) — 없으면 줄 차례. 같은 판의 선들은 한 자를 나눠 쓴다(교환비 위 · 딜·피해 아래 · 2026-10-28). */
-  band?: number;
 }
 export interface StatMetric {
   key: string;
@@ -82,7 +80,7 @@ export function exOf(s: MemberStats | undefined | null): number | null {
 }
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exdmg" | "apm" | "rec" | "games" | "crec" | "tier", race: BaseRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "rec" | "games" | "crec" | "tier", race: BaseRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
@@ -108,18 +106,6 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exdmg" | "ap
   if (kind === "rate") return { key: `${race ?? ""}:rate`, label: `${who}승률`, series: [{ label: "승률", cls: "", pick: rateOf(race), fmt: pct }], mode: "single" };
   if (kind === "apm") return { key: "apm", label: "APM", series: [{ label: "APM", cls: "", pick: (e) => n(e.overall.avgApm), fmt: int }], mode: "single" };
   if (kind === "ex") return { key: "ex", label: "교환비(준 ÷ 입은 데미지)", series: [{ label: "교환비", cls: "", pick: (e) => exOf(e.overall), fmt: x2 }], mode: "single" };
-  /* ★ 폰 교환비 칸(2026-10-28, 요청: "모바일 데미지 → 이름 바꾸고 교환비만 표시 · 팝업엔 교환비와 딜 피해") — 위 판 교환비 · 아래 판 딜 · 피해(한 자). */
-  if (kind === "exdmg") {
-    return {
-      key: "exdmg", label: "교환비 · 데미지",
-      series: [
-        { label: "교환비", cls: "", pick: (e) => exOf(e.overall), fmt: x2, band: 0 },
-        { label: "딜", cls: "is-dealt", pick: (e) => n(e.overall.dmgDealtRel), fmt: x100, band: 1 },
-        { label: "피해", cls: "is-taken", pick: (e) => n(e.overall.dmgTakenRel), fmt: x100, band: 1 },
-      ],
-      mode: "stacked",
-    };
-  }
   if (kind === "dmg") {
     return {
       key: "dmg", label: "데미지(평균 대비 배수)",
@@ -146,8 +132,7 @@ const PAD_BOTTOM = 30;
 
 /** 일곱 달 선 그래프 — 래더 상세와 같은 벌(.scr-rank-detail-*).
  *  single: 한 선 · shared(딜 · 피해): 같은 자에 두 선(첫 선 값은 점 위 · 둘째는 점 아래 — 아래 여백을 넓혀 달 이름과 안 겹치게) ·
- *  stacked(게임수 · 승률): 단위가 달라 **위아래 두 판**(각자 제 자 · 판 왼쪽 위에 이름) · 달 이름은 맨 아래 한 번.
- *  stacked 의 한 판에 선이 둘이면(series.band 가 같음 · 교환비 / 딜 · 피해) 그 둘은 shared 처럼 한 자 · 둘째 값은 점 아래. */
+ *  stacked(게임수 · 승률): 단위가 달라 **위아래 두 판**(각자 제 자 · 판 왼쪽 위에 이름) · 달 이름은 맨 아래 한 번. */
 export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: StatTrendData; member: Member; metric: StatMetric; chartW?: number }) {
   const months = data.months;
   /* 달이 많으면(여러 달 조회) 달 이름은 띄엄띄엄(겹침 방지 · 마지막 달은 늘) · 값 글자는 열 칸까지만. */
@@ -155,10 +140,7 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
   const showVals = months.length <= 10;
   const xFor = (i: number) => PAD_X + (i * (chartW - PAD_X * 2)) / Math.max(1, months.length - 1);
   const mode = metric.mode;
-  const bandOf = metric.series.map((s, ri) => (mode === "stacked" ? s.band ?? ri : 0));
-  const posInBand = bandOf.map((b, ri) => bandOf.slice(0, ri).filter((x) => x === b).length);
-  const twoInBand = mode === "stacked" && posInBand.some((p) => p > 0);
-  const H = mode === "stacked" ? (twoInBand ? 264 : 250) : mode === "shared" ? 168 : 150;   // 아래 판의 값이 달 이름과 안 닿게 stacked 는 여유를 더 · 한 판 두 선이면 점 아래 값 자리만큼 더
+  const H = mode === "stacked" ? 250 : mode === "shared" ? 168 : 150;   // 아래 판의 값이 달 이름과 안 닿게 stacked 는 여유를 더
   const padBottom = mode === "shared" ? 46 : PAD_BOTTOM;
   const bandH = mode === "stacked" ? 74 : H - 34 - padBottom;
   const bandTop = (ri: number) => (mode === "stacked" ? 30 + ri * (bandH + 36) : 34);
@@ -166,11 +148,10 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
   const allKnown = picked.flat().filter((v): v is number => v !== null);
   const rows = metric.series.map((s, ri) => {
     const vals = picked[ri];
-    const known = mode === "shared" ? allKnown
-      : picked.filter((_v, rj) => bandOf[rj] === bandOf[ri]).flat().filter((v): v is number => v !== null);
+    const known = mode === "shared" ? allKnown : vals.filter((v): v is number => v !== null);
     const lo = known.length ? Math.min(...known) : 0; const hi = known.length ? Math.max(...known) : 1;
     const span = Math.max(hi - lo, Math.abs(hi) * 0.02, 1e-6);
-    const top = bandTop(bandOf[ri]);
+    const top = bandTop(ri);
     const yFor = (v: number) => top + ((hi - v) / span) * bandH;
     const segs: { i: number; v: number }[][] = [];
     vals.forEach((v, i) => {
@@ -178,7 +159,7 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
       const last = segs[segs.length - 1];
       if (last && last[last.length - 1].i === i - 1) last.push({ i, v }); else segs.push([{ i, v }]);
     });
-    return { s, vals, yFor, segs, top, below: (mode === "shared" && ri === 1) || posInBand[ri] > 0 };
+    return { s, vals, yFor, segs, top };
   });
   const any = allKnown.length > 0;
   const waiting = data.loading && !any;
@@ -188,13 +169,9 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
   return (
     <div className="scr-rank-detail-chart-area scr-sg-trend-area" style={area}>
       <svg className="scr-rank-detail-chart" viewBox={`0 0 ${chartW} ${H}`}>
-        {mode === "stacked" && rows.map((r, ri) => (posInBand[ri] > 0 ? null : (
-          <text key={`band-${ri}`} className="scr-sg-trend-band" x={8} y={r.top - 14}>
-            {rows.filter((_r, rj) => bandOf[rj] === bandOf[ri]).map((o, k) => (
-              <tspan key={o.s.label} className={`scr-sg-trend-band ${o.s.cls}`}>{k > 0 ? ` · ${o.s.label}` : o.s.label}</tspan>
-            ))}
-          </text>
-        )))}
+        {mode === "stacked" && rows.map((r, ri) => (
+          <text key={`band-${ri}`} className={`scr-sg-trend-band ${r.s.cls}`} x={8} y={r.top - 14}>{r.s.label}</text>
+        ))}
         {rows.map((r, ri) => r.segs.map((seg, si) => (
           <polyline key={`${ri}-${si}`} className={`scr-rank-detail-line scr-sg-trend-line ${r.s.cls}`} points={seg.map((p) => `${xFor(p.i)},${r.yFor(p.v)}`).join(" ")} />
         )))}
@@ -207,7 +184,7 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
           <g key={`${ri}-p${i}`}>
             <circle className={`scr-rank-detail-dot scr-sg-trend-dot ${r.s.cls}`} cx={xFor(i)} cy={r.yFor(v)} r={3} />
             {showVals && (
-              <text className={`scr-rank-detail-value scr-sg-trend-val ${r.s.cls}`} x={xFor(i)} y={r.below ? r.yFor(v) + 15 : r.yFor(v) - 8}>
+              <text className={`scr-rank-detail-value scr-sg-trend-val ${r.s.cls}`} x={xFor(i)} y={mode === "shared" && ri === 1 ? r.yFor(v) + 15 : r.yFor(v) - 8}>
                 {r.s.fmt(v)}
               </text>
             )}
