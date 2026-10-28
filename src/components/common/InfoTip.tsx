@@ -8,25 +8,33 @@ let closeOpenTip: (() => void) | null = null;
 const EDGE = 8;
 
 export default function InfoTip(
-  { text, label, size = 12, trigger, triggerClassName, bubbleClassName }:
-  /** text — 글 한 줄이거나 그림이 든 덩이(통계 표 도움말 · 2026-10-22). bubbleClassName — 그런 덩이의 말풍선 폭·여백. */
-  { text: ReactNode; label?: string; size?: number; trigger?: ReactNode; triggerClassName?: string; bubbleClassName?: string },
+  { text, label, size = 12, trigger, triggerClassName, bubbleClassName, hover = false }:
+  /** text — 글 한 줄이거나 그림이 든 덩이(통계 표 도움말 · 2026-10-22). bubbleClassName — 그런 덩이의 말풍선 폭·여백.
+   *  hover — 마우스를 얹으면 열고 떠나면 닫는다(PC · 2026-10-28, 요청: "티어 팝업도 피시에서 마우스오버시 열리게") · 터치는 종전대로 눌러서. */
+  { text: ReactNode; label?: string; size?: number; trigger?: ReactNode; triggerClassName?: string; bubbleClassName?: string; hover?: boolean },
 ) {
   const [pos, setPos] = useState<{ top: number; left: number; anchorTop: number } | null>(null);
   const ref = useRef<HTMLSpanElement>(null);
   const bubbleRef = useRef<HTMLSpanElement>(null);
   const open = pos !== null;
 
-  const toggle = (e: { stopPropagation: () => void; preventDefault: () => void }) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (open) { setPos(null); closeOpenTip = null; return; }
+  /** 마우스로 연 말풍선인가 — 그때의 누름은 닫지 않는다(얹은 채 누르면 바로 닫혀 버린다). */
+  const byHover = useRef(false);
+  const openNow = () => {
     closeOpenTip?.();
     const r = ref.current?.getBoundingClientRect();
     if (r) {
       setPos({ top: r.bottom + 6, left: r.left + r.width / 2, anchorTop: r.top });
       closeOpenTip = () => setPos(null);
     }
+  };
+  const toggle = (e: { stopPropagation: () => void; preventDefault: () => void }) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (open && byHover.current) return;
+    if (open) { setPos(null); closeOpenTip = null; return; }
+    byHover.current = false;
+    openNow();
   };
 
   useLayoutEffect(() => {
@@ -73,6 +81,8 @@ export default function InfoTip(
       aria-label={label ? `${label} 설명 보기` : "설명 보기"}
       onClick={toggle}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") toggle(e); }}
+      onPointerEnter={hover ? (e) => { if (e.pointerType === "mouse" && !open) { byHover.current = true; openNow(); } } : undefined}
+      onPointerLeave={hover ? (e) => { if (e.pointerType === "mouse" && byHover.current) { byHover.current = false; setPos(null); } } : undefined}
     >
       {trigger ? trigger : <Info size={size} />}
       {open && pos && createPortal(

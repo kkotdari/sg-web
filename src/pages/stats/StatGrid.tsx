@@ -73,14 +73,14 @@ function TierCell({ t }: { t?: TierEntry | null }) {
   return (
     <span className="scr-sg-c scr-sg-tier-c">
       <InfoTip
-        label={`${t.tier}티어`} triggerClassName="scr-sg-tierbtn" bubbleClassName="scr-sg-tier-tip"
+        label={`${t.tier}티어`} triggerClassName="scr-sg-tierbtn" bubbleClassName="scr-sg-tier-tip" hover
         trigger={<b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b>}
         text={(
+          /* 근거는 세 줄만(2026-10-28, 요청: "간단하게 · N티어 / 보정승률 / 데미지 이정도만") — 셈의 풀이는 표 도움말(StatHelp)에. */
           <span className="scr-sg-help-list">
-            <span><b>{t.tier}티어</b> · 1~{t.tiers} 중(점수가 뭉친 무리끼리 같은 등급 · 빈 등급도 있어요)</span>
-            <span>조합 보정 승률 {t.win ?? "-"}% — 같이·상대한 사람의 유불리와 부종족으로 한 판을 걷어낸 값</span>
-            <span>같은 편 동료 대비 — 데미지 {xOf(t.dmg)} · 일꾼 {xOf(t.wk)} · 채집 {xOf(t.res)} · 인구 {xOf(t.sup)}</span>
-            <span>{t.plays}판 — 판이 적을수록 평균 쪽으로 눌려요</span>
+            <b>{t.tier}티어</b>
+            <span>보정승률: {t.win ?? "-"}%</span>
+            <span>데미지: {xOf(t.dmg)}</span>
           </span>
         )}
       />
