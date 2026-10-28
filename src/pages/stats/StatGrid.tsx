@@ -233,7 +233,7 @@ function PcRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; g
 function MCell({ s, games, noRate, member, race = null, className }: { s?: MemberStats; games?: number; noRate?: boolean; member?: Member; race?: BaseRace | null; className?: string }) {
   if (!s || s.plays === 0) return <span className={cx("scr-sg-c scr-sg-mrec", className)}><Dash /></span>;
   /* 승률에 % 를 붙인다(2026-10-28, 요청: "전적은 승률만 퍼센트 붙여 표시(팝업은 그대로)" · 옛: 숫자만 — 2026-10-22 "%도 제거") · 색은 본문색(is-rate · 같은 날 요청:
-     "모바일 승률 퍼센트 색 기본색"). 종족 칸(scr-sg-mrace)은 보통 폰 너비에서 숨는다(CSS). */
+     "모바일 승률 퍼센트 색 기본색"). 넓은 폰에서만 선다(scr-sg-mwide · 좁은 폰은 게임수 · 승률 두 칸 — MobileRow ★). */
   return (
     <TCell member={member} metric={statMetric(games !== undefined ? "crec" : "rec", race)} className={cx("scr-sg-mrec", className)}>
       {/* 평균 줄은 판수(경기 수)만(2026-10-28, 요청: "평균에는 판수만 표시" → "넓은 화면에서도 판수만" — 옛: 위 참여 합 · 아래 경기 수). 팝업은 그대로(참여 · 경기 수). */}
@@ -261,8 +261,16 @@ function MobileRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolea
       {/* 교환비 칸(2026-10-28, 요청: "모바일 데미지 → 이름 바꾸고 교환비만 표시" → "팝업에서 딜 피해 제거") — 칸도 팝업도 교환비만(PC 교환비 칸과 같은 색 · 같은 그래프). */}
       <TCell member={clan ? undefined : who} metric={statMetric("ex")} className="scr-sg-mnum">{clan ? <Dash /> : <Ex s={s} />}</TCell>
       <TCell member={who} metric={statMetric("apm")} className="scr-sg-mnum">{s.avgApm ?? <Dash />}</TCell>
-      <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} member={who} />
-      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} member={who} race={r} className="scr-sg-mrace" />)}
+      {/* ★ 좁은 폰(600px 이하 · CSS)은 전적을 게임수 · 승률 **두 칸**으로(2026-10-28, 요청: "좁은 폰의 경우 게임수와 승률 두 칸으로 나눠서 표시 · 팝업도") — 팝업도 칸마다
+          (PC 게임수 · 승률 칸과 같은 그래프). 평균 줄은 게임수 = 경기 수 · 승률은 "-"(PC 평균 줄과 같게). 넓은 폰은 아래 전적 묶음(전체 · 종족)을 그대로 쓴다. */}
+      <TCell member={who} metric={statMetric(clan ? "games" : "plays")} className="scr-sg-mnum scr-sg-mnarrow">
+        {clan ? (games ?? 0).toLocaleString() : s.plays > 0 ? s.plays.toLocaleString() : <Dash />}
+      </TCell>
+      <TCell member={clan ? undefined : who} metric={statMetric("rate")} className="scr-sg-mnum scr-sg-mnarrow">
+        {clan || s.plays === 0 ? <Dash /> : `${s.winRate}%`}
+      </TCell>
+      <MCell s={s} games={clan ? (games ?? 0) : undefined} noRate={clan} member={who} className="scr-sg-mwide" />
+      {RACES.map((r) => <MCell key={r} s={row.byRace?.[r]} member={who} race={r} className="scr-sg-mwide" />)}
     </div>
   );
 }
@@ -286,7 +294,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span>교환비 — <b>1.25</b> 준 ÷ 입은 데미지(1보다 크면 주고받기에서 이김) · 누르면 교환비 변화</span>
             <span>APM — 분당 행동 수 평균</span>
             <span>티어(팀전) — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 · 인분 = EAPM ÷ 120 × 교환비 보정(센 상대에게 밑진 몫은 덜 깎음) × 승패 보정(같은 편·상대 편으로 예상한 것보다 꾸준히 더/덜 이긴 만큼 · 그 기간 끝까지 쌓아 천천히) · 편의 힘은 센 사람에게 무게를 더 줘서 1티어 한 명이 크게 쳐요 · 1.5인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어(절대 기준이라 빈 등급도 있어요) · 지난 달 티어는 뒤 판에 안 바뀌어요 · 얹거나 누르면 달별 변화와 근거값 · 열 판 미만은 -</span>
-            <span><b>68</b> 게임수 · <i>54%</i> 승률 — 전체(넓은 화면은 종족별도)</span>
+            <span><b>68</b> 게임수 · <i>54%</i> 승률 — 좁은 화면은 두 칸 · 넓은 화면은 전체 · 종족별 한 칸에 둘</span>
             <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
             <span>값을 누르면 다섯 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 다섯 달)</span>
           </span>
@@ -372,10 +380,12 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
           {/* 교환비 칸(MobileRow ★) — 머리도 "교환비" · 교환비로 정렬(2026-10-28 · 옛: "데미지" · 교환비 → 데미지 → 끔). */}
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("ex")}>교환비</SortHead></span>
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("apm")}>APM</SortHead></span>
-          <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
-          {/* 보통 폰 너비(종족 칸이 숨을 때)엔 "전적" / "전체" 두 줄을 "전적" 한 칸으로(2026-10-28, 요청: "전체만 보일 땐 그냥 전적 칸 하나로 합치고") — 글자 둘을 CSS 가 갈아 낀다. */}
-          <span className="scr-sg-c scr-sg-hsub scr-sg-race-head scr-sg-mtotal-head"><SortHead {...cycle("rate", "plays")}><span className="scr-sg-lbl-wide">전체</span><span className="scr-sg-lbl-narrow">전적</span></SortHead></span>
-          {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head scr-sg-mrace"><SortHead {...cycle(`${r}:rate`, `${r}:plays`)}>{r}</SortHead></span>)}
+          {/* 좁은 폰은 게임수 · 승률 두 머리(MobileRow ★ · 넓은 폰은 아래 전적 묶음) — CSS 가 너비로 갈아 낀다. */}
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow scr-sg-mnarrow"><SortHead {...mToggle("plays")}>게임수</SortHead></span>
+          <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow scr-sg-mnarrow"><SortHead {...mToggle("rate")}>승률</SortHead></span>
+          <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4 scr-sg-mwide">전적</span>
+          <span className="scr-sg-c scr-sg-hsub scr-sg-race-head scr-sg-mwide"><SortHead {...cycle("rate", "plays")}>전체</SortHead></span>
+          {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head scr-sg-mwide"><SortHead {...cycle(`${r}:rate`, `${r}:plays`)}>{r}</SortHead></span>)}
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} tier={tier} />}
         {rows.map((r) => <MobileRow key={r.member.id} row={r} tier={tier} />)}

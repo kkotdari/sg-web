@@ -5149,19 +5149,17 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-mrate.is-rate { color: var(--text); opacity: 1; }   /* 승률(%)은 본문색(2026-10-28, 요청: "모바일 승률 퍼센트 색 기본색") */
 /* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름. 뜻 풀이는 도움말 말풍선(.scr-sg-help). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; }
-/* ★ 보통 폰 너비에선 전적을 전체 하나로(2026-10-28, 요청: "전적도 일반적 폰 너비에서는 전체 전적만 판수와 승률로 표시 종족 구분 없이") — 종족 칸(scr-sg-mrace)을
-   숨기고 칸 수를 줄인다. 600px 넘는 폰 가로 · 태블릿은 종족 칸 그대로. */
+/* ★ 좁은 폰(600px 이하)은 종족 구분 없이 게임수 · 승률 두 칸(2026-10-28, 요청: "전적도 일반적 폰 너비에서는 전체 전적만 · 종족 구분 없이" →
+   "좁은 폰의 경우 게임수와 승률 두 칸으로 나눠서") — 넓은 폰 칸(scr-sg-mwide · 전적 묶음 · 종족)을 숨기고 좁은 폰 칸(scr-sg-mnarrow)을 세운다.
+   600px 넘는 폰 가로 · 태블릿은 거꾸로. */
 @media (max-width: 600px) {
-  .scr-sg.is-m { grid-template-columns: minmax(min-content, 1.6fr) repeat(3, minmax(44px, 1fr)); }
-  .scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.4fr) repeat(4, minmax(40px, 1fr)); }
-  .scr-sg.is-m .scr-sg-mrace { display: none; }
-  /* 머리는 "전적" 한 칸(두 줄을 내리 씀 · 2026-10-28, 요청: "전체만 보일 땐 그냥 전적 칸 하나로"). */
-  .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { display: none; }
-  .scr-sg.is-m .scr-sg-row.scr-sg-head > .scr-sg-c.scr-sg-race-head.scr-sg-mtotal-head { grid-row: 1 / span 2; padding-top: 8px; font-size: 11px; letter-spacing: normal; }
-  .scr-sg.is-m .scr-sg-mtotal-head .scr-sg-lbl-wide { display: none; }
-  .scr-sg.is-m .scr-sg-mtotal-head .scr-sg-lbl-narrow { display: inline; }
+  .scr-sg.is-m { grid-template-columns: minmax(min-content, 1.6fr) repeat(4, minmax(40px, 1fr)); }
+  .scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.7fr) repeat(5, minmax(34px, 1fr)); }
+  .scr-sg.is-m .scr-sg-mwide { display: none; }
 }
-.scr-sg-lbl-narrow { display: none; }
+@media (min-width: 601px) {
+  .scr-sg.is-m .scr-sg-mnarrow { display: none; }
+}
 /* 폰 표 도움말(StatHelp · 2026-10-22) — 정렬 줄 오른끝 단추 · 말풍선에 한 줄짜리 표 그림(.scr-sg-help-mock)과 풀이 목록. */
 .scr-sg-help-btn { margin-left: auto; padding: 0 2px; }
 .scr-infotip-bubble.scr-sg-help { max-width: min(300px, 88vw); padding: 10px 12px; white-space: normal; }
