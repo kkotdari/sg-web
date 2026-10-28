@@ -232,13 +232,14 @@ function PcRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; g
  *  그 종족 판이 없으면 "-". 클랜원 전체의 전체 칸은 아래가 경기 수(내전이라 승률은 늘 반반). 옛: "N전" · 이름표 "승률" · "N%". */
 function MCell({ s, games, noRate, member, race = null, className }: { s?: MemberStats; games?: number; noRate?: boolean; member?: Member; race?: BaseRace | null; className?: string }) {
   if (!s || s.plays === 0) return <span className={cx("scr-sg-c scr-sg-mrec", className)}><Dash /></span>;
-  /* 승률에 % 를 붙인다(2026-10-28, 요청: "전적은 승률만 퍼센트 붙여 표시(팝업은 그대로)" · 옛: 숫자만 — 2026-10-22 "%도 제거"). 종족 칸(scr-sg-mrace)은 보통 폰 너비에서 숨는다(CSS). */
+  /* 승률에 % 를 붙인다(2026-10-28, 요청: "전적은 승률만 퍼센트 붙여 표시(팝업은 그대로)" · 옛: 숫자만 — 2026-10-22 "%도 제거") · 색은 본문색(is-rate · 같은 날 요청:
+     "모바일 승률 퍼센트 색 기본색"). 종족 칸(scr-sg-mrace)은 보통 폰 너비에서 숨는다(CSS). */
   return (
     <TCell member={member} metric={statMetric(games !== undefined ? "crec" : "rec", race)} className={cx("scr-sg-mrec", className)}>
       <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b></span>
       {games !== undefined
         ? <span className="scr-sg-mrate">{games.toLocaleString()}</span>
-        : noRate ? <Dash /> : <span className="scr-sg-mrate">{s.winRate}%</span>}
+        : noRate ? <Dash /> : <span className="scr-sg-mrate is-rate">{s.winRate}%</span>}
     </TCell>
   );
 }
@@ -284,7 +285,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span>티어(팀전) — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 · 인분 = EAPM ÷ 120 × 교환비 보정(센 상대에게 밑진 몫은 덜 깎음) × 승패 보정(같은 편·상대 편으로 예상한 것보다 꾸준히 더/덜 이긴 만큼 · 그 기간 끝까지 쌓아 천천히) · 편의 힘은 센 사람에게 무게를 더 줘서 1티어 한 명이 크게 쳐요 · 1.5인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어(절대 기준이라 빈 등급도 있어요) · 지난 달 티어는 뒤 판에 안 바뀌어요 · 얹거나 누르면 달별 변화와 근거값 · 열 판 미만은 -</span>
             <span><b>68</b> 게임수 · <i>54%</i> 승률 — 전체(넓은 화면은 종족별도)</span>
             <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
-            <span>값을 누르면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
+            <span>값을 누르면 다섯 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 다섯 달)</span>
           </span>
         </>
       ) : (
@@ -295,7 +296,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
           <span>티어(팀전 조회에서만) — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 · 인분 = EAPM ÷ 120 × 교환비 보정(센 상대에게 밑진 몫은 덜 깎음) × 승패 보정(같은 편·상대 편으로 예상한 것보다 꾸준히 더/덜 이긴 만큼 · 그 기간 끝까지 쌓아 천천히) · 편의 힘은 센 사람에게 무게를 더 줘서 1티어 한 명이 크게 쳐요 · 1.5인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어(절대 기준이라 빈 등급도 있어요) · 지난 달 티어는 뒤 판에 안 바뀌어요 · 얹거나 누르면 달별 변화와 근거값 · 열 판 미만은 -</span>
           <span>종족 칸 — 그 종족으로 뛴 게임수 · 승률</span>
           <span>머리(게임수 · 승률 · 데미지 · 교환비 · APM · 종족별 게임수 · 승률)를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
-          <span>값에 마우스를 얹으면 일곱 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 일곱 달)</span>
+          <span>값에 마우스를 얹으면 다섯 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 다섯 달)</span>
         </span>
       )}
     />
@@ -308,7 +309,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   clanGames: number;
   rows: StatGridRow[];
   mobile: boolean;
-  /** 일곱 달 변화 자료(StatTrend) — 없으면 칸에 손잡이가 없다. */
+  /** 다섯 달 변화 자료(StatTrend) — 없으면 칸에 손잡이가 없다. */
   trend: StatTrendData | null;
   /** 팀전 티어 칸(유저 옆 · 팀전 조회에서만 — 위 TierCell ★). */
   tier?: boolean;

@@ -5146,6 +5146,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-mrec > .scr-sg-v:first-child > b { color: var(--text); } /* 전수도 본문색(승률과 같게 · 요청) */
 /* 폰 전적 칸 아래 승률 · 클랜 경기 수 — 판수보다 작게(괄호 없음)(2026-10-22, 요청: "승률이 좀 작게"). */
 .scr-sg-mrate { font-size: 10px; font-weight: 400; color: var(--dim); opacity: 0.85; line-height: 1; }   /* 괄호 없이 더 옅게(2026-10-22, 요청: "승률 괄호 제거하고 연하게") */
+.scr-sg-mrate.is-rate { color: var(--text); opacity: 1; }   /* 승률(%)은 본문색(2026-10-28, 요청: "모바일 승률 퍼센트 색 기본색") — 평균 줄의 경기 수는 옅은 그대로 */
 /* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름. 뜻 풀이는 도움말 말풍선(.scr-sg-help). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; }
 /* ★ 보통 폰 너비에선 전적을 전체 하나로(2026-10-28, 요청: "전적도 일반적 폰 너비에서는 전체 전적만 판수와 승률로 표시 종족 구분 없이") — 종족 칸(scr-sg-mrace)을
