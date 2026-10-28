@@ -236,11 +236,13 @@ function MCell({ s, games, noRate, member, race = null, className }: { s?: Membe
      "모바일 승률 퍼센트 색 기본색"). 종족 칸(scr-sg-mrace)은 보통 폰 너비에서 숨는다(CSS). */
   return (
     <TCell member={member} metric={statMetric(games !== undefined ? "crec" : "rec", race)} className={cx("scr-sg-mrec", className)}>
-      {/* 평균 줄은 보통 폰 너비에서 판수(경기 수)만(2026-10-28, 요청: "평균에는 판수만 표시" — 참여 합 is-part 를 CSS 가 숨기고 경기 수를 본 숫자처럼). */}
-      <span className={cx("scr-sg-v", games !== undefined && "is-part")}><b>{s.plays.toLocaleString()}</b></span>
+      {/* 평균 줄은 판수(경기 수)만(2026-10-28, 요청: "평균에는 판수만 표시" → "넓은 화면에서도 판수만" — 옛: 위 참여 합 · 아래 경기 수). 팝업은 그대로(참여 · 경기 수). */}
       {games !== undefined
-        ? <span className="scr-sg-mrate is-games">{games.toLocaleString()}</span>
-        : noRate ? <Dash /> : <span className="scr-sg-mrate is-rate">{s.winRate}%</span>}
+        ? <span className="scr-sg-v"><b>{games.toLocaleString()}</b></span>
+        : <>
+          <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b></span>
+          {noRate ? <Dash /> : <span className="scr-sg-mrate is-rate">{s.winRate}%</span>}
+        </>}
     </TCell>
   );
 }

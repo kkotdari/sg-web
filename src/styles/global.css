@@ -5146,7 +5146,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-mrec > .scr-sg-v:first-child > b { color: var(--text); } /* 전수도 본문색(승률과 같게 · 요청) */
 /* 폰 전적 칸 아래 승률 · 클랜 경기 수 — 판수보다 작게(괄호 없음)(2026-10-22, 요청: "승률이 좀 작게"). */
 .scr-sg-mrate { font-size: 10px; font-weight: 400; color: var(--dim); opacity: 0.85; line-height: 1; }   /* 괄호 없이 더 옅게(2026-10-22, 요청: "승률 괄호 제거하고 연하게") */
-.scr-sg-mrate.is-rate { color: var(--text); opacity: 1; }   /* 승률(%)은 본문색(2026-10-28, 요청: "모바일 승률 퍼센트 색 기본색") — 평균 줄의 경기 수는 옅은 그대로 */
+.scr-sg-mrate.is-rate { color: var(--text); opacity: 1; }   /* 승률(%)은 본문색(2026-10-28, 요청: "모바일 승률 퍼센트 색 기본색") */
 /* 폰 머리 두 줄(2026-10-22) — 전적 머리가 전체·종족 넷을 덮고 그 아래 종족 이름. 뜻 풀이는 도움말 말풍선(.scr-sg-help). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { grid-column: span 4; }
 /* ★ 보통 폰 너비에선 전적을 전체 하나로(2026-10-28, 요청: "전적도 일반적 폰 너비에서는 전체 전적만 판수와 승률로 표시 종족 구분 없이") — 종족 칸(scr-sg-mrace)을
@@ -5155,13 +5155,11 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   .scr-sg.is-m { grid-template-columns: minmax(min-content, 1.6fr) repeat(3, minmax(44px, 1fr)); }
   .scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.4fr) repeat(4, minmax(40px, 1fr)); }
   .scr-sg.is-m .scr-sg-mrace { display: none; }
-  /* 머리는 "전적" 한 칸(두 줄을 내리 씀 · 2026-10-28, 요청: "전체만 보일 땐 그냥 전적 칸 하나로") · 평균 줄 전적은 경기 수만. */
+  /* 머리는 "전적" 한 칸(두 줄을 내리 씀 · 2026-10-28, 요청: "전체만 보일 땐 그냥 전적 칸 하나로"). */
   .scr-sg.is-m .scr-sg-head > .scr-sg-hgroup4 { display: none; }
   .scr-sg.is-m .scr-sg-row.scr-sg-head > .scr-sg-c.scr-sg-race-head.scr-sg-mtotal-head { grid-row: 1 / span 2; padding-top: 8px; font-size: 11px; letter-spacing: normal; }
   .scr-sg.is-m .scr-sg-mtotal-head .scr-sg-lbl-wide { display: none; }
   .scr-sg.is-m .scr-sg-mtotal-head .scr-sg-lbl-narrow { display: inline; }
-  .scr-sg.is-m .scr-sg-mrec > .scr-sg-v.is-part { display: none; }
-  .scr-sg.is-m .scr-sg-mrec > .scr-sg-mrate.is-games { font-size: 12px; color: var(--text); opacity: 1; line-height: normal; }
 }
 .scr-sg-lbl-narrow { display: none; }
 /* 폰 표 도움말(StatHelp · 2026-10-22) — 정렬 줄 오른끝 단추 · 말풍선에 한 줄짜리 표 그림(.scr-sg-help-mock)과 풀이 목록. */
