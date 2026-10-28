@@ -328,9 +328,9 @@ export interface TierEntry {
   cbt?: number | null;
   /** 생산·인구 한 항목(티어 점수 칸) — 같은 편 동료 대비 배수(2026-10-28). */
   eco?: number | null;
-  /** 판 평균 APM · 점수에 더한 APM 가점(0 ~ 0.5 · 깎지는 않음 · 2026-10-28). */
-  apm?: number | null;
-  apmBonus?: number | null;
+  /** 판 평균 EAPM · 점수에 더한 EAPM 가점(0 ~ 0.75 · 깎지는 않음 · 2026-10-28 · 처음 APM → 같은 날 EAPM). */
+  eapm?: number | null;
+  eapmBonus?: number | null;
 }
 
 export interface ClanBreakdownEntry {
