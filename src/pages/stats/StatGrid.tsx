@@ -236,9 +236,10 @@ function MCell({ s, games, noRate, member, race = null, className }: { s?: Membe
      "모바일 승률 퍼센트 색 기본색"). 종족 칸(scr-sg-mrace)은 보통 폰 너비에서 숨는다(CSS). */
   return (
     <TCell member={member} metric={statMetric(games !== undefined ? "crec" : "rec", race)} className={cx("scr-sg-mrec", className)}>
-      <span className="scr-sg-v"><b>{s.plays.toLocaleString()}</b></span>
+      {/* 평균 줄은 보통 폰 너비에서 판수(경기 수)만(2026-10-28, 요청: "평균에는 판수만 표시" — 참여 합 is-part 를 CSS 가 숨기고 경기 수를 본 숫자처럼). */}
+      <span className={cx("scr-sg-v", games !== undefined && "is-part")}><b>{s.plays.toLocaleString()}</b></span>
       {games !== undefined
-        ? <span className="scr-sg-mrate">{games.toLocaleString()}</span>
+        ? <span className="scr-sg-mrate is-games">{games.toLocaleString()}</span>
         : noRate ? <Dash /> : <span className="scr-sg-mrate is-rate">{s.winRate}%</span>}
     </TCell>
   );
@@ -370,7 +371,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("ex")}>교환비</SortHead></span>
           <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow"><SortHead {...mToggle("apm")}>APM</SortHead></span>
           <span className="scr-sg-c scr-sg-hgroup scr-sg-hgroup4">전적</span>
-          <span className="scr-sg-c scr-sg-hsub scr-sg-race-head"><SortHead {...cycle("rate", "plays")}>전체</SortHead></span>
+          {/* 보통 폰 너비(종족 칸이 숨을 때)엔 "전적" / "전체" 두 줄을 "전적" 한 칸으로(2026-10-28, 요청: "전체만 보일 땐 그냥 전적 칸 하나로 합치고") — 글자 둘을 CSS 가 갈아 낀다. */}
+          <span className="scr-sg-c scr-sg-hsub scr-sg-race-head scr-sg-mtotal-head"><SortHead {...cycle("rate", "plays")}><span className="scr-sg-lbl-wide">전체</span><span className="scr-sg-lbl-narrow">전적</span></SortHead></span>
           {RACES.map((r) => <span key={r} className="scr-sg-c scr-sg-hsub scr-sg-race-head scr-sg-mrace"><SortHead {...cycle(`${r}:rate`, `${r}:plays`)}>{r}</SortHead></span>)}
         </div>
         {clanRow && <MobileRow row={clanRow} clan games={clanGames} tier={tier} />}
