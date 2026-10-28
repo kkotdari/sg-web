@@ -328,6 +328,8 @@ export interface TierEntry {
   cbt?: number | null;
   /** 생산·인구 한 항목(티어 점수 칸) — 같은 편 동료 대비 배수(2026-10-28). */
   eco?: number | null;
+  /** 병력 유지 — 분마다 일꾼 뺀 인구 평균 · 같은 편 동료 대비 배수(2026-10-28). */
+  arm?: number | null;
   /** 운영 — 능력치로 짠 예상 승률 대비 실제 편차 중 제 몫(%p) · 제 판들의 예상 승률 평균(%) · win 은 이제 실제 승률(2026-10-28). */
   ops?: number | null;
   expWin?: number | null;
