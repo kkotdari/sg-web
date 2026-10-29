@@ -5121,10 +5121,10 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 폰 — [유저 | APM | 데미지 | 전체 | 테란 | 프로토스 | 저그](2026-10-22, 요청: "모바일도 APM · 데미지 컬럼으로 · 닉네임 최소 폭 줄여") — 옛: 유저 칸 아래 한 줄
    "APM 230 1.4 0.8"(그 줄 폭을 유저 칸이 먼저 가졌다) · 그 전엔 [유저 | 전적] 세로 쌓기. APM 34 · 데미지 38 고정 · 전적 넷은 36px 부터(1fr) ·
    유저 칸은 닉네임 다섯 글자가 늘 보이는 폭(min-content — 이름 최소 5em · 아래 .scr-sg-name)부터 1.6fr 로 는다(요청: "최소 다섯 글자는 나와야 해 닉네임"). */
-.scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(min-content, 2fr) repeat(10, minmax(30px, 1fr));   /* 유저 밖 칸 같은 폭(2026-10-22, 요청: "모바일 유저 제외 모든 컬럼 폭 동일하게") · 넓은 폰은 교환비 · APM · 게임수 · 승률 + 종족마다 게임수 · 승률(2026-10-28, 요청: "넓은 폰도 게임수 승률 나누기" — 옛 여섯 칸: 전적 넷이 한 칸에 둘) */ font-size: var(--fs-11); }
+.scr-sg.is-m { border-radius: 3px; grid-template-columns: minmax(min-content, 2fr) repeat(12, minmax(30px, 1fr));   /* 넓은 폰은 PC 와 같은 칸(2026-10-29, 요청: "피시와 넓은 폭 폰의 컬럼을 PC 기준으로 똑같이 통일") — 게임수 · 승률 · 교환비 · 보정교환비 · APM · EAPM + 종족마다 게임수 · 승률 열둘 · 유저 밖 칸 같은 폭(2026-10-22, 요청: "모바일 유저 제외 모든 컬럼 폭 동일하게") · 넓은 폰은 교환비 · APM · 게임수 · 승률 + 종족마다 게임수 · 승률(2026-10-28, 요청: "넓은 폰도 게임수 승률 나누기" — 옛 여섯 칸: 전적 넷이 한 칸에 둘) */ font-size: var(--fs-11); }
 /* 폰 티어 칸(2026-10-27, 요청: "모바일 유저칸 너비 줄이고") — 유저 칸 1.6fr → 1.2fr · 닉네임 최소 5em → 4em.
    티어 칸도 다른 칸과 같은 폭(2026-10-28, 요청: "모바일에서 티어칸도 다른 칸과 너비 같게" — 옛: 30px 고정). */
-.scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 2fr) repeat(11, minmax(28px, 1fr)); }
+.scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 2fr) repeat(13, minmax(28px, 1fr)); }
 .scr-sg.is-m.has-tier .scr-sg-name { min-width: 4em; }
 .scr-sg.is-m .scr-sg-tier-c { padding-left: 2px; padding-right: 2px; }
 .scr-sg.is-m .scr-sg-tier { width: 20px; height: 20px; border-radius: 4px; font-size: 11px; }
@@ -5149,6 +5149,10 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
   .scr-sg.is-m { grid-template-columns: minmax(min-content, 1.6fr) repeat(4, minmax(40px, 1fr)); }
   .scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.7fr) repeat(5, minmax(34px, 1fr)); }
   .scr-sg.is-m .scr-sg-mwide { display: none; }
+}
+/* 좁은 폰 몫 칸(보정교환비 · EAPM 이 앞 · MobileRow ★)은 넓은 폰에서 숨는다 — 넓은 폰은 PC 차례의 scr-sg-mwide 칸을 쓴다. */
+@media (min-width: 601px) {
+  .scr-sg.is-m .scr-sg-mnarrow { display: none; }
 }
 /* 폰 표 도움말(StatHelp · 2026-10-22) — 정렬 줄 오른끝 단추 · 말풍선에 한 줄짜리 표 그림(.scr-sg-help-mock)과 풀이 목록. */
 .scr-sg-help-btn { margin-left: auto; padding: 0 2px; }
@@ -5455,6 +5459,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-trend-facts i { font-style: normal; color: var(--muted); }
 .scr-sg-trend-facts b { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
 .scr-sg-trend-pop:not(.is-m) .scr-sg-trend-facts { margin: -2px 0 8px; font-size: var(--fs-caption); }
+/* 덧붙인 그래프의 머리(StatMetric.more · 2026-10-29 · 교환비 팝업의 딜 · 피해) — 위 그래프와 띄운다. */
+.scr-sg-trend-head.scr-sg-trend-more { margin-top: 10px; }
 .scr-sg-trend-legend { margin-left: auto; display: inline-flex; gap: 8px; font-size: var(--fs-9); }
 .scr-sg-trend-legend i { font-style: normal; font-weight: 700; color: var(--text); }
 .scr-sg-trend-legend i.is-dealt, .scr-sg-trend-line.is-dealt, .scr-sg-trend-dot.is-dealt, .scr-sg-trend-val.is-dealt { color: var(--win, #16a34a); stroke: var(--win, #16a34a); }

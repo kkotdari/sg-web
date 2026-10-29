@@ -6,7 +6,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
-import { statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
+import { exOf, statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -94,7 +94,7 @@ const sortLabel = (k: StatSortKey): string => {
   if (k === "apm") return "APM";
   if (k === "eapm") return "EAPM";
   if (k === "tier") return "티어";
-  if (k === "dmg") return "데미지";
+  if (k === "exr") return "교환비";
   if (k === "ex") return "보정교환비";
   const [who, what] = k.includes(":") ? k.split(":") : ["전체", k];
   return `${who} ${what === "rate" ? "승률" : "게임수"}`;
@@ -328,9 +328,9 @@ export default function ClanStatsScreen() {
         const ax = exv(a); const bx = exv(b);
         return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
       }
-      if (key === "dmg") {
-        const ad = a.stats.dmgDealtRel; const bd = b.stats.dmgDealtRel;
-        return missingLast(typeof ad !== "number", typeof bd !== "number") || dirSign * ((ad ?? 0) - (bd ?? 0));
+      if (key === "exr") {
+        const ax = exOf(a.stats); const bx = exOf(b.stats);
+        return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
       }
       if (key === "apm" || key === "eapm" || key === "cmd") {
         const f = key === "apm" ? "avgApm" : key === "eapm" ? "avgEapm" : "avgCmd";

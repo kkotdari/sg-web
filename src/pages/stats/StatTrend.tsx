@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import { Spinner } from "../../components/common/Feedback";
 import { shiftMonthValue } from "../../utils/date";
 import type { BaseRace, Member, MemberStatsEntry } from "../../types";
@@ -58,6 +58,8 @@ export interface StatMetric {
   series: TrendSeries[];
   /** 선이 둘일 때 — shared: 같은 단위라 한 자(딜 · 피해) · stacked: 단위가 달라 위아래 두 판(게임수 · 승률). 하나면 single. */
   mode: "single" | "shared" | "stacked";
+  /** 아래에 덧붙이는 그래프들(2026-10-29, 요청: "교환비 팝업엔 교환비, 딜+피해 그래프 2개") — 저마다 제 이름 · 범례 줄과 그래프. */
+  more?: StatMetric[];
 }
 
 const n = (v: number | null | undefined): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -71,9 +73,16 @@ const int = (v: number) => Math.round(v).toLocaleString();
 const pct = (v: number) => `${Math.round(v)}%`;
 const x100 = (v: number) => (v / 100).toFixed(1);
 const x2 = (v: number) => v.toFixed(2);
+/** 교환비 = 준 ÷ 입은 데미지(유닛 + 건물 합 · 2026-10-28, 요청: "통계에 교환비 컬럼을 추가") — 둘 중 하나라도 없으면 null. */
+export function exOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
+  if (!s) return null;
+  const d = (s.dmgDealtUnit ?? 0) + (s.dmgDealtBldg ?? 0);
+  const t = (s.dmgTakenUnit ?? 0) + (s.dmgTakenBldg ?? 0);
+  return s.dmgPlays && d > 0 && t > 0 ? d / t : null;
+}
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: BaseRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: BaseRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
@@ -105,6 +114,13 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "apm" | "eapm
   }
   /* 보정 교환비(2026-10-28, 요청: "그리드 교환비 표시가 보정 전이라 헷갈림 — 라벨을 보정교환비로 바꾸고 보정값 표시") — 달마다 그 달 판으로 셈한 sg-api tier.ex. */
   if (kind === "ex") return { key: "ex", label: "보정교환비(종족 · 상대 세기 뺌)", series: [{ label: "보정교환비", cls: "", pick: (e) => n(e.tier?.ex), fmt: x2 }], mode: "single" };
+  /* 교환비(날 값 · 2026-10-29, 요청: "PC 데미지 컬럼 제거하고 교환비 추가 — 팝업엔 교환비, 딜+피해 그래프 2개") — 교환비 그래프 아래에 데미지(딜 · 피해) 그래프. */
+  if (kind === "exr") {
+    return {
+      key: "exr", label: "교환비(준 ÷ 입은 데미지)", series: [{ label: "교환비", cls: "", pick: (e) => exOf(e.overall), fmt: x2 }], mode: "single",
+      more: [statMetric("dmg")],
+    };
+  }
   /* 데미지(kind "dmg") — 딜 · 피해 두 선. 옛 폰 전적 칸(게임수 · 승률 위아래 · "rec" · "crec")은 걷었다(2026-10-28 — 폰도 게임수 · 승률 칸이 따로). */
   return {
     key: "dmg", label: "데미지(평균 대비 배수)",
@@ -230,6 +246,15 @@ export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
         </div>
       )}
       <StatTrendChart data={data} member={anchor.member} metric={anchor.metric} chartW={mobile ? w - 24 : CHART_VB_W} />
+      {anchor.metric.more?.map((mm) => (
+        <Fragment key={mm.key}>
+          <div className="scr-sg-trend-head scr-sg-trend-more">
+            <span>{mm.label}</span>
+            {mm.series.length > 1 && <span className="scr-sg-trend-legend">{mm.series.map((s) => <i key={s.label} className={s.cls}>{s.label}</i>)}</span>}
+          </div>
+          <StatTrendChart data={data} member={anchor.member} metric={mm} chartW={mobile ? w - 24 : CHART_VB_W} />
+        </Fragment>
+      ))}
     </div>
   );
 }
