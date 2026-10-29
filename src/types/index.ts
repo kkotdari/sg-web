@@ -201,6 +201,8 @@ export interface GameResult {
   recommendCount?: number;
   recommended?: boolean;
   fame?: boolean;
+  /** 댓글 수(2026-10-29 · 게임 목록 GET /api/game-results 만 싣는다 · 다른 자리는 0). */
+  commentCount?: number;
   hasTruth?: boolean | null;
   hidden?: boolean;
   /** 내전(참가자 전원이 회원)인가 — 서버가 실어 준다(비공개 판은 팀이 비어 슬롯으로 못 가른다 · 2026-10-12). 옛 서버면 없다. */

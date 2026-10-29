@@ -41,7 +41,8 @@ import type { GameResult, Member } from "../../types";
    같은 날 "추천 아이콘은 도구에서 추천 컬럼으로 이동"). */
 /* 차례(2026-10-26, 요청: "피시에서 게임길이 컬럼을 맵 다음으로 옮기고 로스터 다음에 배치라는 컬럼 — 미니맵 안개 없는 버전에 각 유저 스타팅 위치 · 종족") —
    맵 · 게임길이 · 로스터 · 배치(아래 StartMapCell). */
-const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "게임길이", "로스터", "배치", "데이터", "도구", "추천"];
+/* 추천 다음 **댓글** 칸(2026-10-29, 요청: "게임목록 댓글수 표시 — 피시는 추천 다음에 컬럼을 추가해서 숫자 표시"). */
+const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "게임길이", "로스터", "배치", "데이터", "도구", "추천", "댓글"];
 
 /** 배치 칩 글 — 폭 4칸(한글·한자 등 넓은 글자 2칸 · 영문·숫자 1칸) 안에서 앞부터(2026-10-26, 요청: "2글자 정도" → "영어는 4글자"). */
 function shortSpot(name: string): string {
@@ -273,6 +274,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         </span>
         {/* 추천 단추는 도구 칸이 아니라 추천 칸에 수와 함께(2026-10-22, 요청: "추천 아이콘은 도구에서 추천 컬럼으로 이동") — 단추가 안 서는 판(명예의 전당 · 손님)은 수만. */}
         <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : rec.shown ? <RecommendButton rec={rec} count className="scr-gtab-rec" /> : rec.n}</span>
+        <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : game.commentCount ?? 0}</span>
       </div>
       {graphOpen && <GameCurvesModal game={game} onClose={() => setGraphOpen(false)} />}
     </div>

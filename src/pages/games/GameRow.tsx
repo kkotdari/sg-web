@@ -32,6 +32,8 @@ export function GameDataButton({ game, graph = true }: { game: GameResult; graph
     <span className="scr-feed-row-data-wrap" onPointerDown={stop} onPointerUp={stop} onClick={stop} onKeyDown={stop} onContextMenu={stop}>
       {/* 추천(폰 · 2026-10-22 요청) — 수와 함께 · 로스터 아래 줄 왼끝(global.css). */}
       <RecommendButton rec={rec} size={14} count className="scr-feed-row-rec" />
+      {/* 댓글 수(2026-10-29, 요청: "모바일은 푸터 가운데 댓글 0 이런 식으로") — 줄 아래 격자의 가운데 칸(global.css .scr-feed-row-cmt). */}
+      <span className="scr-feed-row-cmt">댓글 {game.commentCount ?? 0}</span>
       {graph && (
         <button
           type="button" className="scr-icon-btn scr-feed-row-data" title="데이터 그래프" aria-label="데이터 그래프"
