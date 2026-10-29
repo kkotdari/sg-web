@@ -45,12 +45,13 @@ import type { GameResult, Member } from "../../types";
 /* 추천 다음 **댓글** 칸(2026-10-29, 요청: "게임목록 댓글수 표시 — 피시는 추천 다음에 컬럼을 추가해서 숫자 표시"). */
 const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "게임길이", "로스터", "배치", "데이터", "도구", "추천", "댓글"];
 
-/** 배치 칩 글 — 폭 4칸(한글·한자 등 넓은 글자 2칸 · 영문·숫자 1칸) 안에서 앞부터(2026-10-26, 요청: "2글자 정도" → "영어는 4글자"). */
+/** 배치 칩 글 — 폭 6칸(한글·한자 등 넓은 글자 2칸 · 영문·숫자 1.2칸) 안에서 앞부터(2026-10-26, 요청: "2글자 정도" → "영어는 4글자" →
+ *  2026-10-29 "한글 세 글자 영어 다섯 글자까지" — 한글 셋 = 영문 다섯 = 6칸 · 섞이면 그 사이). */
 function shortSpot(name: string): string {
   let out = ""; let w = 0;
   for (const ch of Array.from(name)) {
-    const cw = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]/.test(ch) ? 2 : 1;
-    if (w + cw > 4) break;
+    const cw = /[\u1100-\u11ff\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]/.test(ch) ? 2 : 1.2;
+    if (w + cw > 6 + 1e-9) break;
     out += ch; w += cw;
   }
   return out;
