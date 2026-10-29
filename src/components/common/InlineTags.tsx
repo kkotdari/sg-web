@@ -36,6 +36,29 @@ function GameTagChip({ no }: { no: string }) {
   );
 }
 
+/** 태그를 고르며 한글 조합을 끊느라 칸을 잠깐 놓는 중인가(insert ★) — 칸의 onBlur 가 이때는 아무것도 하지 않는다. */
+let tagRefocus9 = false;
+export const tagRefocusing = (): boolean => tagRefocus9;
+
+/** 회원 태그 칩 — 누르면 그 회원 정보 창(2026-10-29, 실기 지적: "태그 눌러도 회원정보창 안 뜨는 문제" · 옛 칩은 글자만이었다).
+ *  닉네임이 바뀌어 회원을 못 찾으면 글자만. 줄·카드의 누름(게임 열기 등)으로 안 번지게 막는다. */
+function MemberTagChip({ name }: { name: string }) {
+  const id = useAppStore((s) => s.members.find((m) => m.nickname === name && m.status === "active")?.id);
+  const openMemberProfile = useAppStore((s) => s.openMemberProfile);
+  if (!id) return <span className="scr-comment-mention">@{name}</span>;
+  const open = (e: { stopPropagation: () => void; preventDefault: () => void }): void => { e.stopPropagation(); e.preventDefault(); openMemberProfile(id); };
+  return (
+    <span
+      className="scr-comment-mention is-link" role="button" tabIndex={0} title={`${name} 회원 정보`}
+      onClick={open}
+      onPointerDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") open(e); }}
+    >
+      @{name}
+    </span>
+  );
+}
+
 /** 글자 → 칩을 섞은 조각들. names 는 회원 칩으로 그릴 닉네임(긴 이름 먼저 맞춘다). keyBase 는 여러 조각을 이어 붙일 때 겹치지 않게. */
 export function renderTags(text: string, names: string[], keyBase = ""): ReactNode[] {
   const nameAlt = names.filter(Boolean).slice().sort((a, b) => b.length - a.length).map(escapeRe);
@@ -47,7 +70,7 @@ export function renderTags(text: string, names: string[], keyBase = ""): ReactNo
     if (m.index > last) out.push(<span key={`${keyBase}t${last}`}>{text.slice(last, m.index)}</span>);
     out.push(m[1]
       ? <GameTagChip key={`${keyBase}g${m.index}`} no={m[1]} />
-      : <span key={`${keyBase}c${m.index}`} className="scr-comment-mention">@{m[2]}</span>);
+      : <MemberTagChip key={`${keyBase}c${m.index}`} name={m[2]} />);
     last = m.index + m[0].length;
   }
   if (last < text.length) out.push(<span key={`${keyBase}t${last}`}>{text.slice(last)}</span>);
@@ -177,6 +200,10 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
   const insert = (token: string): void => {
     if (!mode) return;
     const el = inputRef.current;
+    /* ★ 한글 조합 중이면 먼저 끊는다(2026-10-29, 실기 지적: "닉네임 태그 입력 시 한글 마지막 글자가 중복으로 또 입력") — '@정구'의 '구'가 아직 조합 중인 채
+       값을 갈면, 그 뒤 IME 가 조합을 마치며 '구'를 커서 자리에 한 번 더 넣었다. blur 가 조합을 지금 끝내고(값은 이미 그 글자를 담고 있다) 곧장 다시 잡는다 —
+       그 사이의 blur 를 칸을 감싼 쪽(댓글 쓰기 칸 접기 · 시트 typing)이 '떠났다'로 읽지 않게 tagRefocusing() 으로 알린다. */
+    if (el && document.activeElement === el) { tagRefocus9 = true; try { el.blur(); el.focus(); } finally { tagRefocus9 = false; } }
     const cursor = el?.selectionStart ?? value.length;
     const next = value.slice(0, mode.start) + token + value.slice(cursor);
     if (maxLength !== undefined && next.length > maxLength) return;

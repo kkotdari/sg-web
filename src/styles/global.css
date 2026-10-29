@@ -2958,6 +2958,8 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-mention-opt .scr-avatar { flex-shrink: 0; }
 .scr-mention-name { font-size: var(--fs-body); font-weight: 600; }
 .scr-comment-mention { vertical-align: middle; position: relative; top: -1px; margin: 0 1px; user-select: none; }
+.scr-comment-mention.is-link { cursor: pointer; }   /* 누르면 회원 정보(InlineTags MemberTagChip · 2026-10-29) */
+@media (hover: hover) { .scr-comment-mention.is-link:hover { text-decoration: underline; } }
 .scr-comment-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .scr-comment-item {
   display: flex; flex-direction: column; gap: 4px; padding: 10px 2px;

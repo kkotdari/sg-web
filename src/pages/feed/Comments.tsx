@@ -9,7 +9,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { cx } from "../../utils/format";
-import { mentionIdsOf, renderTags, useInlineTags } from "../../components/common/InlineTags";
+import { mentionIdsOf, renderTags, tagRefocusing, useInlineTags } from "../../components/common/InlineTags";
 import { formatWhen, serverMs } from "../../utils/date";
 
 const COMMENT_NEW_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -529,6 +529,7 @@ export default function Comments({ targetType, targetId, overModal = false, shee
                 ref={composerWrapRef}
                 className="scr-feed-comment-composer"
                 onBlur={(e) => {
+                  if (tagRefocusing()) return;   // 태그 고르며 한글 조합 끊기(InlineTags insert ★) — 떠난 게 아니다
                   if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setComposerOpen(false);
                 }}
               >
@@ -545,7 +546,7 @@ export default function Comments({ targetType, targetId, overModal = false, shee
           className={cx("scr-comment-sheet scr-feed-card-comment scr-feed-notes", typing && "scr-comment-sheet-typing", overModal && "scr-comment-sheet-over-modal")}
           role="dialog" aria-label="댓글"
           onFocus={() => setTyping(true)}
-          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setTyping(false); }}
+          onBlur={(e) => { if (!tagRefocusing() && !e.currentTarget.contains(e.relatedTarget as Node | null)) setTyping(false); }}
         >
           <div className="scr-comment-sheet-head">
             <span className="scr-comment-sheet-title">댓글 {notes.length}</span>

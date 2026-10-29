@@ -17,7 +17,7 @@ import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { isPhotoSet, type ScheduleBlock, type SchedulePhoto } from "../../types";
 import { imgSrc } from "../../utils/imgSrc";
 import { canSaveToAlbum, downloadFiles, fetchMedia, isVideoItem, MAX_VIDEO_BYTES, shareToAlbum } from "../../utils/media";
-import { renderTags, useInlineTags, useMemberNames } from "../../components/common/InlineTags";
+import { renderTags, tagRefocusing, useInlineTags, useMemberNames } from "../../components/common/InlineTags";
 
 export type DraftBlock = ScheduleBlock & { key: string };
 /** 제목 요소 — 글 요소 중 제목 줄만 가진 것(노션의 제목 블록). 새로 만든 빈 제목은 heading 표식으로 안다. */
@@ -242,7 +242,7 @@ function TextBlock({
             tags.onInput(v, e.target.selectionStart ?? v.length);
           }}
           onKeyDown={(e) => { if (!tags.onKeyDown(e)) onEdgeKey(e); }}
-          onBlur={() => setEditing(false)}
+          onBlur={() => { if (!tagRefocusing()) setEditing(false); }}   // 태그 고르며 한글 조합 끊기(InlineTags insert ★)는 떠난 게 아니다
         />
       ) : value || canEdit ? (
         <p
@@ -521,7 +521,7 @@ function ListBlock({
                   onChange={(e) => setItem(i, e.target.value, e.currentTarget)}
                   onKeyDown={(e) => onKey(i, e)}
                   onFocus={() => setFocused(i)}
-                  onBlur={() => setFocused((f) => (f === i ? null : f))}
+                  onBlur={() => { if (!tagRefocusing()) setFocused((f) => (f === i ? null : f)); }}
                 />
               ) : (
                 <span className="scr-sb-line scr-sb-list-text">{linkify(it, names)}</span>
