@@ -66,6 +66,9 @@
   --panel-solid: #101011;
   --card-bg: #0d0d0e;
   --panel-raised: rgba(255, 255, 255, 0.12);
+  /* 불투명 판(2026-10-29, 지적: "칩 강조 시 배경이 반투명해서 뒤가 비침") — 위 반투명 판을 짙은 바탕(--panel-solid)에 미리 얹은 색. 강조색과 섞을 때 이것을 쓴다
+     (반투명 판과 섞으면 결과도 반투명이라 겹친 칩이 비쳤다 — 38% 강조 + 62% × 0.12 = 알파 0.45). */
+  --panel-raised-solid: color-mix(in srgb, #fff 12%, var(--panel-solid));
   --input-bg: rgba(6, 6, 7, 0.86);
   --header-bg: rgba(7, 7, 8, 0.74);
 
@@ -503,6 +506,7 @@ html.scr-light-theme {
   --panel: rgba(255, 255, 255, 0.46);
   --panel-solid: #ffffff;
   --panel-raised: #f0f0f0;
+  --panel-raised-solid: var(--panel-raised);
   --input-bg: #ffffff;
   --line: #000000;
   --input-line: rgba(0, 0, 0, 0.3);   /* 라이트 입력 칸 테두리 검정 → 0.3(2026-10-22, 요청: "라이트 테마 모든 인풋창 테두리 좀 더 연하게") */
@@ -2257,9 +2261,9 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-bl-arrowhead { fill: rgba(var(--overlay-rgb), 0.55); }   /* 잇는 선 끝의 화살촉(2026-10-23, 요청: "변태 화살표 없애고 선을 화살표로") — 칩 글자의 → · + 머리는 걷었다 */
 /* (걷어냄 · 2026-10-23, 요청: "시간축에 따른 효과 제거") 시간선 처지 is-build · is-dead · is-pre · 취소선(.scr-bl-strike) · 잇는 선의 처지. */
 /* 같은 종류 강조 = 강조색(폰 테크 칩 .scr-tl-chip.is-hl 과 같은 색 · 2026-10-22) — **불투명**(같은 날 "강조 시 뒤 안 보이게 불투명") — 반투명 강조색을 칩 바탕에 미리 섞어 칠한다. */
-.scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 30%, var(--panel-raised, var(--panel))); fill-opacity: 1; stroke: var(--lighting-accent, var(--point)); }
+.scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 30%, var(--panel-raised-solid, var(--panel-raised, var(--panel)))); fill-opacity: 1; stroke: var(--lighting-accent, var(--point)); }
 /* 다크는 강조색을 **옅게 섞어**(85 → 38%) 흰 글자가 읽히게(2026-10-23, 지적: "다크모드 강조색 글씨 안 보임" — 85% 는 밝은 강조색 판이라 흰 글자가 묻혔다). */
-html:not(.scr-light-theme) .scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 38%, var(--panel-raised, var(--panel))); }
+html:not(.scr-light-theme) .scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 38%, var(--panel-raised-solid, var(--panel-raised, var(--panel)))); }
 /* 얹은 칩 하나(진짜 주인공 · 2026-10-23, 요청: "진짜 주인공(실제 선택)은 더 진하게") — 같은 종류 강조(30% · 다크 85%)보다 진하게 · svg 끝에 한 벌 더 그려 맨 위.
    테두리·얹은 건물 선은 본문색(까만 선) 말고 강조색(같은 날 "얹은 칩 그림자? 이거 땜에 어두워 보이는 것도 · 까만 선이고").
    같은 종류 칩과 **반대쪽으로** 벌린다(같은 날 "눈에 더 안 띄지 왜 — 다른 애들보다" → "칩도 살짝 확대 · 선도 더 두껍게 · 테두리는 따로 안 주는 게 · 색 차이 더 두드러지게") —
@@ -2268,9 +2272,9 @@ html:not(.scr-light-theme) .scr-bl-chip.is-hl { fill: color-mix(in srgb, var(--l
    그대로이고 크기만 1.3배(GameCurvesModal scale). */
 .scr-bl-hit { cursor: default; }
 /* 마우스를 얹은 테크와 같은 종류(모든 사람)는 강조색 칩(2026-10-21, 요청: "같은 종류의 건물을 모두 하이라이팅" → "칩형태로") — 글자색은 그대로. */
-.scr-tl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 30%, var(--panel-raised, var(--panel))); fill-opacity: 1; stroke: var(--lighting-accent, var(--point)); }   /* 칩이 되며 PC 강조(.scr-bl-chip.is-hl)와 같은 불투명 섞음으로(옛 반투명 강조색 0.3) */   /* 연하게 — 글자(본문색)가 또렷이(요청: "잘 안보이네 좀 연해야겠다") */
+.scr-tl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 30%, var(--panel-raised-solid, var(--panel-raised, var(--panel)))); fill-opacity: 1; stroke: var(--lighting-accent, var(--point)); }   /* 칩이 되며 PC 강조(.scr-bl-chip.is-hl)와 같은 불투명 섞음으로(옛 반투명 강조색 0.3) */   /* 연하게 — 글자(본문색)가 또렷이(요청: "잘 안보이네 좀 연해야겠다") */
 /* 어두운 테마는 30% 면 칙칙해 85% 로 밝게(2026-10-21, 지적: "다크 테마 테크트리 칩 강조색이 너무 칙칙 어둡"). */
-html:not(.scr-light-theme) .scr-tl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 38%, var(--panel-raised, var(--panel))); }   /* 다크 38%(위 .scr-bl-chip.is-hl 과 같은 까닭) */
+html:not(.scr-light-theme) .scr-tl-chip.is-hl { fill: color-mix(in srgb, var(--lighting-accent, var(--point)) 38%, var(--panel-raised-solid, var(--panel-raised, var(--panel)))); }   /* 다크 38%(위 .scr-bl-chip.is-hl 과 같은 까닭) */
 .scr-tl-name > text { font-weight: 600; }
 .scr-tl-name { cursor: pointer; outline: none; }
 .scr-tl-hit { cursor: default; }
