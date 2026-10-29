@@ -170,10 +170,15 @@ export async function primeComments(items: ItemComment[]): Promise<void> {
   notifyComments();
 }
 
-export default function Comments({ targetType, targetId, overModal = false }: {
+export default function Comments({ targetType, targetId, overModal = false, sheetOnly = false, onSheetClose, onCount }: {
   targetType: CommentTargetType;
   targetId: number;
   overModal?: boolean;
+  /** 폰에서 댓글 시트만 띄운다(본문 미리보기 없이 · 처음부터 열림) — 닫히면 onSheetClose(2026-10-29 · 게임 목록 댓글 수 누름). */
+  sheetOnly?: boolean;
+  onSheetClose?: () => void;
+  /** 댓글 수가 바뀌면(불러옴·달기·지우기) 알린다 — 목록 줄의 수를 맞춘다. */
+  onCount?: (n: number) => void;
 }) {
   const [composerOpen, setComposerOpen] = useState(false);
   const composerWrapRef = useRef<HTMLDivElement>(null);
@@ -192,7 +197,7 @@ export default function Comments({ targetType, targetId, overModal = false }: {
   const [err, setErr] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ItemComment | null>(null);
   const mobile = useIsMobile();
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(() => sheetOnly && mobile);
   const sheetRef = useRef<HTMLDivElement>(null);
   const sheetBodyRef = useRef<HTMLDivElement>(null);
   const [typing, setTyping] = useState(false);
@@ -230,6 +235,19 @@ export default function Comments({ targetType, targetId, overModal = false }: {
     }).catch(() => { });
   };
   const closeSheet = () => closeSheetFrom(0);
+  /* 시트만 띄운 판(sheetOnly)은 시트가 닫히면 부른 쪽도 닫는다. */
+  const sheetWasOpenRef = useRef(false);
+  useEffect(() => {
+    if (sheetOpen) { sheetWasOpenRef.current = true; return; }
+    if (sheetOnly && sheetWasOpenRef.current) onSheetClose?.();
+  }, [sheetOpen, sheetOnly, onSheetClose]);
+  const onCountRef = useRef(onCount); onCountRef.current = onCount;
+  const countSeenRef = useRef(notes.length);
+  useEffect(() => {   // 첫 그림(불러오기 전 0)은 건너뛰고 바뀔 때만
+    if (countSeenRef.current === notes.length) return;
+    countSeenRef.current = notes.length;
+    onCountRef.current?.(notes.length);
+  }, [notes.length]);
   useEffect(() => { if (!mobile) setSheetOpen(false); }, [mobile]);
   const pinnedScrollRef = useRef(0);
   useEffect(() => {
@@ -460,8 +478,8 @@ export default function Comments({ targetType, targetId, overModal = false }: {
       className="scr-feed-notes"
       onClick={(e) => e.stopPropagation()}
     >
-      {notes.length > 0 && <div className="scr-feed-comments-heading">댓글 {notes.length}</div>}
-      {mobile ? (
+      {!sheetOnly && notes.length > 0 && <div className="scr-feed-comments-heading">댓글 {notes.length}</div>}
+      {sheetOnly ? null : mobile ? (
         <>
           {notes.length > 0 ? (
             <div

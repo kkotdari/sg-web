@@ -3801,7 +3801,11 @@ span.scr-gtab-unhide.is-off { opacity: 0.5; cursor: default; }
 .scr-gtab-rec { width: auto; height: 26px; padding: 0 4px; gap: 4px; }
 .scr-gtab-rec .scr-recommend-n { font-size: inherit; }
 /* 댓글 수(2026-10-29, 요청: "모바일은 푸터 가운데 댓글 0") — 추천(왼끝)·데이터(오른끝) 사이 가운데 칸. */
-.scr-feed-row-cmt { grid-column: 2; justify-self: center; font-size: var(--fs-11); color: var(--row-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.scr-feed-row-cmt { grid-column: 2; justify-self: center; height: 32px; padding: 0 10px; border: 0; background: none; font: inherit; font-size: var(--fs-11); color: var(--row-dim); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+/* 누르면 댓글만 띄운다(2026-10-29, 요청: "댓글 누르면 댓글만 팝업으로 보이기" · GameCommentsModal) — PC 칸은 칸 전체가 누름 자리(데이터 칸과 같은 꼴). */
+.scr-gtab-cmtcell { cursor: pointer; }
+@media (hover: hover) { .scr-gtab-cmtcell:hover { color: var(--lighting-accent, var(--point)); } }
+.scr-game-comments-modal .scr-modal-body { max-height: min(70vh, 640px); overflow-y: auto; }
 .scr-feed-row-rec { grid-column: 1; justify-self: start; width: auto; min-width: 32px; height: 32px; padding: 0 6px; margin-left: 4px; }   /* 살짝 오른쪽(-6 → 4 · 2026-10-23 요청: "추천버튼 살짝 우측으로") */
 /* ★ 윗줄 = [재생 배지 왼끝 · 맵·시간 배지 **정가운데** · (NEW) 시각 오른끝](2026-10-19, 요청 위 ★★) — 맵 배지는 줄 몸의 가운데에 절대 자리(위 여백 7 = 줄 몸 위 패딩).
    리그 판 머리 줄(has-above)이 있는 줄은 그 아래라 자리를 모른다 — 양옆 auto 여백으로 가운데 어림. */

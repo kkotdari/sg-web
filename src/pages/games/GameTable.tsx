@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ChartLine, EyeOff, Save, Share2 } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { canManageGame } from "../../utils/gameAccess";
@@ -18,6 +18,7 @@ import { isMeleeGame } from "./GameResultSides";
 import { GameRowNames } from "./GameRow";
 import { RecommendButton, useRecommend } from "./Recommend";
 import GameCurvesModal from "../../modals/GameCurvesModal";
+import GameCommentsModal from "../../modals/GameCommentsModal";
 import InfoTip from "../../components/common/InfoTip";
 import type { GameResult, Member } from "../../types";
 
@@ -206,6 +207,10 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   const canHide = !!onHide && !game.hidden && canManageGame(game, user);
   const [graphOpen, setGraphOpen] = useState(false);
   const rec = useRecommend(game);
+  /* 댓글 칸(2026-10-29) — 누르면 댓글만 띄운다(GameCommentsModal) · 거기서 달거나 지우면 수를 맞춘다. */
+  const [cmtOpen, setCmtOpen] = useState(false);
+  const [cmtN, setCmtN] = useState(game.commentCount ?? 0);
+  useEffect(() => { setCmtN(game.commentCount ?? 0); }, [game.id, game.commentCount]);
   const share = async () => {
     const out = await shareToKakao(gameResultShareContent(game, memberOf));
     if (out === "shared" || out === "copied") void api.pingGameAction("share", game);
@@ -274,9 +279,18 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
         </span>
         {/* 추천 단추는 도구 칸이 아니라 추천 칸에 수와 함께(2026-10-22, 요청: "추천 아이콘은 도구에서 추천 컬럼으로 이동") — 단추가 안 서는 판(명예의 전당 · 손님)은 수만. */}
         <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : rec.shown ? <RecommendButton rec={rec} count className="scr-gtab-rec" /> : rec.n}</span>
-        <span className="scr-gtab-cell scr-gtab-num">{secret ? "-" : game.commentCount ?? 0}</span>
+        {secret ? <span className="scr-gtab-cell scr-gtab-num">-</span> : (
+          <span
+            className="scr-gtab-cell scr-gtab-num scr-gtab-cmtcell" role="button" tabIndex={0} title="댓글 보기"
+            onClick={(e) => { e.stopPropagation(); setCmtOpen(true); }}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setCmtOpen(true); } }}
+          >
+            {cmtN}
+          </span>
+        )}
       </div>
       {graphOpen && <GameCurvesModal game={game} onClose={() => setGraphOpen(false)} />}
+      {cmtOpen && <GameCommentsModal game={game} onClose={() => setCmtOpen(false)} onCount={setCmtN} />}
     </div>
   );
 }

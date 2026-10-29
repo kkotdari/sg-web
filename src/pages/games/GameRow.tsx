@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ChartLine } from "lucide-react";
 import { cachedReplayMap } from "scplay";
 import { isMeleeGame, resolveSlotName } from "./GameResultSides";
@@ -8,6 +8,7 @@ import { useLongPress } from "../../hooks/useLongPress";
 import { isSecretGame } from "../../utils/gameAccess";
 import { api } from "../../api/client";
 import GameCurvesModal from "../../modals/GameCurvesModal";
+import GameCommentsModal from "../../modals/GameCommentsModal";
 import RaceBadge from "../../components/common/RaceBadge";
 import { RecommendButton, useRecommend } from "./Recommend";
 import type { GameResult, GameResultSlot, Member } from "../../types";
@@ -27,13 +28,16 @@ export function FlatLine({ children }: { children: ReactNode }) {
 export function GameDataButton({ game, graph = true }: { game: GameResult; graph?: boolean }) {
   const [open, setOpen] = useState(false);
   const rec = useRecommend(game);
+  const [cmtOpen, setCmtOpen] = useState(false);
+  const [cmtN, setCmtN] = useState(game.commentCount ?? 0);
+  useEffect(() => { setCmtN(game.commentCount ?? 0); }, [game.id, game.commentCount]);
   const stop = (e: { stopPropagation: () => void }): void => e.stopPropagation();
   return (
     <span className="scr-feed-row-data-wrap" onPointerDown={stop} onPointerUp={stop} onClick={stop} onKeyDown={stop} onContextMenu={stop}>
       {/* 추천(폰 · 2026-10-22 요청) — 수와 함께 · 로스터 아래 줄 왼끝(global.css). */}
       <RecommendButton rec={rec} size={14} count className="scr-feed-row-rec" />
       {/* 댓글 수(2026-10-29, 요청: "모바일은 푸터 가운데 댓글 0 이런 식으로") — 줄 아래 격자의 가운데 칸(global.css .scr-feed-row-cmt). */}
-      <span className="scr-feed-row-cmt">댓글 {game.commentCount ?? 0}</span>
+      <button type="button" className="scr-feed-row-cmt" onClick={() => setCmtOpen(true)} aria-label={`댓글 ${cmtN}개 보기`}>댓글 {cmtN}</button>
       {graph && (
         <button
           type="button" className="scr-icon-btn scr-feed-row-data" title="데이터 그래프" aria-label="데이터 그래프"
@@ -43,6 +47,7 @@ export function GameDataButton({ game, graph = true }: { game: GameResult; graph
         </button>
       )}
       {open && <GameCurvesModal game={game} onClose={() => setOpen(false)} />}
+      {cmtOpen && <GameCommentsModal game={game} onClose={() => setCmtOpen(false)} onCount={setCmtN} />}
     </span>
   );
 }
