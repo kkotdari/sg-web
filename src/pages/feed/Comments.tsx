@@ -170,7 +170,7 @@ export async function primeComments(items: ItemComment[]): Promise<void> {
   notifyComments();
 }
 
-export default function Comments({ targetType, targetId, overModal = false, sheetOnly = false, onSheetClose, onCount }: {
+export default function Comments({ targetType, targetId, overModal = false, sheetOnly = false, onSheetClose, onCount, fresh = false }: {
   targetType: CommentTargetType;
   targetId: number;
   overModal?: boolean;
@@ -179,6 +179,8 @@ export default function Comments({ targetType, targetId, overModal = false, shee
   onSheetClose?: () => void;
   /** 댓글 수가 바뀌면(불러옴·달기·지우기) 알린다 — 목록 줄의 수를 맞춘다. */
   onCount?: (n: number) => void;
+  /** 미리 받은 묶음(primed · 피드에 실린 판만)이 있어도 서버에서 다시 받는다 — 피드 밖 판(명예의 전당 등)은 묶음에 없어 비어 보였다(2026-10-29 실기 지적). */
+  fresh?: boolean;
 }) {
   const [composerOpen, setComposerOpen] = useState(false);
   const composerWrapRef = useRef<HTMLDivElement>(null);
@@ -360,13 +362,13 @@ export default function Comments({ targetType, targetId, overModal = false, shee
   }, [sheetOpen, notes.length]);
 
   useEffect(() => {
-    if (primedOnce) { setNotes(primed.get(keyOf(targetType, targetId)) ?? []); return; }
+    if (primedOnce && !fresh) { setNotes(primed.get(keyOf(targetType, targetId)) ?? []); return; }
     let cancelled = false;
     api.listComments(targetType, targetId)
       .then((items) => { if (!cancelled) setNotes(items); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [targetType, targetId]);
+  }, [targetType, targetId, fresh]);
 
   const apply = (next: (prev: ItemComment[]) => ItemComment[]) => {
     setNotes((prev) => {

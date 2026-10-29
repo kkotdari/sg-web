@@ -164,7 +164,8 @@ export const FeedRow = memo(function FeedRow({ item, flag, notes, pickable, pick
       desc={<>
         {rowDesc(item, view)}
         {secret && <UnhideRequestButton game={item.gameResult} inRow />}
-        {notes > 0 && (
+        {/* 게임 줄은 줄 아래 가운데 '댓글 N'(GameRow GameDataButton · 2026-10-29)이 맡아 [N] 을 걷는다(요청: "이거도 댓글 표시 아녀? 제거"). */}
+        {notes > 0 && item.kind !== "gameResult" && (
           <span className="scr-feed-row-notes" title={`댓글 ${notes}개`}>[{notes}]</span>
         )}
       </>}
