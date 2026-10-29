@@ -17,6 +17,26 @@ import type { GameResult, Member } from "../../types";
 /** 게임번호 꼴 — 시작 시각 12자리(yyMMddHHmmss · 시각 모를 판은 yyMMdd99nnnn), 같은 초에 둘째 판부터 -2…-9. */
 const GAME_TAG = /#(\d{12}(?:-\d)?)(?![\d-])/g;
 const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/* ★ 회원 태그는 **아이디로 저장**한다(2026-10-29, 요청: "닉네임 말고 아이디로 태그를 저장하면 되잖아 · 보여 줄 때 치환하고") — 입력 칸에는 `@닉네임` 이 보이고
+   저장할 때 `@[아이디]` 로 바꾼다(tagsToStore) · 고치려고 칸에 다시 띄울 때(tagsToEdit)와 보일 때(renderTags)는 그 회원의 **지금 닉네임**으로.
+   닉네임을 바꿔도 태그가 따라가고 칩이 그 회원을 정확히 연다. 옛 글의 `@닉네임` 은 그대로 칩으로 읽는다(그 닉네임의 지금 회원). */
+const ID_TAG = /@\[([^\]\s]{1,64})\]/g;
+const activeNamed = (members: Member[]): Member[] => members.filter((m) => m.status === "active" && m.nickname);
+/** 입력 꼴(`@닉네임`) → 저장 꼴(`@[아이디]`). 긴 닉네임부터 맞춘다. */
+export function tagsToStore(text: string, members: Member[] = useAppStore.getState().members): string {
+  if (!text.includes("@")) return text;
+  const active = activeNamed(members);
+  if (active.length === 0) return text;
+  const byName = new Map(active.map((m) => [m.nickname, m.id]));
+  const re = new RegExp(`@(${active.map((m) => m.nickname).sort((a, b) => b.length - a.length).map(escapeRe).join("|")})`, "g");
+  return text.replace(re, (all, n: string) => { const id = byName.get(n); return id ? `@[${id}]` : all; });
+}
+/** 저장 꼴 → 입력 꼴(지금 닉네임). 모르는 아이디는 그대로 둔다. */
+export function tagsToEdit(text: string, members: Member[] = useAppStore.getState().members): string {
+  if (!text.includes("@[")) return text;
+  const byId = new Map(members.map((m) => [m.id, m.nickname]));
+  return text.replace(ID_TAG, (all, id: string) => { const n = byId.get(id); return n ? `@${n}` : all; });
+}
 
 function GameTagChip({ no }: { no: string }) {
   const path = gamePath(no);
@@ -42,19 +62,19 @@ export const tagRefocusing = (): boolean => tagRefocus9;
 
 /** 회원 태그 칩 — 누르면 그 회원 정보 창(2026-10-29, 실기 지적: "태그 눌러도 회원정보창 안 뜨는 문제" · 옛 칩은 글자만이었다).
  *  닉네임이 바뀌어 회원을 못 찾으면 글자만. 줄·카드의 누름(게임 열기 등)으로 안 번지게 막는다. */
-function MemberTagChip({ name }: { name: string }) {
-  const id = useAppStore((s) => s.members.find((m) => m.nickname === name && m.status === "active")?.id);
+function MemberTagChip({ name, memberId }: { name?: string; memberId?: string }) {
+  const hit = useAppStore((s) => (memberId ? s.members.find((m) => m.id === memberId) : s.members.find((m) => m.nickname === name && m.status === "active")));
   const openMemberProfile = useAppStore((s) => s.openMemberProfile);
-  if (!id) return <span className="scr-comment-mention">@{name}</span>;
-  const open = (e: { stopPropagation: () => void; preventDefault: () => void }): void => { e.stopPropagation(); e.preventDefault(); openMemberProfile(id); };
+  if (!hit) return <span className="scr-comment-mention">@{name ?? memberId}</span>;
+  const open = (e: { stopPropagation: () => void; preventDefault: () => void }): void => { e.stopPropagation(); e.preventDefault(); openMemberProfile(hit.id); };
   return (
     <span
-      className="scr-comment-mention is-link" role="button" tabIndex={0} title={`${name} 회원 정보`}
+      className="scr-comment-mention is-link" role="button" tabIndex={0} title={`${hit.nickname} 회원 정보`}
       onClick={open}
       onPointerDown={(e) => e.stopPropagation()}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") open(e); }}
     >
-      @{name}
+      @{hit.nickname}
     </span>
   );
 }
@@ -62,7 +82,7 @@ function MemberTagChip({ name }: { name: string }) {
 /** 글자 → 칩을 섞은 조각들. names 는 회원 칩으로 그릴 닉네임(긴 이름 먼저 맞춘다). keyBase 는 여러 조각을 이어 붙일 때 겹치지 않게. */
 export function renderTags(text: string, names: string[], keyBase = ""): ReactNode[] {
   const nameAlt = names.filter(Boolean).slice().sort((a, b) => b.length - a.length).map(escapeRe);
-  const re = new RegExp(`${GAME_TAG.source}${nameAlt.length ? `|@(${nameAlt.join("|")})` : ""}`, "g");
+  const re = new RegExp(`${GAME_TAG.source}|${ID_TAG.source}${nameAlt.length ? `|@(${nameAlt.join("|")})` : ""}`, "g");
   const out: ReactNode[] = [];
   let last = 0;
   let m: RegExpExecArray | null;
@@ -70,7 +90,8 @@ export function renderTags(text: string, names: string[], keyBase = ""): ReactNo
     if (m.index > last) out.push(<span key={`${keyBase}t${last}`}>{text.slice(last, m.index)}</span>);
     out.push(m[1]
       ? <GameTagChip key={`${keyBase}g${m.index}`} no={m[1]} />
-      : <MemberTagChip key={`${keyBase}c${m.index}`} name={m[2]} />);
+      : m[2] ? <MemberTagChip key={`${keyBase}c${m.index}`} memberId={m[2]} />
+        : <MemberTagChip key={`${keyBase}c${m.index}`} name={m[3]} />);
     last = m.index + m[0].length;
   }
   if (last < text.length) out.push(<span key={`${keyBase}t${last}`}>{text.slice(last)}</span>);
@@ -85,8 +106,10 @@ export function useMemberNames(): string[] {
 
 /** 글 속 회원 태그의 회원 id — 댓글이 알림 대상으로 보낸다. */
 export function mentionIdsOf(text: string, members: Member[]): string[] {
-  const active = members.filter((m) => m.status === "active" && m.nickname);
+  const active = activeNamed(members);
   if (active.length === 0) return [];
+  const activeIds = new Set(active.map((m) => m.id));
+  const fromIds = Array.from(text.matchAll(ID_TAG), (x) => x[1]).filter((id) => activeIds.has(id));
   const byName = new Map(active.map((m) => [m.nickname, m.id]));
   const esc = active.map((m) => m.nickname).sort((a, b) => b.length - a.length).map(escapeRe);
   const re = new RegExp(`@(${esc.join("|")})`, "g");
@@ -96,6 +119,7 @@ export function mentionIdsOf(text: string, members: Member[]): string[] {
     const id = byName.get(m[1]);
     if (id) ids.add(id);
   }
+  for (const id of fromIds) ids.add(id);
   return Array.from(ids);
 }
 

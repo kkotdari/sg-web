@@ -9,7 +9,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
 import { cx } from "../../utils/format";
-import { mentionIdsOf, renderTags, tagRefocusing, useInlineTags } from "../../components/common/InlineTags";
+import { mentionIdsOf, renderTags, tagRefocusing, tagsToEdit, tagsToStore, useInlineTags } from "../../components/common/InlineTags";
 import { formatWhen, serverMs } from "../../utils/date";
 
 const COMMENT_NEW_WINDOW_MS = 12 * 60 * 60 * 1000;
@@ -63,7 +63,8 @@ function NoteComposer({
   const doSubmit = () => {
     const trimmed = text.trim();
     if (!trimmed || submitting) return;
-    onSubmit(trimmed, mentionIdsOf(trimmed, members));
+    const stored = tagsToStore(trimmed, members);   // 회원 태그는 아이디로 저장(InlineTags ID_TAG ★ · 칸의 50자는 보이는 글자로 잰다)
+    onSubmit(stored, mentionIdsOf(stored, members));
   };
 
   const isEmpty = text === "";
@@ -436,7 +437,7 @@ export default function Comments({ targetType, targetId, overModal = false, shee
         {interactive && editingId === c.id ? (
           <NoteComposer
             members={members}
-            initialText={c.text}
+            initialText={tagsToEdit(c.text, members)}
             submitting={busy}
             onSubmit={(text, ids) => void update(c.id, text, ids)}
             onCancel={() => setEditingId(null)}

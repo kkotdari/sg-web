@@ -12,6 +12,7 @@ import { releaseKeyboardHold } from "../../utils/keyboardHold";
 import { showAlert } from "../../components/common/AlertDialog";
 import { isPhotoSet, type ScheduleBlock, type SchedulePhoto, type ScheduleBlockWrite } from "../../types";
 import { FeedCard } from "../feed/FeedCard";
+import { tagsToEdit, tagsToStore } from "../../components/common/InlineTags";
 import ScheduleBlocks, { NEW_PREFIX, sortingNow, splitTitles, withKeys, type DraftBlock } from "./ScheduleBlocks";
 
 /* ★ 블록 문서 카드(2026-10-26, 요청: "자유게시판 만들어줘 · 일정 폼 재사용(공통화)") — 일정 카드(ScheduleCard)의 늘 편집 상태 ·
@@ -210,9 +211,15 @@ function DocTools<D extends BlockDoc, W>({ spec, doc, canDelete, onDeleted, adop
 
 type Draft = { head: DocHead; blocks: DraftBlock[] };
 
+/* ★ 회원 태그는 아이디로 저장한다(InlineTags ID_TAG ★ · 2026-10-29) — 고침 판(draft)은 **입력 꼴**(`@닉네임`)로 들고, 서버로 보낼 때만 저장 꼴(`@[아이디]`)로 바꾼다.
+   받은 판은 draftOf 가 입력 꼴로 · 보낼 판은 storeDraft 가 저장 꼴로(아래 save · adoptIds 도 보낸 꼴로 견준다). 읽기 화면은 renderTags 가 둘 다 읽는다. */
+const tagBlock = (b: DraftBlock, f: (t: string) => string): DraftBlock => (
+  b.kind === "text" || b.kind === "list" ? { ...b, text: f(b.text), title: f(b.title), items: b.items.map(f) } : b
+);
+const storeDraft = (d: Draft): Draft => ({ ...d, blocks: d.blocks.map((b) => tagBlock(b, (t) => tagsToStore(t))) });
 const draftOf = <D extends BlockDoc, W>(spec: DocSpec<D, W>, s: D, prev: DraftBlock[] = []): Draft => {
   const keyOf = new Map(prev.map((b) => [b.id, b.key]));
-  return { head: spec.headOf(s), blocks: splitTitles(s.blocks ?? []).map((b) => ({ ...b, key: keyOf.get(b.id) ?? b.id })) };
+  return { head: spec.headOf(s), blocks: splitTitles(s.blocks ?? []).map((b) => tagBlock({ ...b, key: keyOf.get(b.id) ?? b.id }, (t) => tagsToEdit(t))) };
 };
 const levelsOf = (b: ScheduleBlock): number[] => b.items.map((_, i) => b.levels?.[i] ?? 0);
 const sameBlock = (a: ScheduleBlock, b: ScheduleBlock): boolean =>
@@ -542,14 +549,14 @@ function BlockDocCardInner<D extends BlockDoc, W>({
     saving.current = true;
     if (!quiet) setSaveState("saving");
     const ver = editVer.current;
-    const sent = d;
+    const sent = storeDraft(d);
     const pending = countNewPhotos(sent);
     if (pending > 0 && !uploadTotal.current) uploadTotal.current = pending;
     /* 가림막(화면 어둡게 · 입력 막기)은 사진을 올릴 때만(2026-10-18, 지적: "접기·펴기가 왜 이렇게 딜레이가 있어 보이지") — 여태는 글 한 자·
        접기 하나를 저장할 때도 응답이 올 때까지 화면 전체를 덮고 입력을 삼켜 고침이 늦게 먹는 것처럼 보였다. 저장 중 고침은 editVer 로 따로 챙긴다. */
     if (uploadTotal.current > 0) setShield({ done: uploadTotal.current - pending, total: uploadTotal.current });
     try {
-      const { blocks, deferred } = await blocksPayloadOf(d);
+      const { blocks, deferred } = await blocksPayloadOf(sent);
       const saved = await spec.update(latest.current.doc.id, spec.writeOf(d.head, blocks));
       mineAt.current = saved.updatedAt;
       if (deferred.size === 0) { uploadTotal.current = 0; setShield(null); }
