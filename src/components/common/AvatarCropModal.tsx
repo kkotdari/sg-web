@@ -102,6 +102,7 @@ export default function AvatarCropModal({ file, onCancel, onDone }: AvatarCropMo
             <>
               <div
                 className="scr-crop-frame"
+                data-own-drag   /* 사진 끌기 중 창 끌어 닫기(useModalDragDismiss)가 같이 타지 않게 */
                 style={{ width: VIEW, height: VIEW }}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}

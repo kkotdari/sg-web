@@ -16,6 +16,12 @@ function isMotionMap(el: Element | null): boolean {
   return !!el?.closest(".scr-motion-map");
 }
 
+/** 제 끌기를 가진 자리(`data-own-drag` · 2026-10-29, 지적: "회원정보 사진 수정에서 모바일은 사진 위치를 옮기면 스크롤도 돼서 아래로 화면을 내려 닫혀" —
+ *  사진 위치 틀 · AvatarCropModal)는 끌어 닫기가 손을 뗀다. */
+function ownsDrag(el: Element | null): boolean {
+  return !!el?.closest("[data-own-drag]");
+}
+
 function isZoomedPhoto(el: Element | null): boolean {
   return el?.closest<HTMLElement>(".scr-pv-frame")?.dataset.zoomed === "1";
 }
@@ -80,7 +86,7 @@ export function useModalDragDismiss(): void {
         return;
       }
       const target = e.target as HTMLElement | null;
-      if (isEditable(target) || isMotionMap(target) || isZoomedPhoto(target)) { mode = "idle"; return; }
+      if (isEditable(target) || isMotionMap(target) || isZoomedPhoto(target) || ownsDrag(target)) { mode = "idle"; return; }
       const s = target?.closest<HTMLElement>(SHEET_SELECTOR) ?? null;
       if (!s) { mode = "idle"; return; }
       sheet = s;
