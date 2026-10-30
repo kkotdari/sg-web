@@ -9,7 +9,7 @@ import type { GameResult } from "../../types";
 import Comments from "../feed/Comments";
 import { GameResultTools } from "./GameResultCardBody";
 import GameResultStory from "./GameResultStory";
-import PlayerLoadShell from "./PlayerLoadShell";
+import { DetailLoading } from "./DetailLoading";
 import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
 
 /* ★ 게임 상세는 **목록과 무관한 별도 페이지**다(2026-10-19, 요청: "너나와 리그 게임도 목록과 전혀무관하게 변경 · 별도 페이지임 그냥") —
@@ -31,6 +31,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   const memberOf = useAppStore((s) => s.memberOf);
   const deleteGameResultAction = useAppStore((s) => s.deleteGameResult);
   const [game, setGame] = useState<GameResult | null>(null);
+  const [shown, setShown] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<GameResult | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
@@ -73,7 +74,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
     setGame(updated);
   };
 
-  /* 게임을 받는 동안도 페이지 꼴(머리 줄 · 판 자리)을 먼저 세우고 판 자리에 자료를 기다리는 재생기(PlayerLoadShell)를 둔다 — 옛 돌림표만 뜨던 빈 화면 대신. */
+  /* 게임을 받는 동안은 머리 줄과 워드마크 로딩만(2026-10-30, 요청: "상세에 진입하면 타이틀 외의 다른 부분은 그리지 말고 워드마크 로딩바만" · 옛: 자료를 기다리는 재생기 PlayerLoadShell). */
   if (!game) {
     return (
       <div className="scr-feed-group-page">
@@ -85,7 +86,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
             </button>
           </div>
         </div>
-        <div className="scr-game-page-card"><PlayerLoadShell /></div>
+        <DetailLoading />
       </div>
     );
   }
@@ -121,11 +122,15 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
           result={game.result}
           memberOf={memberOf}
           menu={menu}
+          onShown={() => setShown(true)}
         />
       </div>
-      <div className="scr-feed-card-comment scr-game-page-comment">
-        <Comments targetType="gameResult" targetId={game.id} />
-      </div>
+      {/* 댓글은 판(재생기 · 로스터)이 다 그려진 뒤에(GameResultStory onShown · 2026-10-30 "타이틀 외의 다른 부분은 그리지 말고"). */}
+      {shown && (
+        <div className="scr-feed-card-comment scr-game-page-comment">
+          <Comments targetType="gameResult" targetId={game.id} />
+        </div>
+      )}
       {pendingDelete && (
         <ConfirmDialog
           title="게임결과를 삭제할까요?"

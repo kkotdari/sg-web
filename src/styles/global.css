@@ -5635,3 +5635,6 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-bbs-when-k { font-weight: 500; color: var(--muted); }
 .scr-bbs-item-sub > .scr-bbs-when { font-size: inherit; }
 .scr-bbs-item-sub > .scr-bbs-when::before { content: none; }
+/* 게임 상세의 기다림(DetailLoading · 2026-10-30) — 화면 한가운데 워드마크만 · 누름은 흘려보낸다(제목 줄의 뒤로 단추). */
+.scr-detail-loading { position: fixed; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.scr-detail-loading > .scr-boot { min-height: 0; }

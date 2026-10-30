@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState, type MouseEvent, type PointerEvent } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { formatWhen } from "../../utils/date";
 import { ReplayModule, sceneLinkOf9, type MotionBase } from "scplay";
 import { createPortal } from "react-dom";
@@ -13,14 +13,14 @@ import { useReplayMap } from "scplay";
 import { cleanMapName } from "../../utils/mapName";
 import { parseRoute } from "../../utils/route";
 import { cx } from "../../utils/format";
-import PlayerLoadShell from "./PlayerLoadShell";
+import { DetailLoading } from "./DetailLoading";
 import { hasComputerSlot, truthMissing } from "../../utils/gamePlayable";
 import { normalizeSearchText } from "../../utils/memberSearch";
 import type { GameResult, GameResultSlot, Member } from "../../types";
 
 export default function GameResultStory({
   gameResult, team1, team2, result, memberOf, highlightMemberIds, highlightTerms, active = true,
-  menu, headSlot = null,
+  menu, headSlot = null, onShown,
 }: {
   gameResult: GameResult;
   team1: GameResultSlot[];
@@ -33,6 +33,8 @@ export default function GameResultStory({
   active?: boolean;
   /** 페이지 제목 줄의 머리 칸(.scr-crumb-meta) — 있으면 시각·맵·승패·등록자를 거기에 포털로 그린다(게임 페이지). */
   headSlot?: HTMLElement | null;
+  /** 게임 상세 — 판(재생기 · 로스터)이 다 그려졌다(재생기는 로딩이 다 끝난 때) · 부르는 쪽이 댓글 따위를 이때 세운다. */
+  onShown?: () => void;
 }) {
   const grid = useReplayMap(gameResult.mapHash);
   const detailClose = useContext(GameDetailCloseContext);
@@ -108,6 +110,13 @@ export default function GameResultStory({
   const playerWait = !showRoster && !!storyMap && !playerReady;
   const [revealWin, setRevealWin] = useState(false);
   const soleViewNow = !!detailClose || linkQuery !== null;
+  /* ★ 게임 상세는 **다 될 때까지 워드마크만**(2026-10-30, 요청: "상세에 진입하면 타이틀 외의 다른 부분은 그리지 말고 워드마크 로딩바만 · 재생 정보가 도착하면 그때
+     재생기를 띄우든 로스터를 띄우든 결정 · 재생기는 모든 정보가 다 도착하고 화면이 준비되면 그때 그리기 — 전광판이나 시간 그런 것도 다") — 지도를 받는 동안
+     (mapPending)·재생기 로딩(scplay veil → onReady) 동안은 판 자리를 비우고 DetailLoading 만. 로스터 판은 곧장. 옛 자료를 기다리는 재생기(PlayerLoadShell)는 걷었다. */
+  const [playerShown, setPlayerShown] = useState(false);
+  const loadingNow = soleViewNow && !showRoster && !playerShown;
+  const onShownRef = useRef(onShown); onShownRef.current = onShown;
+  useEffect(() => { if (!loadingNow && (showRoster || playerShown)) onShownRef.current?.(); }, [loadingNow, showRoster, playerShown]);
   const showMapLine = showRoster && !headSlot && Boolean(mapName || minutes !== null);
 
   const stopBubble = {
@@ -197,6 +206,8 @@ export default function GameResultStory({
         onDetailClose={detailClose ?? undefined}
         soleView={soleViewNow}
         askMode={soleViewNow}   /* 게임 상세는 들어올 때 보기 모드(요약 · 풀)를 묻는다 — 재생기가 장면 링크면 안 묻는다(2026-10-23) */
+        veil={soleViewNow}   /* 로딩이 다 끝날 때까지 가린다(위 loadingNow ★) */
+        onReady={() => setPlayerShown(true)}
         loadUnitTracks={() => api.getGameUnitTracks(gameResult.id)
           .catch(() => ({ motion: null }))}
         winnerTeam={gameResult.result === "team1" ? 1 : gameResult.result === "team2" ? 2 : undefined}
@@ -257,8 +268,9 @@ export default function GameResultStory({
         {winBadge}
       </div>
     )}
-      {/* 게임 상세(soleView)는 자료를 기다리는 재생기(PlayerLoadShell · scplay pending)를 먼저 세운다 — 목록 카드는 옛 흐린 네모 그대로. */}
-      {(mapPending || playerWait) && (soleViewNow ? <PlayerLoadShell /> : <div className="scr-story-mapwait" aria-hidden />)}
+      {/* 게임 상세는 다 될 때까지 워드마크(DetailLoading · 위 loadingNow ★) — 목록 카드는 옛 흐린 네모 그대로. */}
+      {loadingNow && <DetailLoading />}
+      {(mapPending || playerWait) && !soleViewNow && <div className="scr-story-mapwait" aria-hidden />}
       {!showRoster && playerReady && mapBlock}
       {showMapLine && (
         <div className="scr-game-result-trow-map-line scr-game-result-trow-map-meta">
@@ -266,7 +278,7 @@ export default function GameResultStory({
           {minutes !== null && <span className="scr-game-result-trow-dur">({minutes}분)</span>}
         </div>
       )}
-      {gameResult.createdBy && (
+      {gameResult.createdBy && !loadingNow && (
         <div className="scr-story-by">{gameResult.createdBy.nickname} 등록</div>
       )}
     </div>
