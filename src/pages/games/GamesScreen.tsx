@@ -22,7 +22,6 @@ import { buildReplayDrafts, type ReplayDraft } from "../../utils/replayDraft";
 import { hasAppUpdatePreloadErrorOccurred } from "../../utils/appUpdate";
 import GameListPage, { type GameBulkAll } from "./GameListPage";
 import GameDetailPage from "./GameDetailPage";
-import { holdGame } from "../../utils/gamePeek";
 import type { RowAct, RowView } from "../feed/FeedRow";
 import { FeedProvider, useFeedActions, useRecentLeague } from "../feed/feed";
 import {
@@ -82,9 +81,7 @@ function GamesRouter() {
     // 게임 목록의 공방/내전 탭은 목록 주소의 것 — 상세 주소엔 안 싣는다(뒤로 가면 목록 주소에서 되살아난다)
     const search = linkParams([...SCENE_LINK_KEYS9, "f", "tab"]);
     if (item.kind !== "gameResult") return;
-    const key9 = item.gameResult.matchNo || String(item.gameResult.id);
-    holdGame(key9, item.gameResult);   // 상세가 첫 그림부터 쓴다(utils/gamePeek ★ — 재생 트랙 없는 판에 재생기가 잠깐 뜨던 것)
-    go(gamePath(key9), { search });
+    go(gamePath(item.gameResult.matchNo || String(item.gameResult.id)), { search });
     pushedItemRef.current = true;
   };
   /** 상세를 닫을 때(게임으로 가기 · GameDetailCloseContext) — 들어온 목록으로. */

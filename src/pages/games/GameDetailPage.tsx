@@ -11,7 +11,6 @@ import { GameResultTools } from "./GameResultCardBody";
 import GameResultStory from "./GameResultStory";
 import PlayerLoadShell from "./PlayerLoadShell";
 import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
-import { peekGame } from "../../utils/gamePeek";
 
 /* ★ 게임 상세는 **목록과 무관한 별도 페이지**다(2026-10-19, 요청: "너나와 리그 게임도 목록과 전혀무관하게 변경 · 별도 페이지임 그냥") —
    들어올 때마다 서버에서 받고, 고친 것을 목록에 알리지 않는다. 제 게임을 제 상태로 든다. */
@@ -31,7 +30,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   const isAdmin = !!user && isAdminRole(user.roles);
   const memberOf = useAppStore((s) => s.memberOf);
   const deleteGameResultAction = useAppStore((s) => s.deleteGameResult);
-  const [game, setGame] = useState<GameResult | null>(() => peekGame(idText));   // 목록에서 넘겨 준 판(utils/gamePeek ★)이면 곧장
+  const [game, setGame] = useState<GameResult | null>(null);
   const [pendingDelete, setPendingDelete] = useState<GameResult | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
@@ -44,7 +43,8 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
     return () => document.body.classList.remove("scr-gamepage-open");
   }, []);
   useEffect(() => {
-    let cancelled = false;   // 넘겨받은 판이 있어도 서버에서 새로 받아 갈아 끼운다(댓글·추천 수 · 고친 결과)
+    if (game) return undefined;
+    let cancelled = false;
     api.getGameResult(Number(idText))
       .then((gr) => { if (!cancelled) setGame(gr); })
       .catch(() => { if (!cancelled) onMiss(); });
