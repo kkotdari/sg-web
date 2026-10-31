@@ -239,7 +239,7 @@ export default function App() {
 
         {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
         {viewingMember && <MemberProfileModal member={viewingMember} onClose={closeMemberProfile} />}
-        {updateNotice && <AppUpdateNoticeModal notes={updateNotice.notes} onClose={dismissUpdateNotice} />}
+        {updateNotice && <AppUpdateNoticeModal notes={updateNotice.notes} version={updateNotice.activeVersion} onClose={dismissUpdateNotice} />}
         {staleVersion && bootVersion.current && (
           <AppReloadModal from={bootVersion.current} to={staleVersion} />
         )}

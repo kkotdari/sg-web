@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api } from "../api/client";
 import { versionNumber } from "../utils/appVersion";
+import { updatePageOf } from "../updates";
 import { parseRoute } from "../utils/route";
 import type {
   Member, GameResult, NewGameResult, MemberCreatePayload, MemberStatus, MemberRole, AppVersion,
@@ -29,7 +30,7 @@ function computeUpdateNotice(
     if (!prev || prev === activeVersion) return null;
     const entry = appVersions.find((v) => versionNumber(v.number) === versionNumber(activeVersion));
     const notes = entry?.notes ?? "";
-    if (!hasNoticeContent(notes)) return null;
+    if (!hasNoticeContent(notes) && !updatePageOf(activeVersion)) return null;   // 안내 페이지(src/updates)가 있는 버전은 글이 비어도 띄운다
     return { prevVersion: prev, activeVersion, notes };
   } catch {
   }

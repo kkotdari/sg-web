@@ -10,6 +10,7 @@ import { showAlert } from "../components/common/AlertDialog";
 import { useAppStore, hasNoticeContent } from "../store/appStore";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
 import { versionNumber } from "../utils/appVersion";
+import { updatePageOf } from "../updates";
 
 interface VersionManageModalProps {
   onClose: () => void;
@@ -173,7 +174,7 @@ export default function VersionManageModal({ onClose }: VersionManageModalProps)
               type="button"
               className="scr-rect-btn is-secondary"
               onClick={() => setPreviewing(true)}
-              disabled={!hasNoticeContent(draft)}
+              disabled={!hasNoticeContent(draft) && !updatePageOf(selected)}
             >
               미리보기
             </button>
@@ -204,7 +205,7 @@ export default function VersionManageModal({ onClose }: VersionManageModalProps)
       )}
 
       {previewing && (
-        <AppUpdateNoticeModal notes={draft} onClose={() => setPreviewing(false)} />
+        <AppUpdateNoticeModal notes={draft} version={selected} onClose={() => setPreviewing(false)} />
       )}
     </div>,
     document.body,
