@@ -4613,8 +4613,8 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   font-size: var(--fs-caption); color: var(--muted); cursor: pointer;
 }
 .scr-tb-hint { cursor: default; }
-/* 칩은 격자(2026-10-31, 요청: "목록의 칩 폭을 줄여서 화면 폭에 따라 여러 개가 한 줄에 · 다만 줄은 꽉 채우게 나눠 갖기") — 칸 최소 130 · 남는 폭은 같은 줄이 1fr 로 나눈다 · 칩은 두 줄(이름 / 종족·판 수). */
-.scr-tb-pick-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+/* 칩은 격자(2026-10-31, 요청: "목록의 칩 폭을 줄여서 화면 폭에 따라 여러 개가 한 줄에 · 다만 줄은 꽉 채우게 나눠 갖기") — 칸 최소 160(폰 330 폭이면 한 줄에 하나) · 남는 폭은 같은 줄이 1fr 로 나눈다 · 칩 내용은 한 줄. */
+.scr-tb-pick-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
 .scr-tb-pick-list > li { min-width: 0; }
 /* ★ 고르기는 **칩 단추**(2026-10-24, 요청: "개인 칩 누르면 추가돼서 맨 위로 올라가고 색깔 변경 — 체크박스식 아님 · 맨 위에 이름 검색창") — 옛 체크박스 줄을 걷었다.
    고른 칩은 강조색 바탕에 흰 글자로 위에 모인다. 검색칸은 칩 입력(scr-gs-chips)을 빌린다(담긴 값은 곧장 고름으로). */
@@ -5703,5 +5703,3 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-tb-roster-ib { margin-left: 4px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .scr-tb-pick-plays.is-thin { color: var(--loss); font-weight: 700; }
 .scr-tb-pick.is-on .scr-tb-pick-plays.is-thin { color: #ffd6d6; }
-.scr-tb-pick-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.scr-tb-pick-body > .scr-tb-pick-meta { font-size: 11px; }
