@@ -4656,6 +4656,14 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 /* vs 정가운데(2026-10-31 요청) — 두 편 폭이 달라도 [1fr | vs | 1fr] 격자로. */
 .scr-tb-roster { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; }
 .scr-tb-roster > .scr-tb-roster-side { min-width: 0; }
+/* 좁으면 이름만 줄인다 — 아바타·종족 배지·인분은 눌리지 않게(2026-10-31, 지적: "아바타 눌림 안돼"). */
+.scr-tb-roster-side .scr-roster-person { max-width: 100%; }
+.scr-tb-roster-side .scr-roster-person > .scr-avatar,
+.scr-tb-roster-side .scr-roster-person > .scr-team-name-race,
+.scr-tb-roster-side .scr-roster-person > .scr-tb-roster-ib { flex: none; }
+.scr-tb-roster-side .scr-roster-person > .scr-roster-name { flex: 0 1 auto; min-width: 0; }
+.scr-tb-roster-side .scr-roster-person > .scr-team-name-race { position: static; }   /* 게임 결과용 절대 자리(.scr-team-name-race)를 풀어 이름 옆 제자리에 */
+.scr-tb-pick > .scr-avatar { flex: none; }
 .scr-tb-roster-side.is-right .scr-roster-block { grid-template-columns: 1fr; justify-items: end; }
 .scr-tb-roster-side.is-right .scr-roster-row { grid-column: 1; flex-direction: row-reverse; }
 .scr-tb-roster-side.is-right .scr-roster-person { flex-direction: row-reverse; }
