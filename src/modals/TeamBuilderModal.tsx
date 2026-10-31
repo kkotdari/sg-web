@@ -141,12 +141,9 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
   const pickable = useMemo(() => (rows ?? []).filter((r) => !r.blocked), [rows]);
   const pickedSet = useMemo(() => new Set(picked), [picked]);
   const allPicked = pickable.length > 0 && pickable.every((r) => pickedSet.has(r.member.id));
-  /* ★ 고른 사람은 **맨 위**(2026-10-24, 요청: "개인 칩 누르면 추가돼서 맨 위로 올라가고 색깔 변경 — 체크박스식 아님") — 누른 차례 그대로 위에, 나머지는 인분 차례. */
-  const ordered = useMemo(() => {
-    const list = rows ?? [];
-    const top = picked.map((id) => byId.get(id)).filter((r): r is Row => !!r);
-    return [...top, ...list.filter((r) => !pickedSet.has(r.member.id))];
-  }, [rows, picked, byId, pickedSet]);
+  /* ★ 고른 사람은 **제자리에서 색만**(2026-10-31, 지적: "선택 시 스크롤이 위로 올라가서 불편") — 2026-10-24 의 '누르면 맨 위로'를 되물렸다:
+     누른 칩이 목록 맨 위로 옮겨 가며 보던 자리가 튀었다. 목록은 인분 차례 그대로 · 고른 칩은 강조색. */
+  const ordered = rows ?? [];
   /* 이름 검색(요청: "맨 위에 이름으로 검색창 · 자동완성 · 엔터 누르면 바로 추가") — 칩 입력의 자동완성을 빌리고 담긴 값은 바로 고름으로 옮긴다(칸은 늘 비어 있다). */
   const searchOpts = useMemo<ChipOpt[]>(() => pickable.filter((r) => !pickedSet.has(r.member.id)).map((r) => ({ value: r.member.nickname, member: r.member })), [pickable, pickedSet]);
   const addByName = (names: string[]): void => {
