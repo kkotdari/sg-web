@@ -290,21 +290,23 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
                       className={cx("scr-tb-pick", r.blocked && "is-off", pickedSet.has(r.member.id) && "is-on")}
                       onClick={() => toggle(r.member.id)}
                     >
-                      <Avatar member={r.member} size={26} />
-                      <span className="scr-tb-pick-name">{r.member.nickname}</span>
-                      {r.blocked ? (
-                        <span className="scr-tb-pick-meta">팀전 기록 없음</span>
-                      ) : (
-                        <span className="scr-tb-pick-meta">
-                          {/* 주종 · 부종(2026-10-31, 요청: "목록에는 부종까지 노출" · "목록에 티어랑 인분 표시 제거") — 부종은 옅게. 계산은 지정 종족의 인분(inbunOf). */}
-                          {([r.race, r.alt?.race] as (Race | null | undefined)[]).filter((x): x is Race => !!x).map((rc, i) => (
-                            <span key={rc} className={cx("scr-tb-pick-rc", i > 0 && "is-alt")} title={i > 0 ? `부종 ${rc}` : `주종 ${rc}`}>
-                              <RaceBadge race={rc} size={14} circleLetter />
-                            </span>
-                          ))}
-                          <span className="scr-tb-pick-plays">{r.plays}판{r.plays < TIER_MIN_GAMES && <b className="scr-tb-thin"> 표본 적음</b>}</span>
-                        </span>
-                      )}
+                      <Avatar member={r.member} size={22} />
+                      <span className="scr-tb-pick-body">
+                        <span className="scr-tb-pick-name">{r.member.nickname}</span>
+                        {r.blocked ? (
+                          <span className="scr-tb-pick-meta">기록 없음</span>
+                        ) : (
+                          <span className="scr-tb-pick-meta">
+                            {/* 주종 · 부종(2026-10-31, 요청: "목록에는 부종까지 노출" · "목록에 티어랑 인분 표시 제거") — 부종은 옅게. 계산은 지정 종족의 인분(inbunOf). */}
+                            {([r.race, r.alt?.race] as (Race | null | undefined)[]).filter((x): x is Race => !!x).map((rc, i) => (
+                              <span key={rc} className={cx("scr-tb-pick-rc", i > 0 && "is-alt")} title={i > 0 ? `부종 ${rc}` : `주종 ${rc}`}>
+                                <RaceBadge race={rc} size={14} circleLetter />
+                              </span>
+                            ))}
+                            <span className={cx("scr-tb-pick-plays", r.plays < TIER_MIN_GAMES && "is-thin")} title={r.plays < TIER_MIN_GAMES ? "표본 적음(10판 미만)" : undefined}>{r.plays}판</span>
+                          </span>
+                        )}
+                      </span>
                     </button>
                   </li>
                 ))}

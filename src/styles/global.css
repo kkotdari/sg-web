@@ -4613,13 +4613,15 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
   font-size: var(--fs-caption); color: var(--muted); cursor: pointer;
 }
 .scr-tb-hint { cursor: default; }
-.scr-tb-pick-list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+/* 칩은 격자(2026-10-31, 요청: "목록의 칩 폭을 줄여서 화면 폭에 따라 여러 개가 한 줄에 · 다만 줄은 꽉 채우게 나눠 갖기") — 칸 최소 130 · 남는 폭은 같은 줄이 1fr 로 나눈다 · 칩은 두 줄(이름 / 종족·판 수). */
+.scr-tb-pick-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.scr-tb-pick-list > li { min-width: 0; }
 /* ★ 고르기는 **칩 단추**(2026-10-24, 요청: "개인 칩 누르면 추가돼서 맨 위로 올라가고 색깔 변경 — 체크박스식 아님 · 맨 위에 이름 검색창") — 옛 체크박스 줄을 걷었다.
    고른 칩은 강조색 바탕에 흰 글자로 위에 모인다. 검색칸은 칩 입력(scr-gs-chips)을 빌린다(담긴 값은 곧장 고름으로). */
 .scr-tb-search > .scr-gs-chips { min-height: 36px; padding: 3px 8px; margin-bottom: 8px; }
 .scr-tb-pick {
-  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; font: inherit; color: var(--text);
-  padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px;
+  display: flex; align-items: center; gap: 6px; width: 100%; height: 100%; min-width: 0; text-align: left; font: inherit; color: var(--text);
+  padding: 5px 8px; border: 1px solid var(--line); border-radius: 10px;
   background: var(--panel); cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
@@ -5694,8 +5696,12 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-tb-fallback { font-style: normal; color: var(--muted); }
 .scr-tb-pick-race { flex: none; }
 /* 팀 구성하기 — 주종·부종과 그 종족 인분(2026-10-31) · 결과 로스터의 지정 종족 인분. */
-.scr-tb-pick-meta { display: inline-flex; align-items: center; gap: 6px; }
+.scr-tb-pick-meta { display: inline-flex; align-items: center; gap: 4px; }
 .scr-tb-pick-rc { display: inline-flex; align-items: center; gap: 2px; font-variant-numeric: tabular-nums; }
 .scr-tb-pick-rc.is-alt { opacity: 0.6; }
 .scr-tb-pick-rc > .scr-tb-fallback { margin-left: 2px; font-size: 10.5px; }
 .scr-tb-roster-ib { margin-left: 4px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.scr-tb-pick-plays.is-thin { color: var(--loss); font-weight: 700; }
+.scr-tb-pick.is-on .scr-tb-pick-plays.is-thin { color: #ffd6d6; }
+.scr-tb-pick-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.scr-tb-pick-body > .scr-tb-pick-meta { font-size: 11px; }
