@@ -5692,3 +5692,4 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-tb-tier { display: inline-flex; vertical-align: 1px; width: 15px; min-width: 15px; height: 15px; padding: 0 3px; font-size: 10px; line-height: 15px; margin-left: 3px; }
 .scr-tb-pick-meta > .scr-tb-tier { margin: 0 2px 0 0; }
 .scr-tb-fallback { font-style: normal; color: var(--muted); }
+.scr-tb-pick-race { flex: none; }

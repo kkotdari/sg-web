@@ -73,7 +73,7 @@ function RosterTeam({ ids, rows, right }: { ids: string[]; rows: Map<string, Row
             <span className="scr-roster-person" title={`${monthLabel(r.month)} · ${inbunText(r.inbun)} · ${r.plays}판`}>
               <Avatar member={r.member} size={20} />
               <span className="scr-roster-name">{r.member.nickname}</span>
-              <RaceBadge race={r.race ?? ""} size={13} circleLetter className="scr-team-name-race" />
+              <RaceBadge race={r.race ?? ""} size={16} circleLetter className="scr-team-name-race" />
               <TierChip tier={r.tier} />
             </span>
           </div>
@@ -273,6 +273,8 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
                     >
                       <Avatar member={r.member} size={26} />
                       <span className="scr-tb-pick-name">{r.member.nickname}</span>
+                      {/* 주종(가장 많이 한 종족) — 프로토스 상한·결과 종족의 재료(2026-10-31, 요청: "종족까지 지정해서 보여주기"). */}
+                      {r.race && <RaceBadge race={r.race} size={14} circleLetter className="scr-tb-pick-race" />}
                       {r.blocked ? (
                         <span className="scr-tb-pick-meta">팀전 기록 없음</span>
                       ) : (
