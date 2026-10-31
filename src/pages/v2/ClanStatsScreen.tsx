@@ -361,11 +361,10 @@ export default function ClanStatsScreen() {
   }, [viewMembers, view, shownSort]);
 
 
-  const teamRange = useMemo<TeamBuilderRange | null>(() => {
-    if (period === PERIOD_ALL) return null;
-    if (period === PERIOD_TODAY) return { ...todayRange(), label: "오늘" };
+  /* 팀 구성하기의 기준 달 — 보는 달(여러 달이면 마지막 달) · 전체기간·오늘이면 이번 달(인분은 그 달부터 거슬러 판이 넉넉한 달 · TeamBuilderModal). */
+  const teamRange = useMemo<TeamBuilderRange>(() => {
     const p = MONTH_PERIOD_RE.test(period) ? period : currentMonthValue();
-    return { ...monthPeriodToRange(p), label: p.replace("~", " ~ ") };
+    return { month: p.split("~").pop() as string };
   }, [period]);
 
   return (

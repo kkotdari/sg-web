@@ -14,20 +14,21 @@ import { useLockBodyScroll } from "../utils/bodyScrollLock";
 import { buildTeams } from "../utils/teamBalance";
 import { normalizeSearchText } from "../utils/memberSearch";
 import { cx } from "../utils/format";
+import { currentMonthValue } from "../utils/date";
 import type { BalanceSplit } from "../utils/teamBalance";
-import type { BaseRace, GameType, Member, Race } from "../types";
+import type { BaseRace, GameType, Member, Race, TierEntry } from "../types";
 
 const CLAN_TYPE: GameType = "0102";
 
 interface Row {
   member: Member;
-  /** 몇 인분(팀전 티어의 잣대) — 통계에서 보던 기간 것 · 그 기간 판이 없으면 전체 기간 것(fallback). 없으면 고를 수 없다. */
+  /** 몇 인분(팀전 티어의 잣대) — 기준 달부터 거슬러 판이 넉넉한 첫 달 것(아래 pickMonth ★). 없으면 고를 수 없다. */
   inbun: number | null;
   tier: number | null;
-  /** 인분을 잰 판 수(그 기간 또는 전체). */
+  /** 인분을 잰 판 수(그 달 · 또는 전체 기간). */
   plays: number;
-  /** 인분을 전체 기간에서 가져왔나(그 기간 팀전 판이 없었다). */
-  fallback: boolean;
+  /** 인분을 가져온 달("YYYY-MM") · 전체 기간이면 "all". */
+  month: string;
   /** 주종족(가장 많이 한 종족 · 전체 기간) — 결과 로스터의 종족 글자 · 프로토스 상한(PROTOSS_CAP ★)의 재료. */
   race: Race | null;
   blocked: boolean;
@@ -69,7 +70,7 @@ function RosterTeam({ ids, rows, right }: { ids: string[]; rows: Map<string, Row
       {members.map((r) => (
         <div key={r.member.id} className="scr-roster-block">
           <div className="scr-roster-row">
-            <span className="scr-roster-person" title={`${inbunText(r.inbun)} · ${r.plays}판${r.fallback ? " · 전체 기간" : ""}`}>
+            <span className="scr-roster-person" title={`${monthLabel(r.month)} · ${inbunText(r.inbun)} · ${r.plays}판`}>
               <Avatar member={r.member} size={20} />
               <span className="scr-roster-name">{r.member.nickname}</span>
               <RaceBadge race={r.race ?? ""} size={13} circleLetter className="scr-team-name-race" />
@@ -82,8 +83,18 @@ function RosterTeam({ ids, rows, right }: { ids: string[]; rows: Map<string, Row
   );
 }
 
-/** 통계에서 보던 기간(없으면 전체 기간) — 인분은 이 기간 것을 먼저 쓴다. */
-export interface TeamBuilderRange { from: string; to: string; label: string }
+/** 기준 달("YYYY-MM") — 통계에서 보던 달(여러 달이면 마지막 달 · 전체기간·오늘이면 이번 달). */
+export interface TeamBuilderRange { month: string }
+
+/* ★ 인분은 **기준 달부터 거슬러**(2026-10-31, 요청: "이번 달 표본이 적거나 없으면 전달 · 없으면 그 전달 이렇게 사용") — 그 달 판이 TIER_MIN_GAMES(10 · 티어 등급 문턱) 이상인
+   첫 달의 인분. 최근 LOOKBACK_MONTHS 달에 그런 달이 없으면 판이 있는 가장 최근 달 · 그것도 없으면 전체 기간. 달별 인분은 통계 응답의 trend(달마다 tier.py 로 그 달 판만 셈). */
+const LOOKBACK_MONTHS = 6;
+const monthEnd = (ym: string): string => {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m, 0));
+  return `${ym}-${String(d.getUTCDate()).padStart(2, "0")}`;
+};
+const monthLabel = (ym: string): string => (ym === "all" ? "전체 기간" : `${Number(ym.slice(5))}월`);
 
 export default function TeamBuilderModal({ onClose, range }: { onClose: () => void; range?: TeamBuilderRange | null }) {
   useLockBodyScroll();
@@ -92,37 +103,33 @@ export default function TeamBuilderModal({ onClose, range }: { onClose: () => vo
   /** 고른 사람(누른 차례 — 맨 위로 올라간다). */
   const [picked, setPicked] = useState<string[]>([]);
   const [result, setResult] = useState<{ splits: BalanceSplit[]; rows: Map<string, Row>; switched: string[]; short: number; capped: boolean; at: number; exact: boolean } | null>(null);
-  const rangeKey = range ? `${range.from}~${range.to}` : "";
+  const refMonth = range?.month ?? currentMonthValue();
 
   useEffect(() => {
     const active = members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended");
     if (active.length === 0) { setRows([]); return; }
     let dead = false;
     const memberIds = active.map((m) => m.id);
-    const base = { memberIds, matchType: CLAN_TYPE, race: "all" as const };
-    /* 팀전 티어(서버 tier.py)의 인분 — 통계에서 보던 기간 것 · 그 기간에 팀전 판이 없는 사람은 전체 기간 것(전체 기간 조회는 한 번만). */
-    const ranged = range && (range.from || range.to);
-    Promise.all([
-      api.getGameResultStats(base),
-      ranged ? api.getGameResultStats({ ...base, dateFrom: range.from, dateTo: range.to }) : Promise.resolve(null),
-    ])
-      .then(([all, per]) => {
+    /* 한 번에 — 전체 기간(기준 달 끝까지 · 주종족과 마지막 수단의 인분) + 기준 달까지 LOOKBACK_MONTHS 달의 달별 줄(trend). */
+    api.getGameResultStats({ memberIds, matchType: CLAN_TYPE, race: "all", dateTo: monthEnd(refMonth), trendMonths: LOOKBACK_MONTHS })
+      .then((res) => {
         if (dead) return;
-        const allBy = new Map(all.members.map((e) => [e.memberId, e]));
-        const perBy = new Map((per?.members ?? []).map((e) => [e.memberId, e]));
+        const allBy = new Map(res.members.map((e) => [e.memberId, e]));
+        const months = Object.keys(res.trend ?? {}).filter((k) => k <= refMonth).sort().reverse();   // 기준 달부터 거슬러
+        const byMonth = new Map(months.map((k) => [k, new Map((res.trend?.[k] ?? []).map((e) => [e.memberId, e]))]));
         const list: Row[] = active.map((m) => {
           const e = allBy.get(m.id);
-          const pt = perBy.get(m.id)?.tier;
-          const at = e?.tier;
-          const usePer = !!ranged && typeof pt?.inbun === "number" && pt.plays > 0;
-          const t = usePer ? pt : at;
-          const inbun = typeof t?.inbun === "number" && t.inbun > 0 ? t.inbun : null;
+          const has = (t?: TierEntry | null): t is TierEntry => typeof t?.inbun === "number" && t.inbun > 0 && t.plays > 0;
+          let pick: { t: TierEntry; month: string } | null = null;
+          for (const k of months) { const t = byMonth.get(k)?.get(m.id)?.tier; if (has(t) && t.plays >= TIER_MIN_GAMES) { pick = { t, month: k }; break; } }
+          if (!pick) for (const k of months) { const t = byMonth.get(k)?.get(m.id)?.tier; if (has(t)) { pick = { t, month: k }; break; } }
+          if (!pick && has(e?.tier)) pick = { t: e!.tier!, month: "all" };
           const race = e?.mostPlayedRace ?? null;
           const altRace = e ? RACE_ORDER.filter((r) => r !== race && (e.byRace[r]?.plays ?? 0) > 0).sort((x, y) => e.byRace[y].plays - e.byRace[x].plays)[0] : undefined;
           const a = altRace && e ? e.byRace[altRace] : undefined;
           return {
-            member: m, inbun, tier: t?.tier ?? null, plays: t?.plays ?? 0, fallback: !!ranged && !usePer && inbun !== null,
-            race, blocked: inbun === null,
+            member: m, inbun: pick?.t.inbun ?? null, tier: pick?.t.tier ?? null, plays: pick?.t.plays ?? 0, month: pick?.month ?? "all",
+            race, blocked: !pick,
             alt: altRace && a ? { race: altRace, plays: a.plays, winRate: a.winRate } : null,
           };
         });
@@ -131,7 +138,7 @@ export default function TeamBuilderModal({ onClose, range }: { onClose: () => vo
       })
       .catch((e: Error) => { if (!dead) { setRows([]); showAlert(e.message || "팀전 기록을 불러오지 못했어요."); } });
     return () => { dead = true; };
-  }, [members, rangeKey]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [members, refMonth]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const byId = useMemo(() => new Map((rows ?? []).map((r) => [r.member.id, r])), [rows]);
   const pickable = useMemo(() => (rows ?? []).filter((r) => !r.blocked), [rows]);
@@ -277,7 +284,7 @@ export default function TeamBuilderModal({ onClose, range }: { onClose: () => vo
                       ) : (
                         <span className="scr-tb-pick-meta">
                           <TierChip tier={r.tier} /> {inbunText(r.inbun)} · {r.plays}판
-                          {r.fallback && <i className="scr-tb-fallback"> 전체 기간</i>}
+                          {r.month !== refMonth && <i className="scr-tb-fallback"> {monthLabel(r.month)}</i>}
                           {r.plays < TIER_MIN_GAMES && <b className="scr-tb-thin"> 표본 적음</b>}
                         </span>
                       )}
@@ -287,7 +294,7 @@ export default function TeamBuilderModal({ onClose, range }: { onClose: () => vo
               </ul>
 
               <div className="scr-tb-actions">
-                <span className="scr-tb-hint">팀전 티어의 인분{range?.label ? `(${range.label})` : ""}으로 승리 확률이 가장 반반에 가깝게 · 홀수면 n : n+1</span>
+                <span className="scr-tb-hint">팀전 티어의 인분({monthLabel(refMonth)} · 10판 미만이면 지난달)으로 승리 확률이 가장 반반에 가깝게 · 홀수면 n : n+1</span>
                 <button
                   type="button" className="scr-rect-btn"
                   disabled={picked.length < 2} onClick={build}
