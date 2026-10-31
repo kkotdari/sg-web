@@ -5697,9 +5697,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-tb-pick-race { flex: none; }
 /* 팀 구성하기 — 주종·부종과 그 종족 인분(2026-10-31) · 결과 로스터의 지정 종족 인분. */
 .scr-tb-pick-meta { display: inline-flex; align-items: center; gap: 4px; }
-.scr-tb-pick-rc { display: inline-flex; align-items: center; gap: 2px; font-variant-numeric: tabular-nums; }
-.scr-tb-pick-rc.is-alt { opacity: 0.6; }
-.scr-tb-pick-rc > .scr-tb-fallback { margin-left: 2px; font-size: 10.5px; }
+.scr-tb-pick-rc { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px; }
+.scr-tb-pick-rc.is-alt { width: 13px; }   /* 부종은 흐리게가 아니라 작게(2026-10-31 요청) — 그림 11 · 칸 13 */
 .scr-tb-roster-ib { margin-left: 4px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.scr-tb-pick-plays { flex: none; width: calc(3ch + 1.1em); white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }   /* 세 자리 + "판" */
 .scr-tb-pick-plays.is-thin { color: var(--loss); font-weight: 700; }
 .scr-tb-pick.is-on .scr-tb-pick-plays.is-thin { color: #ffd6d6; }
