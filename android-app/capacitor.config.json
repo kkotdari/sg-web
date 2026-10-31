@@ -1,0 +1,13 @@
+{
+  "appId": "com.kkotdari.stargate",
+  "appName": "스타게이트",
+  "webDir": "www",
+  "server": {
+    "url": "https://sg8.vercel.app",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#000000"
+  }
+}
