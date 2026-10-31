@@ -20,8 +20,13 @@ function webPushAvailable(): boolean {
   return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 }
 
+/** 안드 앱이 Firebase 설정(google-services.json)을 품고 구워졌나 — 없이 구운 판은 FCM 등록에서 앱이 죽는다(MainActivity ScrApp.fcm). */
+function nativeFcmReady(): boolean {
+  try { return !!(window as unknown as { ScrApp?: { fcm?: () => boolean } }).ScrApp?.fcm?.(); } catch { return false; }
+}
+
 export function pushSupported(): boolean {
-  return isNativeApp() || webPushAvailable();
+  return isNativeApp() ? nativeFcmReady() : webPushAvailable();
 }
 
 export function isIos(): boolean {
@@ -100,7 +105,7 @@ async function nativeSubscribe(ask: boolean): Promise<void> {
 
 /** 켜기 — 권한을 묻는다. 실패하면 던진다(message: permission · server · …). */
 export async function enablePush(): Promise<void> {
-  if (isNativeApp()) await nativeSubscribe(true);
+  if (isNativeApp()) { if (!nativeFcmReady()) throw new Error("unsupported"); await nativeSubscribe(true); }
   else if (webPushAvailable()) await webSubscribe(true);
   else throw new Error("unsupported");
   ls.set(WANT_KEY, "1");
@@ -131,7 +136,7 @@ export async function pushIsOn(): Promise<boolean> {
 export async function ensurePush(): Promise<void> {
   if (!pushWanted()) return;
   try {
-    if (isNativeApp()) await nativeSubscribe(false);
+    if (isNativeApp()) { if (nativeFcmReady()) await nativeSubscribe(false); }
     else if (webPushAvailable()) await webSubscribe(false);
   } catch { /* 권한이 사라졌으면 그대로 둔다 — 앱 설정에서 다시 켠다 */ }
 }

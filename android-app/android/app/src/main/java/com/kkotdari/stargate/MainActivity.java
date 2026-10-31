@@ -1,6 +1,7 @@
 package com.kkotdari.stargate;
 
 import android.os.Bundle;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
@@ -18,6 +19,15 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         bridge.setWebViewClient(new SprWebViewClient(bridge));
+        /* 사이트가 묻는 앱 정보(window.ScrApp) — fcm(): 이 APK 에 Firebase 설정(google-services.json)이 들었나.
+           없이 구운 판에서 푸시 플러그인 register() 를 부르면 FirebaseApp 이 없어 앱이 죽는다 → 사이트가 알림 스위치를 막는다(utils/push). */
+        final boolean fcm = getResources().getIdentifier("google_app_id", "string", getPackageName()) != 0;
+        bridge.getWebView().addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public boolean fcm() {
+                return fcm;
+            }
+        }, "ScrApp");
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
