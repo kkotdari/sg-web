@@ -5684,3 +5684,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-appset-row + .scr-appset-row { border-top: 1px solid var(--line-faint); }
 .scr-appset-title { font-size: 15px; font-weight: 600; }
 .scr-appset-btn { text-decoration: none; min-width: 64px; justify-content: center; }
+
+/* ★ 팀 구성하기 — 통계 머리줄로(2026-10-31) · 인분·티어 배지(통계 표의 .scr-sg-tier 를 작게) · 전체 기간에서 가져온 인분 표시. */
+.scr-stats-tb-btn { margin-left: auto; }
+.scr-tb-tier { display: inline-flex; vertical-align: 1px; width: 15px; min-width: 15px; height: 15px; padding: 0 3px; font-size: 10px; line-height: 15px; margin-left: 3px; }
+.scr-tb-pick-meta > .scr-tb-tier { margin: 0 2px 0 0; }
+.scr-tb-fallback { font-style: normal; color: var(--muted); }

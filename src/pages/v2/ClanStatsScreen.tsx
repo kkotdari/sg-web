@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Users } from "lucide-react";
+import TeamBuilderModal, { type TeamBuilderRange } from "../../modals/TeamBuilderModal";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
@@ -140,7 +141,9 @@ export default function ClanStatsScreen() {
   const setUsers = (next: string[]): void => setUserRaw(next.length ? JSON.stringify(next) : "");
   const activeMembers = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended"), [members]);
   const userOpts = useMemo<ChipOpt[]>(() => activeMembers.map((m) => ({ value: m.nickname, member: m })), [activeMembers]);
-  /* (옮김 2026-10-24) 팀 구성하기 단추·창은 배치 화면 상단으로(PlacementScreen · 요청: "팀 구성하기 위치: 배치 메뉴 상단으로 이동"). */
+  /* 팀 구성하기(2026-10-31, 요청: "팀구성하기를 다시 통계화면으로 옮기고 · 로직을 티어 계산 로직을 재사용" — 2026-10-24 배치 화면으로 갔던 것을 되돌림) —
+     인분은 지금 보는 기간 것을 먼저 쓴다(그 기간 팀전 판이 없는 사람은 전체 기간 · TeamBuilderModal). */
+  const [teamBuilder, setTeamBuilder] = useState(false);
   /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 머리를 누르면 끝에 붙고, 고른 머리를 누르면 빠진다(하나는 남는다).
      머리를 눌러 고르고(요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") 고른 차례는 정렬 줄 "정렬: 전체 승률 › APM" 에 하나씩 붙고 빠진다(요청: "누르면 '정렬:' 옆에 하나씩 나오고 없어짐").
      다 빼면 기본 차례만(줄에 "기본"). 머리를 누르는 셈(켜고 끄기 · 폰 전적 머리의 승률 → 게임수 → 끔)은 StatGrid 가 한다.
@@ -358,6 +361,13 @@ export default function ClanStatsScreen() {
   }, [viewMembers, view, shownSort]);
 
 
+  const teamRange = useMemo<TeamBuilderRange | null>(() => {
+    if (period === PERIOD_ALL) return null;
+    if (period === PERIOD_TODAY) return { ...todayRange(), label: "오늘" };
+    const p = MONTH_PERIOD_RE.test(period) ? period : currentMonthValue();
+    return { ...monthPeriodToRange(p), label: p.replace("~", " ~ ") };
+  }, [period]);
+
   return (
     <div className="scr-screen scr-stats-screen-v2">
       <div className="scr-v2-toolbar">
@@ -377,8 +387,13 @@ export default function ClanStatsScreen() {
             <button type="button" className={cx("scr-compact-rect-btn", period !== PERIOD_TODAY && "is-secondary")}
               aria-pressed={period === PERIOD_TODAY} onClick={() => setPeriod(PERIOD_TODAY)} title="정오부터 다음 날 정오 전까지">오늘</button>
           </div>
+          <button type="button" className="scr-compact-rect-btn scr-stats-tb-btn" onClick={() => setTeamBuilder(true)}>
+            <Users size={13} aria-hidden /> 팀 구성하기
+            <span className="scr-tb-beta">beta</span>
+          </button>
         </div>
       </div>
+      {teamBuilder && <TeamBuilderModal onClose={() => setTeamBuilder(false)} range={teamRange} />}
 
       <div className="scr-line-tabs scr-stats-size-tabs" role="tablist" aria-label="팀 규모">
         {SIZE_TABS.map((t) => (
