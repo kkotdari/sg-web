@@ -310,6 +310,8 @@ export interface MemberStatsEntry {
   provisional: boolean | null;
   /** 팀전 티어(sg-api tier.py · 2026-10-27) — 팀전 조회에서만 · 1 이 가장 높다. */
   tier?: TierEntry | null;
+  /** 종족별 인분(sg-api tierByRace=true 일 때만 · 2026-10-31) — 그 종족으로 한 판만으로 잰 티어. */
+  tierByRace?: Record<string, TierEntry> | null;
 }
 
 /** 팀전 티어(sg-api tier.py · 2026-10-28 처음부터 다시) — tier/score 는 판이 열 미만이면 null. 인분 = 그 기간 EAPM ÷ 120 × 교환비 보정(cbt) × 승패 보정(adj · 그 기간 판으로). 옛 모형의 칸(dmg · wk · res · sup · prod · skill · eco · arm · expWin · level)은 늘 null. */

@@ -94,6 +94,8 @@ export interface GameResultStatsParams {
   mapGroup?: "fastest" | "hunter" | "spirit";
   /** 달별 변화 — dateTo 가 든 달을 마지막으로 N 달의 사람 줄을 응답 trend 에 함께(2026-10-24 · 요청 한 번). */
   trendMonths?: number;
+  /** 종족별 인분도(팀 구성하기 · 2026-10-31). */
+  tierByRace?: boolean;
 }
 
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
@@ -366,6 +368,7 @@ export const api = {
       teamSize: params.teamSize,
       mapGroup: params.mapGroup,
       trendMonths: params.trendMonths,
+      tierByRace: params.tierByRace || undefined,
     });
     return request<GameResultStatsResponse>(`/api/game-results/stats${qs}`);
   },

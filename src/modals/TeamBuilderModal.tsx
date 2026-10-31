@@ -34,10 +34,16 @@ interface Row {
   blocked: boolean;
   /** 부종(두 번째로 많이 한 종족) — 프로토스 상한에 걸려 부종으로 설 때. */
   alt: { race: BaseRace; plays: number; winRate: number } | null;
+  /** 종족별 인분(2026-10-31, 요청: "종족별 인분까지 계산해야지") — 종족마다 최신 달부터 거슬러 그 종족 기록이 있는 첫 달 것(없으면 전체 기간). */
+  byRace: Partial<Record<string, RaceInbun>>;
 }
+interface RaceInbun { inbun: number; tier: number | null; plays: number; month: string }
+/** 이 줄이 지금 서는 종족(주종 · 상한으로 바뀌면 부종)의 인분 — 그 종족 기록이 없으면 사람 인분. 팀 가름과 승률이 이 값을 쓴다. */
+const inbunOf = (r: Row): number | null => (r.race ? r.byRace[r.race]?.inbun : undefined) ?? r.inbun;
+const raceRec = (r: Row, race: string | null | undefined): RaceInbun | null => (race ? r.byRace[race] ?? null : null);
 
 /* ★ 프로토스는 **팀당 2명까지**(2026-10-24, 요청: "종족은 프 2까지만 가능 · 프 주종이 4명을 넘으면 한 명은 부종으로 — 가장 부종이 높은 사람이") —
-   고른 사람 중 프 주종이 팀 수 × 2(= 4)를 넘으면 넘친 수만큼 **부종 기록(승률 · 판 수)이 가장 좋은 사람**부터 부종으로 세운다(종족 글자만 · 인분은 사람 값 그대로).
+   고른 사람 중 프 주종이 팀 수 × 2(= 4)를 넘으면 넘친 수만큼 **부종 인분이 가장 높은 사람**(없으면 부종 승률)부터 부종으로 세운다 — 그 뒤 세기는 부종 인분(inbunOf).
    부종 기록이 없는 사람은 못 바꾼다 — 그래도 넘치면 상한을 못 지킨 채 짠다(결과에 적는다). 팀 가름(buildTeams)에는 '양 팀 다 프 ≤ 2' 제약을 건다. */
 const PROTOSS_CAP = 2;
 const RACE_ORDER: BaseRace[] = ["테란", "프로토스", "저그"];
@@ -46,8 +52,9 @@ const protossOk = (rows: Map<string, Row>) => (a: string[], b: string[]): boolea
 function applyProtossCap(chosen: Row[]): { rows: Row[]; switched: string[]; short: number } {
   const over = chosen.filter((r) => r.race === "프로토스").length - PROTOSS_CAP * 2;
   if (over <= 0) return { rows: chosen, switched: [], short: 0 };
+  const altIb = (r: Row): number => raceRec(r, r.alt?.race)?.inbun ?? -1;
   const cands = chosen.filter((r) => r.race === "프로토스" && r.alt)
-    .sort((a, b) => (b.alt!.winRate - a.alt!.winRate) || (b.alt!.plays - a.alt!.plays));
+    .sort((a, b) => (altIb(b) - altIb(a)) || (b.alt!.winRate - a.alt!.winRate) || (b.alt!.plays - a.alt!.plays));
   const pick = new Set(cands.slice(0, over).map((r) => r.member.id));
   const rows = chosen.map((r) => (pick.has(r.member.id) && r.alt ? { ...r, race: r.alt.race } : r));
   return { rows, switched: [...pick], short: Math.max(0, over - pick.size) };
@@ -70,11 +77,12 @@ function RosterTeam({ ids, rows, right }: { ids: string[]; rows: Map<string, Row
       {members.map((r) => (
         <div key={r.member.id} className="scr-roster-block">
           <div className="scr-roster-row">
-            <span className="scr-roster-person" title={`${monthLabel(r.month)} · ${inbunText(r.inbun)} · ${r.plays}판`}>
+            <span className="scr-roster-person" title={((rr) => (rr ? `${r.race} ${monthLabel(rr.month)} · ${inbunText(rr.inbun)} · ${rr.plays}판` : `${monthLabel(r.month)} · ${inbunText(r.inbun)} · ${r.plays}판`))(raceRec(r, r.race))}>
               <Avatar member={r.member} size={20} />
               <span className="scr-roster-name">{r.member.nickname}</span>
               <RaceBadge race={r.race ?? ""} size={16} circleLetter className="scr-team-name-race" />
-              <TierChip tier={r.tier} />
+              <TierChip tier={raceRec(r, r.race)?.tier ?? r.tier} />
+              <span className="scr-tb-roster-ib">{(inbunOf(r) ?? 0).toFixed(2)}</span>
             </span>
           </div>
         </div>
@@ -109,7 +117,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
     let dead = false;
     const memberIds = active.map((m) => m.id);
     /* 한 번에 — 전체 기간(기준 달 끝까지 · 주종족과 마지막 수단의 인분) + 기준 달까지 LOOKBACK_MONTHS 달의 달별 줄(trend). */
-    api.getGameResultStats({ memberIds, matchType: CLAN_TYPE, race: "all", dateTo: monthEnd(refMonth), trendMonths: LOOKBACK_MONTHS })
+    api.getGameResultStats({ memberIds, matchType: CLAN_TYPE, race: "all", dateTo: monthEnd(refMonth), trendMonths: LOOKBACK_MONTHS, tierByRace: true })
       .then((res) => {
         if (dead) return;
         const allBy = new Map(res.members.map((e) => [e.memberId, e]));
@@ -124,10 +132,21 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
           const race = e?.mostPlayedRace ?? null;
           const altRace = e ? RACE_ORDER.filter((r) => r !== race && (e.byRace[r]?.plays ?? 0) > 0).sort((x, y) => e.byRace[y].plays - e.byRace[x].plays)[0] : undefined;
           const a = altRace && e ? e.byRace[altRace] : undefined;
+          /* 종족별 — 종족마다 최신 달부터 그 종족 기록이 있는 첫 달 · 없으면 전체 기간(기준 달 끝까지). */
+          const byRace: Partial<Record<string, RaceInbun>> = {};
+          const races = new Set<string>([...Object.keys(e?.tierByRace ?? {}), ...months.flatMap((k) => Object.keys(byMonth.get(k)?.get(m.id)?.tierByRace ?? {}))]);
+          for (const rc of races) {
+            let got: RaceInbun | null = null;
+            for (const k of months) { const t = byMonth.get(k)?.get(m.id)?.tierByRace?.[rc]; if (has(t)) { got = { inbun: t.inbun!, tier: t.tier, plays: t.plays, month: k }; break; } }
+            const ta = e?.tierByRace?.[rc];
+            if (!got && has(ta)) got = { inbun: ta.inbun!, tier: ta.tier, plays: ta.plays, month: "all" };
+            if (got) byRace[rc] = got;
+          }
           return {
             member: m, inbun: pick?.t.inbun ?? null, tier: pick?.t.tier ?? null, plays: pick?.t.plays ?? 0, month: pick?.month ?? "all",
             race, blocked: !pick,
             alt: altRace && a ? { race: altRace, plays: a.plays, winRate: a.winRate } : null,
+            byRace,
           };
         });
         list.sort((a, b) => Number(a.blocked) - Number(b.blocked) || (b.inbun ?? 0) - (a.inbun ?? 0) || a.member.nickname.localeCompare(b.member.nickname));
@@ -161,7 +180,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
     if (picked0.length < 2) { showAlert("두 명 이상 골라 주세요."); return; }
     const cap = applyProtossCap(picked0);
     const rowsMap = new Map(cap.rows.map((r) => [r.member.id, r]));
-    const players = cap.rows.map((r) => ({ id: r.member.id, inbun: r.inbun ?? 1 }));
+    const players = cap.rows.map((r) => ({ id: r.member.id, inbun: inbunOf(r) ?? 1 }));
     /* '양 팀 다 프 ≤ 2' 로 먼저 짜고, 그 제약으로 한 조합도 안 나오면 제약 없이(capped 거짓 · 결과에 적는다). */
     let out = buildTeams(players, 40, protossOk(rowsMap));
     let capped = true;
@@ -176,7 +195,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
 
   const split = result ? result.splits[result.at] : null;
   const resRows = result?.rows ?? byId;
-  const sumInbun = (ids: string[]): number => ids.reduce((s, id) => s + (resRows.get(id)?.inbun ?? 0), 0);
+  const sumInbun = (ids: string[]): number => ids.reduce((s, id) => { const r = resRows.get(id); return s + (r ? inbunOf(r) ?? 0 : 0); }, 0);
 
   return createPortal(
     <div className="scr-modal-overlay">
@@ -273,15 +292,17 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
                     >
                       <Avatar member={r.member} size={26} />
                       <span className="scr-tb-pick-name">{r.member.nickname}</span>
-                      {/* 주종(가장 많이 한 종족) — 프로토스 상한·결과 종족의 재료(2026-10-31, 요청: "종족까지 지정해서 보여주기"). */}
-                      {r.race && <RaceBadge race={r.race} size={14} circleLetter className="scr-tb-pick-race" />}
                       {r.blocked ? (
                         <span className="scr-tb-pick-meta">팀전 기록 없음</span>
                       ) : (
                         <span className="scr-tb-pick-meta">
-                          <TierChip tier={r.tier} /> {inbunText(r.inbun)} · {r.plays}판
-                          {r.month !== refMonth && <i className="scr-tb-fallback"> {monthLabel(r.month)}</i>}
-                          {r.plays < TIER_MIN_GAMES && <b className="scr-tb-thin"> 표본 적음</b>}
+                          {/* 주종 · 부종(2026-10-31, 요청: "목록에는 부종까지 노출" · "목록에 티어랑 인분 표시 제거") — 부종은 옅게. 계산은 지정 종족의 인분(inbunOf). */}
+                          {([r.race, r.alt?.race] as (Race | null | undefined)[]).filter((x): x is Race => !!x).map((rc, i) => (
+                            <span key={rc} className={cx("scr-tb-pick-rc", i > 0 && "is-alt")} title={i > 0 ? `부종 ${rc}` : `주종 ${rc}`}>
+                              <RaceBadge race={rc} size={14} circleLetter />
+                            </span>
+                          ))}
+                          <span className="scr-tb-pick-plays">{r.plays}판{r.plays < TIER_MIN_GAMES && <b className="scr-tb-thin"> 표본 적음</b>}</span>
                         </span>
                       )}
                     </button>
