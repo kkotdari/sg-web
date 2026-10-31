@@ -2618,12 +2618,14 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 }
 .scr-drawer-user .scr-avatar { width: 48px !important; height: 48px !important; }
 .scr-drawer-user-name { font-weight: 700; font-size: var(--fs-subhead); }
-.scr-drawer-user-acts { display: flex; align-items: center; gap: 2px; margin-left: -6px; }
+/* 앱 설정이 들어와 셋(내 정보 · 앱 설정 · 로그아웃)이 되며 서랍 폭(192)에서 낱말 안이 꺾였다(2026-10-31 지적) — 단추 안은 안 꺾고 여백 6 → 2 · 글자 −1px(폰 14 → 13) · 넘치면 단추째 다음 줄. */
+.scr-drawer-user-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 0; margin-left: -2px; }
 .scr-drawer-user-act {
-  padding: 3px 6px; border: none; border-radius: 4px; background: none; cursor: pointer;
-  font: inherit; font-size: var(--fs-caption); color: var(--muted); -webkit-tap-highlight-color: transparent;
+  white-space: nowrap; flex: none;
+  padding: 3px 2px; border: none; border-radius: 4px; background: none; cursor: pointer;
+  font: inherit; font-size: calc(var(--fs-caption) - 1px); color: var(--muted); -webkit-tap-highlight-color: transparent;
 }
-.scr-drawer-user-sep { color: var(--dim); font-size: var(--fs-caption); }
+.scr-drawer-user-sep { flex: none; color: var(--dim); font-size: var(--fs-caption); }
 .scr-drawer-actions > .scr-drawer-theme { align-self: flex-start; margin-left: 6px; }
 @media (hover: hover) { .scr-drawer-user-act:hover { color: var(--text); } }
 .scr-drawer-nav { display: flex; flex-direction: column; gap: 4px; margin-top: auto; }
