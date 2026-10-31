@@ -83,8 +83,9 @@ function RosterTeam({ ids, rows, right }: { ids: string[]; rows: Map<string, Row
   );
 }
 
-/* ★ 인분은 **최신 달(이번 달)부터 거슬러**(2026-10-31, 요청: "이번 달 표본이 적거나 없으면 전달 · 없으면 그 전달 이렇게 사용" · "기준달은 보고 있는 달이 아니라 그냥 최신달") — 그 달 판이 TIER_MIN_GAMES(10 · 티어 등급 문턱) 이상인
-   첫 달의 인분. 최근 LOOKBACK_MONTHS 달에 그런 달이 없으면 판이 있는 가장 최근 달 · 그것도 없으면 전체 기간. 달별 인분은 통계 응답의 trend(달마다 tier.py 로 그 달 판만 셈). */
+/* ★ 인분은 **최신 달(이번 달)부터 거슬러 기록이 있는 첫 달**(2026-10-31, 요청: "이번 달 표본이 적거나 없으면 전달 · 없으면 그 전달" · "기준달은 그냥 최신달" ·
+   "최소 기준을 없애고 최근 기록 있는 달로") — 판 수 문턱 없이 그 달 팀전 판이 있으면 그 달 인분. 최근 LOOKBACK_MONTHS 달에 없으면 전체 기간.
+   달별 인분은 통계 응답의 trend(달마다 tier.py 로 그 달 판만 셈). */
 const LOOKBACK_MONTHS = 6;
 const monthEnd = (ym: string): string => {
   const [y, m] = ym.split("-").map(Number);
@@ -118,8 +119,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
           const e = allBy.get(m.id);
           const has = (t?: TierEntry | null): t is TierEntry => typeof t?.inbun === "number" && t.inbun > 0 && t.plays > 0;
           let pick: { t: TierEntry; month: string } | null = null;
-          for (const k of months) { const t = byMonth.get(k)?.get(m.id)?.tier; if (has(t) && t.plays >= TIER_MIN_GAMES) { pick = { t, month: k }; break; } }
-          if (!pick) for (const k of months) { const t = byMonth.get(k)?.get(m.id)?.tier; if (has(t)) { pick = { t, month: k }; break; } }
+          for (const k of months) { const t = byMonth.get(k)?.get(m.id)?.tier; if (has(t)) { pick = { t, month: k }; break; } }
           if (!pick && has(e?.tier)) pick = { t: e!.tier!, month: "all" };
           const race = e?.mostPlayedRace ?? null;
           const altRace = e ? RACE_ORDER.filter((r) => r !== race && (e.byRace[r]?.plays ?? 0) > 0).sort((x, y) => e.byRace[y].plays - e.byRace[x].plays)[0] : undefined;
@@ -291,7 +291,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
               </ul>
 
               <div className="scr-tb-actions">
-                <span className="scr-tb-hint">팀전 티어의 인분({monthLabel(refMonth)} · 10판 미만이면 지난달)으로 승리 확률이 가장 반반에 가깝게 · 홀수면 n : n+1</span>
+                <span className="scr-tb-hint">팀전 티어의 인분(기록이 있는 가장 최근 달)으로 승리 확률이 가장 반반에 가깝게 · 홀수면 n : n+1</span>
                 <button
                   type="button" className="scr-rect-btn"
                   disabled={picked.length < 2} onClick={build}
