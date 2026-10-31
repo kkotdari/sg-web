@@ -83,10 +83,7 @@ function RosterTeam({ ids, rows, right }: { ids: string[]; rows: Map<string, Row
   );
 }
 
-/** 기준 달("YYYY-MM") — 통계에서 보던 달(여러 달이면 마지막 달 · 전체기간·오늘이면 이번 달). */
-export interface TeamBuilderRange { month: string }
-
-/* ★ 인분은 **기준 달부터 거슬러**(2026-10-31, 요청: "이번 달 표본이 적거나 없으면 전달 · 없으면 그 전달 이렇게 사용") — 그 달 판이 TIER_MIN_GAMES(10 · 티어 등급 문턱) 이상인
+/* ★ 인분은 **최신 달(이번 달)부터 거슬러**(2026-10-31, 요청: "이번 달 표본이 적거나 없으면 전달 · 없으면 그 전달 이렇게 사용" · "기준달은 보고 있는 달이 아니라 그냥 최신달") — 그 달 판이 TIER_MIN_GAMES(10 · 티어 등급 문턱) 이상인
    첫 달의 인분. 최근 LOOKBACK_MONTHS 달에 그런 달이 없으면 판이 있는 가장 최근 달 · 그것도 없으면 전체 기간. 달별 인분은 통계 응답의 trend(달마다 tier.py 로 그 달 판만 셈). */
 const LOOKBACK_MONTHS = 6;
 const monthEnd = (ym: string): string => {
@@ -96,14 +93,14 @@ const monthEnd = (ym: string): string => {
 };
 const monthLabel = (ym: string): string => (ym === "all" ? "전체 기간" : `${Number(ym.slice(5))}월`);
 
-export default function TeamBuilderModal({ onClose, range }: { onClose: () => void; range?: TeamBuilderRange | null }) {
+export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
   useLockBodyScroll();
   const members = useAppStore((s) => s.members);
   const [rows, setRows] = useState<Row[] | null>(null);
   /** 고른 사람(누른 차례 — 맨 위로 올라간다). */
   const [picked, setPicked] = useState<string[]>([]);
   const [result, setResult] = useState<{ splits: BalanceSplit[]; rows: Map<string, Row>; switched: string[]; short: number; capped: boolean; at: number; exact: boolean } | null>(null);
-  const refMonth = range?.month ?? currentMonthValue();
+  const refMonth = useMemo(() => currentMonthValue(), []);
 
   useEffect(() => {
     const active = members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended");
