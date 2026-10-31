@@ -4653,7 +4653,9 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-tb-match-prob > b { font-size: 22px; font-weight: 900; color: var(--text-dim); line-height: 1; }
 .scr-tb-match-prob > b.is-up { color: var(--text); }
 .scr-tb-match-prob > i { font-style: normal; font-size: 16px; font-weight: 700; color: var(--muted); }
-.scr-tb-roster { align-items: flex-start; }
+/* vs 정가운데(2026-10-31 요청) — 두 편 폭이 달라도 [1fr | vs | 1fr] 격자로. */
+.scr-tb-roster { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; }
+.scr-tb-roster > .scr-tb-roster-side { min-width: 0; }
 .scr-tb-roster-side.is-right .scr-roster-block { grid-template-columns: 1fr; justify-items: end; }
 .scr-tb-roster-side.is-right .scr-roster-row { grid-column: 1; flex-direction: row-reverse; }
 .scr-tb-roster-side.is-right .scr-roster-person { flex-direction: row-reverse; }
@@ -5691,8 +5693,6 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 
 /* ★ 팀 구성하기 — 통계 머리줄로(2026-10-31) · 인분·티어 배지(통계 표의 .scr-sg-tier 를 작게) · 전체 기간에서 가져온 인분 표시. */
 .scr-stats-tb-btn { margin-left: auto; }
-.scr-tb-tier { display: inline-flex; vertical-align: 1px; width: 15px; min-width: 15px; height: 15px; padding: 0 3px; font-size: 10px; line-height: 15px; margin-left: 3px; }
-.scr-tb-pick-meta > .scr-tb-tier { margin: 0 2px 0 0; }
 .scr-tb-fallback { font-style: normal; color: var(--muted); }
 .scr-tb-pick-race { flex: none; }
 /* 팀 구성하기 — 주종·부종과 그 종족 인분(2026-10-31) · 결과 로스터의 지정 종족 인분. */

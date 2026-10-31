@@ -64,11 +64,6 @@ function applyProtossCap(chosen: Row[]): { rows: Row[]; switched: string[]; shor
 const TIER_MIN_GAMES = 10;
 const inbunText = (v: number | null): string => (v === null ? "-" : `${v.toFixed(2)}인분`);
 
-function TierChip({ tier }: { tier: number | null }) {
-  if (tier === null) return null;
-  return <b className={cx("scr-sg-tier", "scr-tb-tier", `is-t${Math.min(tier, 4)}`)}>{tier}</b>;
-}
-
 /** 결과의 한쪽 — 경기 결과의 로스터(GameResultSides)와 같은 꼴: 아바타 · 이름 · 종족 글자 · 티어 · 인분. */
 function RosterTeam({ ids, rows, right }: { ids: string[]; rows: Map<string, Row>; right?: boolean }) {
   const members = ids.map((id) => rows.get(id)).filter((r): r is Row => !!r);
@@ -81,7 +76,6 @@ function RosterTeam({ ids, rows, right }: { ids: string[]; rows: Map<string, Row
               <Avatar member={r.member} size={20} />
               <span className="scr-roster-name">{r.member.nickname}</span>
               <RaceBadge race={r.race ?? ""} size={16} circleLetter className="scr-team-name-race" />
-              <TierChip tier={raceRec(r, r.race)?.tier ?? r.tier} />
               <span className="scr-tb-roster-ib">{(inbunOf(r) ?? 0).toFixed(2)}</span>
             </span>
           </div>
