@@ -6,6 +6,7 @@ import MobileTabBar from "./MobileTabBar";
 import Avatar from "../components/common/Avatar";
 import BrandLogo from "../components/common/BrandLogo";
 import UploaderInstallModal from "../components/common/UploaderInstallModal";
+import AppSettingsModal from "../modals/AppSettingsModal";
 import { cx } from "../utils/format";
 import { attachPopover } from "../utils/popover";
 import { useIsNarrow } from "../utils/useIsNarrow";
@@ -40,6 +41,7 @@ export default function Header({
 
   /* 메뉴의 "앱 설치"(PWA)는 걷고 그 자리에 업로더 설치(2026-10-21, 요청) — 내려받기 창을 연다. */
   const [uploaderOpen, setUploaderOpen] = useState(false);
+  const [appSettingsOpen, setAppSettingsOpen] = useState(false);
 
 
   const [drawerRendered, setDrawerRendered] = useState(false);
@@ -217,6 +219,12 @@ export default function Header({
               </button>
               <button
                 type="button" className="scr-menu-pop-opt"
+                onClick={() => { setAppSettingsOpen(true); setProfileMenuOpen(false); }}
+              >
+                <span className="scr-menu-pop-opt-label">앱 설정</span>
+              </button>
+              <button
+                type="button" className="scr-menu-pop-opt"
                 onClick={() => { onLogout(); setProfileMenuOpen(false); }}
               >
                 <span className="scr-menu-pop-opt-label">로그아웃</span>
@@ -255,6 +263,8 @@ export default function Header({
               <div className="scr-drawer-user-acts">
                 <button type="button" className="scr-drawer-user-act" onClick={() => { onOpenProfile(); setMenuOpen(false); }}>내 정보</button>
                 <span className="scr-drawer-user-sep" aria-hidden>·</span>
+                <button type="button" className="scr-drawer-user-act" onClick={() => { setAppSettingsOpen(true); setMenuOpen(false); }}>앱 설정</button>
+                <span className="scr-drawer-user-sep" aria-hidden>·</span>
                 <button type="button" className="scr-drawer-user-act" onClick={() => { onLogout(); setMenuOpen(false); }}>로그아웃</button>
               </div>
             </div>
@@ -275,6 +285,8 @@ export default function Header({
           </div>,
         document.body,
       )}
+
+      {appSettingsOpen && <AppSettingsModal onClose={() => setAppSettingsOpen(false)} />}
 
       {uploaderOpen && (
         <UploaderInstallModal onClose={() => { setUploaderOpen(false); setMenuOpen(false); }} />

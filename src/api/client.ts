@@ -247,6 +247,24 @@ export const api = {
     return !!refreshToken;
   },
 
+  /* 푸시 알림(2026-10-31 · sg-api domain/push) — 브라우저·아이폰 PWA 는 Web Push(endpoint + 키) · 안드 앱은 FCM 토큰(endpoint 칸). */
+  async pushConfig(): Promise<{ webPushKey: string | null; fcm: boolean }> {
+    return request("/api/push/config");
+  },
+  async pushSubscribe(body: { kind: "web" | "fcm"; endpoint: string; p256dh?: string; auth?: string }): Promise<void> {
+    return request("/api/push/subscriptions", { method: "POST", body: JSON.stringify(body) });
+  },
+  async pushState(endpoint: string): Promise<boolean> {
+    const r = await request<{ on: boolean }>(`/api/push/subscriptions/state${buildQuery({ endpoint })}`);
+    return r.on;
+  },
+  /** 끄기는 로그인 없이도(로그아웃 뒤에도 그 기기 알림을 걷는다) — 기기가 가진 endpoint 가 열쇠. */
+  async pushUnsubscribe(endpoint: string): Promise<void> {
+    await fetch(`${API_BASE}/api/push/subscriptions/delete`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint }),
+    }).catch(() => undefined);
+  },
+
   async logout(): Promise<void> {
     const tokenToRevoke = refreshToken;
     clearTokens();

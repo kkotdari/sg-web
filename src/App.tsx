@@ -28,6 +28,7 @@ import GamesScreen from "./pages/games/GamesScreen";
 import BoardScreen from "./pages/board/BoardScreen";
 import LadderScreen from "./pages/v2/LadderScreen";
 import ClanStatsScreen from "./pages/v2/ClanStatsScreen";
+import { ensurePush } from "./utils/push";
 import CatalogScreen from "./pages/catalog/CatalogScreen";
 import GuestApp from "./pages/guest/GuestApp";
 
@@ -115,6 +116,10 @@ export default function App() {
   useEffect(() => {
     void restoreSession();
   }, [restoreSession]);
+
+  useEffect(() => {
+    if (user) void ensurePush();   // 알림을 켜 둔 기기면 조용히 다시 건다(토큰 갱신 · 회원이 바뀐 기기 · utils/push)
+  }, [user?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (user) void bootstrap();

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { pushOnLogout } from "../utils/push";
 import { api } from "../api/client";
 import { versionNumber } from "../utils/appVersion";
 import { updatePageOf } from "../updates";
@@ -139,6 +140,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   logout: () => {
+    pushOnLogout();   // 이 기기 알림 구독을 서버에서 걷는다(켬 뜻은 남아 다음 로그인에 다시 건다 · utils/push)
     api.logout();
     set({ user: null, members: [] });
   },
