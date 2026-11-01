@@ -114,6 +114,9 @@ export default function GameResultStory({
      재생기를 띄우든 로스터를 띄우든 결정 · 재생기는 모든 정보가 다 도착하고 화면이 준비되면 그때 그리기 — 전광판이나 시간 그런 것도 다") — 지도를 받는 동안
      (mapPending)·재생기 로딩(scplay veil → onReady) 동안은 판 자리를 비우고 DetailLoading 만. 로스터 판은 곧장. 옛 자료를 기다리는 재생기(PlayerLoadShell)는 걷었다. */
   const [playerShown, setPlayerShown] = useState(false);
+  /* ★ 로딩 퍼센트(2026-11-01, 요청: "워드마크 아랫줄에 단색으로 로딩 퍼센티지") — 게임 받기(GameDetailPage 3%) → 지도 받기 10% → 재생기 로딩 20~99%(scplay onLoadProgress 0~1) · 다 되면 걷힌다. */
+  const [playerProg, setPlayerProg] = useState(0);
+  const loadPct = mapPending ? 10 : Math.min(99, 20 + 79 * playerProg);
   const loadingNow = soleViewNow && !showRoster && !playerShown;
   const onShownRef = useRef(onShown); onShownRef.current = onShown;
   useEffect(() => { if (!loadingNow && (showRoster || playerShown)) onShownRef.current?.(); }, [loadingNow, showRoster, playerShown]);
@@ -208,6 +211,7 @@ export default function GameResultStory({
         askMode={soleViewNow}   /* 게임 상세는 들어올 때 보기 모드(요약 · 풀)를 묻는다 — 재생기가 장면 링크면 안 묻는다(2026-10-23) */
         veil={soleViewNow}   /* 로딩이 다 끝날 때까지 가린다(위 loadingNow ★) */
         onReady={() => setPlayerShown(true)}
+        onLoadProgress={setPlayerProg}
         loadUnitTracks={() => api.getGameUnitTracks(gameResult.id)
           .catch(() => ({ motion: null }))}
         winnerTeam={gameResult.result === "team1" ? 1 : gameResult.result === "team2" ? 2 : undefined}
@@ -269,7 +273,7 @@ export default function GameResultStory({
       </div>
     )}
       {/* 게임 상세는 다 될 때까지 워드마크(DetailLoading · 위 loadingNow ★) — 목록 카드는 옛 흐린 네모 그대로. */}
-      {loadingNow && <DetailLoading />}
+      {loadingNow && <DetailLoading pct={loadPct} />}
       {(mapPending || playerWait) && !soleViewNow && <div className="scr-story-mapwait" aria-hidden />}
       {!showRoster && playerReady && mapBlock}
       {showMapLine && (

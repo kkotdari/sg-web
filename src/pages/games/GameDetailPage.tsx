@@ -86,7 +86,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
             </button>
           </div>
         </div>
-        <DetailLoading />
+        <DetailLoading pct={3} />   {/* 게임 받는 중 — 이어서 GameResultStory 가 10% 부터 */}
       </div>
     );
   }

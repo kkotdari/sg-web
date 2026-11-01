@@ -5711,3 +5711,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-tb-pick-plays { flex: none; width: calc(3ch + 1.1em); white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }   /* 세 자리 + "판" */
 .scr-tb-pick-plays.is-thin { color: var(--loss); font-weight: 700; }
 .scr-tb-pick.is-on .scr-tb-pick-plays.is-thin { color: #ffd6d6; }
+
+/* ★ 로딩 퍼센트(2026-11-01 · Feedback LoadingMark pct) — 워드마크 아랫줄 · 단색 작은 글자 · 숫자 폭 고정(흔들림 없게). */
+.scr-boot-stack { display: inline-flex; flex-direction: column; align-items: center; gap: 10px; }
+.scr-boot-pct { font-family: var(--font-ui); font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
