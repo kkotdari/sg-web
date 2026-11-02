@@ -43,6 +43,5 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- 앱 안 업데이트(Updater) — 내려받은 새 APK 의 설치 창을 띄운다 -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- (걷어냄 · 2026-11-02) REQUEST_INSTALL_PACKAGES — 앱 안 설치를 걷었다(Updater ★ · Play 프로텍트). 새 판은 브라우저로 받는다. -->
 </manifest>

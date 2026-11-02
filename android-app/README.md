@@ -4,7 +4,7 @@ Capacitor 웹뷰 앱이에요. 사이트(`https://sg8.vercel.app/`, 홈 화면)�
 
 - **모델 그림 내장**: 재생기 폰 아틀라스(약 67MB)를 앱 안에 넣어요. 사이트가 그림을 새로 구우면 바뀐 파일만 네트워크로 받아요.
 - **푸시 알림**: FCM으로 받아요. 켜고 끄는 건 사이트의 *앱 설정 → 알림*에서 해요.
-- **앱 안 업데이트**: 앱이 깃허브 릴리즈의 `version.json`을 보고 새 판이 있으면 내려받아 설치 창을 띄워요.
+- **새 판 알림**: 앱이 깃허브 릴리즈의 `version.json`을 보고 새 판이 있으면 알려 주고, [받기]를 누르면 브라우저로 새 APK를 받아요(받은 파일을 눌러 설치). 앱이 직접 설치 창을 띄우던 길은 Play 프로텍트가 '유해한 앱'으로 거는 까닭이라 걷었어요(설치 권한 `REQUEST_INSTALL_PACKAGES` 도 없음).
 - **앱 ID**: `com.kkotdari.stargate`
 
 빌드는 GitHub Actions(`.github/workflows/android.yml`)가 해요.
