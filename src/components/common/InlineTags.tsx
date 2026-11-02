@@ -217,7 +217,6 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
     const closeOnScroll = (e: Event) => {
       const t = e.target as Node | null;
       if (t && dropRef.current?.contains(t)) return;
-      if (tagRefocus9) return;   // 터치로 칸을 놓는 동안(optPointerDown ★★) 키보드가 내려가며 나는 굴림에 목록을 닫지 않는다 — 곧 click 이 고른다
       setMode(null);
     };
     document.addEventListener("pointerdown", closeOnOutside, true);
@@ -236,38 +235,30 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
     setMode(m ? { kind: "member", q: m[1], start: cursor - m[0].length } : null);
   };
 
-  /* ★★ **손가락으로 고를 때는 누르는 순간 칸을 놓는다**(2026-11-02, 실기 지적: 사파리 "@조조 입력 후 띄어쓰기 후 다른 글자를 입력하면 @조조조다른글자 — 아직도") —
-     아이폰 한글 키보드는 '조'를 아직 조합 중으로 기억한 채였다: 칸 값을 `@조조 ` 로 갈아도 키보드 쪽 조합 버퍼는 안 비워져, 다음 글자에서 **직전 한 글자(띄어쓰기)를 지우고
-     '조'를 다시 넣었다**(@조조 + 조 + 다른글자). 아래 insert 의 '놓았다 곧장 다시 잡기'는 같은 틱 안이라 키보드(UI 프로세스)가 놓음을 못 받고 그대로였다.
-     이제 터치는 **누름(pointerdown)에서 칸을 놓고** 손을 뗀 뒤의 click(사용자 손짓 안)에서 값을 갈고 다시 잡는다 — 그 사이 틈에 키보드가 조합을 끝내고 버퍼를 비운다.
-     놓는 동안의 blur 는 칸을 감싼 쪽이 '떠났다'로 읽지 않게 tagRefocusing() 을 켠다(click 이 안 오면 — 끌어서 취소 — 0.8초 뒤 끈다). 마우스는 종전대로(누름을 막아 칸을 안 놓는다). */
-  const touchBlur9 = useRef(0);
-  const optPointerDown = (e: React.PointerEvent): void => {
-    if (e.pointerType === "mouse") return;
-    const el = inputRef.current;
-    if (!el || document.activeElement !== el) return;
-    tagRefocus9 = true;
-    window.clearTimeout(touchBlur9.current);
-    touchBlur9.current = window.setTimeout(() => { tagRefocus9 = false; }, 800);
-    el.blur();
+  /* ★★ **태그는 브라우저의 글자 넣기로 갈아 끼운다**(2026-11-02, 실기 지적: 사파리 "@조조 입력 후 띄어쓰기 후 다른 글자를 입력하면 @조조조다른글자 — 아직도" →
+     같은 날 "아이폰에서 @ 목록 선택 시 키보드가 닫혀서 불편 · 커서도 없어지고") — 아이폰 한글 키보드는 '조'를 아직 조합 중으로 기억한다. 칸 값을 스크립트로 갈면
+     (React setValue) 키보드는 그걸 모른 채 '커서 앞 한 글자 = 조합 중인 글자'로 여겨, 다음 글자에서 그 자리(띄어쓰기)를 '조'로 바꿔 넣었다(@조조 + 조 + 다른글자).
+     첫 손질(누를 때 칸을 놓고 click 에서 다시 잡기)은 겹침은 막았지만 아이폰이 다시 잡기를 안 받아 키보드가 닫히고 커서가 사라졌다 — 걷었다.
+     이제 칸은 놓지 않고 [@ 자리 ~ 커서]를 고른 뒤 `execCommand("insertText")` 로 태그를 넣는다 — 키보드가 친 것과 같은 편집 길이라 조합을 제대로 마무리하고(키보드도
+     그걸 안다) input 이벤트로 React 값이 따라온다. 키보드·커서가 그대로다. 안 되는 브라우저면(false · 값이 안 바뀜) 옛 길(조합 끊고 값 갈기)로 간다. */
+  const replaceNative9 = (el: HTMLInputElement | HTMLTextAreaElement, start: number, end: number, token: string): boolean => {
+    try {
+      if (document.activeElement !== el) return false;
+      el.setSelectionRange(start, end);
+      if (!document.execCommand("insertText", false, token)) return false;
+      return el.value.slice(start, start + token.length) === token;
+    } catch { return false; }
   };
 
   const insert = (token: string): void => {
     if (!mode) return;
     const el = inputRef.current;
-    if (el && document.activeElement !== el && tagRefocus9) {
-      /* 터치로 이미 놓은 칸(위 optPointerDown ★★) — 조합은 끝났고 값은 DOM 이 든다(React 값은 한 박자 늦을 수 있다). 갈고 **이 click 안에서** 다시 잡는다. */
-      window.clearTimeout(touchBlur9.current);
-      const cur = el.value;
-      const cursor = Math.min(el.selectionStart ?? cur.length, cur.length);
-      const next = cur.slice(0, mode.start) + token + cur.slice(cursor);
-      if (maxLength !== undefined && next.length > maxLength) { tagRefocus9 = false; return; }
-      setValue(next);
-      setMode(null);
-      const pos = mode.start + token.length;
-      try { el.focus(); } finally { tagRefocus9 = false; }
-      requestAnimationFrame(() => { const e2 = inputRef.current; if (e2) e2.setSelectionRange(pos, pos); });
-      return;
+    if (el) {
+      const cur0 = el.value;
+      const cursor0 = Math.min(el.selectionStart ?? cur0.length, cur0.length);
+      const len0 = cur0.length - (cursor0 - mode.start) + token.length;
+      if (maxLength !== undefined && len0 > maxLength) return;
+      if (replaceNative9(el, mode.start, cursor0, token)) { setMode(null); return; }
     }
     /* ★ 한글 조합 중이면 먼저 끊는다(2026-10-29, 실기 지적: "닉네임 태그 입력 시 한글 마지막 글자가 중복으로 또 입력") — '@정구'의 '구'가 아직 조합 중인 채
        값을 갈면, 그 뒤 IME 가 조합을 마치며 '구'를 커서 자리에 한 번 더 넣었다. blur 가 조합을 지금 끝내고(값은 이미 그 글자를 담고 있다) 곧장 다시 잡는다 —
@@ -306,7 +297,6 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
           key={g.id} type="button"
           className={cx("scr-pv-opt scr-tag-game-opt", i === highlight && "scr-pv-opt-active")}
           onMouseEnter={() => setHighlight(i)}
-          onPointerDown={optPointerDown}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => choose(i)}
         >
@@ -319,7 +309,6 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
             key="__all" type="button"
             className={cx("scr-pv-opt scr-mention-opt scr-mention-all", highlight === 0 && "scr-pv-opt-active")}
             onMouseEnter={() => setHighlight(0)}
-            onPointerDown={optPointerDown}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => choose(0)}
           >
@@ -334,7 +323,6 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
               key={m.id} type="button"
               className={cx("scr-pv-opt scr-mention-opt", i === highlight && "scr-pv-opt-active")}
               onMouseEnter={() => setHighlight(i)}
-              onPointerDown={optPointerDown}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => choose(i)}
             >
