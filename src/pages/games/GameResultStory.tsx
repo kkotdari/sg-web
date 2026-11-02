@@ -20,7 +20,7 @@ import type { GameResult, GameResultSlot, Member } from "../../types";
 
 export default function GameResultStory({
   gameResult, team1, team2, result, memberOf, highlightMemberIds, highlightTerms, active = true,
-  menu, headSlot = null, onShown,
+  menu, headSlot = null, onShown, onSized,
 }: {
   gameResult: GameResult;
   team1: GameResultSlot[];
@@ -35,6 +35,8 @@ export default function GameResultStory({
   headSlot?: HTMLElement | null;
   /** 게임 상세 — 판(재생기 · 로스터)이 다 그려졌다(재생기는 로딩이 다 끝난 때) · 부르는 쪽이 댓글 따위를 이때 세운다. */
   onShown?: () => void;
+  /** 판 높이가 확정됐다(재생기 자리 높이가 200ms 동안 안 변함 · 로스터는 곧장) — 상세가 이때부터 댓글을 띄운다(아래 sized ★). */
+  onSized?: () => void;
 }) {
   const grid = useReplayMap(gameResult.mapHash);
   const detailClose = useContext(GameDetailCloseContext);
@@ -120,6 +122,24 @@ export default function GameResultStory({
   const loadingNow = soleViewNow && !showRoster && !playerShown;
   const onShownRef = useRef(onShown); onShownRef.current = onShown;
   useEffect(() => { if (!loadingNow && (showRoster || playerShown)) onShownRef.current?.(); }, [loadingNow, showRoster, playerShown]);
+  /* ★ **재생기 높이가 확정된 뒤에** 로딩바(판 안)와 댓글(2026-11-02, 요청: "재생기 높이가 확정된 후 로딩바와 댓글 띄우기") — 가린 재생기(veil · 자리는 차지)가
+     붙고 제 높이를 잡는 동안 판 안 워드마크와 아래 댓글이 따라 출렁였다(판 자리 최소 60vh → 재생기 높이). 재생기 감싸개 높이를 ResizeObserver 로 보다가 200ms 안 변하면
+     확정. 그 전의 로딩바는 화면 고정 한가운데(게임 받는 동안과 같은 자리 · 판 높이와 무관). 로스터 판은 곧장 확정. */
+  const [sized, setSized] = useState(false);
+  const mapBoxRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (sized) return undefined;
+    if (showRoster) { setSized(true); return undefined; }
+    const el9 = mapBoxRef.current;
+    if (!el9 || typeof ResizeObserver === "undefined") return undefined;
+    let last9 = -1; let t9 = 0;
+    const arm9 = (): void => { window.clearTimeout(t9); t9 = window.setTimeout(() => { if (el9.offsetHeight > 0) setSized(true); }, 200); };
+    const ro9 = new ResizeObserver(() => { const h9 = el9.offsetHeight; if (h9 !== last9) { last9 = h9; arm9(); } });
+    ro9.observe(el9); arm9();
+    return () => { ro9.disconnect(); window.clearTimeout(t9); };
+  }, [sized, showRoster, playerReady, storyMap]);
+  const onSizedRef = useRef(onSized); onSizedRef.current = onSized;
+  useEffect(() => { if (sized) onSizedRef.current?.(); }, [sized]);
   const showMapLine = showRoster && !headSlot && Boolean(mapName || minutes !== null);
 
   const stopBubble = {
@@ -199,7 +219,7 @@ export default function GameResultStory({
     headSlot,
   ) : null;
   const mapBlock = storyMap && (
-    <div {...stopBubble}>
+    <div {...stopBubble} ref={mapBoxRef}>
       <ReplayModule
         grid={storyMap} endSec={endSecVal}
         bases={bases} teamOfRaw={teamOfRaw} active={active}
@@ -273,7 +293,7 @@ export default function GameResultStory({
       </div>
     )}
       {/* 게임 상세는 다 될 때까지 워드마크(DetailLoading · 위 loadingNow ★) — 목록 카드는 옛 흐린 네모 그대로. */}
-      {loadingNow && <DetailLoading pct={loadPct} inCard />}
+      {loadingNow && <DetailLoading pct={loadPct} inCard={sized} />}   {/* 높이 확정 전은 화면 고정 한가운데(위 sized ★) */}
       {(mapPending || playerWait) && !soleViewNow && <div className="scr-story-mapwait" aria-hidden />}
       {!showRoster && playerReady && mapBlock}
       {showMapLine && (

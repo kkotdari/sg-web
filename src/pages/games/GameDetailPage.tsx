@@ -32,6 +32,8 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   const deleteGameResultAction = useAppStore((s) => s.deleteGameResult);
   const [game, setGame] = useState<GameResult | null>(null);
   const [shown, setShown] = useState(false);
+  /** 판 높이 확정(GameResultStory onSized ★) — 그 전엔 판 자리 최소 높이·댓글을 안 둔다(재생기가 높이를 잡으며 댓글이 출렁이지 않게). */
+  const [sized, setSized] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<GameResult | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
@@ -113,7 +115,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
         </div>
         <div className="scr-v2-toolbar-actions">{menu}</div>
       </div>
-      <div className={`scr-game-page-card${shown ? "" : " is-loading"}`}>   {/* 로딩 동안 판 자리를 잡아 둔다(워드마크가 그 안 · 아래 댓글과 안 겹치게) */}
+      <div className={`scr-game-page-card${sized ? "" : " is-loading"}`}>   {/* 로딩 동안 판 자리를 잡아 둔다(워드마크가 그 안 · 아래 댓글과 안 겹치게) */}
         <GameResultStory
           headSlot={headSlot}
           gameResult={game}
@@ -123,11 +125,13 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
           memberOf={memberOf}
           menu={menu}
           onShown={() => setShown(true)}
+          onSized={() => setSized(true)}
         />
       </div>
       {/* 댓글은 게임을 받자마자(2026-11-02, 요청: "게임 상세 로딩 중에도 댓글은 보고 쓸 수 있게 변경") — 판(재생기 · 로스터)이 그려지길 안 기다린다.
-          옛: GameResultStory onShown 뒤에만(2026-10-30 "타이틀 외의 다른 부분은 그리지 말고"). */}
-      {(
+          옛: GameResultStory onShown 뒤에만(2026-10-30 "타이틀 외의 다른 부분은 그리지 말고").
+          ★ 단, 판 **높이가 확정된 뒤**(sized · 2026-11-02, 요청: "재생기 높이가 확정된 후 로딩바와 댓글 띄우기") — 그 전엔 재생기가 높이를 잡으며 댓글이 출렁였다. */}
+      {sized && (
         <div className={`scr-feed-card-comment scr-game-page-comment${shown ? "" : " is-loading"}`}>
           <Comments targetType="gameResult" targetId={game.id} />
         </div>
