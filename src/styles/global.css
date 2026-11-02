@@ -2999,6 +2999,8 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-mention-opt { display: flex; align-items: center; gap: 8px; font-family: var(--font-ui); }
 .scr-mention-opt .scr-avatar { flex-shrink: 0; }
 .scr-mention-name { font-size: var(--fs-body); font-weight: 600; }
+/* 전체 멘션 줄(맨 위 · InlineTags ALL_TAG) — 아바타 자리에 같은 크기 둥근 무리 아이콘. */
+.scr-mention-all-ic { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft, rgba(127, 127, 127, 0.18)); color: var(--accent, currentColor); }
 .scr-comment-mention { vertical-align: middle; position: relative; top: -1px; margin: 0 1px; user-select: none; }
 .scr-comment-mention.is-link { cursor: pointer; }   /* 누르면 회원 정보(InlineTags MemberTagChip · 2026-10-29) */
 @media (hover: hover) { .scr-comment-mention.is-link:hover { text-decoration: underline; } }

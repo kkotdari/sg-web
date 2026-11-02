@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { Gamepad2 } from "lucide-react";
+import { Gamepad2, Users } from "lucide-react";
 import Avatar from "./Avatar";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -23,8 +23,13 @@ const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 const ID_TAG = /@\[([^\]\s]{1,64})\]/g;
 const activeNamed = (members: Member[]): Member[] => members.filter((m) => m.status === "active" && m.nickname);
 /** 입력 꼴(`@닉네임`) → 저장 꼴(`@[아이디]`). 긴 닉네임부터 맞춘다. */
+/* ★ 전체 멘션(2026-11-02, 요청: "유저 멘션에 전체 멘션 추가 · 목록에 맨 위에") — 칸에는 `@전체`, 저장은 `@[*]`(ID_TAG 꼴 그대로 · 서버는 알림 대상 `*` 를
+   지금 활동 중인 회원 전부로 푼다 — sg-api activity _resolve_mentions). 보일 때는 링크 없는 `@전체` 칩. */
+export const ALL_TAG_NAME = "전체";
+export const ALL_TAG_ID = "*";
 export function tagsToStore(text: string, members: Member[] = useAppStore.getState().members): string {
   if (!text.includes("@")) return text;
+  text = text.replace(new RegExp(`@${ALL_TAG_NAME}(?![^\\s@])`, "g"), `@[${ALL_TAG_ID}]`);
   const active = activeNamed(members);
   if (active.length === 0) return text;
   const byName = new Map(active.map((m) => [m.nickname, m.id]));
@@ -35,6 +40,7 @@ export function tagsToStore(text: string, members: Member[] = useAppStore.getSta
 export function tagsToEdit(text: string, members: Member[] = useAppStore.getState().members): string {
   if (!text.includes("@[")) return text;
   const byId = new Map(members.map((m) => [m.id, m.nickname]));
+  byId.set(ALL_TAG_ID, ALL_TAG_NAME);
   return text.replace(ID_TAG, (all, id: string) => { const n = byId.get(id); return n ? `@${n}` : all; });
 }
 
@@ -63,6 +69,10 @@ export const tagRefocusing = (): boolean => tagRefocus9;
 /** 회원 태그 칩 — 누르면 그 회원 정보 창(2026-10-29, 실기 지적: "태그 눌러도 회원정보창 안 뜨는 문제" · 옛 칩은 글자만이었다).
  *  닉네임이 바뀌어 회원을 못 찾으면 글자만. 줄·카드의 누름(게임 열기 등)으로 안 번지게 막는다. */
 function MemberTagChip({ name, memberId }: { name?: string; memberId?: string }) {
+  if (memberId === ALL_TAG_ID) return <span className="scr-comment-mention">@{ALL_TAG_NAME}</span>;   // 전체 멘션(위 ALL_TAG ★) — 열 회원이 없다
+  return <MemberTagChipOne name={name} memberId={memberId} />;
+}
+function MemberTagChipOne({ name, memberId }: { name?: string; memberId?: string }) {
   const hit = useAppStore((s) => (memberId ? s.members.find((m) => m.id === memberId) : s.members.find((m) => m.nickname === name && m.status === "active")));
   const openMemberProfile = useAppStore((s) => s.openMemberProfile);
   if (!hit) return <span className="scr-comment-mention">@{name ?? memberId}</span>;
@@ -106,8 +116,9 @@ export function useMemberNames(): string[] {
 
 /** 글 속 회원 태그의 회원 id — 댓글이 알림 대상으로 보낸다. */
 export function mentionIdsOf(text: string, members: Member[]): string[] {
+  const all9 = text.includes(`@[${ALL_TAG_ID}]`) || new RegExp(`@${ALL_TAG_NAME}(?![^\\s@])`).test(text);   // 전체 멘션 — 서버가 활동 회원 전부로 푼다(위 ALL_TAG ★)
   const active = activeNamed(members);
-  if (active.length === 0) return [];
+  if (active.length === 0) return all9 ? [ALL_TAG_ID] : [];
   const activeIds = new Set(active.map((m) => m.id));
   const fromIds = Array.from(text.matchAll(ID_TAG), (x) => x[1]).filter((id) => activeIds.has(id));
   const byName = new Map(active.map((m) => [m.nickname, m.id]));
@@ -120,6 +131,7 @@ export function mentionIdsOf(text: string, members: Member[]): string[] {
     if (id) ids.add(id);
   }
   for (const id of fromIds) ids.add(id);
+  if (all9) return [ALL_TAG_ID, ...Array.from(ids)];
   return Array.from(ids);
 }
 
@@ -182,7 +194,9 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
       .sort((a, b) => a.nickname.localeCompare(b.nickname, "ko"))
       .slice(0, 50);
   }, [members, mode]);
-  const count = mode?.kind === "game" ? games.length : people.length;
+  /** 전체 멘션 줄(맨 위 · 위 ALL_TAG ★) — 친 글자가 없거나 '전체'·'all' 에 들면. */
+  const allOpt = mode?.kind === "member" && (!mode.q || ALL_TAG_NAME.includes(mode.q) || "all".startsWith(mode.q.toLowerCase()));
+  const count = mode?.kind === "game" ? games.length : people.length + (allOpt ? 1 : 0);
   const shown = mode !== null && count > 0;
 
   useEffect(() => { setHighlight(0); }, [mode?.kind, mode?.q, games]);
@@ -203,6 +217,7 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
     const closeOnScroll = (e: Event) => {
       const t = e.target as Node | null;
       if (t && dropRef.current?.contains(t)) return;
+      if (tagRefocus9) return;   // 터치로 칸을 놓는 동안(optPointerDown ★★) 키보드가 내려가며 나는 굴림에 목록을 닫지 않는다 — 곧 click 이 고른다
       setMode(null);
     };
     document.addEventListener("pointerdown", closeOnOutside, true);
@@ -221,9 +236,39 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
     setMode(m ? { kind: "member", q: m[1], start: cursor - m[0].length } : null);
   };
 
+  /* ★★ **손가락으로 고를 때는 누르는 순간 칸을 놓는다**(2026-11-02, 실기 지적: 사파리 "@조조 입력 후 띄어쓰기 후 다른 글자를 입력하면 @조조조다른글자 — 아직도") —
+     아이폰 한글 키보드는 '조'를 아직 조합 중으로 기억한 채였다: 칸 값을 `@조조 ` 로 갈아도 키보드 쪽 조합 버퍼는 안 비워져, 다음 글자에서 **직전 한 글자(띄어쓰기)를 지우고
+     '조'를 다시 넣었다**(@조조 + 조 + 다른글자). 아래 insert 의 '놓았다 곧장 다시 잡기'는 같은 틱 안이라 키보드(UI 프로세스)가 놓음을 못 받고 그대로였다.
+     이제 터치는 **누름(pointerdown)에서 칸을 놓고** 손을 뗀 뒤의 click(사용자 손짓 안)에서 값을 갈고 다시 잡는다 — 그 사이 틈에 키보드가 조합을 끝내고 버퍼를 비운다.
+     놓는 동안의 blur 는 칸을 감싼 쪽이 '떠났다'로 읽지 않게 tagRefocusing() 을 켠다(click 이 안 오면 — 끌어서 취소 — 0.8초 뒤 끈다). 마우스는 종전대로(누름을 막아 칸을 안 놓는다). */
+  const touchBlur9 = useRef(0);
+  const optPointerDown = (e: React.PointerEvent): void => {
+    if (e.pointerType === "mouse") return;
+    const el = inputRef.current;
+    if (!el || document.activeElement !== el) return;
+    tagRefocus9 = true;
+    window.clearTimeout(touchBlur9.current);
+    touchBlur9.current = window.setTimeout(() => { tagRefocus9 = false; }, 800);
+    el.blur();
+  };
+
   const insert = (token: string): void => {
     if (!mode) return;
     const el = inputRef.current;
+    if (el && document.activeElement !== el && tagRefocus9) {
+      /* 터치로 이미 놓은 칸(위 optPointerDown ★★) — 조합은 끝났고 값은 DOM 이 든다(React 값은 한 박자 늦을 수 있다). 갈고 **이 click 안에서** 다시 잡는다. */
+      window.clearTimeout(touchBlur9.current);
+      const cur = el.value;
+      const cursor = Math.min(el.selectionStart ?? cur.length, cur.length);
+      const next = cur.slice(0, mode.start) + token + cur.slice(cursor);
+      if (maxLength !== undefined && next.length > maxLength) { tagRefocus9 = false; return; }
+      setValue(next);
+      setMode(null);
+      const pos = mode.start + token.length;
+      try { el.focus(); } finally { tagRefocus9 = false; }
+      requestAnimationFrame(() => { const e2 = inputRef.current; if (e2) e2.setSelectionRange(pos, pos); });
+      return;
+    }
     /* ★ 한글 조합 중이면 먼저 끊는다(2026-10-29, 실기 지적: "닉네임 태그 입력 시 한글 마지막 글자가 중복으로 또 입력") — '@정구'의 '구'가 아직 조합 중인 채
        값을 갈면, 그 뒤 IME 가 조합을 마치며 '구'를 커서 자리에 한 번 더 넣었다. blur 가 조합을 지금 끝내고(값은 이미 그 글자를 담고 있다) 곧장 다시 잡는다 —
        그 사이의 blur 를 칸을 감싼 쪽(댓글 쓰기 칸 접기 · 시트 typing)이 '떠났다'로 읽지 않게 tagRefocusing() 으로 알린다. */
@@ -241,7 +286,8 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
   };
   const choose = (i: number): void => {
     if (mode?.kind === "game") { const g = games[i]; if (g) insert(`#${g.matchNo} `); }
-    else { const p = people[i]; if (p) insert(`@${p.nickname} `); }
+    else if (allOpt && i === 0) insert(`@${ALL_TAG_NAME} `);
+    else { const p = people[i - (allOpt ? 1 : 0)]; if (p) insert(`@${p.nickname} `); }
   };
 
   const onKeyDown = (e: React.KeyboardEvent): boolean => {
@@ -260,24 +306,44 @@ export function useInlineTags({ inputRef, value, setValue, maxLength }: {
           key={g.id} type="button"
           className={cx("scr-pv-opt scr-tag-game-opt", i === highlight && "scr-pv-opt-active")}
           onMouseEnter={() => setHighlight(i)}
+          onPointerDown={optPointerDown}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => choose(i)}
         >
           <span className="scr-tag-game-no">#{g.matchNo}</span>
           <span className="scr-tag-game-desc">{gameLine(g, memberOf)}</span>
         </button>
-      )) : people.map((m, i) => (
-        <button
-          key={m.id} type="button"
-          className={cx("scr-pv-opt scr-mention-opt", i === highlight && "scr-pv-opt-active")}
-          onMouseEnter={() => setHighlight(i)}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => choose(i)}
-        >
-          <Avatar member={m} size={22} />
-          <span className="scr-mention-name">{m.nickname}</span>
-        </button>
-      ))}
+      )) : [
+        ...(allOpt ? [(
+          <button
+            key="__all" type="button"
+            className={cx("scr-pv-opt scr-mention-opt scr-mention-all", highlight === 0 && "scr-pv-opt-active")}
+            onMouseEnter={() => setHighlight(0)}
+            onPointerDown={optPointerDown}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => choose(0)}
+          >
+            <span className="scr-mention-all-ic" aria-hidden><Users size={14} /></span>
+            <span className="scr-mention-name">{ALL_TAG_NAME}</span>
+          </button>
+        )] : []),
+        ...people.map((m, i0) => {
+          const i = i0 + (allOpt ? 1 : 0);
+          return (
+            <button
+              key={m.id} type="button"
+              className={cx("scr-pv-opt scr-mention-opt", i === highlight && "scr-pv-opt-active")}
+              onMouseEnter={() => setHighlight(i)}
+              onPointerDown={optPointerDown}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => choose(i)}
+            >
+              <Avatar member={m} size={22} />
+              <span className="scr-mention-name">{m.nickname}</span>
+            </button>
+          );
+        }),
+      ]}
     </div>,
     document.body,
   ) : null;
