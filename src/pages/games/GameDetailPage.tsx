@@ -9,7 +9,6 @@ import type { GameResult } from "../../types";
 import Comments from "../feed/Comments";
 import { GameResultTools } from "./GameResultCardBody";
 import GameResultStory from "./GameResultStory";
-import { DetailLoading } from "./DetailLoading";
 import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
 
 /* ★ 게임 상세는 **목록과 무관한 별도 페이지**다(2026-10-19, 요청: "너나와 리그 게임도 목록과 전혀무관하게 변경 · 별도 페이지임 그냥") —
@@ -88,7 +87,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
             </button>
           </div>
         </div>
-        <DetailLoading pct={3} />   {/* 게임 받는 중 — 이어서 GameResultStory 가 10% 부터 */}
+        {/* 게임 받는 동안은 로딩바도 없다(2026-11-02 되물림 — 로딩바는 판 높이가 확정된 뒤 판 안 한 자리에서만 · GameResultStory sized ★). */}
       </div>
     );
   }

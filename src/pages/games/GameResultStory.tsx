@@ -124,7 +124,8 @@ export default function GameResultStory({
   useEffect(() => { if (!loadingNow && (showRoster || playerShown)) onShownRef.current?.(); }, [loadingNow, showRoster, playerShown]);
   /* ★ **재생기 높이가 확정된 뒤에** 로딩바(판 안)와 댓글(2026-11-02, 요청: "재생기 높이가 확정된 후 로딩바와 댓글 띄우기") — 가린 재생기(veil · 자리는 차지)가
      붙고 제 높이를 잡는 동안 판 안 워드마크와 아래 댓글이 따라 출렁였다(판 자리 최소 60vh → 재생기 높이). 재생기 감싸개 높이를 ResizeObserver 로 보다가 200ms 안 변하면
-     확정. 그 전의 로딩바는 화면 고정 한가운데(게임 받는 동안과 같은 자리 · 판 높이와 무관). 로스터 판은 곧장 확정. */
+     확정. 로스터 판은 곧장 확정. 그 전엔 로딩바도 없다 — 처음엔 확정 전 로딩바를 화면 고정 한가운데에 두었으나 판 안으로 옮겨 가며 위아래로 움직였다
+     (되물림: "확정 전에도 띄우니까 로딩바 위치가 위아래로 이동해서 별론데" · GameDetailPage 의 게임 받는 동안 로딩바도 같은 까닭으로 걷었다). */
   const [sized, setSized] = useState(false);
   const mapBoxRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -293,7 +294,7 @@ export default function GameResultStory({
       </div>
     )}
       {/* 게임 상세는 다 될 때까지 워드마크(DetailLoading · 위 loadingNow ★) — 목록 카드는 옛 흐린 네모 그대로. */}
-      {loadingNow && <DetailLoading pct={loadPct} inCard={sized} />}   {/* 높이 확정 전은 화면 고정 한가운데(위 sized ★) */}
+      {loadingNow && sized && <DetailLoading pct={loadPct} inCard />}   {/* 높이 확정 뒤에만 · 판 안 한 자리(위 sized ★) */}
       {(mapPending || playerWait) && !soleViewNow && <div className="scr-story-mapwait" aria-hidden />}
       {!showRoster && playerReady && mapBlock}
       {showMapLine && (
