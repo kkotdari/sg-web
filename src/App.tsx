@@ -29,6 +29,7 @@ import BoardScreen from "./pages/board/BoardScreen";
 import LadderScreen from "./pages/v2/LadderScreen";
 import ClanStatsScreen from "./pages/v2/ClanStatsScreen";
 import { ensurePush } from "./utils/push";
+import { useDeployRefresh } from "./hooks/useDeployRefresh";
 import CatalogScreen from "./pages/catalog/CatalogScreen";
 import GuestApp from "./pages/guest/GuestApp";
 
@@ -139,6 +140,7 @@ export default function App() {
     void refreshAll();
   }, [screen, user?.id, refreshAll]);
 
+  useDeployRefresh();   // 앱(PWA·안드)으로 돌아올 때 새 배포면 자동 새로고침(hooks/useDeployRefresh ★)
   const bootVersion = useRef<string | null>(null);
   const [staleVersion, setStaleVersion] = useState<string | null>(null);
   const seeVersion = (v: string): void => {
