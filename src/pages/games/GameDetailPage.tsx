@@ -113,7 +113,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
         </div>
         <div className="scr-v2-toolbar-actions">{menu}</div>
       </div>
-      <div className="scr-game-page-card">
+      <div className={`scr-game-page-card${shown ? "" : " is-loading"}`}>   {/* 로딩 동안 판 자리를 잡아 둔다(워드마크가 그 안 · 아래 댓글과 안 겹치게) */}
         <GameResultStory
           headSlot={headSlot}
           gameResult={game}
@@ -125,9 +125,10 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
           onShown={() => setShown(true)}
         />
       </div>
-      {/* 댓글은 판(재생기 · 로스터)이 다 그려진 뒤에(GameResultStory onShown · 2026-10-30 "타이틀 외의 다른 부분은 그리지 말고"). */}
-      {shown && (
-        <div className="scr-feed-card-comment scr-game-page-comment">
+      {/* 댓글은 게임을 받자마자(2026-11-02, 요청: "게임 상세 로딩 중에도 댓글은 보고 쓸 수 있게 변경") — 판(재생기 · 로스터)이 그려지길 안 기다린다.
+          옛: GameResultStory onShown 뒤에만(2026-10-30 "타이틀 외의 다른 부분은 그리지 말고"). */}
+      {(
+        <div className={`scr-feed-card-comment scr-game-page-comment${shown ? "" : " is-loading"}`}>
           <Comments targetType="gameResult" targetId={game.id} />
         </div>
       )}

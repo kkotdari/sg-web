@@ -5697,6 +5697,11 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* 게임 상세의 기다림(DetailLoading · 2026-10-30) — 화면 한가운데 워드마크만 · 누름은 흘려보낸다(제목 줄의 뒤로 단추). */
 .scr-detail-loading { position: fixed; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; pointer-events: none; }
 .scr-detail-loading > .scr-boot { min-height: 0; }
+/* 판 자리 안의 기다림(DetailLoading inCard · 2026-11-02, 요청: "게임 상세 로딩 중에도 댓글은 보고 쓸 수 있게") — 가린 재생기(visibility hidden · 자리는 차지)의 위쪽 한가운데에 ·
+   카드와 함께 굴러가므로 아래 댓글 위에 안 겹친다. */
+.scr-game-page-card { position: relative; }
+.scr-game-page-card.is-loading { min-height: min(60vh, 520px); }
+.scr-detail-loading.is-incard { position: absolute; inset: 0 0 auto 0; height: min(100%, 70vh); min-height: 160px; z-index: 2; }
 
 /* ★ 앱 설정(2026-10-31 · modals/AppSettingsModal) — 줄마다 [이름 | 스위치·단추]. 스위치는 제어판의 버전 안내 스위치(scr-notice-switch) 그대로. */
 .scr-appset-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }

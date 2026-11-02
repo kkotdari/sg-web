@@ -273,7 +273,7 @@ export default function GameResultStory({
       </div>
     )}
       {/* 게임 상세는 다 될 때까지 워드마크(DetailLoading · 위 loadingNow ★) — 목록 카드는 옛 흐린 네모 그대로. */}
-      {loadingNow && <DetailLoading pct={loadPct} />}
+      {loadingNow && <DetailLoading pct={loadPct} inCard />}
       {(mapPending || playerWait) && !soleViewNow && <div className="scr-story-mapwait" aria-hidden />}
       {!showRoster && playerReady && mapBlock}
       {showMapLine && (
