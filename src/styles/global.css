@@ -2468,7 +2468,10 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
 .scr-up-list b { color: var(--text); margin-right: 6px; }
 .scr-up-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 @media (max-width: 960px) { .scr-up-compare { grid-template-columns: 1fr; } }
-.scr-up-shot { position: relative; margin: 0; border-radius: 8px; overflow: hidden; background: #2b2f36; aspect-ratio: 1600 / 1490; }
+.scr-up-shot { position: relative; margin: 0; border-radius: 8px; overflow: hidden; background: #2b2f36; aspect-ratio: 1400 / 1191; }
+/* 종족별 전후(UpdateV5 RACES · 2026-11-02) — 종족 이름 줄 + 전후 한 벌씩 세 벌. */
+.scr-up-race + .scr-up-race { margin-top: 14px; }
+.scr-up-race-name { margin: 0 0 6px; font-size: var(--fs-body); font-weight: 700; }
 .scr-up-shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .scr-up-shot figcaption {
   position: absolute; left: 8px; top: 8px; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 800;
