@@ -35,11 +35,16 @@
       ]
     },
     {
-      "source": "/pf-feecbae208d9/(.*)",
+      "source": "/pf/(.*)",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
       ]
     }
+  ],
+  "redirects": [
+    { "source": "/pf-feecbae208d9", "destination": "/pf/5.1/", "permanent": false },
+    { "source": "/pf-feecbae208d9/(.*)", "destination": "/pf/5.1/$1", "permanent": false },
+    { "source": "/pf/5.1", "destination": "/pf/5.1/", "permanent": false }
   ],
   "rewrites": [
     {
