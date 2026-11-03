@@ -5742,3 +5742,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   .scr-stats-screen-v2 { max-width: 1480px; }
   .scr-main:has(.scr-stats-screen-v2) { max-width: 1480px; }   /* 리그 상세(1920)와 같은 꼴 — 본문 틀도 함께 넓힌다 */
 }
+/* PC 통계 묶음 고르기(2026-11-03, 요청: "전체, 테란, 프로토스, 저그 체크박스로 선택한 것만 보이게") — 표 위 오른쪽 작은 체크 줄. */
+.scr-sg-groups { display: flex; justify-content: flex-end; gap: 12px; margin: 0 0 6px; font-size: var(--fs-caption); color: var(--muted); }
+.scr-sg-group-chk { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
+.scr-sg-group-chk.is-on { color: var(--text); }
+.scr-sg-group-chk > input { margin: 0; accent-color: var(--accent, #2b62e8); cursor: pointer; }

@@ -179,6 +179,10 @@ function WhoPlain({ member }: { member: Member }) {
 }
 
 /* (걷음 · 2026-11-03) RaceCells — 종족 두 칸[게임수 | 승률]. PC 는 이제 묶음 다섯 칸(아래 GroupCells) · 폰은 MobileRow 가 제 칸을 쓴다. */
+/** PC 묶음(전체 · 종족 셋) — 고르기 체크박스(StatGrid grpOn ★)가 보일 것을 정한다. */
+type PcGroup = "전체" | BaseRace;
+const PC_GROUPS: readonly PcGroup[] = ["전체", ...RACES];
+const GRP_STORE = "sg-stat-groups";
 /** ★ PC 묶음 다섯 칸(2026-11-03, 요청: "통계 피시버전만 — 경기수/승률/교환비/APM/EAPM 다섯 컬럼을 똑같이 전체/테란/프로토스/저그 반복 · 칸 모양도 똑같이 · 폭 넓히고") —
  *  [게임수 | 승률 | 교환비(날 값) | APM | EAPM] 을 전체 · 종족마다 같은 꼴로. 보정교환비 칸은 PC 에서 걷었다(티어 팝업 근거값에 남는다). 묶음 첫 칸은 왼 선(scr-sg-gstart).
  *  평균 줄: 전체 게임수 = 경기 수 · 전체 승률 · 교환비는 "-"(내전이라 늘 반반 · 1 근처) · 종족 승률은 쓴다(그 종족으로 뛴 클랜원 판). */
@@ -197,7 +201,7 @@ function GroupCells({ s, race, member, clan, games }: { s?: MemberStats; race: B
   );
 }
 
-function PcRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; games?: number; tier?: boolean }) {
+function PcRow({ row, clan, games, tier, groups }: { row: StatGridRow; clan?: boolean; games?: number; tier?: boolean; groups: readonly PcGroup[] }) {
   /* 평균 줄도 변화 그래프(2026-10-25, 요청: "통계의 평균행에도 상세 팝업 붙여야지") — 평균 줄의 회원은 빈 id(StatTrend CLAN_MEMBER_ID). */
   const who = row.member;
   return (
@@ -206,8 +210,9 @@ function PcRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolean; g
           {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : <Who member={row.member} />}
         </span>
         {tier && <TierCell t={clan ? null : row.tier} member={clan ? undefined : who} />}
-        <GroupCells s={row.stats} race={null} member={who} clan={clan} games={games} />
-        {RACES.map((r) => <GroupCells key={r} s={row.byRace?.[r]} race={r} member={who} clan={clan} />)}
+        {groups.map((g) => (g === "전체"
+          ? <GroupCells key={g} s={row.stats} race={null} member={who} clan={clan} games={games} />
+          : <GroupCells key={g} s={row.byRace?.[g]} race={g} member={who} clan={clan} />))}
       </div>
   );
 }
@@ -346,6 +351,19 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   /** 폰 단일 머리(티어 · 데미지 · APM) — 아이콘 10px. */
   const mToggle = (k: StatSortKey) => ({ ...pcToggle(k), ic: 10 });
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace } : null;
+  /* ★ PC 묶음 고르기(2026-11-03, 요청: "전체, 테란, 프로토스, 저그 체크박스로 선택한 것만 보이게") — 고른 묶음만 칸을 세운다 · 하나는 늘 남긴다 · 브라우저에 기억(localStorage · 실패하면 다 켬). */
+  const [grpOn, setGrpOn] = useState<Record<PcGroup, boolean>>(() => {
+    const all: Record<PcGroup, boolean> = { 전체: true, 테란: true, 프로토스: true, 저그: true };
+    try { const v = JSON.parse(localStorage.getItem(GRP_STORE) ?? "null") as Partial<Record<PcGroup, boolean>> | null; if (v && PC_GROUPS.some((g) => v[g])) return { ...all, ...v }; } catch { /* 기억 없음 */ }
+    return all;
+  });
+  const grpToggle = (g: PcGroup): void => setGrpOn((cur) => {
+    const nx = { ...cur, [g]: !cur[g] };
+    if (!PC_GROUPS.some((k) => nx[k])) return cur;   // 하나는 남긴다
+    try { localStorage.setItem(GRP_STORE, JSON.stringify(nx)); } catch { /* 기억 못 함 */ }
+    return nx;
+  });
+  const groups = PC_GROUPS.filter((g) => grpOn[g]);
   if (mobile) {
     return (
       <TrendCtx.Provider value={ctx}>
@@ -382,14 +400,22 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   }
   return (
     <TrendCtx.Provider value={ctx}>
-    <div className={cx("scr-sg", tier && "has-tier")} role="table" aria-label="통계">
+    <div className="scr-sg-groups" role="group" aria-label="보일 묶음">
+      {PC_GROUPS.map((g) => (
+        <label key={g} className={cx("scr-sg-group-chk", grpOn[g] && "is-on")}>
+          <input type="checkbox" checked={grpOn[g]} onChange={() => grpToggle(g)} />{g}
+        </label>
+      ))}
+    </div>
+    <div className={cx("scr-sg", tier && "has-tier")} role="table" aria-label="통계"
+      style={{ gridTemplateColumns: `minmax(150px, 1.6fr)${tier ? " 56px" : ""} repeat(${groups.length * 5}, minmax(50px, 1fr))` }}>
       {/* 머리는 두 줄 — 종족 이름이 [게임수 | 승률] 두 칸을 덮고(PC 머리 "경기"·"전적" → "게임수" · 2026-10-22), 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
         {tier && <span className="scr-sg-c scr-sg-h2"><SortHead {...pcToggle("tier")}>티어</SortHead></span>}
         {/* 묶음 머리(전체 · 종족) — 다섯 칸을 덮는다 · 아랫줄은 묶음마다 같은 다섯 머리(위 GroupCells ★). */}
-        {(["전체", ...RACES] as const).map((g) => <span key={g} className="scr-sg-c scr-sg-hgroup scr-sg-hgroup5 scr-sg-gstart">{g}</span>)}
-        {([null, ...RACES] as const).map((r) => (
+        {groups.map((g) => <span key={g} className="scr-sg-c scr-sg-hgroup scr-sg-hgroup5 scr-sg-gstart">{g}</span>)}
+        {groups.map((g) => (g === "전체" ? null : g)).map((r) => (
           <Fragment key={r ?? "all"}>
             {([["게임수", "plays"], ["승률", "rate"], ["교환비", "exr"], ["APM", "apm"], ["EAPM", "eapm"]] as const).map(([h, k], i) => (
               <span key={k} className={cx("scr-sg-c scr-sg-hsub", i === 0 && "scr-sg-gstart")}><SortHead {...pcToggle(r ? (`${r}:${k}` as StatSortKey) : k)}>{h}</SortHead></span>
@@ -397,8 +423,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
           </Fragment>
         ))}
       </div>
-      {clanRow && <PcRow row={clanRow} clan games={clanGames} tier={tier} />}
-      {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} />)}
+      {clanRow && <PcRow row={clanRow} clan games={clanGames} tier={tier} groups={groups} />}
+      {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} groups={groups} />)}
     </div>
     {popEl}
     </TrendCtx.Provider>
