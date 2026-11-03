@@ -10,6 +10,8 @@ import RosterSide, { isMeleeGame, outcomeFor, resolveSlotName } from "./GameResu
 import Avatar from "../../components/common/Avatar";
 import { GameDetailCloseContext } from "./gameDetailClose";
 import { useReplayMap } from "scplay";
+import { useAppStore } from "../../store/appStore";
+import { isTesterRole } from "../../constants/roles";
 import { cleanMapName } from "../../utils/mapName";
 import { parseRoute } from "../../utils/route";
 import { cx } from "../../utils/format";
@@ -39,6 +41,7 @@ export default function GameResultStory({
   onSized?: () => void;
 }) {
   const grid = useReplayMap(gameResult.mapHash);
+  const isTester = useAppStore((s) => !!s.user && isTesterRole(s.user.roles));
   const detailClose = useContext(GameDetailCloseContext);
   const linkQuery = useMemo(() => {
     const r = parseRoute();
@@ -222,6 +225,7 @@ export default function GameResultStory({
   const mapBlock = storyMap && (
     <div {...stopBubble} ref={mapBoxRef}>
       <ReplayModule
+        isTester={isTester}   /* 테스터 역할(0204)이면 재생기 최대 프레임 단추·diag 고르기(2026-11-03) */
         grid={storyMap} endSec={endSecVal}
         bases={bases} teamOfRaw={teamOfRaw} active={active}
         sceneLink={sceneLink}

@@ -13,7 +13,7 @@ export type GameType = "0101" | "0102" | "0103";
 
 export type MemberStatus = "pending" | "active" | "suspended" | "withdrawn";
 
-export type MemberRole = "0202" | "0203";
+export type MemberRole = "0202" | "0203" | "0204";   // 0204 테스터(2026-11-03)
 
 export interface Member {
   id: string;
