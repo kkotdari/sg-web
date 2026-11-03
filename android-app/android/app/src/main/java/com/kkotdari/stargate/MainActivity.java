@@ -1,5 +1,7 @@
 package com.kkotdari.stargate;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
@@ -41,6 +43,18 @@ public class MainActivity extends BridgeActivity {
         });
         updater = new Updater(this);
         updater.checkSoon();
+    }
+
+    /* 사이트 링크로 열렸으면 그 주소를 연다(2026-11-03 · 매니페스트의 VIEW 거르개) — Capacitor 는 늘 server.url(첫 화면)만 연다.
+       BridgeActivity 가 첫 실행에도 load() 끝에서 이것을 부른다(첫 화면 loadUrl 뒤 · post 라 웹뷰 손님(SprWebViewClient)이 선 다음에 돈다). */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (bridge == null || intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
+        final Uri u = intent.getData();
+        if (u == null || !"https".equals(u.getScheme()) || !"sg8.vercel.app".equals(u.getHost())) return;
+        final WebView wv = bridge.getWebView();
+        if (wv != null) wv.post(() -> wv.loadUrl(u.toString()));
     }
 
     @Override

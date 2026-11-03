@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kkotdari.stargate",
+      "sha256_cert_fingerprints": ["BA:DC:DD:97:BF:B5:9B:1C:EA:86:EE:BD:7B:0B:6E:ED:AE:3A:C4:34:43:4B:A1:FB:1C:0D:41:AE:85:5C:17:4B"]
+    }
+  }
+]

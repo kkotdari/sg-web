@@ -22,6 +22,29 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- 사이트 링크를 앱으로(2026-11-03, 요청: "카카오톡등의 링크열면 앱/PWA앱이 있으면 그쪽으로 열리게") — 앱 화면 주소만(포트폴리오·업로더 등 정적 쪽은 브라우저).
+                 autoVerify: 사이트의 /.well-known/assetlinks.json(릴리즈 서명 SHA-256)으로 확인되면 다른 앱에서 누른 링크가 묻지 않고 앱으로 온다.
+                 카톡 인앱 브라우저는 링크를 제 안에서 열므로 사이트가 intent:// 로 이 앱을 직접 부른다(sg-web utils/inAppBrowser openAppIntent).
+                 주소 목록은 sg-web src/utils/route.ts SCREEN_SEG 와 같다. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="sg8.vercel.app" />
+                <data android:path="/" />
+                <data android:pathPrefix="/games" />
+                <data android:pathPrefix="/board" />
+                <data android:pathPrefix="/ladder" />
+                <data android:pathPrefix="/stats" />
+                <data android:pathPrefix="/members" />
+                <data android:pathPrefix="/leagues" />
+                <data android:pathPrefix="/minimaps" />
+                <data android:pathPrefix="/control" />
+                <data android:pathPrefix="/catalog" />
+                <data android:pathPrefix="/explore" />
+                <data android:pathPrefix="/placement" />
+            </intent-filter>
+
         </activity>
 
         <!-- FCM 알림 아이콘(흰 실루엣) · 색 — scripts/make-icons.py -->

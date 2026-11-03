@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X, ExternalLink } from "lucide-react";
-import { detectInAppBrowser, openInExternalBrowser, type InAppInfo } from "../../utils/inAppBrowser";
+import { detectInAppBrowser, openInExternalBrowser, appIntentUrl, APP_TRIED_KEY, type InAppInfo } from "../../utils/inAppBrowser";
 
 const DISMISS_KEY = "stargate_inapp_notice_dismissed";
 const AUTO_KEY = "stargate_inapp_auto_tried";
@@ -14,14 +14,29 @@ export default function InAppBrowserNotice({ compact = false }: { compact?: bool
   const autoRef = useRef(false);
 
   useEffect(() => {
-    if (!compact || !info.isInApp || dismissed || autoRef.current) return undefined;
-    try { if (sessionStorage.getItem(AUTO_KEY) === "1") return undefined; } catch { }
+    if (!info.isInApp || dismissed || autoRef.current) return undefined;
     autoRef.current = true;
-    const id = window.setTimeout(() => {
-      try { sessionStorage.setItem(AUTO_KEY, "1"); } catch { }
+    /** 종전 길 — 공유 링크로 들어왔으면 외부 브라우저로 한 번 자동으로 연다. */
+    const external = (): void => {
+      if (!compact) return;
+      try { if (sessionStorage.getItem(AUTO_KEY) === "1") return; sessionStorage.setItem(AUTO_KEY, "1"); } catch { }
       openInExternalBrowser(info.kind);
-    }, 350);
-    return () => window.clearTimeout(id);
+    };
+    /* ★ 먼저 앱(안드로이드 · 세션에 한 번 · utils/inAppBrowser appIntentUrl ★). 앱이 열리면 이 화면은 뒤로 숨는다 — 그 뒤로는 아무것도 안 한다
+       (숨은 동안 늦춰진 타이머가 돌아와서 외부 브라우저를 또 열지 않게 숨음을 기억한다). 앱이 없으면 인앱 브라우저가 같은 주소로 다시 열어 표식을 보고 종전 길로. */
+    let tried = false;
+    try { tried = sessionStorage.getItem(APP_TRIED_KEY) === "1"; } catch { tried = true; }
+    const intent = tried ? null : appIntentUrl();
+    if (!intent) { const id = window.setTimeout(external, 350); return () => window.clearTimeout(id); }
+    try { sessionStorage.setItem(APP_TRIED_KEY, "1"); } catch { }
+    let left = false;
+    const onHide = (): void => { if (document.visibilityState === "hidden") left = true; };
+    const onPageHide = (): void => { left = true; };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onPageHide);
+    window.location.href = intent;
+    const id = window.setTimeout(() => { if (!left && document.visibilityState === "visible") external(); }, 1600);
+    return () => { window.clearTimeout(id); document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", onPageHide); };
   }, [compact, info.isInApp, info.kind, dismissed]);
 
   if (!info.isInApp || dismissed) return null;
