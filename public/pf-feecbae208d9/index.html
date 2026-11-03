@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive">
-<title>한 프레임도 양보하지 않는다 — STARGATE 백엔드 포트폴리오</title>
-<meta name="description" content="스타크래프트 클랜 경기 기록 플랫폼 STARGATE를 AI와 함께 설계·구현한 백엔드 개발자 포트폴리오">
+<title>한 프레임도 양보하지 않는다 — STARGATE 포트폴리오</title>
+<meta name="description" content="클랜원이 모이고, 기억하고, 깊이 보는 곳 — 스타크래프트 클랜 플랫폼 STARGATE를 AI와 함께 설계·구현한 개발자 포트폴리오">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -187,6 +187,41 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
   .rv{opacity:0; transform:translateY(12px); transition:opacity .6s ease, transform .6s ease}
   .rv.in{opacity:1; transform:none}
 }
+
+/* ── 왜(01) ── */
+.why3{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px}
+.why{padding:24px 24px 22px; position:relative; overflow:hidden}
+.why .n{font-family:Orbitron,sans-serif; font-weight:900; font-size:44px; line-height:1; color:transparent; -webkit-text-stroke:1.2px var(--psi2); opacity:.7}
+.why h3{margin:12px 0 8px; font-size:19px}
+.why .q{margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); font-size:13.5px; color:var(--muted)}
+.why .q b{color:var(--psi); font-weight:600}
+.need{width:100%; border-collapse:separate; border-spacing:0; font-size:14.5px}
+.need th{font:600 11px/1 "IBM Plex Mono",monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); text-align:left; padding:0 14px 12px}
+.need td{padding:14px; border-top:1px solid var(--line2); vertical-align:top; line-height:1.6}
+.need td:first-child{color:var(--ink); font-weight:600; width:24%}
+.need td:nth-child(2){width:34%}
+.need td .to{display:inline-block; margin-top:6px; font:500 11.5px/1 "IBM Plex Mono",monospace; color:var(--psi)}
+.needwrap{padding:18px 10px 6px; overflow-x:auto}
+.needwrap table{min-width:720px}
+/* ── 시각 전환 ── */
+.pipe{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; counter-reset:pp}
+.pipe .st{position:relative; padding:16px 16px 14px; background:linear-gradient(180deg,#fff,#f6f9ff); border:1px solid var(--line); border-radius:12px; counter-increment:pp}
+.pipe .st::before{content:counter(pp,decimal-leading-zero); font:700 11px/1 "IBM Plex Mono",monospace; color:var(--psi2); letter-spacing:.12em}
+.pipe .st b{display:block; margin:8px 0 4px; color:var(--ink); font-size:15px}
+.pipe .st span{display:block; font-size:12.5px; color:var(--muted); line-height:1.5}
+.vs{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.vs .shot figcaption{padding:8px 12px; font-size:12.5px}
+.vs .shot.af figcaption b{color:var(--psi)}
+.race{margin-top:14px}
+.race h4{margin:0 0 8px; font:600 12px/1 "IBM Plex Mono",monospace; letter-spacing:.18em; color:var(--muted); text-transform:uppercase}
+.gain{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; margin-top:14px}
+.gain div{padding:14px 16px; border-radius:10px; background:var(--bg2)}
+.gain b{display:block; color:var(--ink); font-size:14.5px; margin-bottom:4px}
+.gain span{font-size:13px; color:var(--muted); line-height:1.5; display:block}
+.ba{display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:stretch}
+.ba .arrow{display:grid; place-items:center; font:700 22px/1 Orbitron,sans-serif; color:var(--psi)}
+@media (max-width:860px){ .ba{grid-template-columns:1fr} .ba .arrow{transform:rotate(90deg); padding:4px 0} }
+@media (max-width:520px){ .vs{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -194,8 +229,9 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
 <header class="top"><div class="wrap">
   <a class="brand" href="#top">STAR<b>G</b>ATE</a>
   <nav class="nav" aria-label="장">
-    <a href="#c1">01 개요</a><a href="#c2">02 구조</a><a href="#c3">03 데이터</a><a href="#c4">04 검증</a>
-    <a href="#c5">05 API</a><a href="#c6">06 설계</a><a href="#c7">07 리그·일정</a><a href="#c8">08 재생기</a><a href="#c9">09 협업</a><a href="#c10">10 지시서</a>
+    <a href="#c1">01 왜</a><a href="#c2">02 개요</a><a href="#c3">03 구조</a><a href="#c4">04 데이터</a><a href="#c5">05 검증</a>
+    <a href="#c6">06 API</a><a href="#c7">07 설계</a><a href="#c8">08 리그·일정</a><a href="#c9">09 재생기</a><a href="#c10">10 시각 전환</a>
+    <a href="#c11">11 앱</a><a href="#c12">12 협업</a><a href="#c13">13 지시서</a>
   </nav>
 </div></header>
 
@@ -204,22 +240,25 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
 
 <!-- ═════════ 표지 ═════════ -->
 <section class="hero">
-  <div class="eyebrow">Backend Developer Portfolio · STARGATE</div>
+  <div class="eyebrow">Developer Portfolio · STARGATE</div>
   <h1>한 프레임도<br><span class="grad">양보하지 않는다</span><span class="en">UNTIL IT MATCHES THE ORIGINAL</span></h1>
-  <p class="lede">스타크래프트 클랜의 경기 기록·통계·리그·리플레이 재생을 한데 묶은 플랫폼 <strong>STARGATE</strong>를 AI와 짝을 이뤄 설계하고 만들었습니다.
-    리플레이 파일 하나를 받아 <strong>원작 엔진으로 다시 돌리고</strong>, 그 결과를 통계·검색·재생으로 쓸 수 있는 데이터로 바꾸는 백엔드가 중심입니다.
+  <p class="lede">시작은 기술이 아니라 우리 클랜이었습니다. 클랜원이 <strong>편하게 모여 이야기하고</strong>, 함께한 경기가 <strong>추억으로 쌓이고</strong>,
+    게임 모임답게 <strong>경기를 깊이 들여다볼 수 있는 곳</strong> — 그렇게 스타크래프트 클랜 플랫폼 <strong>STARGATE</strong>를 AI와 짝을 이뤄 설계하고 만들었습니다.
+    리플레이 하나를 <strong>원작 엔진으로 다시 돌려</strong> 통계·검색·3D 재생으로 바꾸는 서버, 폰에서도 매끄러운 재생기, 웹·아이폰·안드로이드를 아우르는 앱까지.
     원작과 한 프레임이라도 어긋나면 끝까지 쫓았습니다.</p>
 
   <div class="kpis">
     <div class="kpi hud"><div class="v">552,929</div><div class="l">원작과 난수 단위로 대조해<br>맞춘 프레임</div></div>
     <div class="kpi hud"><div class="v">1,442</div><div class="l">세 저장소 커밋<br>(2026.10.04 – 10.26)</div></div>
-    <div class="kpi hud"><div class="v">394</div><div class="l">API 자동 테스트<br>(배포 전 매번 전부 통과)</div></div>
+    <div class="kpi hud"><div class="v">404</div><div class="l">API 자동 테스트<br>(배포 전 매번 전부 통과)</div></div>
     <div class="kpi hud"><div class="v">114</div><div class="l">코드로 직접 빚은<br>3D 유닛·건물 모델</div></div>
-    <div class="kpi hud"><div class="v">11,084</div><div class="l">줄의 작업 기록<br>(실측·되물린 값·함정)</div></div>
+    <div class="kpi hud"><div class="v">10,716</div><div class="l">미리 구워 내려받는<br>모델 그림 칸</div></div>
+    <div class="kpi hud"><div class="v">12,254</div><div class="l">줄의 작업 기록<br>(실측·되물린 값·함정)</div></div>
   </div>
 
   <div class="wall">
     <div class="prompt big rv"><q>처음 일정 만들고 글쓰기할 때 아무 데나 클릭해도 커서가 생겨야 해. (당연히 처음 위치에)</q><span class="ctx">쓰는 사람의 첫 1초까지 설계 대상이었다.</span></div>
+    <div class="prompt big rv"><q>웹 셰이더로 아무리 하려고 해도 못 했던 걸, 아틀라스로 바꾸고는 무한히 할 수 있게 됐네.</q><span class="ctx">매 프레임 그리던 모델을 미리 구워 내려받게 바꾸자, 성능 걱정 없이 그림을 다듬을 수 있게 됐다.</span></div>
     <div class="prompt big rv"><q>새 DB 칸 필요. 재생용 참값과 통계용 참값 구분.</q><span class="ctx">무거운 재생 데이터를 지워도 통계는 남도록 — 데이터 수명을 갈랐다.</span></div>
     <div class="prompt big rv"><q>원작을 다시 보니 1팀이 빨강 2팀이 파랑이네. 우린 다 반대로 쓰고 있어. 바로잡아줘.</q><span class="ctx">팀색은 한 상수에 모여 있어 재생기·데이터창·목록이 한 번에 바뀌었다.</span></div>
     <div class="prompt rv"><q>라이팅 테마는 사실 컬러/투명도/글로우에 관한 거라, 그 외의 형태적인 면은 기본으로 분리하고 싶어. 그래야 나중에 색만 쏙쏙 바꾸기 쉬우니까.</q><span class="ctx">형태와 색의 관심사 분리 — UI에도 같은 설계 감각을 요구했다.</span></div>
@@ -228,9 +267,46 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
   </div>
 </section>
 
-<!-- ═════════ 01 개요 ═════════ -->
+<!-- ═════════ 왜 ═════════ -->
 <section class="ch" id="c1">
   <div class="chhead"><div class="chno">01</div><div>
+    <div class="chlab">Why · Needs · Motivation</div>
+    <h2>우리 클랜이 모일 곳이 필요했다</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>클랜원이 편하게 소통하며 참여도를 높일 수 있는 장을 마련.</q><span class="ctx">기술보다 먼저 정한 것 — 누구를 위해, 왜 만드는가.</span></div>
+
+  <p class="lede rv" style="margin-bottom:26px">대화는 흘러가 버리고, 경기 결과는 각자의 컴퓨터에 흩어지고, 어제 그 명경기는 말로만 남는다.
+    STARGATE는 이 세 가지 아쉬움에서 출발했습니다. 기능 하나하나가 아래 세 목적 가운데 어디에 닿는지를 기준으로 골랐습니다.</p>
+
+  <div class="why3">
+    <div class="why card hud rv"><div class="n">01</div><h3>편하게 소통하고, 더 많이 참여하는 장</h3>
+      <p>클랜원 누구나 부담 없이 들어와 말을 걸 수 있어야 했다. <strong>게시판</strong>(공지·일정·공략·잡담·질문), 게임마다 <strong>댓글·추천</strong>, 회원 <strong>@태그</strong>, 그리고 내가 언급되거나 내 경기에 반응이 오면 <strong>푸시 알림</strong>. 리그·일정·배치고사는 다 같이 참여할 계기를 만든다.</p>
+      <div class="q"><b>고민</b> · 클랜원은 개발자가 아니다. 그래서 리플레이 올리기는 업로더가 알아서, 알림 설정은 켜고 끄기 하나로.</div></div>
+    <div class="why card hud rv"><div class="n">02</div><h3>역사와 추억의 아카이브</h3>
+      <p>함께한 경기는 클랜의 역사다. 리플레이가 올라오면 결과·참가자·맵·시작 위치가 <strong>자동으로 기록</strong>되고, 리그 대진과 <strong>명예의 전당</strong>이 시즌을 넘어 남는다. 몇 년 뒤에도 그날의 경기를 <strong>그대로 다시 재생</strong>할 수 있다.</p>
+      <div class="q"><b>고민</b> · 영원히 남겨야 할 것과 지워도 되는 것은 다르다. 그래서 무거운 재생 데이터와 가벼운 통계 데이터의 수명을 갈랐다(04장).</div></div>
+    <div class="why card hud rv"><div class="n">03</div><h3>게임 모임다운 고급 데이터</h3>
+      <p>게임 모임이라면 "누가 이겼나"보다 한 걸음 더 들어가고 싶다. 원작 엔진으로 경기를 다시 돌려 <strong>분당 일꾼·자원·데미지·우세도</strong>, "질럿 러시를 한 경기" 같은 <strong>전술 검색</strong>, 그리고 경기를 직접 다시 보는 <strong>3D 재생과 자동 중계</strong>.</p>
+      <div class="q"><b>고민</b> · 틀린 데이터는 믿음을 잃는다. 그래서 원작과 한 프레임씩 대조했다(05장) — 552,929프레임, 어긋난 난수 0.</div></div>
+  </div>
+
+  <div class="card hud rv needwrap" style="margin-top:16px">
+    <table class="need">
+      <thead><tr><th>클랜원의 필요</th><th>부딪힌 고민</th><th>내린 선택</th></tr></thead>
+      <tbody>
+        <tr><td>올리고 보기가 쉬워야 한다</td><td>설치·설정이 하나라도 늘면 아무도 안 쓴다</td><td>업로더가 리플레이 폴더를 지켜보다 자동 등록 · 웹을 그대로 여는 앱 · 알림은 스위치 하나<br><span class="to">→ 02 · 11장</span></td></tr>
+        <tr><td>대부분 폰으로 본다</td><td>114종 3D 모델을 폰이 매 프레임 그리지 못한다</td><td>모든 모델 그림을 미리 구워 압축해 내려받기 · 기기별 성능 단<br><span class="to">→ 10장</span></td></tr>
+        <tr><td>기록은 오래 남아야 한다</td><td>리플레이 참값은 판마다 수 MB — DB가 버티지 못한다</td><td>재생용·통계용 참값을 다른 표로 · 지우기·재분석 규칙을 표마다<br><span class="to">→ 04장</span></td></tr>
+        <tr><td>데이터를 믿을 수 있어야 한다</td><td>파서만으로는 실제 게임 속 상황을 알 수 없다</td><td>서버에서 원작 엔진(OpenBW)을 돌리고 원작과 난수 단위 대조<br><span class="to">→ 04 · 05장</span></td></tr>
+        <tr><td>모임마다 운영 방식이 다르다</td><td>우리 클랜 규칙만 박아 넣으면 금방 낡는다</td><td>팀전·개인전·임의 크기 대진표·블록 문서 일정으로 일반화<br><span class="to">→ 08장</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═════════ 개요 ═════════ -->
+<section class="ch" id="c2">
+  <div class="chhead"><div class="chno">02</div><div>
     <div class="chlab">Overview</div>
     <h2>클랜의 모든 경기가 기록되고, 다시 재생되는 곳</h2>
   </div></div>
@@ -256,9 +332,9 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
   </div>
 </section>
 
-<!-- ═════════ 02 구조 ═════════ -->
-<section class="ch" id="c2">
-  <div class="chhead"><div class="chno">02</div><div>
+<!-- ═════════ 구조 ═════════ -->
+<section class="ch" id="c3">
+  <div class="chhead"><div class="chno">03</div><div>
     <div class="chlab">Architecture</div>
     <h2>세 저장소, 하나의 흐름</h2>
   </div></div>
@@ -312,9 +388,9 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
   </div>
 </section>
 
-<!-- ═════════ 03 데이터 ═════════ -->
-<section class="ch" id="c3">
-  <div class="chhead"><div class="chno">03</div><div>
+<!-- ═════════ 데이터 ═════════ -->
+<section class="ch" id="c4">
+  <div class="chhead"><div class="chno">04</div><div>
     <div class="chlab">Data Pipeline · Backend</div>
     <h2>리플레이 한 개를, 쓸 수 있는 데이터로</h2>
   </div></div>
@@ -340,9 +416,9 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
   </div>
 </section>
 
-<!-- ═════════ 04 검증 ═════════ -->
-<section class="ch" id="c4">
-  <div class="chhead"><div class="chno">04</div><div>
+<!-- ═════════ 검증 ═════════ -->
+<section class="ch" id="c5">
+  <div class="chhead"><div class="chno">05</div><div>
     <div class="chlab">Verification · 원판과 같아지기</div>
     <h2>552,929 프레임, 어긋난 난수 0</h2>
   </div></div>
@@ -370,9 +446,9 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
   </div>
 </section>
 
-<!-- ═════════ 05 API ═════════ -->
-<section class="ch" id="c5">
-  <div class="chhead"><div class="chno">05</div><div>
+<!-- ═════════ API ═════════ -->
+<section class="ch" id="c6">
+  <div class="chhead"><div class="chno">06</div><div>
     <div class="chlab">API · Performance</div>
     <h2>왕복은 줄이고, 계약은 지킨다</h2>
   </div></div>
@@ -389,15 +465,15 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
         <li><strong>DB 변경은 SQL 파일</strong>로 저장소에 남기고 운영자가 직접 실행 → 그다음 서버 배포 (자격증명은 절대 주고받지 않음)</li>
         <li><strong>입력 검증</strong>: 시작 위치처럼 바깥에서 오는 값은 검증기에서 반올림·범위 밖은 "모름"으로</li>
         <li><strong>권한·공유</strong>: JWT + 리프레시, 역할 코드, 외부 공유 목록은 별도 패스 헤더 · 손님 모드 가명</li>
-        <li><strong>테스트 394개</strong>: httpx 비동기 클라이언트로 엔드포인트 단위 시나리오 · 린트는 기존 대비 새 경고 0을 관문으로</li>
+        <li><strong>테스트 404개</strong>: httpx 비동기 클라이언트로 엔드포인트 단위 시나리오 · 린트는 기존 대비 새 경고 0을 관문으로</li>
       </ul>
     </div>
   </div>
 </section>
 
-<!-- ═════════ 06 설계 ═════════ -->
-<section class="ch" id="c6">
-  <div class="chhead"><div class="chno">06</div><div>
+<!-- ═════════ 설계 ═════════ -->
+<section class="ch" id="c7">
+  <div class="chhead"><div class="chno">07</div><div>
     <div class="chlab">Reusability · Extensibility · Maintainability</div>
     <h2>한 곳만 고치면 전부 바뀌게</h2>
   </div></div>
@@ -415,16 +491,16 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
       <li>참값 트랙은 판 번호(9→13)로 버전을 매겨 옛 데이터도 그대로 읽는다</li>
       <li>기기 프로필 <code>DEV9</code> 표 하나로 폰·PC 성능 단을 조정</li></ul></div>
     <div class="card hud rv"><h3><span class="ic">M</span>유지보수</h3><ul>
-      <li><strong>11,084줄의 작업 기록</strong>: 되물린 값·함정·실측·확인 명령(🔎)을 손질마다 남겨 같은 실수를 두 번 하지 않는다</li>
+      <li><strong>12,254줄의 작업 기록</strong>: 되물린 값·함정·실측·확인 명령(🔎)을 손질마다 남겨 같은 실수를 두 번 하지 않는다</li>
       <li>규약 문서는 40KB 상한 — 늘 지킬 규칙만 남기고 이력은 기록으로</li>
       <li>자동 관문: 메시 덮임 100%, CSS 가드, 등급표·총구표 재생성 검사, 아틀라스 <code>--check</code></li>
       <li>기각된 가설도 지우지 않고 손잡이로 남겨 <strong>회귀 검사가 공짜</strong></li></ul></div>
   </div>
 </section>
 
-<!-- ═════════ 07 리그·일정 ═════════ -->
-<section class="ch" id="c7">
-  <div class="chhead"><div class="chno">07</div><div>
+<!-- ═════════ 리그·일정 ═════════ -->
+<section class="ch" id="c8">
+  <div class="chhead"><div class="chno">08</div><div>
     <div class="chlab">League · Schedule</div>
     <h2>어느 클럽이든 쓸 수 있는 운영 도구</h2>
   </div></div>
@@ -452,9 +528,9 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
   </div>
 </section>
 
-<!-- ═════════ 08 재생기 ═════════ -->
-<section class="ch" id="c8">
-  <div class="chhead"><div class="chno">08</div><div>
+<!-- ═════════ 재생기 ═════════ -->
+<section class="ch" id="c9">
+  <div class="chhead"><div class="chno">09</div><div>
     <div class="chlab">Replay · 3D Models</div>
     <h2>데이터가 다시 경기가 되는 순간</h2>
   </div></div>
@@ -478,9 +554,117 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
   <p style="margin-top:14px; color:var(--muted); font-size:14px">네 방위(45·135·225·315°)를 한 번에 굽는 도록 스크립트가 매 손질의 관문이다. 메시는 요잉 0에서 한 번 굽고 셰이더가 돌린다 — 굽는 시각에 세계를 묻지 않는 규칙.</p>
 </section>
 
-<!-- ═════════ 09 협업 ═════════ -->
-<section class="ch" id="c9">
-  <div class="chhead"><div class="chno">09</div><div>
+<!-- ═════════ 시각 전환 ═════════ -->
+<section class="ch" id="c10">
+  <div class="chhead"><div class="chno">10</div><div>
+    <div class="chlab">Approach Shift · Pre-baked Atlas</div>
+    <h2>그리지 말고, 미리 구워 두자</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>웹 셰이더로 아무리 하려고 해도 못 했던 걸, 아틀라스로 바꾸고는 무한히 할 수 있게 됐네.</q><span class="ctx">성능의 벽을 넘자 품질의 천장이 사라졌다.</span></div>
+
+  <div class="ba">
+    <div class="card hud rv"><h3><span class="ic">✕</span>벽 — 매 프레임 그리는 3D</h3>
+      <p>114종 모델은 다각형으로 빚은 3D 메시다. 처음엔 화면에 나올 때마다 브라우저가 실시간으로 그렸다. PC에선 괜찮았지만 폰은 버티지 못했다.</p>
+      <ul>
+        <li>"모바일 재생기에서 <strong>프레임이 너무 낮고 모델도 늦게 뜸</strong>" — 새 모델이 나오는 순간마다 굽느라 끊겼다</li>
+        <li>내부 그림자·재질 같은 효과를 셰이더에 더하면 그만큼 <strong>모든 프레임</strong>이 무거워진다 — 하고 싶어도 못 넣었다</li>
+        <li>최적화(LOD·판 재사용·덜 그리기)를 거듭해도 결국 같은 계산을 매번 하는 구조였다</li>
+      </ul></div>
+    <div class="arrow">→</div>
+    <div class="card hud rv"><h3><span class="ic">✓</span>전환 — 질문 하나</h3>
+      <div class="prompt" style="margin:4px 0 12px"><q>모든 모델의 그림을 하나도 빠짐없이 그려서 가지고 있다가 보여주면 되는 거 아니냐는 뜻.</q></div>
+      <p>모든 종류 × 모든 자세 × 16방향 × 그림자 × 건물 변종을 재생기와 <strong>같은 셰이더로 미리 구워</strong> 압축 텍스처로 내려받는다. 재생 중에는 <strong>굽지 않고 붙이기만</strong> 한다.</p>
+      <div class="tags"><span class="tag p">10,716 칸</span><span class="tag p">판 1장 16MB → 650KB</span><span class="tag">재생 중 굽기 0</span><span class="tag">폰 싣기 1.3초</span></div></div>
+  </div>
+
+  <h3 style="margin:30px 0 12px">굽기부터 화면까지</h3>
+  <div class="pipe rv">
+    <div class="st"><b>굽기</b><span>재생기를 굽기 모드로 열어 모든 칸을 그린다 · 내 컴퓨터의 GPU로(헤드리스는 느려서)</span></div>
+    <div class="st"><b>압축</b><span>Basis KTX2(UASTC·밉·zstd) · 고·저 해상도 두 벌 · 이름은 그림 내용 해시</span></div>
+    <div class="st"><b>관문</b><span>모델·셰이더를 고치면 <code>--check</code> 가 판이 묵었다고 알린다</span></div>
+    <div class="st"><b>배포</b><span>재생기 라이브러리에 실어 웹 정적 자리 · 안드로이드 앱 안(67MB)으로</span></div>
+    <div class="st"><b>싣기</b><span>기기 형식(ASTC·BC7·ETC2)으로 풀어 GPU 고정 판에 · 안 바뀐 묶음은 다시 안 받는다</span></div>
+  </div>
+
+  <h3 style="margin:30px 0 6px">비용이 사라지자 할 수 있게 된 것</h3>
+  <p style="color:var(--muted); font-size:14.5px">굽는 시간은 이제 사용자의 프레임이 아니라 한 번의 굽기에서 치른다. 그래서 비싼 효과를 마음껏 넣었다 — 재생 중 추가 비용은 0.</p>
+  <div class="gain rv">
+    <div><b>내부 그림자</b><span>칸마다 빛 쪽 깊이 판(1024²)을 따로 굽고 부드럽게 걸러, 부품끼리 드리우는 그림자</span></div>
+    <div><b>빛 한 벌</b><span>방향광·명암·광택·안 그림자·바닥 그림자를 왼쪽 위 한 빛으로 맞춤 — 입체감이 또렷해졌다</span></div>
+    <div><b>선명도</b><span>2배 해상도로 구워 최대 8배 확대까지 그림 판 그대로 · PC도 메시로 돌아가지 않는다</span></div>
+    <div><b>대비</b><span>굽는 단계에서 대비를 살짝(×1.1) — 작은 화면에서도 모양이 읽힌다</span></div>
+    <div><b>재질</b><span>테란 쇠는 페인트가 아니라 쇠처럼, 저그 살 속살 비침 · 하이브 뿔 상아</span></div>
+  </div>
+
+  <h3 style="margin:30px 0 4px">같은 장면, 같은 순간 — 10.29 → 11.02</h3>
+  <p style="color:var(--muted); font-size:14px">비교샷도 스크립트로 찍는다 — 옛 커밋을 따로 세워 같은 장면·같은 순간을 찍고, 이름에는 찍은 날이 아니라 코드의 버전 날짜를 단다.</p>
+  <div class="race rv"><h4>Terran</h4><div class="vs">
+    <figure class="shot hud"><img loading="lazy" src="img/atlas-terran-before.webp" alt="테란 재생 화면 — 10월 29일 판"><figcaption><b>이전</b> · 10.29</figcaption></figure>
+    <figure class="shot hud af"><img loading="lazy" src="img/atlas-terran-after.webp" alt="테란 재생 화면 — 11월 2일 판"><figcaption><b>이후</b> · 11.02</figcaption></figure></div></div>
+  <div class="race rv"><h4>Protoss</h4><div class="vs">
+    <figure class="shot hud"><img loading="lazy" src="img/atlas-protoss-before.webp" alt="프로토스 재생 화면 — 10월 29일 판"><figcaption><b>이전</b> · 10.29</figcaption></figure>
+    <figure class="shot hud af"><img loading="lazy" src="img/atlas-protoss-after.webp" alt="프로토스 재생 화면 — 11월 2일 판"><figcaption><b>이후</b> · 11.02</figcaption></figure></div></div>
+  <div class="race rv"><h4>Zerg</h4><div class="vs">
+    <figure class="shot hud"><img loading="lazy" src="img/atlas-zerg-before.webp" alt="저그 재생 화면 — 10월 29일 판"><figcaption><b>이전</b> · 10.29</figcaption></figure>
+    <figure class="shot hud af"><img loading="lazy" src="img/atlas-zerg-after.webp" alt="저그 재생 화면 — 11월 2일 판"><figcaption><b>이후</b> · 11.02</figcaption></figure></div></div>
+
+  <div class="card hud rv" style="margin-top:16px">
+    <h3><span class="ic">⏱</span>바뀌어 온 길</h3>
+    <div class="tl">
+      <div class="e"><div class="d">2026.10.23</div><h3>평면 몸은 2D 판으로</h3><p>메시를 한 번 찍은 칸을 사각 하나로 붙이기 — 하지만 굽기는 여전히 재생 중에.</p></div>
+      <div class="e"><div class="d">2026.10.25</div><h3>서버 아틀라스</h3><p>모든 칸을 미리 구워 압축해 내려받기 · 성능 단마다 해상도 두 벌 · 재생 중 굽기 0.</p></div>
+      <div class="e"><div class="d">2026.10.26</div><h3>판마다 다시 받지 않기</h3><p>다음 경기로 GL 캔버스를 물려줘 그림을 다시 싣지 않는다.</p></div>
+      <div class="e"><div class="d">2026.10.29</div><h3>내부 그림자 · 빛 한 벌 · 대비</h3><p>시안 다섯 개를 견주고 "대비 들어간 버전으로" — 굽기에서만 가능한 효과.</p></div>
+      <div class="e"><div class="d">2026.11.01 – 11.02</div><h3>재질 · 땅 · 크립</h3><p>쇠·살의 결, 지형 질감, 크립 액체층 — 그리고 같은 장면 비교샷.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 앱 ═════════ -->
+<section class="ch" id="c11">
+  <div class="chhead"><div class="chno">11</div><div>
+    <div class="chlab">App · PWA · Android · Push</div>
+    <h2>주머니 속의 클랜</h2>
+  </div></div>
+  <div class="opener rv"><span class="k">&gt; prompt</span><q>알림은 그냥 통째로 켜고 끄기만.</q><span class="ctx">설정은 하나 — 쓰는 사람이 고민할 일을 만들지 않는다.</span></div>
+
+  <div class="split">
+    <figure class="shot hud rv"><img loading="lazy" src="img/app-landscape.webp" alt="앱 가로 전체화면 재생기 — 미니맵·인포·재생바·로스터"><figcaption><b>가로 모드</b> · 앱·PC 전체화면에서 16:10보다 넓으면 미니맵 · 인포 · 재생바 · 로스터를 옆으로 늘어놓는다.</figcaption></figure>
+    <div class="card hud rv">
+      <h3><span class="ic">◆</span>세 곳, 하나의 배포</h3>
+      <ul>
+        <li><strong>아이폰</strong>은 홈 화면에 추가하는 PWA, <strong>안드로이드</strong>는 사이트를 그대로 여는 Capacitor 앱 — 웹을 한 번 배포하면 셋이 함께 바뀐다</li>
+        <li>안드로이드 앱엔 <strong>모델 그림(67MB)을 내장</strong>하고, 그림이 새로 구워지면 바뀐 파일만 받는다(이름이 내용 해시)</li>
+        <li>새 판이 나오면 앱이 릴리즈의 <code>version.json</code>을 보고 알려 준다 · 서명 빌드는 GitHub Actions</li>
+        <li>업데이트마다 <strong>새 소식 팝업</strong>(5.1: 게시판 · 가로 모드 · 효과음 · 그래픽 비교샷)</li>
+      </ul>
+      <div class="tags"><span class="tag z">PWA · Service Worker</span><span class="tag z">Capacitor</span><span class="tag p">Web Push(VAPID)</span><span class="tag p">FCM</span><span class="tag">GitHub Actions</span></div>
+    </div>
+  </div>
+
+  <div class="cols" style="margin-top:16px">
+    <div class="card hud rv"><h3><span class="ic">✉</span>반응이 돌아오게 — 푸시</h3>
+      <p>참여는 반응이 돌아올 때 늘어난다. 알림 거리는 다섯 가지로 좁혔다.</p>
+      <ul>
+        <li>게시판 글·댓글에서 내가 <strong>태그</strong>됨</li>
+        <li><strong>내가 뛴 게임</strong>이 등록됨 · 그 게임에 추천·댓글</li>
+        <li>게임 댓글에서 내가 태그됨 · <strong>공지</strong> 올라옴</li>
+      </ul>
+      <p>한 일에 한 사람은 한 번만, 내가 한 일은 나에게 안 보낸다.</p></div>
+    <div class="card hud rv"><h3><span class="ic">⚙</span>보내기는 요청을 붙잡지 않는다</h3>
+      <p>받을 사람을 커밋 뒤에 읽고, 네트워크 일은 <strong>배경 작업</strong>으로 돌린다. 웹 푸시(아이폰·브라우저)와 FCM(안드로이드)을 한 서비스가 갈라 보내고, 죽은 구독(404·410·UNREGISTERED)은 배경 작업이 새 세션으로 지운다. 키가 없으면 아무것도 하지 않는다.</p></div>
+    <div class="card hud rv"><h3><span class="ic">⛨</span>앱다운 단단함</h3>
+      <ul>
+        <li>설치 창을 앱이 직접 띄우던 길은 Play 프로텍트가 '유해한 앱'으로 거는 까닭이라 걷고, 브라우저로 APK를 받게 바꿨다</li>
+        <li>아이폰이 메모리 부족으로 그래픽 문맥을 거둬 가면 재생기가 <strong>새 캔버스로 갈아 끼워</strong> 스스로 되살아난다</li>
+        <li>서명 키·서비스 계정 키는 저장소에 두지 않는다 — 비밀값은 사람이 직접 넣는다</li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- ═════════ 협업 ═════════ -->
+<section class="ch" id="c12">
+  <div class="chhead"><div class="chno">12</div><div>
     <div class="chlab">Persistence · Human × AI</div>
     <h2>치열하게 묻고, 끝까지 맞추고, 함께 만든다</h2>
   </div></div>
@@ -490,7 +674,7 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
     <div class="card hud rv"><h3><span class="ic">✎</span>사람: 방향 · 관찰 · 결정</h3>
       <p>원작을 직접 보고 차이를 말로 짚는다. 버그는 <strong>재현 조건까지 좁혀</strong> 건넨다. 셋 중 무엇이 근본 해결인지 되묻는다. 그리고 <strong>"배포"라는 말이 있을 때만</strong> 세상에 내보낸다.</p></div>
     <div class="card hud rv"><h3><span class="ic">⚙</span>AI: 구현 · 검증 · 기록</h3>
-      <p>Claude가 세 저장소를 오가며 구현하고, 내보내기 전 <strong>타입 검사 · 빌드 · 394개 테스트 · 스크린샷</strong>을 스스로 돌린다. 고친 이유와 되물린 값은 기록 파일 끝에 남긴다 — 다음 세션의 AI가 같은 실수를 하지 않도록.</p></div>
+      <p>Claude가 세 저장소를 오가며 구현하고, 내보내기 전 <strong>타입 검사 · 빌드 · 404개 테스트 · 스크린샷</strong>을 스스로 돌린다. 고친 이유와 되물린 값은 기록 파일 끝에 남긴다 — 다음 세션의 AI가 같은 실수를 하지 않도록.</p></div>
     <div class="card hud rv"><h3><span class="ic">⛨</span>둘 사이의 계약</h3>
       <ul>
         <li>요청이 이름 붙인 것만 건드린다</li>
@@ -505,14 +689,17 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
       <div class="e"><div class="d">2026.08.21 – 08.27</div><h3>원판과 같아지기</h3><p>헤드리스 1.16.1 검증 장치, 가설 32개, 552,929프레임 일치.</p></div>
       <div class="e"><div class="d">2026.10.04</div><h3>재생기 라이브러리 분리 (scplay)</h3><p>순수 엔진·워커·WebGL 붓 — 23일간 511커밋.</p></div>
       <div class="e"><div class="d">2026.10.07</div><h3>웹 · API 새 저장소</h3><p>sg-web 814커밋, sg-api 117커밋 · 테스트 394개.</p></div>
+      <div class="e"><div class="d">2026.10.25</div><h3>미리 구운 아틀라스</h3><p>폰의 성능 벽을 굽기로 넘다 — 그 뒤로 그림의 품질은 굽기만 다시 하면 오른다.</p></div>
       <div class="e"><div class="d">2026.10.26</div><h3>오늘도 한 칸</h3><p>팀색을 원작대로 바로잡고, 목록에 맵을 한 번에 싣고, 배치 칩의 크기를 열 번 넘게 다시 맞췄다. 그것이 이 프로젝트의 속도다.</p></div>
+      <div class="e"><div class="d">2026.10.31</div><h3>푸시 · 앱</h3><p>웹 푸시와 FCM, 안드로이드 앱과 서명 릴리즈 — 클랜이 주머니로 들어왔다.</p></div>
+      <div class="e"><div class="d">2026.11.02</div><h3>버전 5.1</h3><p>게시판, 가로 모드, 효과음 업그레이드, 그래픽 개선. 이야기하고 기억하고 깊이 보는 곳에 한 걸음 더.</p></div>
     </div>
   </div>
 </section>
 
 <!-- ═════════ 맺음 · 이 페이지의 프롬프트 ═════════ -->
-<section class="ch" id="c10">
-  <div class="chhead"><div class="chno">10</div><div>
+<section class="ch" id="c13">
+  <div class="chhead"><div class="chno">13</div><div>
     <div class="chlab">Made with AI · The Brief</div>
     <h2>이 포트폴리오도 AI로 제작되었으며, 프롬프트는 다음과 같습니다</h2>
   </div></div>
@@ -530,6 +717,9 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
       <li><b>리그 · 일정 화면</b> — 그 특징과 함께, 어느 클럽에서나 쓸 수 있는 <strong>보편성</strong>과 쓰는 사람의 <strong>편의성</strong>을 강조한다.</li>
       <li><b>시각자료</b> — 말보다 그림이 많게. 홈페이지, 3D 모델 도록, 재생기를 직접 캡처해 넣는다.</li>
       <li><b>목소리</b> — 내가 실제로 건넨 프롬프트 중 멋진 것을 골라 <strong>맨 위</strong>에 걸고, 제목은 멋지게. <strong>각 장의 시작도 프롬프트로</strong> 연다.</li>
+      <li><b>앱</b> — 아이폰 PWA · 안드로이드 앱 · 푸시 알림 같은 <strong>앱 관련 내용</strong>도 담는다.</li>
+      <li><b>동기</b> — 개발적인 것만 강조하지 말고 <strong>니즈 · 동기 · 고민</strong>을. 처음에 <strong>왜 이 앱을 만들었는지</strong> — 클랜원이 편하게 소통하며 참여도를 높일 장, 역사와 추억의 아카이브, 게임 모임다운 고급 데이터.</li>
+      <li><b>접근법의 전환</b> — 이미지를 <strong>미리 구워 내려받는 방식</strong>으로 바꿔 성능 한계를 넘고, 그 덕에 내부 그림자 · 선명도 · 대비 같은 <strong>모델 품질</strong>을 올릴 수 있게 된 과정.</li>
       <li><b>맺음</b> — 이 지시서 자체를 마지막에 남겨, 이 페이지가 어떻게 만들어졌는지도 보여준다.</li>
     </ol>
     <p class="note">사람은 방향과 기준을 정하고, AI는 자료를 읽어 구조를 세우고 · 화면을 찍고 · 쓰고 · 검증해 배포했다. 이 페이지 역시 그 방식의 결과물이다.</p>
@@ -538,7 +728,7 @@ pre .h{color:#ffd166} pre .o{color:#5ee3b0} pre .d{color:#7c8db0}
 
 <footer class="end">
   <div class="orb">GG · WELL PLAYED</div>
-  <p>STARGATE · 백엔드 개발자 포트폴리오 · 화면은 로컬에서 시험 데이터로 찍었습니다.</p>
+  <p>STARGATE · 개발자 포트폴리오 · 화면은 로컬에서 시험 데이터로 찍었습니다.</p>
 </footer>
 
 </div>
