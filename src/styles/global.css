@@ -5731,3 +5731,14 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* ★ 로딩 퍼센트(2026-11-01 · Feedback LoadingMark pct) — 워드마크 아랫줄 · 단색 작은 글자 · 숫자 폭 고정(흔들림 없게). */
 .scr-boot-stack { display: inline-flex; flex-direction: column; align-items: center; gap: 10px; }
 .scr-boot-pct { font-family: var(--font-ui); font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+
+/* ★ PC 통계 묶음 다섯 칸(2026-11-03, 요청: "경기수/승률/교환비/APM/EAPM 다섯 컬럼을 똑같이 전체/테란/프로토스/저그 반복 · 칸 모양도 똑같이 · 폭이 모자랄 테니 페이지 폭 넓히고") —
+   유저 · (티어) · 묶음 넷 × [게임수 | 승률 | 교환비 | APM | EAPM] 같은 폭 · 묶음 머리는 다섯 칸을 덮고 · 묶음 첫 칸에 왼 선. 통계 화면만 1480 까지 넓힌다(다른 목록은 1080 그대로). 폰(.is-m)은 안 탄다. */
+.scr-sg.has-tier:not(.is-m) { grid-template-columns: minmax(150px, 1.6fr) 56px repeat(20, minmax(50px, 1fr)); }
+.scr-sg:not(.is-m):not(.has-tier) { grid-template-columns: minmax(150px, 1.6fr) repeat(20, minmax(50px, 1fr)); }
+.scr-sg-head > .scr-sg-hgroup.scr-sg-hgroup5 { grid-column: span 5; }
+.scr-sg:not(.is-m) .scr-sg-gstart { box-shadow: inset 1px 0 0 var(--line-faint); }
+@media (min-width: 961px) {
+  .scr-stats-screen-v2 { max-width: 1480px; }
+  .scr-main:has(.scr-stats-screen-v2) { max-width: 1480px; }   /* 리그 상세(1920)와 같은 꼴 — 본문 틀도 함께 넓힌다 */
+}

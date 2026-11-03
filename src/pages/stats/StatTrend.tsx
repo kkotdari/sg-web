@@ -99,8 +99,9 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "apm"
   }
   if (kind === "plays") return { key: `${race ?? ""}:plays`, label: `${who}게임수`, series: [{ label: "게임수", cls: "", pick: playsOf(race), fmt: int }], mode: "single" };
   if (kind === "rate") return { key: `${race ?? ""}:rate`, label: `${who}승률`, series: [{ label: "승률", cls: "", pick: rateOf(race), fmt: pct }], mode: "single" };
-  if (kind === "apm") return { key: "apm", label: "APM", series: [{ label: "APM", cls: "", pick: (e) => n(e.overall.avgApm), fmt: int }], mode: "single" };
-  if (kind === "eapm") return { key: "eapm", label: "EAPM", series: [{ label: "EAPM", cls: "", pick: (e) => n(e.overall.avgEapm), fmt: int }], mode: "single" };
+  /* 종족 APM · EAPM · 교환비(2026-11-03 · PC 묶음 다섯 칸 — StatGrid GroupCells) — race 가 있으면 그 종족 판의 값. */
+  if (kind === "apm") return { key: race ? `${race}:apm` : "apm", label: `${who}APM`, series: [{ label: "APM", cls: "", pick: (e) => { const s = of(race)(e); return s && s.plays > 0 ? n(s.avgApm) : null; }, fmt: int }], mode: "single" };
+  if (kind === "eapm") return { key: race ? `${race}:eapm` : "eapm", label: `${who}EAPM`, series: [{ label: "EAPM", cls: "", pick: (e) => { const s = of(race)(e); return s && s.plays > 0 ? n(s.avgEapm) : null; }, fmt: int }], mode: "single" };
   /* 폰 EAPM 칸(2026-10-28, 요청: "모바일 EAPM 컬럼에 APM 그래프도 표시 · 겹쳐서 한 그래프로") — 한 자(shared)에 두 선: APM(옅게 · 값은 위)이 늘 더 커서 먼저 · EAPM(본색 · 값은 아래). */
   if (kind === "eapmApm") {
     return {
@@ -116,6 +117,7 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "apm"
   if (kind === "ex") return { key: "ex", label: "보정교환비(종족 · 상대 세기 뺌)", series: [{ label: "보정교환비", cls: "", pick: (e) => n(e.tier?.ex), fmt: x2 }], mode: "single" };
   /* 교환비(날 값 · 2026-10-29, 요청: "PC 데미지 컬럼 제거하고 교환비 추가 — 팝업엔 교환비, 딜+피해 그래프 2개") — 교환비 그래프 아래에 데미지(딜 · 피해) 그래프. */
   if (kind === "exr") {
+    if (race) return { key: `${race}:exr`, label: `${who}교환비(준 ÷ 입은 데미지)`, series: [{ label: "교환비", cls: "", pick: (e) => exOf(of(race)(e)), fmt: x2 }], mode: "single" };
     return {
       key: "exr", label: "교환비(준 ÷ 입은 데미지)", series: [{ label: "교환비", cls: "", pick: (e) => exOf(e.overall), fmt: x2 }], mode: "single",
       more: [statMetric("dmg")],

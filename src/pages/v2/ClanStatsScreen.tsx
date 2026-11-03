@@ -98,7 +98,7 @@ const sortLabel = (k: StatSortKey): string => {
   if (k === "exr") return "교환비";
   if (k === "ex") return "보정교환비";
   const [who, what] = k.includes(":") ? k.split(":") : ["전체", k];
-  return `${who} ${what === "rate" ? "승률" : "게임수"}`;
+  return `${who} ${what === "rate" ? "승률" : what === "exr" ? "교환비" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
 };
 
 /** 변화 그래프의 기준 — last: 마지막 달(한 달이면 그 달 · 여러 달 a~b 면 b · 달이 아니면 이번 달 — 서버도 dateTo 가 든 달을 마지막으로 센다) · period: 달 셈에 넣을 기간 글자. */
@@ -340,9 +340,15 @@ export default function ClanStatsScreen() {
         return missingLast(a.stats[f] === null, b.stats[f] === null) || dirSign * ((a.stats[f] ?? 0) - (b.stats[f] ?? 0));
       }
       /* 전적 — 전체(plays · rate) 또는 종족별("테란:plays" …)의 판 수 · 승률. 판이 없으면 뒤로. */
-      const [race, what] = key.includes(":") ? (key.split(":") as [BaseRace, "rate" | "plays"]) : [null, key as "rate" | "plays"];
+      const [race, what] = key.includes(":") ? (key.split(":") as [BaseRace, "rate" | "plays" | "exr" | "apm" | "eapm"]) : [null, key as "rate" | "plays"];
       const as = race ? a.entry?.byRace?.[race] : a.stats;
       const bs = race ? b.entry?.byRace?.[race] : b.stats;
+      /* 종족 교환비 · APM · EAPM(2026-11-03 · PC 묶음 다섯 칸) — 그 종족 판이 없거나 값이 없으면 뒤로. */
+      if (what === "exr" || what === "apm" || what === "eapm") {
+        const vOf = (x: typeof as) => (!x || x.plays === 0 ? null : what === "exr" ? exOf(x) : what === "apm" ? x.avgApm : x.avgEapm);
+        const av = vOf(as); const bv = vOf(bs);
+        return missingLast(av === null, bv === null) || dirSign * ((av ?? 0) - (bv ?? 0));
+      }
       const ap = as?.plays ?? 0; const bp = bs?.plays ?? 0;
       return missingLast(ap === 0, bp === 0)
         || dirSign * (what === "plays" ? ap - bp : (as?.winRate ?? 0) - (bs?.winRate ?? 0));
