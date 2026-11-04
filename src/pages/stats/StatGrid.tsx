@@ -187,11 +187,13 @@ function WhoPlain({ member }: { member: Member }) {
 /* ★ 주종족 묶음(2026-11-04, 요청: "표도 전체 컬럼 앞에 주종족 컬럼들 추가 · 모바일은 전체 대신 주종족") — 그 조회 판의 30% 이상을 한 종족(여러 개 가능)의 판을 합친 다섯 칸.
    게임수 칸 앞에 주종족 글자(T · P · Z)를 작게. 티어도 이 판으로만 낸다(sg-api tier MAIN_ONLY). */
 type PcGroup = "주종족" | "전체" | BaseRace;
-const PC_GROUPS: readonly PcGroup[] = ["주종족", "전체", ...RACES];
 const RACE_LETTER: Record<BaseRace, string> = { 테란: "T", 프로토스: "P", 저그: "Z" };
 /** 주종족 글자 — 게임수 칸 앞(위 ★). */
 const Mains = ({ rs }: { rs?: BaseRace[] | null }) => (rs && rs.length ? <i className="scr-sg-mains" title={`주종족: ${rs.join(" · ")}`}>{rs.map((r) => RACE_LETTER[r]).join("")}</i> : null);
-const GRP_STORE = "sg-stat-groups";
+/* ★ 보기 고르기(2026-11-04, 요청: "보는 걸 라디오 버튼으로 — 주종/전체 · 각 종족 이 두 개로 나눌게 · 지금 종족 체크박스 대신" → "각 종족 선택 시 옆에 한 종족 것만
+   덧붙는 느낌으로") — [주종족 · 전체] 는 늘 서고, 라디오(없음 · 테란 · 프로토스 · 저그)로 고른 종족 한 묶음만 그 오른쪽에 덧붙는다. 없음이면 표는 폭의 2/3. */
+type PcView = "" | BaseRace;
+const VIEW_STORE = "sg-stat-view";
 /** ★ PC 묶음 다섯 칸(2026-11-03, 요청: "통계 피시버전만 — 경기수/승률/교환비/APM/EAPM 다섯 컬럼을 똑같이 전체/테란/프로토스/저그 반복 · 칸 모양도 똑같이 · 폭 넓히고") —
  *  [게임수 | 승률 | 교환비(날 값) | APM | EAPM] 을 전체 · 종족마다 같은 꼴로. 보정교환비 칸은 PC 에서 걷었다(티어 팝업 근거값에 남는다). 묶음 첫 칸은 왼 선(scr-sg-gstart).
  *  평균 줄: 전체 게임수 = 경기 수 · 전체 승률 "-" · 종족 승률은 쓴다(그 종족으로 뛴 클랜원 판).
@@ -369,23 +371,44 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   const hasMain = rows.some((r) => !!r.main);
   const mk = (k: "plays" | "rate" | "exr" | "apm" | "eapm"): StatSortKey => (hasMain ? `주종족:${k}` : k);
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace, main: clan.main } : null;
-  /* ★ PC 묶음 고르기(2026-11-03, 요청: "전체, 테란, 프로토스, 저그 체크박스로 선택한 것만 보이게") — 고른 묶음만 칸을 세운다 · 하나는 늘 남긴다 · 브라우저에 기억(localStorage · 실패하면 다 켬). */
-  const [grpOn, setGrpOn] = useState<Record<PcGroup, boolean>>(() => {
-    const all: Record<PcGroup, boolean> = { 주종족: true, 전체: true, 테란: true, 프로토스: true, 저그: true };
-    try { const v = JSON.parse(localStorage.getItem(GRP_STORE) ?? "null") as Partial<Record<PcGroup, boolean>> | null; if (v && PC_GROUPS.some((g) => v[g])) return { ...all, ...v }; } catch { /* 기억 없음 */ }
-    return all;
+  /* PC 보기(위 VIEW_GROUPS ★) — 라디오 둘 · 브라우저에 기억(localStorage · 실패하면 주종족·전체). 옛 묶음 체크박스(2026-11-03)는 걷었다. */
+  const [view, setView] = useState<PcView>(() => {
+    try { const v = localStorage.getItem(VIEW_STORE); if (v === "" || RACES.includes(v as BaseRace)) return v as PcView; } catch { /* 기억 없음 */ }
+    return "";
   });
-  const grpToggle = (g: PcGroup): void => setGrpOn((cur) => {
-    const nx = { ...cur, [g]: !cur[g] };
-    if (!PC_GROUPS.some((k) => nx[k])) return cur;   // 하나는 남긴다
-    try { localStorage.setItem(GRP_STORE, JSON.stringify(nx)); } catch { /* 기억 못 함 */ }
-    return nx;
-  });
-  const groups = PC_GROUPS.filter((g) => grpOn[g]);
+  const pickView = (v: PcView): void => { setView(v); try { localStorage.setItem(VIEW_STORE, v); } catch { /* 기억 못 함 */ } };
+  const groups: PcGroup[] = view ? ["주종족", "전체", view] : ["주종족", "전체"];
+  /* ★ 열 강조(2026-11-04, 요청: "마우스 오버나 클릭 시 해당 열 전체에 포인트 효과 — 다크 흰색 톤 · 라이트 푸른 톤 · 버튼 채우기 색") — 얹은 칸(hover)이나 누른 칸(pin · 다시 누르면 끔)의
+     열(줄 안 자리)을 모든 줄에서 칠한다(--btn-fill-bg · 아래 <style>). 유저 · 티어 칸은 안 친다. PC 머리 줄은 그 아랫머리도 함께. */
+  const [hHover, setHHover] = useState<number | null>(null);
+  const [hPin, setHPin] = useState<number | null>(null);
+  const hcol = hHover ?? hPin;
+  const valBase = 1 + (tier ? 1 : 0);
+  const colOf = (t: EventTarget | null): number | null => {
+    const el = (t as HTMLElement | null)?.closest?.(".scr-sg-c") as HTMLElement | null;
+    const row = el?.parentElement;
+    if (!el || !row || !row.classList.contains("scr-sg-row")) return null;
+    const ix = Array.prototype.indexOf.call(row.children, el) as number;
+    if (row.classList.contains("scr-sg-head")) {
+      if (mobile || !el.classList.contains("scr-sg-hsub")) return null;
+      return ix - groups.length;
+    }
+    return ix >= valBase ? ix : null;
+  };
+  useEffect(() => { setHPin(null); setHHover(null); }, [view, mobile, tier]);
+  const hcolCss = hcol === null ? null : (
+    `.scr-sg.is-hcol > .scr-sg-row:not(.scr-sg-head) > :nth-child(${hcol + 1})${mobile ? "" : `, .scr-sg.is-hcol > .scr-sg-head > :nth-child(${hcol + groups.length + 1})`}`
+    + " { background: var(--btn-fill-bg); }");
+  const hcolProps = {
+    onPointerOver: (e: React.PointerEvent) => { if (e.pointerType === "mouse") setHHover(colOf(e.target)); },
+    onPointerLeave: () => setHHover(null),
+    onClickCapture: (e: React.MouseEvent) => { const c = colOf(e.target); if (c !== null) setHPin((p) => (p === c ? null : c)); },
+  };
   if (mobile) {
     return (
       <TrendCtx.Provider value={ctx}>
-      <div className={cx("scr-sg is-m", tier && "has-tier")} role="table" aria-label="통계">
+      {hcolCss && <style>{hcolCss}</style>}
+      <div className={cx("scr-sg is-m", tier && "has-tier", hcol !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}>
         {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 · 전적은 전체·종족 넷을 덮는다. 뜻 풀이는 정렬 줄의 도움말 단추(StatHelp)로 옮겼다(2026-10-22, 요청: "헤더 설명 다 제거 · 도움말 아이콘 툴팁에 표 모양과 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
@@ -418,15 +441,17 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   }
   return (
     <TrendCtx.Provider value={ctx}>
-    <div className="scr-sg-groups" role="group" aria-label="보일 묶음">
-      {PC_GROUPS.map((g) => (
-        <label key={g} className={cx("scr-sg-group-chk", grpOn[g] && "is-on")}>
-          <input type="checkbox" checked={grpOn[g]} onChange={() => grpToggle(g)} />{g}
+    <div className="scr-sg-groups" role="radiogroup" aria-label="보기">
+      {([["", "종족 없음"], ...RACES.map((r) => [r, r] as const)] as const).map(([v, label]) => (
+        <label key={v} className={cx("scr-sg-group-chk", view === v && "is-on")}>
+          <input type="radio" name="scr-sg-view" checked={view === v} onChange={() => pickView(v)} />{label}
         </label>
       ))}
     </div>
-    <div className={cx("scr-sg", tier && "has-tier")} role="table" aria-label="통계"
-      style={{ gridTemplateColumns: `minmax(150px, 1.6fr)${tier ? " 56px" : ""} repeat(${groups.length * 5}, minmax(50px, 1fr))` }}>
+    {hcolCss && <style>{hcolCss}</style>}
+    <div className={cx("scr-sg", tier && "has-tier", hcol !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
+      /* 종족을 안 덧붙이면 폭의 2/3 만 왼쪽부터(2026-11-04, 요청: "주종/전체라고 해서 폭을 다 쓰지 말고 2/3 만 왼쪽부터") — 종족 한 묶음을 덧붙이면 나머지 1/3 을 채운다. */
+      style={{ gridTemplateColumns: `minmax(150px, 1.6fr)${tier ? " 56px" : ""} repeat(${groups.length * 5}, minmax(50px, 1fr))`, ...(!view ? { width: "66.667%", marginRight: "auto" } : {}) }}>
       {/* 머리는 두 줄 — 종족 이름이 [게임수 | 승률] 두 칸을 덮고(PC 머리 "경기"·"전적" → "게임수" · 2026-10-22), 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
