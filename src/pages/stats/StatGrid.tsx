@@ -190,10 +190,11 @@ type PcGroup = "주종족" | "전체" | BaseRace;
 const RACE_LETTER: Record<BaseRace, string> = { 테란: "T", 프로토스: "P", 저그: "Z" };
 /** 주종족 글자 — 게임수 칸 앞(위 ★). */
 const Mains = ({ rs }: { rs?: BaseRace[] | null }) => (rs && rs.length ? <i className="scr-sg-mains" title={`주종족: ${rs.join(" · ")}`}>{rs.map((r) => RACE_LETTER[r]).join("")}</i> : null);
-/* ★ 보기 고르기(2026-11-04, 요청: "보는 걸 라디오 버튼으로 — 주종/전체 · 각 종족 이 두 개로 나눌게 · 지금 종족 체크박스 대신" → "각 종족 선택 시 옆에 한 종족 것만
-   덧붙는 느낌으로") — [주종족 · 전체] 는 늘 서고, 라디오(없음 · 테란 · 프로토스 · 저그)로 고른 종족 한 묶음만 그 오른쪽에 덧붙는다. 없음이면 표는 폭의 2/3. */
-type PcView = "" | BaseRace;
+/* ★ 보기 모드(2026-11-04, 요청: "보는 걸 라디오 버튼으로 — 주종/전체 · 각종족 이 두 개로 나눌게 · 지금 종족 체크박스 대신" · "각종족 보기 모드야 이름이") —
+   주종/전체 = [주종족 · 전체] 두 묶음을 폭의 2/3 만 왼쪽부터 · 각종족 = [테란 · 프로토스 · 저그] 세 묶음을 온 폭(칸 폭이 두 모드에서 같아 한 묶음이 덧붙는 느낌). */
+type PcView = "main" | "race";
 const VIEW_STORE = "sg-stat-view";
+const VIEW_GROUPS: Record<PcView, readonly PcGroup[]> = { main: ["주종족", "전체"], race: RACES };
 /** ★ PC 묶음 다섯 칸(2026-11-03, 요청: "통계 피시버전만 — 경기수/승률/교환비/APM/EAPM 다섯 컬럼을 똑같이 전체/테란/프로토스/저그 반복 · 칸 모양도 똑같이 · 폭 넓히고") —
  *  [게임수 | 승률 | 교환비(날 값) | APM | EAPM] 을 전체 · 종족마다 같은 꼴로. 보정교환비 칸은 PC 에서 걷었다(티어 팝업 근거값에 남는다). 묶음 첫 칸은 왼 선(scr-sg-gstart).
  *  평균 줄: 전체 게임수 = 경기 수 · 전체 승률 "-" · 종족 승률은 쓴다(그 종족으로 뛴 클랜원 판).
@@ -373,11 +374,11 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace, main: clan.main } : null;
   /* PC 보기(위 VIEW_GROUPS ★) — 라디오 둘 · 브라우저에 기억(localStorage · 실패하면 주종족·전체). 옛 묶음 체크박스(2026-11-03)는 걷었다. */
   const [view, setView] = useState<PcView>(() => {
-    try { const v = localStorage.getItem(VIEW_STORE); if (v === "" || RACES.includes(v as BaseRace)) return v as PcView; } catch { /* 기억 없음 */ }
-    return "";
+    try { const v = localStorage.getItem(VIEW_STORE); if (v === "main" || v === "race") return v; } catch { /* 기억 없음 */ }
+    return "main";
   });
   const pickView = (v: PcView): void => { setView(v); try { localStorage.setItem(VIEW_STORE, v); } catch { /* 기억 못 함 */ } };
-  const groups: PcGroup[] = view ? ["주종족", "전체", view] : ["주종족", "전체"];
+  const groups = VIEW_GROUPS[view];
   /* ★ 열 강조(2026-11-04, 요청: "마우스 오버나 클릭 시 해당 열 전체에 포인트 효과 — 다크 흰색 톤 · 라이트 푸른 톤 · 버튼 채우기 색") — 얹은 칸(hover)이나 누른 칸(pin · 다시 누르면 끔)의
      열(줄 안 자리)을 모든 줄에서 칠한다(--btn-fill-bg · 아래 <style>). 유저 · 티어 칸은 안 친다. PC 머리 줄은 그 아랫머리도 함께. */
   const [hHover, setHHover] = useState<number | null>(null);
@@ -442,7 +443,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   return (
     <TrendCtx.Provider value={ctx}>
     <div className="scr-sg-groups" role="radiogroup" aria-label="보기">
-      {([["", "종족 없음"], ...RACES.map((r) => [r, r] as const)] as const).map(([v, label]) => (
+      {([["main", "주종/전체"], ["race", "각종족"]] as const).map(([v, label]) => (
         <label key={v} className={cx("scr-sg-group-chk", view === v && "is-on")}>
           <input type="radio" name="scr-sg-view" checked={view === v} onChange={() => pickView(v)} />{label}
         </label>
@@ -450,8 +451,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
     </div>
     {hcolCss && <style>{hcolCss}</style>}
     <div className={cx("scr-sg", tier && "has-tier", hcol !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
-      /* 종족을 안 덧붙이면 폭의 2/3 만 왼쪽부터(2026-11-04, 요청: "주종/전체라고 해서 폭을 다 쓰지 말고 2/3 만 왼쪽부터") — 종족 한 묶음을 덧붙이면 나머지 1/3 을 채운다. */
-      style={{ gridTemplateColumns: `minmax(150px, 1.6fr)${tier ? " 56px" : ""} repeat(${groups.length * 5}, minmax(50px, 1fr))`, ...(!view ? { width: "66.667%", marginRight: "auto" } : {}) }}>
+      /* 주종/전체는 폭의 2/3 만 왼쪽부터(2026-11-04, 요청: "주종/전체라고 해서 폭을 다 쓰지 말고 2/3 만 왼쪽부터") — 각종족(세 묶음)은 온 폭이라 한 묶음이 덧붙는 느낌. */
+      style={{ gridTemplateColumns: `minmax(150px, 1.6fr)${tier ? " 56px" : ""} repeat(${groups.length * 5}, minmax(50px, 1fr))`, ...(view === "main" ? { width: "66.667%", marginRight: "auto" } : {}) }}>
       {/* 머리는 두 줄 — 종족 이름이 [게임수 | 승률] 두 칸을 덮고(PC 머리 "경기"·"전적" → "게임수" · 2026-10-22), 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
