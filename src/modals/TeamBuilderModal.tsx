@@ -136,9 +136,14 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
             if (!got && has(ta)) got = { inbun: ta.inbun!, tier: ta.tier, plays: ta.plays, month: "all" };
             if (got) byRace[rc] = got;
           }
+          /* ★ 전체 티어가 없어졌다(2026-11-04 · 통계는 종족 티어만 · 서버도 전체 tier 를 안 싣는다) — 고를 수 있는지·인분은 **주종족 티어**로, 그 종족 기록이 없으면
+             판이 가장 많은 종족의 티어로(종족도 그것으로 갈아 세운다). 옛 전체 티어(pick)는 옛 응답에서만 선다. (지적: "팀 구성하기 지금 조건이 뭐야? 비활성화돼 있어서") */
+          const mainRec = race ? byRace[race] : undefined;
+          const anyRace = mainRec ? race : (Object.entries(byRace).sort((x, y) => (y[1]?.plays ?? 0) - (x[1]?.plays ?? 0))[0]?.[0] as Race | undefined);
+          const rec = mainRec ?? (anyRace ? byRace[anyRace] : undefined);
           return {
-            member: m, inbun: pick?.t.inbun ?? null, tier: pick?.t.tier ?? null, plays: pick?.t.plays ?? 0, month: pick?.month ?? "all",
-            race, blocked: !pick,
+            member: m, inbun: pick?.t.inbun ?? rec?.inbun ?? null, tier: pick?.t.tier ?? rec?.tier ?? null, plays: pick?.t.plays ?? rec?.plays ?? 0, month: pick?.month ?? rec?.month ?? "all",
+            race: mainRec || pick ? race : anyRace ?? race, blocked: !pick && !rec,
             alt: altRace && a ? { race: altRace, plays: a.plays, winRate: a.winRate } : null,
             byRace,
           };
