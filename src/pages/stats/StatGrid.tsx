@@ -379,6 +379,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   });
   const pickView = (v: PcView): void => { setView(v); try { localStorage.setItem(VIEW_STORE, v); } catch { /* 기억 못 함 */ } };
   const groups = VIEW_GROUPS[view];
+  /** 주종/전체 표 폭 — 각종족(값 칸 15 + 유저 1.6fr)에서 값 칸 다섯을 뺀 비: (1.6 + 10) ÷ (1.6 + 15) · 티어 칸(56px)은 그대로. */
+  const mainW = tier ? "calc(56px + (100% - 56px) * 11.6 / 16.6)" : "calc(100% * 11.6 / 16.6)";
   /* ★ 열 강조(2026-11-04, 요청: "마우스 오버나 클릭 시 해당 열 전체에 포인트 효과 — 다크 흰색 톤 · 라이트 푸른 톤 · 버튼 채우기 색") — 얹은 칸(hover)이나 누른 칸(pin · 다시 누르면 끔)의
      열(줄 안 자리)을 모든 줄에서 칠한다(--btn-fill-bg · 아래 <style>). 유저 · 티어 칸은 안 친다. PC 머리 줄은 그 아랫머리도 함께. */
   const [hHover, setHHover] = useState<number | null>(null);
@@ -451,8 +453,9 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
     </div>
     {hcolCss && <style>{hcolCss}</style>}
     <div className={cx("scr-sg", tier && "has-tier", hcol !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
-      /* 주종/전체는 폭의 2/3 만 왼쪽부터(2026-11-04, 요청: "주종/전체라고 해서 폭을 다 쓰지 말고 2/3 만 왼쪽부터") — 각종족(세 묶음)은 온 폭이라 한 묶음이 덧붙는 느낌. */
-      style={{ gridTemplateColumns: `minmax(150px, 1.6fr)${tier ? " 56px" : ""} repeat(${groups.length * 5}, minmax(50px, 1fr))`, ...(view === "main" ? { width: "66.667%", marginRight: "auto" } : {}) }}>
+      /* 주종/전체는 값 칸만 2/3(2026-11-04, 요청: "주종/전체라고 해서 폭을 다 쓰지 말고 2/3 만 왼쪽부터" → "각종족은 세 개고 주종족/전체는 두 개라 2/3 만 · 공통 부분 제외하고는") —
+         유저(1.6fr) · 티어(56px) 칸은 각종족 보기와 같은 폭 · 값 칸 하나도 같은 폭이 되게 표 폭을 줄인다(아래 mainW). 각종족(세 묶음)은 온 폭. */
+      style={{ gridTemplateColumns: `minmax(150px, 1.6fr)${tier ? " 56px" : ""} repeat(${groups.length * 5}, minmax(50px, 1fr))`, ...(view === "main" ? { width: mainW, marginRight: "auto" } : {}) }}>
       {/* 머리는 두 줄 — 종족 이름이 [게임수 | 승률] 두 칸을 덮고(PC 머리 "경기"·"전적" → "게임수" · 2026-10-22), 나머지 머리는 두 줄을 내리 쓴다(2026-10-20). 색 네모는 걷었다. */}
       <div className="scr-sg-row scr-sg-head" role="row">
         <span className="scr-sg-c scr-sg-h2 scr-sg-who">유저</span>
