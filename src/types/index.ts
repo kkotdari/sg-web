@@ -297,6 +297,10 @@ export interface MemberStatsEntry {
   overall: MemberStats;
   byRace: Record<BaseRace, MemberStats>;
   mostPlayedRace: Race | null;
+  /** 주종족(sg-api · 2026-11-04) — 그 조회 판의 30% 이상을 한 종족(판 많은 순 · 여러 개 가능 · 없으면 최다 하나). 티어는 이 종족 판으로만. */
+  mainRaces?: BaseRace[] | null;
+  /** 주종족 판을 합친 줄(평균 줄은 사람마다 제 주종족 판을 합친 것). */
+  main?: MemberStats | null;
   sortOrder: number | null;
   tieGroup: number | null;
   personScore: number | null;
@@ -348,6 +352,8 @@ export interface TierEntry {
   stdInbun?: number | null;
   /** 보정 교환비(그 기간 · 표의 교환비 칸 · 2026-10-28) — 종족 몫 · 상대 세기 몫을 뺀 교환비(1 = 보통 · 맵 탭과 상관없이 전체 맵 팀전 판). */
   ex?: number | null;
+  /** 주종족(2026-11-04) — 이 티어를 낸 종족들(그 기간 판 30% 이상). */
+  mains?: string[] | null;
   level?: number | null;
 }
 

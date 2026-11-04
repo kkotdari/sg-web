@@ -340,9 +340,10 @@ export default function ClanStatsScreen() {
         return missingLast(a.stats[f] === null, b.stats[f] === null) || dirSign * ((a.stats[f] ?? 0) - (b.stats[f] ?? 0));
       }
       /* 전적 — 전체(plays · rate) 또는 종족별("테란:plays" …)의 판 수 · 승률. 판이 없으면 뒤로. */
-      const [race, what] = key.includes(":") ? (key.split(":") as [BaseRace, "rate" | "plays" | "exr" | "apm" | "eapm"]) : [null, key as "rate" | "plays"];
-      const as = race ? a.entry?.byRace?.[race] : a.stats;
-      const bs = race ? b.entry?.byRace?.[race] : b.stats;
+      const [race, what] = key.includes(":") ? (key.split(":") as [BaseRace | "주종족", "rate" | "plays" | "exr" | "apm" | "eapm"]) : [null, key as "rate" | "plays"];
+      /* "주종족:…"(2026-11-04) — 그 사람 주종족 판을 합친 줄(entry.main). */
+      const as = race === "주종족" ? a.entry?.main ?? undefined : race ? a.entry?.byRace?.[race] : a.stats;
+      const bs = race === "주종족" ? b.entry?.main ?? undefined : race ? b.entry?.byRace?.[race] : b.stats;
       /* 종족 교환비 · APM · EAPM(2026-11-03 · PC 묶음 다섯 칸) — 그 종족 판이 없거나 값이 없으면 뒤로. */
       if (what === "exr" || what === "apm" || what === "eapm") {
         const vOf = (x: typeof as) => (!x || x.plays === 0 ? null : what === "exr" ? exOf(x) : what === "apm" ? x.avgApm : x.avgEapm);
@@ -476,9 +477,9 @@ export default function ClanStatsScreen() {
         ) : (
           /* ★★ 표(StatGrid · 2026-10-20) — 맨 윗줄 클랜원 전체 · 그 아래 사람마다 한 줄. */
           <StatGrid
-            clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace } : null}
+            clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace, main: view.clan.main } : null}
             clanGames={clanGames}
-            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, tier: c.entry?.tier }))}
+            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, main: c.entry?.main, mainRaces: c.entry?.mainRaces, tier: c.entry?.tier }))}
             tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */
             mobile={isMobile}
             sortKeys={shownSort}

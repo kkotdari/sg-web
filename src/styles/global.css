@@ -5738,6 +5738,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg:not(.is-m):not(.has-tier) { grid-template-columns: minmax(150px, 1.6fr) repeat(20, minmax(50px, 1fr)); }
 .scr-sg-head > .scr-sg-hgroup.scr-sg-hgroup5 { grid-column: span 5; }
 .scr-sg:not(.is-m) .scr-sg-gstart { box-shadow: inset 1px 0 0 var(--line-faint); }
+/* 주종족 글자(StatGrid Mains · 2026-11-04) — 게임수 앞에 작고 옅게(T · P · Z). */
+.scr-sg-mains { font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: 0.02em; color: var(--muted); opacity: 0.7; margin-right: 4px; vertical-align: 1px; }
 @media (min-width: 961px) {
   .scr-stats-screen-v2 { max-width: 1480px; }
   .scr-main:has(.scr-stats-screen-v2) { max-width: 1480px; }   /* 리그 상세(1920)와 같은 꼴 — 본문 틀도 함께 넓힌다 */

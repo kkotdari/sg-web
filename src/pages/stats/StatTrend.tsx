@@ -66,9 +66,11 @@ const n = (v: number | null | undefined): number | null => (typeof v === "number
 /** 그래프가 쓸 그 달의 줄 — 평균 행(CLAN_MEMBER_ID)은 clanByMonth, 나머지는 byMonth. */
 export const trendEntryOf = (data: StatTrendData, member: Member, month: string): TrendEntry | undefined =>
   member.id === CLAN_MEMBER_ID ? data.clanByMonth?.[month] : data.byMonth[month]?.[member.id];
-const of = (race: BaseRace | null) => (e: MemberStatsEntry) => (race ? e.byRace?.[race] : e.overall);
-const playsOf = (race: BaseRace | null) => (e: MemberStatsEntry) => { const s = of(race)(e); return s && s.plays > 0 ? s.plays : null; };
-const rateOf = (race: BaseRace | null) => (e: MemberStatsEntry) => { const s = of(race)(e); return s && s.plays > 0 ? n(s.winRate) : null; };
+/** 칸의 종족 — 종족 셋 · "주종족"(그 사람 주종족 판을 합친 줄 · MemberStatsEntry.main · 2026-11-04) · null 전체. */
+export type StatRace = BaseRace | "주종족";
+const of = (race: StatRace | null) => (e: MemberStatsEntry) => (race === "주종족" ? e.main ?? undefined : race ? e.byRace?.[race] : e.overall);
+const playsOf = (race: StatRace | null) => (e: MemberStatsEntry) => { const s = of(race)(e); return s && s.plays > 0 ? s.plays : null; };
+const rateOf = (race: StatRace | null) => (e: MemberStatsEntry) => { const s = of(race)(e); return s && s.plays > 0 ? n(s.winRate) : null; };
 const int = (v: number) => Math.round(v).toLocaleString();
 const pct = (v: number) => `${Math.round(v)}%`;
 const x100 = (v: number) => (v / 100).toFixed(1);
@@ -82,7 +84,7 @@ export function exOf(s: MemberStatsEntry["overall"] | undefined | null): number 
 }
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: BaseRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
