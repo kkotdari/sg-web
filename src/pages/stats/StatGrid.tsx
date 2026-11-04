@@ -185,16 +185,17 @@ const PC_GROUPS: readonly PcGroup[] = ["전체", ...RACES];
 const GRP_STORE = "sg-stat-groups";
 /** ★ PC 묶음 다섯 칸(2026-11-03, 요청: "통계 피시버전만 — 경기수/승률/교환비/APM/EAPM 다섯 컬럼을 똑같이 전체/테란/프로토스/저그 반복 · 칸 모양도 똑같이 · 폭 넓히고") —
  *  [게임수 | 승률 | 교환비(날 값) | APM | EAPM] 을 전체 · 종족마다 같은 꼴로. 보정교환비 칸은 PC 에서 걷었다(티어 팝업 근거값에 남는다). 묶음 첫 칸은 왼 선(scr-sg-gstart).
- *  평균 줄: 전체 게임수 = 경기 수 · 전체 승률 · 교환비는 "-"(내전이라 늘 반반 · 1 근처) · 종족 승률은 쓴다(그 종족으로 뛴 클랜원 판). */
+ *  평균 줄: 전체 게임수 = 경기 수 · 전체 승률 "-" · 종족 승률은 쓴다(그 종족으로 뛴 클랜원 판).
+ *  교환비도 쓴다(2026-11-04, 요청: "평균 로우의 교환비가 다 비어 있잖아 거기 채워줘") — 클랜원 판을 다 더한 준 ÷ 입은 데미지(전체는 내전이라 1 근처 · 종족은 그 종족의 주고받기). */
 function GroupCells({ s, race, member, clan, games }: { s?: MemberStats; race: BaseRace | null; member?: Member; clan?: boolean; games?: number }) {
   const has = !!s && s.plays > 0;
-  const mOf = (k: "plays" | "rate" | "exr" | "apm" | "eapm") => (clan && (k === "rate" || k === "exr") && !race ? undefined : member);
+  const mOf = (k: "plays" | "rate" | "exr" | "apm" | "eapm") => (clan && k === "rate" && !race ? undefined : member);
   const playsV = clan && !race ? (games ?? 0).toLocaleString() : has ? s!.plays.toLocaleString() : null;
   return (
     <>
       <TCell member={mOf("plays")} metric={statMetric(clan && !race ? "games" : "plays", race)} className="scr-sg-gstart"><Num v={playsV} /></TCell>
       <TCell member={mOf("rate")} metric={statMetric("rate", race)}>{(clan && !race) || !has ? <Dash /> : <Rate s={s} />}</TCell>
-      <TCell member={mOf("exr")} metric={statMetric("exr", race)}>{clan || !has ? <Dash /> : <ExRaw s={s!} />}</TCell>
+      <TCell member={mOf("exr")} metric={statMetric("exr", race)}>{!has ? <Dash /> : <ExRaw s={s!} />}</TCell>
       <TCell member={member} metric={statMetric("apm", race)}><Num v={has ? s!.avgApm : null} /></TCell>
       <TCell member={member} metric={statMetric("eapm", race)}><Num v={has ? s!.avgEapm : null} /></TCell>
     </>
@@ -243,7 +244,7 @@ function MobileRow({ row, clan, games, tier }: { row: StatGridRow; clan?: boolea
       <TCell member={clan ? undefined : who} metric={statMetric("rate")} className="scr-sg-mnum">
         {clan || s.plays === 0 ? <Dash /> : `${s.winRate}%`}
       </TCell>
-      <TCell member={clan ? undefined : who} metric={statMetric("exr")} className="scr-sg-mnum scr-sg-mwide">{clan ? <Dash /> : <ExRaw s={s} />}</TCell>
+      <TCell member={who} metric={statMetric("exr")} className="scr-sg-mnum scr-sg-mwide"><ExRaw s={s} /></TCell>
       <TCell member={clan ? undefined : who} metric={statMetric("ex")} className="scr-sg-mnum scr-sg-mwide">{clan ? <Dash /> : <Ex t={row.tier} />}</TCell>
       <TCell member={who} metric={statMetric("apm")} className="scr-sg-mnum scr-sg-mwide">{s.avgApm ?? <Dash />}</TCell>
       <TCell member={who} metric={statMetric("eapm")} className="scr-sg-mnum scr-sg-mwide">{s.avgEapm ?? <Dash />}</TCell>
