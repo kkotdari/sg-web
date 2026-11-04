@@ -7,7 +7,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
-import { exOf, statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
+import { combinedTier, exOf, statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -94,9 +94,9 @@ function useTodayFrom(on: boolean): string {
 const sortLabel = (k: StatSortKey): string => {
   if (k === "apm") return "APM";
   if (k === "eapm") return "EAPM";
-  if (k === "tier") return "티어";
+  if (k === "tier") return "종합 티어";
   if (k === "exr") return "교환비";
-  const [who, what] = k.includes(":") ? k.split(":") : ["전체", k];
+  const [who, what] = k.includes(":") ? k.split(":") : ["종합", k];
   return `${who} ${what === "tier" ? "티어" : what === "rate" ? "승률" : what === "exr" ? "교환비" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
 };
 
@@ -154,6 +154,15 @@ export default function ClanStatsScreen() {
   const [multiSort, setMultiSort] = useState(false);
   const toggleMulti = (): void => {
     setMultiSort((on) => { if (on && sortKeys.length > 1) setSortKeys([sortKeys[0]]); return !on; });
+  };
+  /* 종족별 보기/숨기기(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균) · 테란 프로토스 저그 접혀 있다가 위에 종족별 보기/숨기기로 · 토글 옆에") —
+     기본은 접힘(종합 묶음만) · 기기마다 기억. 숨길 때 종족 칸으로 고른 정렬은 뺀다(안 보이는 칸으로 줄 세우지 않게 · 다 빠지면 처음 값). */
+  const [showRaces, setShowRacesRaw] = useState(() => { try { return localStorage.getItem("stats.showRaces") === "1"; } catch { return false; } });
+  const toggleRaces = (): void => {
+    const next = !showRaces;
+    setShowRacesRaw(next);
+    try { localStorage.setItem("stats.showRaces", next ? "1" : "0"); } catch { /* 저장 못 해도 이번 화면은 된다 */ }
+    if (!next) { const rest = sortKeys.filter((k) => !k.includes(":")); setSortKeys(rest.length > 0 ? rest : ["tier"]); }
   };
   const matchedMembers = useMemo(() => {
     const terms = users.map((u) => normalizeSearchText(u).trim()).filter(Boolean);
@@ -319,14 +328,10 @@ export default function ClanStatsScreen() {
       /* 팀전 티어 — **인분 내림차순**(2026-10-28, 요청: "티어로 정렬시 인분 내림차순") · 티어 없는 사람(스무 판 미만)은 뒤로 몰고 그 안에서도 인분 순 ·
          인분도 없는 사람(1:1 조회 · 팀전 판 없음)은 맨 뒤. 인분은 **기준 인분**(티어의 잣대 · 같은 날 "개인 능력치 기반 현재 장의 실력") — 한 조회 안에서는
          판 수준이 모두 같아 그 판의 인분 순과 같다. */
-      /* 종족 티어("테란:tier" …) — 그 종족 판으로 잰 인분 내림차순 · "tier" 는 그 사람 종족 티어 가운데 가장 높은 인분(2026-11-04 · 전체 티어는 걷었다). */
+      /* 종족 티어("테란:tier" …) — 그 종족 판으로 잰 인분 내림차순 · "tier" 는 종합 티어(종족 티어 인분을 판 수로 가중 평균 · StatTrend combinedTier · 2026-11-04). */
       if (key === "tier" || key.endsWith(":tier")) {
         const rc = key === "tier" ? null : (key.split(":")[0] as BaseRace);
-        const pick = (c: Card) => {
-          const tb = c.entry?.tierByRace ?? {};
-          const ts = rc ? [tb[rc]] : Object.values(tb);
-          return ts.filter((x) => x && typeof x.tier === "number").sort((x, y) => (y!.stdInbun ?? y!.inbun ?? 0) - (x!.stdInbun ?? x!.inbun ?? 0))[0] ?? (rc ? tb[rc] : undefined);
-        };
+        const pick = (c: Card) => (rc ? c.entry?.tierByRace?.[rc] : combinedTier(c.entry?.tierByRace)) ?? undefined;
         const at = pick(a); const bt = pick(b);
         const ai = at?.stdInbun ?? at?.inbun; const bi = bt?.stdInbun ?? bt?.inbun;
         return missingLast(typeof at?.tier !== "number", typeof bt?.tier !== "number")
@@ -456,6 +461,11 @@ export default function ClanStatsScreen() {
           title={multiSort ? "복수 기준 정렬 끄기 — 머리를 누르면 그 기준 하나로" : "복수 기준 정렬 켜기 — 머리를 누른 차례대로 기준이 쌓여요"}>
           복수 기준
         </button>
+        {/* 종족별 보기/숨기기(위 showRaces ★) — 켜면 종합 뒤에 테란 · 프로토스 · 저그 묶음. */}
+        <button type="button" role="switch" aria-checked={showRaces} className={cx("scr-stats-sort-multi", showRaces && "is-on")} onClick={toggleRaces}
+          title={showRaces ? "종족별 칸 숨기기 — 종합만" : "종족별 칸 보기 — 테란 · 프로토스 · 저그"}>
+          종족별 {showRaces ? "숨기기" : "보기"}
+        </button>
         {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(티어 · 1:1 은 전체 승률 하나)과 다를 때만 선다 · PC 만. */}
         {!isMobile && !(shownSort.length === 1 && shownSort[0] === sortDefault) && (
           <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["tier"])} title={`정렬을 처음 값(${sortLabel(sortDefault)})으로`}>
@@ -487,6 +497,7 @@ export default function ClanStatsScreen() {
             sortKeys={shownSort}
             onSortKeys={setSortKeys}
             multi={multiSort}
+            showRaces={showRaces}
             trend={trend}
           />
         )}

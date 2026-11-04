@@ -1,7 +1,7 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import { Spinner } from "../../components/common/Feedback";
 import { shiftMonthValue } from "../../utils/date";
-import type { BaseRace, Member, MemberStatsEntry } from "../../types";
+import type { BaseRace, Member, MemberStatsEntry, TierEntry } from "../../types";
 
 /* ★ 통계 칸의 **5개월 변화 그래프**(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" → "7개월로 통일하자") ─────────────────────────
    표의 값 칸(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률 · 폰 전적 칸)에 PC 는 마우스를 얹으면, 폰은 누르면 그 사람 · 그 값의 다섯 달
@@ -66,6 +66,21 @@ const n = (v: number | null | undefined): number | null => (typeof v === "number
 /** 그래프가 쓸 그 달의 줄 — 평균 행(CLAN_MEMBER_ID)은 clanByMonth, 나머지는 byMonth. */
 export const trendEntryOf = (data: StatTrendData, member: Member, month: string): TrendEntry | undefined =>
   member.id === CLAN_MEMBER_ID ? data.clanByMonth?.[month] : data.byMonth[month]?.[member.id];
+/** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.6 · 1.00 · 0.80 · 서버 INBUN_CUTS)
+ *  · 판 합이 열 미만이면 등급 없음(서버 TIER_MIN_GAMES). 종족 기록이 없으면 null. 팝업 근거값(EAPM · 교환비 보정 · 승패 보정)도 같은 가중 평균. */
+export function combinedTier(tb: Record<string, TierEntry> | null | undefined): TierEntry | null {
+  const ts = Object.values(tb ?? {}).filter((t) => typeof t?.inbun === "number" && t.inbun > 0 && t.plays > 0);
+  if (ts.length === 0) return null;
+  const n = ts.reduce((a, t) => a + t.plays, 0);
+  const avg = (f: (t: TierEntry) => number | null | undefined): number | null => {
+    const ok = ts.filter((t) => typeof f(t) === "number");
+    const w = ok.reduce((a, t) => a + t.plays, 0);
+    return w > 0 ? ok.reduce((a, t) => a + (f(t) as number) * t.plays, 0) / w : null;
+  };
+  const ib = avg((t) => t.stdInbun ?? t.inbun) ?? 0;
+  const tier = n < 10 ? null : ib >= 1.6 ? 1 : ib >= 1.0 ? 2 : ib >= 0.8 ? 3 : 4;
+  return { ...ts[0], tier, inbun: ib, stdInbun: ib, plays: n, eapm: avg((t) => t.eapm), cbt: avg((t) => t.cbt), adj: avg((t) => t.adj), ex: avg((t) => t.ex) } as TierEntry;
+}
 /** 칸의 종족 — 종족 셋 · "주종족"(그 사람 주종족 판을 합친 줄 · MemberStatsEntry.main · 2026-11-04) · null 전체. */
 export type StatRace = BaseRace | "주종족";
 const of = (race: StatRace | null) => (e: MemberStatsEntry) => (race === "주종족" ? e.main ?? undefined : race ? e.byRace?.[race] : e.overall);
@@ -95,8 +110,8 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "apm"
   if (kind === "tier") {
     return {
       /* 종족 티어(2026-11-04 · race) — 그 달 tierByRace[종족]. 종족이 없으면 옛 전체 티어(팀 빌더 등). */
-      key: race ? `${race}:tier` : "tier", label: race ? `${race} 티어` : "팀전 티어",
-      series: [{ label: "티어", cls: "", pick: (e) => { const v = race && race !== "주종족" ? e.tierByRace?.[race]?.tier : e.tier?.tier; return typeof v === "number" ? -v : null; }, fmt: (v) => `${-v}티어` }],
+      key: race ? `${race}:tier` : "tier", label: race ? `${race} 티어` : "종합 티어",
+      series: [{ label: "티어", cls: "", pick: (e) => { const v = race && race !== "주종족" ? e.tierByRace?.[race]?.tier : (e.tier ?? combinedTier(e.tierByRace))?.tier; return typeof v === "number" ? -v : null; }, fmt: (v) => `${-v}티어` }],
       mode: "single",
     };
   }
