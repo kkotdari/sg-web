@@ -228,8 +228,9 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickRows, setPickRows] = useState<PickRow[] | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
-  type PickFilter = { from: string; to: string; pub: boolean; q: string };
-  const [pickFilter, setPickFilter] = useState<PickFilter>({ from: "", to: "", pub: false, q: "" });
+  /* nopub — 공방 제외(2026-11-04, 요청: "데이터관리에 공방만 체크박스 옆에 공방 제외도 추가 · 체크박스지만 서로 배타적") = 서버 membersOnly(모두 회원인 판 · 내전). pub 과 함께 켜지 않는다. */
+  type PickFilter = { from: string; to: string; pub: boolean; nopub: boolean; q: string };
+  const [pickFilter, setPickFilter] = useState<PickFilter>({ from: "", to: "", pub: false, nopub: false, q: "" });
   useLockBodyScroll(pickerOpen, () => setPickerOpen(false));
 
   /** 대상 목록 — 리플레이 없는 판도 든다(참값·경기 삭제의 대상 · 재분석은 리플레이 있는 판만 건다). 지우고 나면 다시 받는다. */
@@ -243,7 +244,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
       let cursor: string | undefined;
       do {
         const page = await api.getGameResultsPage({
-          cursor, limit: 100, dateFrom: f.from || undefined, dateTo: f.to || undefined, pubOnly: f.pub || undefined,
+          cursor, limit: 100, dateFrom: f.from || undefined, dateTo: f.to || undefined, pubOnly: f.pub || undefined, membersOnly: f.nopub || undefined,
           any: f.q.trim() || undefined,
         });
         for (const m of page.items) rows.push({ id: m.id, matchNo: m.matchNo, game: m });
@@ -261,7 +262,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   };
   const openPicker = () => {
     /* 열 때마다 조건·고른 판을 비운다(2026-10-21, 지적: "선택조건이 닫았다 열어도 유지") — 닫을 때 비우면 닫은 뒤 뜨는 확인 창이 고른 판을 잃는다. */
-    setPickFilter({ from: "", to: "", pub: false, q: "" });
+    setPickFilter({ from: "", to: "", pub: false, nopub: false, q: "" });
     setPicked(new Set());
     setPickRows(null);
     setPickerOpen(true);
@@ -594,8 +595,12 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   />
                 </label>
                 <label className="scr-checkbox-field scr-redo-pick-pub">
-                  <input type="checkbox" checked={pickFilter.pub} onChange={(e) => changePickFilter({ pub: e.target.checked })} />
+                  <input type="checkbox" checked={pickFilter.pub} onChange={(e) => changePickFilter({ pub: e.target.checked, ...(e.target.checked ? { nopub: false } : {}) })} />
                   공방 게임만
+                </label>
+                <label className="scr-checkbox-field scr-redo-pick-pub">
+                  <input type="checkbox" checked={pickFilter.nopub} onChange={(e) => changePickFilter({ nopub: e.target.checked, ...(e.target.checked ? { pub: false } : {}) })} />
+                  공방 제외
                 </label>
                 <input
                   type="search"
