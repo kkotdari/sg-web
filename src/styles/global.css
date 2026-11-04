@@ -5100,7 +5100,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-tier.is-t1 { background: #ffe9b5; color: #2a1d00; }
 .scr-sg-tier.is-t2 { background: #cfeeff; color: #10283a; }
 .scr-sg-tier.is-t3 { background: #ffd6d6; color: #3a1010; }
-.scr-sg-tier.is-t4 { background: rgb(39 0 255 / 14%); color: #111; }   /* 글자 검정(같은 날 "4티어도 검정") */   /* 4등급(2026-10-27 · 4등급 고정) */
+.scr-sg-tier.is-t4 { background: #e1dbff; color: #111; }   /* 불투명(2026-11-04, 지적: "다크 테마에서 4티어가 안 보여 · 불투명하게") — rgb(39 0 255 / 14%) 를 흰 바탕에 얹은 색 */   /* 글자 검정(같은 날 "4티어도 검정") */   /* 4등급(2026-10-27 · 4등급 고정) */
 .scr-sg-row { display: contents; }
 .scr-sg-c {
   display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0;
