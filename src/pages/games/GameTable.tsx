@@ -191,7 +191,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   onClick: () => void;
   onLongPress?: () => void;
   /** 시작일시 칸 — 목록의 기본 타임스탬프(formatAgo · 폰 줄 오른끝과 같은 글 · 2026-10-20 요청: "일시는 기본 타임스탬프 형식"). */
-  when: string;
+  when: ReactNode;
   /** 리그 칸("2026 팀리그" / "결승 · 1세트") — 리그 판이 아니면 "-"(같은 요청: "로스터에서 리그 정보 별도 컬럼으로"). */
   league?: { name: string; round: string } | null;
   /** 리그 칸을 세우나(리그 탭) — 머리 줄과 같은 값. */

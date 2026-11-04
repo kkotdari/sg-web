@@ -1,8 +1,16 @@
-import { memo, useEffect, useReducer, useState, type RefObject } from "react";
+import { memo, useEffect, useReducer, useState, type ReactNode, type RefObject } from "react";
 import { useReplayMapTick } from "scplay";
 import { RowCheck } from "../../components/common/Selection";
 import { cx } from "../../utils/format";
-import { formatAgo } from "../../utils/date";
+import { formatAgo, formatKoreanTime } from "../../utils/date";
+
+/** 게임 줄의 때 — 날짜(오늘 · 어제 · 요일 · 날짜) 아래 줄에 시각(2026-11-04, 요청: "게임 목록 타임스탬프에 시각도 표시 · 시각은 날짜 아래 줄") —
+ *  시작 시각을 아는 경기(withClock · gameStartedAt)만. 다른 줄(글 · 리그 예정)은 옛 한 줄 그대로. */
+function whenNode(item: { kind: string; time: number; withClock: boolean }): ReactNode {
+  const day = formatAgo(item.time);
+  if (item.kind !== "gameResult" || !item.withClock) return day;
+  return <span className="scr-when2"><span>{day}</span><span className="scr-when2-clock">{formatKoreanTime(new Date(item.time))}</span></span>;
+}
 import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
 import { GameRowNames, GameRowStatus, ListRow } from "../games/GameRow";
@@ -122,7 +130,7 @@ export const FeedRow = memo(function FeedRow({ item, flag, notes, pickable, pick
         game={item.gameResult} memberOf={view.memberOf}
         check={check} picked={picked} disabled={secret}
         onClick={() => act.current.open(item)}
-        when={formatAgo(item.time)}
+        when={whenNode(item)}
         onHide={() => act.current.hide(item)}
         leagueCol={view.leagueCol}
         league={lg ? { name: lg.leagueName, round: `${lg.roundName}${lg.matchInRound ? ` ${lg.matchInRound}경기` : ""} ${lg.setNo}세트` } : null}
@@ -174,7 +182,7 @@ export const FeedRow = memo(function FeedRow({ item, flag, notes, pickable, pick
           {flag === "new" ? "NEW" : "UPDATE"}
         </span>
       )}
-      side={formatAgo(item.time)}
+      side={whenNode(item)}
     />
   );
 });
