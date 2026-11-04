@@ -5131,6 +5131,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-stats-sort-multi + .scr-stats-sort-chain { padding-left: 8px; margin-left: 2px; border-left: 1px solid var(--line-soft); }
 /* 정렬 줄 초기화 단추(같은 요청) — 처음 값(전체 승률)과 다를 때만 선다 · 작은 글자 단추. */
 .scr-stats-sort-reset { padding: 2px 6px; gap: 4px; font-size: var(--fs-11); color: var(--muted); }
+/* (2026-11-04, 지적: "초기화 버튼 유무에 따라 높이가 달라짐 · 기준 줄") — 초기화는 고른 기준이 처음 값과 다를 때만 서는데, 제 높이(안 여백 포함)가 줄에서
+   가장 커서 나타날 때마다 줄이 늘었다. 위아래로 음의 바깥 여백을 줘 줄 높이에 안 든다(칠·누름 상자는 그대로). */
+.scr-stats-sort > .scr-stats-sort-reset { margin-block: -6px; }
 @media (hover: hover) { .scr-stats-sort-reset:hover { color: var(--text); } }
 /* 몸은 바탕 그대로(흰색 · 2026-10-22, 요청: "통계 그리드 색 흰색으로" — 옛 클랜원 전체 줄 0.035 · 펼침 0.025 덧칠 걷음) · 머리만 게임 목록 머리와 같은 0.06(바깥 테두리를 걷어 표의 시작을 말한다). */
 .scr-sg-head > .scr-sg-c { border-top: none; padding: 7px 8px; background: rgba(var(--overlay-rgb), 0.06); font-size: var(--fs-11); font-weight: 700; color: var(--muted); }   /* 글자 --dim → --muted(2026-10-22, 요청: "통계 헤더 글자색 좀 더 진하게") */
