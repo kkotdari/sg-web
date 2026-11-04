@@ -145,7 +145,7 @@ function Rate({ s }: { s?: MemberStats }) {
 function Ex({ t }: { t?: TierEntry | null }) {
   const x = typeof t?.ex === "number" ? t.ex : null;
   if (x === null) return <Dash />;
-  return <span className="scr-sg-dmg" title="보정 교환비 — 준 ÷ 입은 데미지에서 종족 차이 · 센 상대에게 밑진 몫을 뺀 값(1.00 = 보통 · 티어가 쓰는 값)"><b className={x >= 1 ? "is-dealt" : "is-taken"}>{x.toFixed(2)}</b></span>;
+  return <span className="scr-sg-dmg" title="보정 교환비 — 준 ÷ 입은 데미지에서 종족 차이 · 센 상대에게 밑진 몫을 뺀 값(1.00 = 보통 · 티어가 쓰는 값)"><b>{x.toFixed(2)}</b></span>;
 }
 
 /** 교환비 칸(날 값 · 2026-10-29, 요청: "PC 데미지 컬럼 제거하고 교환비 추가 — 팝업엔 교환비, 딜+피해 그래프 2개") — 준 ÷ 입은 데미지(보정 전).
@@ -153,7 +153,7 @@ function Ex({ t }: { t?: TierEntry | null }) {
 function ExRaw({ s }: { s: MemberStats }) {
   const x = exOf(s);
   if (x === null) return <Dash />;
-  return <span className="scr-sg-dmg" title="준 데미지 ÷ 입은 데미지(1.00 = 주고받은 양이 같음 · 보정 전)"><b className={x >= 1 ? "is-dealt" : "is-taken"}>{x.toFixed(2)}</b></span>;
+  return <span className="scr-sg-dmg" title="준 데미지 ÷ 입은 데미지(1.00 = 주고받은 양이 같음 · 보정 전)"><b>{x.toFixed(2)}</b></span>;
 }
 
 function Who({ member }: { member: Member }) {
@@ -383,35 +383,44 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   const mainW = tier ? "calc(56px + (100% - 56px) * 11.6 / 16.6)" : "calc(100% * 11.6 / 16.6)";
   /* ★ 열 강조(2026-11-04, 요청: "마우스 오버나 클릭 시 해당 열 전체에 포인트 효과 — 다크 흰색 톤 · 라이트 푸른 톤 · 버튼 채우기 색") — 얹은 칸(hover)이나 누른 칸(pin · 다시 누르면 끔)의
      열(줄 안 자리)을 모든 줄에서 칠한다(--btn-fill-bg · 아래 <style>). 유저 · 티어 칸은 안 친다. PC 머리 줄은 그 아랫머리도 함께. */
-  const [hHover, setHHover] = useState<number | null>(null);
-  const [hPin, setHPin] = useState<number | null>(null);
-  const hcol = hHover ?? hPin;
+  /* (같은 날 "열 강조가 아니라 행 강조를 말한 건데 · 둘 다 강조해도 될 듯 · 라이트의 강조색은 다른 목록 참고해서") — 칸의 **줄과 열** 둘 다 · 색은 다른 목록의 얹은 줄과 같은
+     --lighting-hover-bg(다크 흰 톤 · 라이트 푸른 톤). 머리 칸을 얹으면 열만 · 유저 · 티어 칸을 얹으면 줄만. */
+  type HCell = { r: number | null; c: number | null };
+  const [hHover, setHHover] = useState<HCell | null>(null);
+  const [hPin, setHPin] = useState<HCell | null>(null);
+  const hcell = hHover ?? hPin;
+  const hcol = hcell?.c ?? null;
+  const hrow = hcell?.r ?? null;
   const valBase = 1 + (tier ? 1 : 0);
-  const colOf = (t: EventTarget | null): number | null => {
+  const cellOf = (t: EventTarget | null): HCell | null => {
     const el = (t as HTMLElement | null)?.closest?.(".scr-sg-c") as HTMLElement | null;
     const row = el?.parentElement;
-    if (!el || !row || !row.classList.contains("scr-sg-row")) return null;
+    if (!el || !row || !row.classList.contains("scr-sg-row") || !row.parentElement) return null;
     const ix = Array.prototype.indexOf.call(row.children, el) as number;
     if (row.classList.contains("scr-sg-head")) {
       if (mobile || !el.classList.contains("scr-sg-hsub")) return null;
-      return ix - groups.length;
+      return { r: null, c: ix - groups.length };
     }
-    return ix >= valBase ? ix : null;
+    const r = Array.prototype.indexOf.call(row.parentElement.children, row) as number;
+    return { r, c: ix >= valBase ? ix : null };
   };
+  const sameCell = (a: HCell | null, b: HCell | null): boolean => !!a && !!b && a.r === b.r && a.c === b.c;
   useEffect(() => { setHPin(null); setHHover(null); }, [view, mobile, tier]);
-  const hcolCss = hcol === null ? null : (
-    `.scr-sg.is-hcol > .scr-sg-row:not(.scr-sg-head) > :nth-child(${hcol + 1})${mobile ? "" : `, .scr-sg.is-hcol > .scr-sg-head > :nth-child(${hcol + groups.length + 1})`}`
-    + " { background: var(--btn-fill-bg); }");
+  const hcolCss = hcell === null ? null : [
+    hcol === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:not(.scr-sg-head) > :nth-child(${hcol + 1})${mobile ? "" : `, .scr-sg.is-hcol > .scr-sg-head > :nth-child(${hcol + groups.length + 1})`} { background: var(--lighting-hover-bg); }`,
+    hrow === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:nth-child(${hrow + 1}) > .scr-sg-c { background: var(--lighting-hover-bg); }`,
+    hrow === null || hcol === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:nth-child(${hrow + 1}) > :nth-child(${hcol + 1}) { background: linear-gradient(var(--lighting-hover-bg), var(--lighting-hover-bg)), var(--lighting-hover-bg); }`,
+  ].join("\n");
   const hcolProps = {
-    onPointerOver: (e: React.PointerEvent) => { if (e.pointerType === "mouse") setHHover(colOf(e.target)); },
+    onPointerOver: (e: React.PointerEvent) => { if (e.pointerType === "mouse") { const c = cellOf(e.target); setHHover((p) => (sameCell(p, c) ? p : c)); } },
     onPointerLeave: () => setHHover(null),
-    onClickCapture: (e: React.MouseEvent) => { const c = colOf(e.target); if (c !== null) setHPin((p) => (p === c ? null : c)); },
+    onClickCapture: (e: React.MouseEvent) => { const c = cellOf(e.target); if (c) setHPin((p) => (sameCell(p, c) ? null : c)); },
   };
   if (mobile) {
     return (
       <TrendCtx.Provider value={ctx}>
       {hcolCss && <style>{hcolCss}</style>}
-      <div className={cx("scr-sg is-m", tier && "has-tier", hcol !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}>
+      <div className={cx("scr-sg is-m", tier && "has-tier", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}>
         {/* 머리 두 줄 — 유저 칸은 두 줄을 내리 쓰고 · 전적은 전체·종족 넷을 덮는다. 뜻 풀이는 정렬 줄의 도움말 단추(StatHelp)로 옮겼다(2026-10-22, 요청: "헤더 설명 다 제거 · 도움말 아이콘 툴팁에 표 모양과 설명"). */}
         <div className="scr-sg-row scr-sg-head" role="row">
           <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
@@ -452,7 +461,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
       ))}
     </div>
     {hcolCss && <style>{hcolCss}</style>}
-    <div className={cx("scr-sg", tier && "has-tier", hcol !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
+    <div className={cx("scr-sg", tier && "has-tier", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
       /* 주종/전체는 값 칸만 2/3(2026-11-04, 요청: "주종/전체라고 해서 폭을 다 쓰지 말고 2/3 만 왼쪽부터" → "각종족은 세 개고 주종족/전체는 두 개라 2/3 만 · 공통 부분 제외하고는") —
          유저(1.6fr) · 티어(56px) 칸은 각종족 보기와 같은 폭 · 값 칸 하나도 같은 폭이 되게 표 폭을 줄인다(아래 mainW). 각종족(세 묶음)은 온 폭. */
       style={{ gridTemplateColumns: `minmax(150px, 1.6fr)${tier ? " 56px" : ""} repeat(${groups.length * 5}, minmax(50px, 1fr))`, ...(view === "main" ? { width: mainW, marginRight: "auto" } : {}) }}>
