@@ -1,6 +1,6 @@
 import { Fragment, createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowDownWideNarrow, ArrowUpDown } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpDown, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { StatTrendPop, combinedTier, exOf, statMetric, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
@@ -271,7 +271,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
   );
 }
 
-export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false }: SortProps & {
+export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false, onToggleRaces }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>>; main?: MemberStats | null } | null;
   clanGames: number;
@@ -283,6 +283,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   tier?: boolean;
   /** 종족 묶음(테란 · 프로토스 · 저그)을 종합 뒤에 펼치나 — 기본 접힘(ClanStatsScreen 토글). */
   showRaces?: boolean;
+  /** 종합 머리 오른끝 펼치기/접기 단추 — 없으면 단추가 안 선다. */
+  onToggleRaces?: () => void;
 }) {
   /* 변화 그래프 팝오버(위 TrendCtx ★) — PC 는 떠난 뒤 POP_LINGER 뒤 닫힘 · 폰은 밖 누름·스크롤에 닫힘. */
   const [pop, setPop] = useState<TrendAnchor | null>(null);
@@ -328,6 +330,13 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   const groups: readonly (BaseRace | null)[] = [null, ...races];
   /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · 교환비 · APM · EAPM(위 RaceCells ★). */
   const per = tier ? 6 : 5;
+  /* 접힌 표의 폭(같은 날 "펼치기 접기 개념이라 종합도 원래부터 폭을 좁게") — 펼쳤을 때 유저 + 종합 묶음이 차지하던 몫만큼(칸 틀의 fr 비).
+     내용이 그보다 넓으면 내용대로(max-content) · 화면을 넘지 않게. 좁은 폰은 칸 틀이 달라 몫도 따로(--sgwn). */
+  const foldW = (who: number, cols: number, all: number): string => `${((100 * (who + cols)) / (who + all)).toFixed(2)}%`;
+  const foldStyle = showRaces ? {} : {
+    "--sgw": mobile ? foldW(2, per, per * 4) : foldW(1.6, per, per * 4),
+    "--sgwn": foldW(1.6, tier ? 2 : 1, tier ? 5 : 4),
+  } as React.CSSProperties;
   /* ★ 열 강조(2026-11-04, 요청: "마우스 오버나 클릭 시 해당 열 전체에 포인트 효과 — 다크 흰색 톤 · 라이트 푸른 톤 · 버튼 채우기 색") — 얹은 칸(hover)이나 누른 칸(pin · 다시 누르면 끔)의
      열(줄 안 자리)을 모든 줄에서 칠한다(→ --lighting-hover-bg · 아래 <style>). 유저 · 티어 칸은 안 친다. PC 머리 줄은 그 아랫머리도 함께. */
   /* (같은 날 "열 강조가 아니라 행 강조를 말한 건데 · 둘 다 강조해도 될 듯 · 라이트의 강조색은 다른 목록 참고해서") — 칸의 **줄과 열** 둘 다 · 색은 다른 목록의 얹은 줄과 같은
@@ -370,7 +379,18 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
     <div className="scr-sg-row scr-sg-head" role="row">
       <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
       {m && tier && <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow scr-sg-mnarrow"><SortHead {...mToggle("plays")}>게임수</SortHead></span>}
-      {groups.map((r) => <span key={r ?? "종합"} className="scr-sg-c scr-sg-hgroup scr-sg-gstart" style={{ gridColumn: m ? "span var(--rspan)" : `span ${per}` }}>{r ?? "종합"}</span>)}
+      {groups.map((r) => (
+        <span key={r ?? "종합"} className={cx("scr-sg-c scr-sg-hgroup scr-sg-gstart", !r && onToggleRaces && "has-fold")} style={{ gridColumn: m ? "span var(--rspan)" : `span ${per}` }}>
+          {r ?? "종합"}
+          {/* 종족별 펼치기/접기(2026-11-04, 요청: "종족별 펼치기는 종합 위쪽 오른끝에") — 펼치면 테란 · 프로토스 · 저그 묶음이 종합 오른쪽에 붙는다. */}
+          {!r && onToggleRaces && (
+            <button type="button" className={cx("scr-sg-fold", showRaces && "is-on")} aria-expanded={showRaces} onClick={(e) => { e.stopPropagation(); onToggleRaces(); }}
+              title={showRaces ? "종족별 접기 — 종합만" : "종족별 펼치기 — 테란 · 프로토스 · 저그"}>
+              <span className="scr-sg-fold-t">종족별</span>{showRaces ? <ChevronsLeft size={12} aria-hidden /> : <ChevronsRight size={12} aria-hidden />}
+            </button>
+          )}
+        </span>
+      ))}
       {groups.map((r) => (
         <Fragment key={r ?? "종합"}>
           {SUBS.map(([h, k], i) => {
@@ -390,8 +410,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
     return (
       <TrendCtx.Provider value={ctx}>
       {hcolCss && <style>{hcolCss}</style>}
-      <div className={cx("scr-sg is-m is-race9", tier && "has-tier", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
-        style={{ "--ncw": groups.length * per, "--ncn": groups.length + (tier ? 1 : 0) } as React.CSSProperties}>
+      <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
+        style={{ "--ncw": groups.length * per, "--ncn": groups.length + (tier ? 1 : 0), ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} mobile games={clanGames} races={races} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} mobile races={races} />)}
@@ -403,8 +423,8 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   return (
     <TrendCtx.Provider value={ctx}>
     {hcolCss && <style>{hcolCss}</style>}
-    <div className={cx("scr-sg is-race9", tier && "has-tier", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
-      style={{ gridTemplateColumns: `minmax(150px, 1.6fr) repeat(${groups.length * per}, minmax(50px, 1fr))` }}>
+    <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
+      style={{ gridTemplateColumns: `minmax(150px, 1.6fr) repeat(${groups.length * per}, minmax(50px, 1fr))`, ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} races={races} />)}

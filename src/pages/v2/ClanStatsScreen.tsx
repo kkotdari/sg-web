@@ -155,7 +155,8 @@ export default function ClanStatsScreen() {
   const toggleMulti = (): void => {
     setMultiSort((on) => { if (on && sortKeys.length > 1) setSortKeys([sortKeys[0]]); return !on; });
   };
-  /* 종족별 보기/숨기기(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균) · 테란 프로토스 저그 접혀 있다가 위에 종족별 보기/숨기기로 · 토글 옆에") —
+  /* 종족별 펼치기/접기(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균) · 테란 프로토스 저그 접혀 있다가 …" → 같은 날 "펼치기 접기 개념이라 종합도 원래부터
+     폭을 좁게 · 종족별 펼치기는 종합 위쪽 오른끝에" — 단추는 표 안 종합 머리 오른끝(StatGrid) · 옛 자리: 정렬 줄 복수 기준 옆) —
      기본은 접힘(종합 묶음만) · 기기마다 기억. 숨길 때 종족 칸으로 고른 정렬은 뺀다(안 보이는 칸으로 줄 세우지 않게 · 다 빠지면 처음 값). */
   const [showRaces, setShowRacesRaw] = useState(() => { try { return localStorage.getItem("stats.showRaces") === "1"; } catch { return false; } });
   const toggleRaces = (): void => {
@@ -461,11 +462,6 @@ export default function ClanStatsScreen() {
           title={multiSort ? "복수 기준 정렬 끄기 — 머리를 누르면 그 기준 하나로" : "복수 기준 정렬 켜기 — 머리를 누른 차례대로 기준이 쌓여요"}>
           복수 기준
         </button>
-        {/* 종족별 보기/숨기기(위 showRaces ★) — 켜면 종합 뒤에 테란 · 프로토스 · 저그 묶음. */}
-        <button type="button" role="switch" aria-checked={showRaces} className={cx("scr-stats-sort-multi", showRaces && "is-on")} onClick={toggleRaces}
-          title={showRaces ? "종족별 칸 숨기기 — 종합만" : "종족별 칸 보기 — 테란 · 프로토스 · 저그"}>
-          종족별 {showRaces ? "숨기기" : "보기"}
-        </button>
         {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(티어 · 1:1 은 전체 승률 하나)과 다를 때만 선다 · PC 만. */}
         {!isMobile && !(shownSort.length === 1 && shownSort[0] === sortDefault) && (
           <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["tier"])} title={`정렬을 처음 값(${sortLabel(sortDefault)})으로`}>
@@ -498,6 +494,7 @@ export default function ClanStatsScreen() {
             onSortKeys={setSortKeys}
             multi={multiSort}
             showRaces={showRaces}
+            onToggleRaces={toggleRaces}
             trend={trend}
           />
         )}

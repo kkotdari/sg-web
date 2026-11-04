@@ -5760,5 +5760,21 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   .scr-sg.is-m.is-race9, .scr-sg.is-m.is-race9.has-tier { --rspan: 1; grid-template-columns: minmax(min-content, 1.6fr) repeat(var(--ncn, 2), minmax(40px, 1fr)); }
 }
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
+/* 접힌 표(종합만 · StatGrid foldStyle ★) — 펼쳤을 때 유저 + 종합이 차지하던 몫의 폭 · 내용이 넓으면 내용대로. 종합 머리 오른끝에 펼치기 단추. */
+.scr-sg.is-race9.is-fold { width: max-content; min-width: var(--sgw, 0); max-width: 100%; }
+@media (max-width: 600px) { .scr-sg.is-m.is-race9.is-fold { min-width: var(--sgwn, 0); } }
+.scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup.has-fold { position: relative; padding-right: 64px; padding-left: 64px; }
+.scr-sg-fold {
+  position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; gap: 1px; padding: 1px 4px; border-radius: 4px;
+  font: inherit; font-size: 11px; line-height: 1.2; color: var(--muted); background: transparent; border: 1px solid var(--line-faint); cursor: pointer;
+}
+.scr-sg-fold.is-on { color: var(--btn-fill-text); background: var(--btn-fill-bg); border-color: transparent; }
+@media (hover: hover) { .scr-sg-fold:hover:not(.is-on) { color: var(--text); } }
+/* 좁은 폰 — 종합 머리가 한 칸이라 글은 빼고 화살표만. */
+@media (max-width: 600px) {
+  .scr-sg.is-m.is-race9 .scr-sg-head > .scr-sg-hgroup.has-fold { padding-left: 2px; padding-right: 20px; }
+  .scr-sg.is-m .scr-sg-fold-t { display: none; }
+}
 /* 주종족 묶음(그 조회 판의 30% 이상 · sg-api mainRaces)은 늘 옅은 배경(같은 날 "주종족에 배경 포인트 깔기 · 호버랑 무관하게") — 얹은 줄 · 열 강조(--lighting-hover-bg)가 그 위를 덮는다. */
 .scr-sg .scr-sg-c.is-main { background: rgba(var(--lighting-rgb), 0.07); }
