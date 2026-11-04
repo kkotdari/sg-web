@@ -1,4 +1,4 @@
-import { Fragment, createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ArrowDownWideNarrow, ArrowUpDown, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { StatTrendPop, combinedTier, exOf, statMetric, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
@@ -325,18 +325,30 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   /** 폰 단일 머리(티어 · 데미지 · APM) — 아이콘 10px. */
   const mToggle = (k: StatSortKey) => ({ ...pcToggle(k), ic: 10 });
   const clanRow: StatGridRow | null = clan ? { member: { id: "", nickname: CLAN_LABEL } as Member, stats: clan.stats, byRace: clan.byRace } : null;
-  const races: readonly BaseRace[] = showRaces ? RACES : [];
-  /** 머리 묶음 — 종합 + (펼치면) 종족 셋. */
+  /* ★ 종족 묶음은 **늘 깔고**, 접힘은 종합 오른끝에서 잘라 감춘다(2026-11-04, 요청: "종족별 펼침 · 접음 여부와 관계없이 종합 컬럼 너비는 일정해야 해") —
+     칸 틀이 펼친 표 그대로라 유저 · 종합 칸 너비가 한 치도 안 바뀐다. 자르는 자리는 종합 머리의 오른변(아래 clipW · 그려진 뒤 잼).
+     clip-path 는 밖을 누름 · 얹음에서도 뺀다(감춘 칸이 강조 · 정렬을 안 받는다). 옛(같은 날): 접으면 종족 칸을 안 그리고 표 폭을 fr 몫으로 줄였다 —
+     칸 최소 폭 · 내용 폭 때문에 종합 칸이 펼칠 때와 달랐다. */
+  const races: readonly BaseRace[] = RACES;
+  /** 머리 묶음 — 종합 + 종족 셋. */
   const groups: readonly (BaseRace | null)[] = [null, ...races];
   /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · 교환비 · APM · EAPM(위 RaceCells ★). */
   const per = tier ? 6 : 5;
-  /* 접힌 표의 폭(같은 날 "펼치기 접기 개념이라 종합도 원래부터 폭을 좁게") — 펼쳤을 때 유저 + 종합 묶음이 차지하던 몫만큼(칸 틀의 fr 비).
-     내용이 그보다 넓으면 내용대로(max-content) · 화면을 넘지 않게. 좁은 폰은 칸 틀이 달라 몫도 따로(--sgwn). */
-  const foldW = (who: number, cols: number, all: number): string => `${((100 * (who + cols)) / (who + all)).toFixed(2)}%`;
-  const foldStyle = showRaces ? {} : {
-    "--sgw": mobile ? foldW(2, per, per * 4) : foldW(1.6, per, per * 4),
-    "--sgwn": foldW(1.6, tier ? 2 : 1, tier ? 5 : 4),
-  } as React.CSSProperties;
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [clipW, setClipW] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const g = gridRef.current;
+    if (showRaces || !g) return undefined;
+    const meas = (): void => {
+      const h = g.querySelector(".scr-sg-head > .scr-sg-hgroup") as HTMLElement | null;
+      if (h) setClipW(Math.ceil(h.getBoundingClientRect().right - g.getBoundingClientRect().left));
+    };
+    meas();
+    const ro = new ResizeObserver(meas);
+    ro.observe(g);
+    return () => ro.disconnect();
+  }, [showRaces, mobile, tier]);
+  const foldStyle = showRaces || clipW === null ? {} : { "--sgclip": `${clipW}px` } as React.CSSProperties;
   /* ★ 열 강조(2026-11-04, 요청: "마우스 오버나 클릭 시 해당 열 전체에 포인트 효과 — 다크 흰색 톤 · 라이트 푸른 톤 · 버튼 채우기 색") — 얹은 칸(hover)이나 누른 칸(pin · 다시 누르면 끔)의
      열(줄 안 자리)을 모든 줄에서 칠한다(→ --lighting-hover-bg · 아래 <style>). 유저 · 티어 칸은 안 친다. PC 머리 줄은 그 아랫머리도 함께. */
   /* (같은 날 "열 강조가 아니라 행 강조를 말한 건데 · 둘 다 강조해도 될 듯 · 라이트의 강조색은 다른 목록 참고해서") — 칸의 **줄과 열** 둘 다 · 색은 다른 목록의 얹은 줄과 같은
@@ -410,7 +422,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
     return (
       <TrendCtx.Provider value={ctx}>
       {hcolCss && <style>{hcolCss}</style>}
-      <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
+      <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
         style={{ "--ncw": groups.length * per, "--ncn": groups.length + (tier ? 1 : 0), ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} mobile games={clanGames} races={races} />}
@@ -423,7 +435,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   return (
     <TrendCtx.Provider value={ctx}>
     {hcolCss && <style>{hcolCss}</style>}
-    <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps}
+    <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
       style={{ gridTemplateColumns: `minmax(150px, 1.6fr) repeat(${groups.length * per}, minmax(50px, 1fr))`, ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}

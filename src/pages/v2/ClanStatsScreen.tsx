@@ -455,13 +455,15 @@ export default function ClanStatsScreen() {
       )}
 
       <div className="scr-stats-sort">
-        <span className="scr-stats-sort-label">정렬:</span>
+        <span className="scr-stats-sort-label">정렬</span>
+        {/* 여러 기준(위 multiSort ★ · 2026-11-04, 요청: "복수 기준 단추를 정렬 옆으로 옮기고 여러 기준 체크박스로" — 옛: 기준 줄 뒤 알약 단추 "복수 기준") —
+            켜면 머리를 누른 차례대로 기준이 쌓인다. PC·폰 둘 다. */}
+        <label className={cx("scr-stats-sort-multi", multiSort && "is-on")}
+          title={multiSort ? "여러 기준 끄기 — 머리를 누르면 그 기준 하나로" : "여러 기준 켜기 — 머리를 누른 차례대로 기준이 쌓여요"}>
+          <input type="checkbox" checked={multiSort} onChange={toggleMulti} />
+          여러 기준
+        </label>
         <span className="scr-stats-sort-chain">{shownSort.length > 0 ? shownSort.map((k: StatSortKey) => sortLabel(k)).join(" › ") : "기본"}</span>
-        {/* 복수 기준 토글(위 multiSort ★) — 켜지면 머리를 누른 차례대로 기준이 쌓인다. PC·폰 둘 다. */}
-        <button type="button" role="switch" aria-checked={multiSort} className={cx("scr-stats-sort-multi", multiSort && "is-on")} onClick={toggleMulti}
-          title={multiSort ? "복수 기준 정렬 끄기 — 머리를 누르면 그 기준 하나로" : "복수 기준 정렬 켜기 — 머리를 누른 차례대로 기준이 쌓여요"}>
-          복수 기준
-        </button>
         {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(티어 · 1:1 은 전체 승률 하나)과 다를 때만 선다 · PC 만. */}
         {!isMobile && !(shownSort.length === 1 && shownSort[0] === sortDefault) && (
           <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["tier"])} title={`정렬을 처음 값(${sortLabel(sortDefault)})으로`}>

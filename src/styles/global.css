@@ -5119,13 +5119,16 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-sort-ic { display: inline-flex; align-items: center; gap: 1px; color: var(--dim); }
 .scr-sg-sort.is-on .scr-sg-sort-ic { color: var(--text); }
 .scr-sg-sort-ic i { font-style: normal; font-size: 10px; font-weight: 800; line-height: 1; }
-/* 정렬 줄 복수 기준 토글(2026-10-24, 요청: "기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글") — 탭 알약과 같은 꼴(.scr-line-tab-btn 켜짐 칠). */
+/* 정렬 줄 여러 기준 체크박스(2026-11-04, 요청: "복수 기준 단추를 정렬 옆으로 옮기고 여러 기준 체크박스로" · 옛 2026-10-24 알약 토글 "복수 기준") —
+   "정렬" 글 바로 옆 · 기준 줄(scr-stats-sort-chain)은 그 뒤 가는 세로선 너머. */
 .scr-stats-sort-multi {
-  margin-left: 4px; padding: 2px 8px; border: 1px solid var(--line-soft); border-radius: 999px; background: transparent; cursor: pointer; font: inherit;
-  font-size: var(--fs-9); font-weight: 600; color: var(--muted); white-space: nowrap; -webkit-tap-highlight-color: transparent;
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap;
 }
-.scr-stats-sort-multi.is-on { color: var(--btn-fill-text); background: var(--btn-fill-bg); border-color: transparent; }
+.scr-stats-sort-multi.is-on { color: var(--text); }
+.scr-stats-sort-multi > input { margin: 0; accent-color: var(--accent, #2b62e8); cursor: pointer; }
 @media (hover: hover) { .scr-stats-sort-multi:hover:not(.is-on) { color: var(--text); } }
+.scr-stats-sort-multi + .scr-stats-sort-chain { padding-left: 8px; margin-left: 2px; border-left: 1px solid var(--line-soft); }
 /* 정렬 줄 초기화 단추(같은 요청) — 처음 값(전체 승률)과 다를 때만 선다 · 작은 글자 단추. */
 .scr-stats-sort-reset { padding: 2px 6px; gap: 4px; font-size: var(--fs-11); color: var(--muted); }
 @media (hover: hover) { .scr-stats-sort-reset:hover { color: var(--text); } }
@@ -5760,9 +5763,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   .scr-sg.is-m.is-race9, .scr-sg.is-m.is-race9.has-tier { --rspan: 1; grid-template-columns: minmax(min-content, 1.6fr) repeat(var(--ncn, 2), minmax(40px, 1fr)); }
 }
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
-/* 접힌 표(종합만 · StatGrid foldStyle ★) — 펼쳤을 때 유저 + 종합이 차지하던 몫의 폭 · 내용이 넓으면 내용대로. 종합 머리 오른끝에 펼치기 단추. */
-.scr-sg.is-race9.is-fold { width: max-content; min-width: var(--sgw, 0); max-width: 100%; }
-@media (max-width: 600px) { .scr-sg.is-m.is-race9.is-fold { min-width: var(--sgwn, 0); } }
+/* 접힌 표(종합만 · StatGrid foldStyle ★) — 칸 틀은 펼친 표 그대로 두고 종합 오른변(--sgclip)에서 잘라 감춘다(종합 칸 너비가 펼침 · 접힘에 안 흔들린다). */
+.scr-sg.is-race9.is-fold { clip-path: inset(0 calc(100% - var(--sgclip, 100%)) 0 0 round 0 var(--radius-sm) var(--radius-sm) 0); }
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup.has-fold { position: relative; padding-right: 64px; padding-left: 64px; }
 .scr-sg-fold {
   position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
