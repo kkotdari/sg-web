@@ -158,11 +158,12 @@ export default function ClanStatsScreen() {
   /* 종족별 펼치기/접기(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균) · 테란 프로토스 저그 접혀 있다가 …" → 같은 날 "펼치기 접기 개념이라 종합도 원래부터
      폭을 좁게 · 종족별 펼치기는 종합 위쪽 오른끝에" — 단추는 표 안 종합 머리 오른끝(StatGrid) · 옛 자리: 정렬 줄 복수 기준 옆) —
      기본은 접힘(종합 묶음만) · 기기마다 기억. 숨길 때 종족 칸으로 고른 정렬은 뺀다(안 보이는 칸으로 줄 세우지 않게 · 다 빠지면 처음 값). */
-  const [showRaces, setShowRacesRaw] = useState(() => { try { return localStorage.getItem("stats.showRaces") === "1"; } catch { return false; } });
+  /* 폰은 **늘 펼친 채로 시작**(같은 날, 요청: "모바일 통계는 각 종족 전체 펼친 상태로 시작") — 기억은 PC 만 읽는다(폰에서 접어도 다음엔 펼침). */
+  const [showRaces, setShowRacesRaw] = useState(() => { if (isMobile) return true; try { return localStorage.getItem("stats.showRaces") === "1"; } catch { return false; } });
   const toggleRaces = (): void => {
     const next = !showRaces;
     setShowRacesRaw(next);
-    try { localStorage.setItem("stats.showRaces", next ? "1" : "0"); } catch { /* 저장 못 해도 이번 화면은 된다 */ }
+    if (!isMobile) try { localStorage.setItem("stats.showRaces", next ? "1" : "0"); } catch { /* 저장 못 해도 이번 화면은 된다 */ }
     if (!next) { const rest = sortKeys.filter((k) => !k.includes(":")); setSortKeys(rest.length > 0 ? rest : ["tier"]); }
   };
   const matchedMembers = useMemo(() => {
