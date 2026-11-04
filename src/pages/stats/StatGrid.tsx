@@ -21,7 +21,7 @@ const CLAN_LABEL = "평균";
  *  APM · 데미지 · 전체(rate · plays) · 종족별("테란:rate" · "테란:plays" …). */
 /** 종족 자 — PC 는 종족마다 다섯(게임수 · 승률 · 교환비 · APM · EAPM · 2026-11-03) · 폰은 게임수 · 승률. */
 /** "주종족:…"(2026-11-04) — 그 사람 주종족 판을 합친 줄(MemberStatsEntry.main). */
-export type StatSortKey = "tier" | "rate" | "plays" | "exr" | "ex" | "apm" | "eapm" | `${StatRace}:${"tier" | "rate" | "plays" | "exr" | "apm" | "eapm"}`;
+export type StatSortKey = "tier" | "rate" | "plays" | "exr" | "apm" | "eapm" | `${StatRace}:${"tier" | "rate" | "plays" | "exr" | "apm" | "eapm"}`;
 type SortProps = {
   sortKeys: readonly StatSortKey[]; onSortKeys: (next: StatSortKey[]) => void;
   /** 복수 기준 정렬(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 꺼져 있으면(기본) 머리를 누른 자 **하나**로 갈아탄다. */
@@ -57,8 +57,6 @@ export interface StatGridRow {
   /** 주종족 판을 합친 줄 · 주종족(2026-11-04 · sg-api main · mainRaces). */
   main?: MemberStats | null;
   mainRaces?: BaseRace[] | null;
-  /** 팀전 티어(팀전 조회에서만 · 아래 TierCell). */
-  tier?: TierEntry | null;
   /** 종족별 티어(2026-11-04 · 표의 티어 칸은 이것만 · sg-api tierByRace). */
   tierByRace?: Record<string, TierEntry> | null;
 }
@@ -257,7 +255,6 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
       ) : (
         <span className="scr-sg-help-list">
           <span>교환비 — 준 데미지 ÷ 입은 데미지(보정 전 · 1.00 보다 크면 주고받기에서 이김) · 얹으면 교환비와 <b className="is-dealt">딜</b> · <b className="is-taken">피해</b>(그 경기 참가자 평균의 몇 배) 변화</span>
-          <span>보정교환비 — 준 데미지 ÷ 입은 데미지에서 종족 차이 · 센 상대에게 밑진 몫을 뺀 값(1.00 보다 크면 주고받기에서 이김 · 티어가 쓰는 값)</span>
           <span>APM — 분당 행동 수 평균 · EAPM — 그중 유효 행동(같은 명령 연타 · 헛클릭을 뺌)</span>
           <span>티어 — 이 사람이 보통 몇 인분을 하나로 매기는 1~4 등급 · 인분 = EAPM ÷ 120 × 교환비 보정(센 상대에게 밑진 몫은 덜 깎고 · 종족 차이는 빼고) × 승패 보정(같은 편·상대 편으로 예상한 것보다 더/덜 이긴 만큼 · 그 기간 판으로) · 편의 힘은 센 사람에게 무게를 더 줘서 1티어 한 명이 크게 쳐요 · 1.6인분 이상 1티어 · 1.00 이상 2티어 · 0.80 이상 3티어 · 그 아래 4티어(절대 기준이라 빈 등급도 있어요) · 팀전 전체 · 맵 전체 조회에서만 보여요 · 그 기간 판만 써서 지난 달 티어는 뒤 판에 안 바뀌어요 · 얹거나 누르면 달별 변화와 근거값 · 열 판 미만은 -</span>
           <span>종족마다 같은 여섯 칸(티어 · 게임수 · 승률 · 교환비 · APM · EAPM) — 티어는 그 종족으로 한 판만으로 잰 등급(팀전 · 맵 전체 조회에서만)</span>

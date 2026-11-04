@@ -96,7 +96,6 @@ const sortLabel = (k: StatSortKey): string => {
   if (k === "eapm") return "EAPM";
   if (k === "tier") return "티어";
   if (k === "exr") return "교환비";
-  if (k === "ex") return "보정교환비";
   const [who, what] = k.includes(":") ? k.split(":") : ["전체", k];
   return `${who} ${what === "tier" ? "티어" : what === "rate" ? "승률" : what === "exr" ? "교환비" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
 };
@@ -334,12 +333,6 @@ export default function ClanStatsScreen() {
           || missingLast(typeof ai !== "number", typeof bi !== "number")
           || dirSign * ((ai ?? 0) - (bi ?? 0));
       }
-      if (key === "ex") {
-        /* 보정 교환비(StatGrid Ex ★ · 칸에 보이는 값). */
-        const exv = (c: Card) => (typeof c.entry?.tier?.ex === "number" ? c.entry.tier.ex : null);
-        const ax = exv(a); const bx = exv(b);
-        return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
-      }
       if (key === "exr") {
         const ax = exOf(a.stats); const bx = exOf(b.stats);
         return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
@@ -488,7 +481,7 @@ export default function ClanStatsScreen() {
           <StatGrid
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace, main: view.clan.main } : null}
             clanGames={clanGames}
-            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tier: c.entry?.tier, tierByRace: c.entry?.tierByRace }))}
+            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tierByRace: c.entry?.tierByRace }))}
             tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */
             mobile={isMobile}
             sortKeys={shownSort}
