@@ -98,7 +98,7 @@ const sortLabel = (k: StatSortKey): string => {
   if (k === "exr") return "교환비";
   if (k === "ex") return "보정교환비";
   const [who, what] = k.includes(":") ? k.split(":") : ["전체", k];
-  return `${who} ${what === "rate" ? "승률" : what === "exr" ? "교환비" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
+  return `${who} ${what === "tier" ? "티어" : what === "rate" ? "승률" : what === "exr" ? "교환비" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
 };
 
 /** 변화 그래프의 기준 — last: 마지막 달(한 달이면 그 달 · 여러 달 a~b 면 b · 달이 아니면 이번 달 — 서버도 dateTo 가 든 달을 마지막으로 센다) · period: 달 셈에 넣을 기간 글자. */
@@ -253,6 +253,8 @@ export default function ClanStatsScreen() {
          달 수는 한 달 조회 5(2026-10-28 · 옛 7) · 여러 달 조회면 그 기간(statTrendMonths · 요청: "여러달 기준이면 그 기간동안의 그래프") · 전체 기간은 **이번 달까지 최근 다섯 달**
          (요청: "전체 기간은 최근으로 보여주면 되지" — 서버는 dateTo 가 없으면 한국 시각 이번 달을 마지막으로 센다 · 화면도 currentMonthValue). */
       trendMonths: statTrendMonths(trendBase(debouncedQuery.period).period).length,
+      /* 종족별 티어(2026-11-04, 요청: "종족별 티어로 변경 · 전체 티어는 이제 없음") — 표의 티어 칸은 종족마다(StatGrid RaceCells ★) · 달별 변화도. */
+      tierByRace: debouncedQuery.size === "team" && debouncedQuery.map === "all",
     }).then((res) => {
       if (cancelled) return;
       const trendBy: Record<string, Record<string, MemberStatsEntry>> = {};
@@ -318,8 +320,15 @@ export default function ClanStatsScreen() {
       /* 팀전 티어 — **인분 내림차순**(2026-10-28, 요청: "티어로 정렬시 인분 내림차순") · 티어 없는 사람(스무 판 미만)은 뒤로 몰고 그 안에서도 인분 순 ·
          인분도 없는 사람(1:1 조회 · 팀전 판 없음)은 맨 뒤. 인분은 **기준 인분**(티어의 잣대 · 같은 날 "개인 능력치 기반 현재 장의 실력") — 한 조회 안에서는
          판 수준이 모두 같아 그 판의 인분 순과 같다. */
-      if (key === "tier") {
-        const at = a.entry?.tier; const bt = b.entry?.tier;
+      /* 종족 티어("테란:tier" …) — 그 종족 판으로 잰 인분 내림차순 · "tier" 는 그 사람 종족 티어 가운데 가장 높은 인분(2026-11-04 · 전체 티어는 걷었다). */
+      if (key === "tier" || key.endsWith(":tier")) {
+        const rc = key === "tier" ? null : (key.split(":")[0] as BaseRace);
+        const pick = (c: Card) => {
+          const tb = c.entry?.tierByRace ?? {};
+          const ts = rc ? [tb[rc]] : Object.values(tb);
+          return ts.filter((x) => x && typeof x.tier === "number").sort((x, y) => (y!.stdInbun ?? y!.inbun ?? 0) - (x!.stdInbun ?? x!.inbun ?? 0))[0] ?? (rc ? tb[rc] : undefined);
+        };
+        const at = pick(a); const bt = pick(b);
         const ai = at?.stdInbun ?? at?.inbun; const bi = bt?.stdInbun ?? bt?.inbun;
         return missingLast(typeof at?.tier !== "number", typeof bt?.tier !== "number")
           || missingLast(typeof ai !== "number", typeof bi !== "number")
@@ -479,7 +488,7 @@ export default function ClanStatsScreen() {
           <StatGrid
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace, main: view.clan.main } : null}
             clanGames={clanGames}
-            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, main: c.entry?.main, mainRaces: c.entry?.mainRaces, tier: c.entry?.tier }))}
+            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tier: c.entry?.tier, tierByRace: c.entry?.tierByRace }))}
             tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */
             mobile={isMobile}
             sortKeys={shownSort}

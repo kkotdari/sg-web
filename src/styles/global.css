@@ -5749,3 +5749,14 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg-group-chk { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; }
 .scr-sg-group-chk.is-on { color: var(--text); }
 .scr-sg-group-chk > input { margin: 0; accent-color: var(--accent, #2b62e8); cursor: pointer; }
+
+/* ★ 종족별 티어 표(StatGrid RaceCells ★ · 2026-11-04) — 폰: 넓을 때 종족마다 [티어 | 게임수 | 승률 | 교환비 | APM | EAPM](티어 없는 조회는 다섯) · 좁을 때 종족마다 둘
+   → 좁을 때 [전체 게임수 | 종족마다 티어](같은 날 "좁은 폰은 전체 게임수 · 종족별 티어" · 티어 없는 조회는 종족 게임수). 종족 머리가 덮는 칸 수가 --rspan. PC 는 칸 틀을 인라인으로 준다. */
+.scr-sg.is-m.is-race9 { --rspan: 5; grid-template-columns: minmax(min-content, 2fr) repeat(15, minmax(28px, 1fr)); }
+.scr-sg.is-m.is-race9.has-tier { --rspan: 6; grid-template-columns: minmax(min-content, 2fr) repeat(18, minmax(26px, 1fr)); }
+@media (max-width: 600px) {
+  .scr-sg.is-m.is-race9, .scr-sg.is-m.is-race9.has-tier { --rspan: 1; grid-template-columns: minmax(min-content, 1.6fr) repeat(4, minmax(40px, 1fr)); }
+}
+.scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
+/* 주종족 묶음(그 조회 판의 30% 이상 · sg-api mainRaces)은 늘 옅은 배경(같은 날 "주종족에 배경 포인트 깔기 · 호버랑 무관하게") — 얹은 줄 · 열 강조(--lighting-hover-bg)가 그 위를 덮는다. */
+.scr-sg .scr-sg-c.is-main { background: rgba(var(--lighting-rgb), 0.07); }

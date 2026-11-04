@@ -94,8 +94,9 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "apm"
      티어(sg-api get_stats_trend · 그 달 판으로 EAPM × 교환비 보정 × 승패 보정 · 판 열부터). 티어는 1 이 위에 오도록 부호를 뒤집어 그리고 글자는 "2티어". 인분은 안 그린다(같은 날, 요청: "팝업에 인분 표시 안 하고"). */
   if (kind === "tier") {
     return {
-      key: "tier", label: "팀전 티어",
-      series: [{ label: "티어", cls: "", pick: (e) => { const v = e.tier?.tier; return typeof v === "number" ? -v : null; }, fmt: (v) => `${-v}티어` }],
+      /* 종족 티어(2026-11-04 · race) — 그 달 tierByRace[종족]. 종족이 없으면 옛 전체 티어(팀 빌더 등). */
+      key: race ? `${race}:tier` : "tier", label: race ? `${race} 티어` : "팀전 티어",
+      series: [{ label: "티어", cls: "", pick: (e) => { const v = race && race !== "주종족" ? e.tierByRace?.[race]?.tier : e.tier?.tier; return typeof v === "number" ? -v : null; }, fmt: (v) => `${-v}티어` }],
       mode: "single",
     };
   }
