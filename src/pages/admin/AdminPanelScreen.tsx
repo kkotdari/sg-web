@@ -12,6 +12,7 @@ import VersionManageModal from "../../modals/VersionManageModal";
 import ExtShareManageModal from "../../modals/ExtShareManageModal";
 import DeletedGamesModal from "../../modals/DeletedGamesModal";
 import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
+import DumperReportModal from "../../modals/DumperReportModal";
 import { api } from "../../api/client";
 import { useAppStore } from "../../store/appStore";
 import { showAlert } from "../../components/common/AlertDialog";
@@ -273,6 +274,8 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const searchPicks = () => { setPicked(new Set()); void loadPickRows(pickFilter); };
   const pickedIds = [...picked];
   const pickedReplayIds = (pickRows ?? []).filter((r) => picked.has(r.id) && r.game.replay).map((r) => r.id);
+  /** 덤퍼 검사(2026-11-05) — 열림 + 미리 넣을 경기 번호(데이터 관리에서 고른 판). null = 닫힘. */
+  const [dumperNos, setDumperNos] = useState<string[] | null>(null);
   const dataBusy = redo !== null || purging || deletingGames;
   const allShownPicked = pickShown.length > 0 && pickShown.every((r) => picked.has(r.id));
   const toggleAllShown = () => {
@@ -428,6 +431,17 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                         {redo.failed > 0 ? ` · 실패 ${redo.failed}` : ""}
                       </>
                     ) : purging || deletingGames ? <Spinner /> : "열기"}
+                  </button>
+                </div>
+                <div className="scr-adm-row">
+                  <div className="scr-adm-row-text">
+                    <span className="scr-adm-row-title">덤퍼 검사</span>
+                    <span className="scr-adm-row-desc">
+                      경기 번호나 리플레이 파일 여럿을 서버 덤퍼로 돌려 분별 명령 적중·핵미사일 죽음 리포트를 봐요. 설정 변형(BWDUMP_…)을 같이 견줄 수 있어요. 참값은 안 바뀌어요.
+                    </span>
+                  </div>
+                  <button type="button" className="scr-rect-btn scr-adm-row-btn" onClick={() => setDumperNos([])}>
+                    열기
                   </button>
                 </div>
 
@@ -656,6 +670,14 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 </button>
                 <button
                   type="button" className="scr-rect-btn is-secondary"
+                  disabled={pickedReplayIds.length === 0 || dataBusy}
+                  title="고른 판(리플레이 있는 것)을 서버 덤퍼로 검사해 분별 명령 적중·핵미사일 죽음 리포트를 봐요(참값은 안 바뀌어요)"
+                  onClick={() => { setDumperNos((pickRows ?? []).filter((r) => picked.has(r.id) && r.game.replay).map((r) => r.matchNo)); }}
+                >
+                  덤퍼 검사
+                </button>
+                <button
+                  type="button" className="scr-rect-btn is-secondary"
                   disabled={picked.size === 0 || dataBusy}
                   onClick={() => { setPickerOpen(false); setConfirmPurge(pickedIds); }}
                 >
@@ -674,6 +696,8 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
         </div>,
         document.body,
       )}
+
+      {dumperNos !== null && <DumperReportModal nos={dumperNos} onClose={() => setDumperNos(null)} />}
 
       {confirmPurge !== null && (
         <ConfirmDialog

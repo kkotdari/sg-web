@@ -2293,6 +2293,14 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
   }
 }
 .scr-redo-pick-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
+/* 덤퍼 검사(2026-11-05 · DumperReportModal) — 입력 셋 + 리포트 글(고정폭 · 스크롤). */
+.scr-dumper-rep { display: flex; flex-direction: column; max-height: min(86vh, 860px); z-index: 300; }
+.scr-dumper-rep-body { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: auto; }
+.scr-dumper-rep-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.scr-dumper-rep-field > span { color: var(--text-dim, #8a93a0); }
+.scr-dumper-rep-field textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+.scr-dumper-rep-prog { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.scr-dumper-rep-text { margin: 0; padding: 10px; border-radius: 6px; background: rgba(0, 0, 0, 0.35); font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-all; }
 .scr-redo-pick-search { width: 100%; }
 .scr-redo-pick-from { display: flex; align-items: center; gap: 8px; }
 .scr-redo-pick-from-label { flex: none; font-size: var(--fs-caption); font-weight: 600; }

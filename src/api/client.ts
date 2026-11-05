@@ -679,6 +679,15 @@ export const api = {
     return request(`/api/game-results/admin/reanalyze/${encodeURIComponent(batch)}`);
   },
 
+  /** 덤퍼 검사(2026-11-05) — 경기 번호·리플레이 파일(base64) 여럿 × 설정 변형(BWDUMP_ 열쇠)마다 서버가 덤퍼를 돌려 분별 적중·첫 못 푼 태그·핵미사일 죽음을 모은다. 일 열쇠를 준다. */
+  async dumperReport(body: { nos: string[]; files: { name: string; b64: string }[]; variants: { name: string; env: Record<string, string> }[] }): Promise<{ job: string; total: number }> {
+    return request<{ job: string; total: number }>("/api/game-results/admin/dumper-report", { method: "POST", body: JSON.stringify(body) });
+  },
+
+  async dumperReportStatus(job: string): Promise<{ status: string; total: number; done: number; text: string }> {
+    return request(`/api/game-results/admin/dumper-report/${encodeURIComponent(job)}`);
+  },
+
   async downloadReplayArchive(): Promise<Blob> {
     const headers = new Headers();
     if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
