@@ -275,7 +275,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
   );
 }
 
-export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false }: SortProps & {
+export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false, onVisW }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>>; main?: MemberStats | null } | null;
   rows: StatGridRow[];
@@ -286,6 +286,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   tier?: boolean;
   /** 종족 묶음(테란 · 프로토스 · 저그)을 종합 뒤에 펼치나 — 기본 접힘(ClanStatsScreen 토글). */
   showRaces?: boolean;
+  /** 보이는 표 폭(접혀 종합만이면 그 오른변까지 px · 펼치면 null) — 표 위 정렬 줄이 오른끝(도움말 · 종족별 단추)을 표 오른변에 맞춘다(2026-11-05). */
+  onVisW?: (w: number | null) => void;
   /** 종합 머리 오른끝 펼치기/접기 단추 — 없으면 단추가 안 선다. */
 }) {
   /* 변화 그래프 팝오버(위 TrendCtx ★) — PC 는 떠난 뒤 POP_LINGER 뒤 닫힘 · 폰은 밖 누름·스크롤에 닫힘. */
@@ -351,6 +353,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     return () => ro.disconnect();
   }, [showRaces, mobile, tier]);
   const foldStyle = showRaces || clipW === null ? {} : { "--sgclip": `${clipW}px` } as React.CSSProperties;
+  useEffect(() => { onVisW?.(showRaces ? null : clipW); }, [onVisW, showRaces, clipW]);
   /* ★ 열 강조(2026-11-04, 요청: "마우스 오버나 클릭 시 해당 열 전체에 포인트 효과 — 다크 흰색 톤 · 라이트 푸른 톤 · 버튼 채우기 색") — 얹은 칸(hover)이나 누른 칸(pin · 다시 누르면 끔)의
      열(줄 안 자리)을 모든 줄에서 칠한다(→ --lighting-hover-bg · 아래 <style>). 유저 · 티어 칸은 안 친다. PC 머리 줄은 그 아랫머리도 함께. */
   /* (같은 날 "열 강조가 아니라 행 강조를 말한 건데 · 둘 다 강조해도 될 듯 · 라이트의 강조색은 다른 목록 참고해서") — 칸의 **줄과 열** 둘 다 · 색은 다른 목록의 얹은 줄과 같은

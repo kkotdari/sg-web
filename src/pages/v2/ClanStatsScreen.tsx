@@ -159,6 +159,8 @@ export default function ClanStatsScreen() {
      폭을 좁게 · 종족별 펼치기는 종합 위쪽 오른끝에" — 단추는 표 안 종합 머리 오른끝(StatGrid) · 옛 자리: 정렬 줄 복수 기준 옆) —
      기본은 접힘(종합 묶음만) · 기기마다 기억. 숨길 때 종족 칸으로 고른 정렬은 뺀다(안 보이는 칸으로 줄 세우지 않게 · 다 빠지면 처음 값). */
   /* 폰은 **늘 펼친 채로 시작**(같은 날, 요청: "모바일 통계는 각 종족 전체 펼친 상태로 시작") — 기억은 PC 만 읽는다(폰에서 접어도 다음엔 펼침). */
+  /** 보이는 표 폭(StatGrid onVisW · 접혀 종합만일 때) — 정렬 줄을 그만큼으로 죈다. */
+  const [sortW, setSortW] = useState<number | null>(null);
   const [showRaces, setShowRacesRaw] = useState(() => { if (isMobile) return true; try { return localStorage.getItem("stats.showRaces") === "1"; } catch { return false; } });
   const toggleRaces = (): void => {
     const next = !showRaces;
@@ -456,7 +458,8 @@ export default function ClanStatsScreen() {
         </header>
       )}
 
-      <div className="scr-stats-sort">
+      {/* 정렬 줄 오른끝(도움말 · 종족별 단추)을 보이는 표 오른변에 맞춘다(2026-11-05, 지적: "위치가 이상 버튼" — 접힌 표는 종합 칸만 보여 줄 끝이 표 밖 멀리 떴다). PC 만. */}
+      <div className="scr-stats-sort" style={!isMobile && sortW ? { maxWidth: sortW } : undefined}>
         <span className="scr-stats-sort-label">정렬</span>
         {/* 여러 기준(위 multiSort ★ · 2026-11-04, 요청: "복수 기준 단추를 정렬 옆으로 옮기고 여러 기준 체크박스로" — 옛: 기준 줄 뒤 알약 단추 "복수 기준") —
             켜면 머리를 누른 차례대로 기준이 쌓인다. PC·폰 둘 다. */}
@@ -502,6 +505,7 @@ export default function ClanStatsScreen() {
             onSortKeys={setSortKeys}
             multi={multiSort}
             showRaces={showRaces}
+            onVisW={setSortW}
             trend={trend}
           />
         )}
