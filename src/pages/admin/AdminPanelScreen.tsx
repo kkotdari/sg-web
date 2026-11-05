@@ -82,6 +82,20 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
       setClosing(false);
     }
   };
+  /** 마감 다 풀기(2026-11-05, 요청: "일단 마감 다 풀어줘 한동안 복구의 기간") — 다시 마감하면 그때 새 규칙으로 정리된다. */
+  const reopenGames = async () => {
+    if (!window.confirm(`${closedUntil ? monthLabel(closedUntil.slice(0, 7)) : ""}까지의 마감을 풉니다. 그 달의 게임도 다시 등록 · 삭제 · 되올리기가 돼요(이미 지운 자료는 돌아오지 않아요). 풀까요?`)) return;
+    setClosing(true);
+    try {
+      await api.reopenGames();
+      await loadClose();
+      showToast("마감을 다 풀었어요.", { kind: "ok" });
+    } catch (e) {
+      showAlert(e instanceof Error ? e.message : "마감을 풀지 못했어요.");
+    } finally {
+      setClosing(false);
+    }
+  };
   const [togglingNotice, setTogglingNotice] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [redo, setRedo] = useState<{ done: number; total: number; failed: number } | null>(null);
@@ -410,6 +424,11 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   >
                     {closing ? <Spinner /> : "마감"}
                   </button>
+                  {closedUntil && (
+                    <button type="button" className="scr-rect-btn is-secondary scr-adm-row-btn" onClick={() => { void reopenGames(); }} disabled={closing}>
+                      마감 풀기
+                    </button>
+                  )}
                 </div>
 
                 <div className="scr-adm-row">

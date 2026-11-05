@@ -561,6 +561,10 @@ export const api = {
   async getGamesClose(): Promise<{ closedUntil: string | null }> {
     return request<{ closedUntil: string | null }>("/api/game-results/admin/close");
   },
+  /** 마감 다 풀기(2026-11-05 · 복구 기간) — 마감한 날 표식만 비운다(지운 자료는 안 돌아온다). */
+  async reopenGames(): Promise<{ closedUntil: null; was: string | null }> {
+    return request<{ closedUntil: null; was: string | null }>("/api/game-results/admin/close", { method: "DELETE" });
+  },
   /** 그 달("YYYY-MM")까지 마감(되돌릴 수 없다 · 2026-11-05 바꿈) — 그날까지의 게임은 등록·삭제가 막히고 · 공방 판은 리플레이째 지우고(dropped) ·
    *  내전 판은 참값 · 색인만 지운다(cleared · 기본 정보 · 리플레이 · 통계는 남는다). */
   async closeGames(month: string): Promise<{ closedUntil: string; famed: number; dropped: number; cleared: number }> {
