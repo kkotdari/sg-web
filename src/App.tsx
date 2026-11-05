@@ -40,7 +40,8 @@ function screenFromUrl(): ScreenKey {
 }
 
 /* 메뉴로 화면을 옮길 때 떨구는 화면 제 것 — tab(게임 탭)·size(통계 규모 탭)도(2026-10-20, 요청: "tab 파라미터가 다른 화면까지 남음"). */
-const SCREEN_LOCAL_PARAMS = ["t", "u", "f", "st", "period", "tab", "size"] as const;
+/* m · d — 게임 목록 달 쪽(GameListPage · 2026-11-05, 지적: "이 파라미터가 메뉴 바뀌어도 안 변해") · d 는 하루 쪽 시절 것(옛 주소 정리). */
+const SCREEN_LOCAL_PARAMS = ["t", "u", "f", "st", "period", "tab", "size", "m", "d"] as const;
 
 
 export default function App() {
