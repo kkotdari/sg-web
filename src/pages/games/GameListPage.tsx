@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { flushSync } from "react-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LoadingMark } from "../../components/common/Feedback";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
 import { SelectionBar } from "../../components/common/Selection";
@@ -55,10 +56,20 @@ function SelectionActions({ picked, all, onDelete, onHide }: {
 }
 
 /** 게임 목록 '전체 선택' 명령 — 받아 둔 쪽만이 아니라 그 조건의 판 전부(서버가 filter 로 다시 찾고 exclude 를 뺀다 · count 는 확인 창 수). */
-export type GameBulkAll = { filter: ReturnType<typeof tabQuery> & { any?: string; linked?: string }; exclude: number[]; count: number };
+export type GameBulkAll = { filter: ReturnType<typeof tabQuery> & { any?: string; linked?: string; dateFrom?: string; dateTo?: string }; exclude: number[]; count: number };
 
 /** 게임 목록 한 쪽 — 무한 스크롤로 이만큼씩 더 받는다. */
 const GAME_PAGE9 = 50;
+/** 날짜 쪽(PC)은 그날 판을 다 받는다 — 한 번에 이만큼씩 이어 받는다(서버 상한 100). */
+const DAY_PAGE9 = 100;
+
+const WEEK9 = ["일", "월", "화", "수", "목", "금", "토"];
+/** 'YYYY-MM-DD' → "11.04 (화)" — 해가 다르면 앞에 "25." */
+function dayLabel9(d: string, withYear: boolean): string {
+  const [y, m, dd] = d.split("-").map(Number);
+  const w = WEEK9[new Date(Date.UTC(y, m - 1, dd)).getUTCDay()];
+  return `${withYear ? `${String(y).slice(2)}.` : ""}${String(m).padStart(2, "0")}.${String(dd).padStart(2, "0")} (${w})`;
+}
 
 /** 탭 → 서버 목록 조건 — 리그 판은 리그 탭에만(leagueOnly), 내전·공방은 리그 판을 뺀다(noLeague). 명예의 전당 탭은 fameOnly
  *  (그 판은 리그 탭에도 서고, 내전·공방 목록에는 서버가 안 내린다 — 마감 후엔 명예의 전당에만). */
@@ -113,11 +124,73 @@ export default memo(function GameListPage({
   const [serverGames, setServerGames] = useState<GamesPage9 | null>(null);
   const [serverBusy, setServerBusy] = useState(false);
   const [moreBusy, setMoreBusy] = useState(false);
-  const listQuery9 = useMemo<GameBulkAll["filter"]>(() => {
+  /* ★★ PC 는 **날짜별 쪽**(2026-11-05, 요청: "PC 버전 게임목록 페이징 처리 변경 · 무한스크롤 말고 날짜별 페이지로 변경 좌우에 날짜 이동버튼(하루가 아니라
+     다음 경기있는 날) 위치는 위에서 일정 높이에 고정(플로팅)" · "명예의 전당만 제외") — 그 거름에 판이 있는 날(서버 /days)을 받아 한 날씩 그날 판을 다 보인다.
+     지금 날은 주소 d= · 없거나 그 탭에 없는 날이면 그 앞(옛날 쪽) 가장 가까운 날 · 그것도 없으면 가장 새 날. 폰 · 명예의 전당은 옛 무한 스크롤 그대로. */
+  const dayMode9 = !view.isMobile && gameTab !== "fame";
+  const [dayRaw, setDayRaw] = useUrlState("d");
+  const baseQuery9 = useMemo(() => {
     const merged = formToServer(decodeGameSearch(formRaw));
     return { any: merged.any, linked: merged.linked, ...tabQuery(gameTab) };
   }, [formRaw, gameTab]);
+  const dayKey9 = `${formRaw}|${gameTab}|${refreshKey}`;
+  const [days9, setDays9] = useState<{ key: string; list: { date: string; count: number }[] } | null>(null);
   useEffect(() => {
+    if (!dayMode9) return undefined;
+    let dead = false;
+    api.getGameDays(baseQuery9)
+      .then((list) => { if (!dead) setDays9({ key: dayKey9, list }); })
+      .catch(() => { if (!dead) setDays9({ key: dayKey9, list: [] }); });
+    return () => { dead = true; };
+  }, [dayMode9, dayKey9]);
+  const dayList9 = days9?.key === dayKey9 ? days9.list : null;
+  /** 지금 날 — null 은 날 목록을 받는 중 · "" 는 판이 하나도 없음. */
+  const dayCur9 = useMemo(() => {
+    if (!dayMode9) return undefined;
+    if (!dayList9) return null;
+    if (!dayList9.length) return "";
+    if (!dayRaw) return dayList9[0].date;
+    return (dayList9.find((d) => d.date <= dayRaw) ?? dayList9[dayList9.length - 1]).date;
+  }, [dayMode9, dayList9, dayRaw]);
+  const dayIdx9 = dayList9 && dayCur9 ? dayList9.findIndex((d) => d.date === dayCur9) : -1;
+  const older9 = dayIdx9 >= 0 ? dayList9?.[dayIdx9 + 1]?.date : undefined;
+  const newer9 = dayIdx9 > 0 ? dayList9?.[dayIdx9 - 1]?.date : undefined;
+  const goDay9 = useCallback((d: string | undefined) => {
+    if (!d) return;
+    setDayRaw(d);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [setDayRaw]);
+  const listQuery9 = useMemo<GameBulkAll["filter"]>(() => (
+    dayCur9 ? { ...baseQuery9, dateFrom: dayCur9, dateTo: dayCur9 } : baseQuery9
+  ), [baseQuery9, dayCur9]);
+  useEffect(() => {
+    if (!dayMode9) return undefined;
+    setServerGames(null);
+    if (dayCur9 === null) { setServerBusy(true); return undefined; }
+    if (dayCur9 === "" || dayCur9 === undefined) { setServerBusy(false); setServerGames({ items: [], total: 0, cursor: null }); return undefined; }
+    const y9 = restore9.current;
+    let dead = false;
+    setServerBusy(true);
+    (async () => {
+      const q9 = { ...listQuery9, limit: DAY_PAGE9, sort: "latest" as const };
+      let page = await api.getGameResultsPage(q9);
+      const items = page.items.map((m) => gameResultItem(m));
+      while (page.nextCursor && !dead) {
+        page = await api.getGameResultsPage({ ...q9, cursor: page.nextCursor });
+        items.push(...page.items.map((m) => gameResultItem(m)));
+      }
+      if (dead) return;
+      flushSync(() => setServerGames({ items, total: items.length, cursor: null }));
+      if (y9 === null) return;
+      restore9.current = null;
+      window.scrollTo({ top: y9, behavior: "instant" });
+    })()
+      .catch(() => { if (!dead) setServerGames(null); })
+      .finally(() => { if (!dead) setServerBusy(false); });
+    return () => { dead = true; };
+  }, [dayMode9, dayCur9, listQuery9, refreshKey]);
+  useEffect(() => {
+    if (dayMode9) return undefined;
     const y9 = restore9.current;
     let dead = false;
     setServerGames(null);
@@ -144,7 +217,7 @@ export default memo(function GameListPage({
       .catch(() => { if (!dead) setServerGames(null); })
       .finally(() => { if (!dead) setServerBusy(false); });
     return () => { dead = true; };
-  }, [formRaw, gameTab, refreshKey]);
+  }, [formRaw, gameTab, refreshKey, dayMode9]);
 
   /* ★ 전체 선택(게임 목록)은 **받은 쪽이 아니라 그 조건의 판 전부**(같은 날 요청: "전체 선택 후 어떤 명령을 내리면 전체라는 파라미터를 전달해서 서버에서 처리") —
      켜진 동안 더 받은 쪽도 골라 두고, 받은 판 가운데 고르지 않은 것(풀었거나 못 고르는 것)을 exclude 로 넘긴다. 다 풀면 꺼진다. */
@@ -219,9 +292,9 @@ export default memo(function GameListPage({
         maps={gameOptions.filter((o) => o.tag === "맵").map((o) => o.value)}
       />
       <SearchFilterBar
-        count={serverGames?.total ?? 0}
+        count={dayMode9 ? (dayList9 ?? []).reduce((n, d) => n + d.count, 0) : serverGames?.total ?? 0}
         countLabel="건"
-        countLoading={serverBusy}
+        countLoading={dayMode9 ? !dayList9 : serverBusy}
         heading={<GameTabs value={gameTab} onChange={onGameTabChange} />}
       />
       {selection && filtered.length > 0 && (
@@ -239,6 +312,30 @@ export default memo(function GameListPage({
             picked={pickedItems} all={bulkAll} onDelete={onDeleteItems} onHide={onHideItems}
           />
         </SelectionBar>
+      )}
+      {dayMode9 && dayCur9 && (
+        <>
+          <div className="scr-gday-head">
+            <span className="scr-gday-head-date">{dayLabel9(dayCur9, dayCur9.slice(0, 4) !== String(new Date().getFullYear()))}</span>
+            {dayIdx9 >= 0 && <span className="scr-gday-head-count">{dayList9?.[dayIdx9]?.count ?? 0}판</span>}
+          </div>
+          <div className="scr-gday-nav">
+            <button
+              type="button" className="scr-gday-btn is-older" disabled={!older9} onClick={() => goDay9(older9)}
+              aria-label="이전 경기 날" title={older9 ? `${older9} 경기로` : "더 이전 경기가 없어요"}
+            >
+              <ChevronLeft size={22} strokeWidth={2} aria-hidden="true" />
+              {older9 && <span className="scr-gday-btn-date">{dayLabel9(older9, false)}</span>}
+            </button>
+            <button
+              type="button" className="scr-gday-btn is-newer" disabled={!newer9} onClick={() => goDay9(newer9)}
+              aria-label="다음 경기 날" title={newer9 ? `${newer9} 경기로` : "더 최근 경기가 없어요"}
+            >
+              <ChevronRight size={22} strokeWidth={2} aria-hidden="true" />
+              {newer9 && <span className="scr-gday-btn-date">{dayLabel9(newer9, false)}</span>}
+            </button>
+          </div>
+        </>
       )}
       <div className={cx("scr-feed-rows scr-feed-group-page-rows", !view.isMobile && "scr-gtab-list", view.leagueCol && "has-league")}>
         {!view.isMobile && filtered.length > 0 && <GameTableHead selecting={!!selection} leagueCol={view.leagueCol} />}

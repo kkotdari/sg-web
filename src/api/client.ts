@@ -319,6 +319,15 @@ export const api = {
     return { ...page, items: page.items.map(gameResultFromWire) };
   },
 
+  /** 목록 거름에 드는 판이 있는 날 · 그날 판 수(새 날부터) — PC 게임 목록 날짜별 쪽(2026-11-05). */
+  async getGameDays(params: Pick<GameResultListParams, "any" | "linked" | "membersOnly" | "pubOnly" | "leagueOnly" | "noLeague" | "fameOnly"> = {}): Promise<{ date: string; count: number }[]> {
+    const qs = buildQuery({
+      any: params.any, linked: params.linked,
+      membersOnly: params.membersOnly, pubOnly: params.pubOnly, leagueOnly: params.leagueOnly, noLeague: params.noLeague, fameOnly: params.fameOnly,
+    });
+    return (await request<{ days: { date: string; count: number }[] }>(`/api/game-results/days${qs}`)).days;
+  },
+
   async setGameOutcome(id: number, result: GameOutcome, winnerPlayerName?: string): Promise<GameResult> {
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}/result`, {
       method: "PUT", body: JSON.stringify({ result, winnerPlayerName }),

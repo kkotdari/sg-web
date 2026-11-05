@@ -3798,6 +3798,23 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-gtab-map > span { min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.3; word-break: keep-all; }
 .scr-gtab-dim { color: var(--row-dim); opacity: 0.6; }
 .scr-gtab-links { gap: 2px; }
+/* ★ PC 게임 목록 날짜별 쪽(GameListPage ★★ · 2026-11-05) — 표 위 지금 날 · 좌우에 떠 있는 앞뒤 경기 날 단추(위에서 고정 높이 · 내용 칸 바깥 가장자리 ·
+   좁은 창에선 화면 끝 안쪽 — 왼쪽은 레일 꺼내기 띠 24px 를 비킨다). 앞뒤 날이 없으면 흐리게. */
+.scr-gday-head { display: flex; align-items: baseline; justify-content: center; gap: 8px; margin: 2px 0 10px; }
+.scr-gday-head-date { font-size: var(--fs-subhead); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.scr-gday-head-count { font-size: var(--fs-caption); color: var(--muted); font-variant-numeric: tabular-nums; }
+.scr-gday-btn {
+  position: fixed; top: 240px; z-index: 28; width: 58px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 0 10px;
+  border-radius: 12px; border: 1px solid var(--line-soft); background: var(--panel-solid); color: var(--text);
+  cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+.scr-gday-btn.is-older { left: max(32px, calc(50% - var(--content-max) / 2 - 70px)); }
+.scr-gday-btn.is-newer { right: max(8px, calc(50% - var(--content-max) / 2 - 70px)); }
+@media (hover: hover) { .scr-gday-btn:not(:disabled):hover { background: var(--lighting-hover-bg); } }
+.scr-gday-btn:disabled { opacity: 0.3; cursor: default; }
+.scr-gday-btn-date { font-size: var(--fs-micro); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 /* 게임길이 칸 — 시간은 가운데 그대로, 재생 표시는 그 아래에 띄운다(줄 높이·시간 자리를 안 바꾼다). */
 .scr-gtab-len-t { position: relative; display: inline-block; }
 .scr-gtab-link { width: 26px; height: 26px; color: var(--row-dim); }
