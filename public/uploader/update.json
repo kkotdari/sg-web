@@ -1,16 +1,16 @@
 {
-  "version": "1.2.0",
-  "minVersion": "1.2.0",
+  "version": "1.2.1",
+  "minVersion": "1.2.1",
   "win": {
     "url": "https://sg8.vercel.app/uploader/download/sg-uploader-setup.exe",
-    "sha512": "54671295f6803dfd529f4b676502b91007c4317a02f1602fbadf7859c28034d3584fd293849449f11670695a0794ed258adb91a089190abfc95d23fa77655f6b"
+    "sha512": "95799d6af9f645935a8110a32bbd42fed7a71e23bd439228a4f56a07e47a80913d95d7166d6ce55c6b7b79a4777605bddb3807025a94d9527ea42d91270cabb9"
   },
   "macArm64": {
     "url": "https://sg8.vercel.app/uploader/download/sg-uploader-arm64.zip",
-    "sha512": "67de7ba4b18bace9fff51992e56827d72c099e34dc63dd886f7177e532dfe8144dea9507304a6689c4f4b1daf7d7d639c098b1b1482fb9a43a5176c8b595a8ad"
+    "sha512": "c536ccab68225f885f5ce06fcd70543616ef3f03811f076bd2bd196d5eabc7ccc59203e919129ab487ff8986eac6a702a45f302277849da0b1316d7c94ead756"
   },
   "macX64": {
     "url": "https://sg8.vercel.app/uploader/download/sg-uploader-x64.zip",
-    "sha512": "6b685a36c0f9352095aafe6957abd4db48c48fb0600d5a2e065ca22d0d0c801fd0f993aac183bcfb71b40b47055f26a127e318ae4910e0432c92ad79659a94f1"
+    "sha512": "e054148401054838875cff27edbe38db43e3d11a16fcb3ff87d535e33ad22914364bbfbba10fd75bbb2d26b69eb311309aff515557b291d556f0cf05d8f0e201"
   }
 }
