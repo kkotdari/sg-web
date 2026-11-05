@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { RotateCcw, Users } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, RotateCcw, Users } from "lucide-react";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
@@ -450,7 +450,8 @@ export default function ClanStatsScreen() {
       {view?.clan && (
         <header className="scr-clan-dash-head scr-stats-count-row">
           {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다. */}
-          <span className="scr-clan-dash-sub">{viewMembers.length}명</span>
+          {/* 명수 옆 경기 수(2026-11-05, 요청: "명수 옆에 몇 게임인지 · 폰 피시 모두" — 표 평균 줄의 게임수는 참여 합이라 경기 수는 여기서). */}
+          <span className="scr-clan-dash-sub">{viewMembers.length}명 · {clanGames.toLocaleString()}게임</span>
           {/* (걷음 2026-10-22, 요청: "통계 그래프 제거") 전부 펼치기·접기 — 펼칠 그래프가 없다. */}
         </header>
       )}
@@ -473,6 +474,11 @@ export default function ClanStatsScreen() {
         )}
         {/* 표 도움말 단추 — 정렬 줄 오른끝(옛 폰 "행을 눌러서 그래프 보기" 글 자리 · 2026-10-22, 요청: "도움말과 헤더 설명 다 제거하고 그 자리에 도움말 아이콘 단추" → "PC 에도 알아서"). */}
         <StatHelp mobile={isMobile} />
+        {/* 종족별 펼치기/접기 — 표 밖 정렬 줄 오른끝(2026-11-05, 요청: "저 펴고 접는 버튼은 표 외부로 이동" · 옛: 표 종합 머리 오른끝 · 2026-11-04). */}
+        <button type="button" className={cx("scr-sg-fold", showRaces && "is-on")} aria-expanded={showRaces} onClick={toggleRaces}
+          title={showRaces ? "종족별 접기 — 종합만" : "종족별 펼치기 — 테란 · 프로토스 · 저그"}>
+          종족별{showRaces ? <ChevronsLeft size={12} aria-hidden /> : <ChevronsRight size={12} aria-hidden />}
+        </button>
       </div>
 
       {error && <div className="scr-err">{error}</div>}
@@ -489,7 +495,6 @@ export default function ClanStatsScreen() {
           /* ★★ 표(StatGrid · 2026-10-20) — 맨 윗줄 클랜원 전체 · 그 아래 사람마다 한 줄. */
           <StatGrid
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace, main: view.clan.main } : null}
-            clanGames={clanGames}
             rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tierByRace: c.entry?.tierByRace }))}
             tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */
             mobile={isMobile}
@@ -497,7 +502,6 @@ export default function ClanStatsScreen() {
             onSortKeys={setSortKeys}
             multi={multiSort}
             showRaces={showRaces}
-            onToggleRaces={toggleRaces}
             trend={trend}
           />
         )}

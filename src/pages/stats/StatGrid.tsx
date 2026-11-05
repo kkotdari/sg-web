@@ -1,6 +1,5 @@
 import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowDownWideNarrow, ArrowUpDown, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { StatTrendPop, combinedTier, exOf, statMetric, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
@@ -42,7 +41,11 @@ function SortHead({ on, order, onClick, children, ic = 13 }: { on: boolean; orde
       {children}
       {order !== undefined && (
         <span className="scr-sg-sort-ic" aria-hidden>
-          {on ? <ArrowDownWideNarrow size={ic} /> : <ArrowUpDown size={ic} />}
+          {/* 위아래 삼각형(2026-11-05, 요청: "정렬 아이콘을 단순하게 위아래 삼각형으로 · 미선택 시 위아래 둘 다 연하게") — 정렬은 늘 큰 값부터라 고르면 아래 삼각형만 진하다. */}
+          <svg className="scr-sg-sort-tri" width={Math.round(ic * 0.62)} height={ic} viewBox="0 0 8 13">
+            <path d="M4 0.5 L7.5 5 L0.5 5 Z" className="is-up" />
+            <path d="M4 12.5 L7.5 8 L0.5 8 Z" className={cx("is-dn", on && "is-act")} />
+          </svg>
           {on && order > 0 && <i>{order}</i>}
         </span>
       )}
@@ -210,7 +213,7 @@ function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: Membe
   );
 }
 
-function PcRow({ row, clan, tier, mobile, games, races }: { row: StatGridRow; clan?: boolean; tier?: boolean; mobile?: boolean; games?: number; races: readonly BaseRace[] }) {
+function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: boolean; tier?: boolean; mobile?: boolean; races: readonly BaseRace[] }) {
   /* 평균 줄도 변화 그래프(2026-10-25, 요청: "통계의 평균행에도 상세 팝업 붙여야지") — 평균 줄의 회원은 빈 id(StatTrend CLAN_MEMBER_ID). */
   const who = row.member;
   return (
@@ -218,11 +221,12 @@ function PcRow({ row, clan, tier, mobile, games, races }: { row: StatGridRow; cl
         <span className="scr-sg-c scr-sg-who">
           {clan ? <span className="scr-sg-name scr-sg-name-plain">{CLAN_LABEL}</span> : mobile ? <WhoPlain member={row.member} /> : <Who member={row.member} />}
         </span>
-        {/* 좁은 폰만 전체 게임수(같은 날 "좁은 폰은 전체 게임수 · 종족별 티어" · 평균 줄은 경기 수) — 넓은 폰 · PC 는 종족 칸이 게임수를 든다. */}
+        {/* 좁은 폰만 전체 게임수(같은 날 "좁은 폰은 전체 게임수 · 종족별 티어") — 넓은 폰 · PC 는 종족 칸이 게임수를 든다.
+            평균 줄도 참여 합(2026-11-05, 요청: "폰도 전체 참여한 사람 수의 합으로 · 대신 명수 옆에 몇 게임인지" — 옛: 경기 수 · 경기 수는 ClanStatsScreen 명수 옆). */}
         {/* 티어 없는 조회는 종합 묶음 첫 칸이 게임수라 이 칸을 안 세운다. */}
         {mobile && tier && (
-          <TCell member={who} metric={statMetric(clan ? "games" : "plays")} className="scr-sg-mnum scr-sg-mnarrow">
-            <Num v={clan ? (games ?? 0).toLocaleString() : row.stats.plays > 0 ? row.stats.plays.toLocaleString() : null} />
+          <TCell member={who} metric={statMetric("plays")} className="scr-sg-mnum scr-sg-mnarrow">
+            <Num v={row.stats.plays > 0 ? row.stats.plays.toLocaleString() : null} />
           </TCell>
         )}
         {/* 종합(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)") — 전체 판 · 종합 티어(평균 줄은 티어 없음). */}
@@ -271,10 +275,9 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
   );
 }
 
-export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false, onToggleRaces }: SortProps & {
+export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>>; main?: MemberStats | null } | null;
-  clanGames: number;
   rows: StatGridRow[];
   mobile: boolean;
   /** 다섯 달 변화 자료(StatTrend) — 없으면 칸에 손잡이가 없다. */
@@ -284,7 +287,6 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
   /** 종족 묶음(테란 · 프로토스 · 저그)을 종합 뒤에 펼치나 — 기본 접힘(ClanStatsScreen 토글). */
   showRaces?: boolean;
   /** 종합 머리 오른끝 펼치기/접기 단추 — 없으면 단추가 안 선다. */
-  onToggleRaces?: () => void;
 }) {
   /* 변화 그래프 팝오버(위 TrendCtx ★) — PC 는 떠난 뒤 POP_LINGER 뒤 닫힘 · 폰은 밖 누름·스크롤에 닫힘. */
   const [pop, setPop] = useState<TrendAnchor | null>(null);
@@ -392,15 +394,9 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
       <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
       {m && tier && <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow scr-sg-mnarrow"><SortHead {...mToggle("plays")}>게임수</SortHead></span>}
       {groups.map((r) => (
-        <span key={r ?? "종합"} className={cx("scr-sg-c scr-sg-hgroup scr-sg-gstart", !r && onToggleRaces && "has-fold")} style={{ gridColumn: m ? "span var(--rspan)" : `span ${per}` }}>
+        <span key={r ?? "종합"} className="scr-sg-c scr-sg-hgroup scr-sg-gstart" style={{ gridColumn: m ? "span var(--rspan)" : `span ${per}` }}>
           {r ?? "종합"}
-          {/* 종족별 펼치기/접기(2026-11-04, 요청: "종족별 펼치기는 종합 위쪽 오른끝에") — 펼치면 테란 · 프로토스 · 저그 묶음이 종합 오른쪽에 붙는다. */}
-          {!r && onToggleRaces && (
-            <button type="button" className={cx("scr-sg-fold", showRaces && "is-on")} aria-expanded={showRaces} onClick={(e) => { e.stopPropagation(); onToggleRaces(); }}
-              title={showRaces ? "종족별 접기 — 종합만" : "종족별 펼치기 — 테란 · 프로토스 · 저그"}>
-              <span className="scr-sg-fold-t">종족별</span>{showRaces ? <ChevronsLeft size={12} aria-hidden /> : <ChevronsRight size={12} aria-hidden />}
-            </button>
-          )}
+          {/* 종족별 펼치기/접기 단추는 표 밖 정렬 줄로 옮겼다(2026-11-05, 요청: "저 펴고 접는 버튼은 표 외부로 이동" · ClanStatsScreen). */}
         </span>
       ))}
       {groups.map((r) => (
@@ -425,7 +421,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
       <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
         style={{ "--ncw": groups.length * per, "--ncn": groups.length + (tier ? 1 : 0), ...foldStyle } as React.CSSProperties}>
         {head(true)}
-        {clanRow && <PcRow row={clanRow} clan tier={tier} mobile games={clanGames} races={races} />}
+        {clanRow && <PcRow row={clanRow} clan tier={tier} mobile races={races} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} mobile races={races} />)}
       </div>
       {popEl}

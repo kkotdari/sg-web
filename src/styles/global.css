@@ -5139,6 +5139,10 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-sort-ic { display: inline-flex; align-items: center; gap: 1px; color: var(--dim); }
 .scr-sg-sort.is-on .scr-sg-sort-ic { color: var(--text); }
 .scr-sg-sort-ic i { font-style: normal; font-size: 10px; font-weight: 800; line-height: 1; }
+/* 위아래 삼각형(StatGrid SortHead · 2026-11-05) — 둘 다 연하게 · 고른 머리는 아래만 진하게(정렬은 늘 큰 값부터). */
+.scr-sg-sort-tri { display: block; flex: none; }
+.scr-sg-sort-tri path { fill: currentColor; opacity: 0.3; }
+.scr-sg-sort-tri path.is-act { opacity: 1; }
 /* 정렬 줄 여러 기준 체크박스(2026-11-04, 요청: "복수 기준 단추를 정렬 옆으로 옮기고 여러 기준 체크박스로" · 옛 2026-10-24 알약 토글 "복수 기준") —
    "정렬" 글 바로 옆 · 기준 줄(scr-stats-sort-chain)은 그 뒤 가는 세로선 너머. */
 .scr-stats-sort-multi {
@@ -5788,18 +5792,13 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
 /* 접힌 표(종합만 · StatGrid foldStyle ★) — 칸 틀은 펼친 표 그대로 두고 종합 오른변(--sgclip)에서 잘라 감춘다(종합 칸 너비가 펼침 · 접힘에 안 흔들린다). */
 .scr-sg.is-race9.is-fold { clip-path: inset(0 calc(100% - var(--sgclip, 100%)) 0 0 round 0 var(--radius-sm) var(--radius-sm) 0); }
-.scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup.has-fold { position: relative; padding-right: 64px; padding-left: 64px; }
+/* 종족별 펼치기/접기(ClanStatsScreen 정렬 줄 오른끝 · 2026-11-05 표 밖으로 · 옛: 종합 머리 안 absolute). */
 .scr-sg-fold {
-  position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
-  display: inline-flex; align-items: center; gap: 1px; padding: 1px 4px; border-radius: 4px;
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 1px; padding: 2px 6px; border-radius: 4px;
   font: inherit; font-size: 11px; line-height: 1.2; color: var(--muted); background: transparent; border: 1px solid var(--line-faint); cursor: pointer;
 }
 .scr-sg-fold.is-on { color: var(--btn-fill-text); background: var(--btn-fill-bg); border-color: transparent; }
 @media (hover: hover) { .scr-sg-fold:hover:not(.is-on) { color: var(--text); } }
-/* 좁은 폰 — 종합 머리가 한 칸이라 글은 빼고 화살표만. */
-@media (max-width: 600px) {
-  .scr-sg.is-m.is-race9 .scr-sg-head > .scr-sg-hgroup.has-fold { padding-left: 2px; padding-right: 20px; }
-  .scr-sg.is-m .scr-sg-fold-t { display: none; }
-}
 /* 주종족 묶음(그 조회 판의 30% 이상 · sg-api mainRaces)은 늘 옅은 배경(같은 날 "주종족에 배경 포인트 깔기 · 호버랑 무관하게") — 얹은 줄 · 열 강조(--lighting-hover-bg)가 그 위를 덮는다. */
 .scr-sg .scr-sg-c.is-main { background: rgba(var(--lighting-rgb), 0.07); }
