@@ -7,6 +7,8 @@ export interface UploadJob {
 }
 
 export interface UploaderBridge {
+  /** 업로더 앱 버전(preload · 접속 기록 app_version · 2026-11-05). */
+  version?: string;
   onJob(handler: (job: UploadJob) => Promise<unknown>): void;
   onLogout(handler: () => Promise<void>): void;
   emit(event: "ready" | "needs-login" | "login-ok", payload?: unknown): void;

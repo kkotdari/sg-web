@@ -13,7 +13,7 @@ import type { GameCurve,
 } from "../types";
 import type { ParsedReplay, ReplayMapGrid } from "scplay";
 import { putMapThumbs, type MapThumb } from "../utils/mapThumbs";
-import { clientKind } from "../utils/clientKind";
+import { clientKind, uploaderVersion } from "../utils/clientKind";
 
 function buildQuery(params: Record<string, string | number | boolean | undefined>): string {
   const usp = new URLSearchParams();
@@ -184,7 +184,9 @@ async function request<T>(path: string, options: RequestInit = {}, retryOn401 = 
   const headers = new Headers(options.headers);
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   headers.set("X-Client-Env", CLIENT_ENV);
-  headers.set("X-Client-Kind", clientKind());   // 접속 출처 app · mobile · pc(utils/clientKind ★)
+  headers.set("X-Client-Kind", clientKind());   // 접속 출처 app · mobile · pc · uploader(utils/clientKind ★)
+  const appVer = uploaderVersion();
+  if (appVer) headers.set("X-App-Version", appVer);   // 업로더 버전(2026-11-05 · 접속 기록 app_version)
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
