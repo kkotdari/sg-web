@@ -192,7 +192,7 @@ function raceFacts(s: MemberStats): TrendFact[] {
 }
 /** 종족 묶음 칸 — PC 는 다 · 폰은 넓을 때(scr-sg-mwide)와 좁을 때를 CSS 가 고른다(mobile). */
 /** 묶음 칸 — race 가 null 이면 종합 묶음(전체 판 · 종합 티어 = 종족 티어 가중 평균 · 2026-11-04). */
-function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: MemberStats | null; t?: TierEntry | null; race: BaseRace | null; member?: Member; clan?: boolean; tier?: boolean; mobile?: boolean; main?: boolean }) {
+function RaceCells({ s, t, race, member, clan, tier, mobile, main, games }: { s?: MemberStats | null; t?: TierEntry | null; race: BaseRace | null; member?: Member; clan?: boolean; tier?: boolean; mobile?: boolean; main?: boolean; games?: number }) {
   const has = !!s && s.plays > 0;
   /* 주종족 묶음은 늘 옅은 배경(같은 날 "주종족에 배경 포인트 깔기 · 호버랑 무관하게" · sg-api mainRaces = 그 조회 판의 30% 이상 종족). */
   const mc = main ? "is-main" : "";
@@ -201,7 +201,11 @@ function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: Membe
   return (
     <>
       {tier && <TierCell t={clan ? null : t} member={clan ? undefined : member} race={race ?? undefined} className={cx("scr-sg-gstart", m)} more={has ? raceFacts(s!) : undefined} />}
-      <TCell member={member} metric={statMetric("plays", race)} className={cx(!tier && "scr-sg-gstart", tier ? wide : m)}><Num v={has ? s!.plays.toLocaleString() : null} /></TCell>
+      {/* 평균 줄의 종합 게임수는 **경기 수**(2026-11-05, 지적: "통계의 평균 게임수가 피시는 게임수 곱하기 사람수고 폰은 게임수네 폰에 맞춰 줘") — 옛 PC 는 참여 합(판 × 사람)이었다.
+          종족 칸은 그대로 그 종족으로 뛴 참여 판(한 판에 같은 종족이 여럿일 수 있어 경기 수로 못 센다). */}
+      {clan && race === null && games !== undefined
+        ? <TCell member={member} metric={statMetric("games")} className={cx(!tier && "scr-sg-gstart", tier ? wide : m)}><Num v={games.toLocaleString()} /></TCell>
+        : <TCell member={member} metric={statMetric("plays", race)} className={cx(!tier && "scr-sg-gstart", tier ? wide : m)}><Num v={has ? s!.plays.toLocaleString() : null} /></TCell>}
       <TCell member={member} metric={statMetric("rate", race)} className={wide}>{!has ? <Dash /> : <Rate s={s!} />}</TCell>
       <TCell member={member} metric={statMetric("exr", race)} className={wide}>{!has ? <Dash /> : <ExRaw s={s!} />}</TCell>
       <TCell member={member} metric={statMetric("apm", race)} className={wide}><Num v={has ? s!.avgApm : null} /></TCell>
@@ -226,7 +230,7 @@ function PcRow({ row, clan, tier, mobile, games, races }: { row: StatGridRow; cl
           </TCell>
         )}
         {/* 종합(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)") — 전체 판 · 종합 티어(평균 줄은 티어 없음). */}
-        <RaceCells s={row.stats} t={clan ? null : combinedTier(row.tierByRace)} race={null} member={who} clan={clan} tier={tier} mobile={mobile} />
+        <RaceCells s={row.stats} t={clan ? null : combinedTier(row.tierByRace)} race={null} member={who} clan={clan} tier={tier} mobile={mobile} games={clan ? games : undefined} />
         {races.map((r) => <RaceCells key={r} s={row.byRace?.[r]} t={row.tierByRace?.[r]} race={r} member={who} clan={clan} tier={tier} mobile={mobile} main={!clan && !!row.mainRaces?.includes(r)} />)}
       </div>
   );
@@ -438,7 +442,7 @@ export default function StatGrid({ clan, clanGames, rows, mobile, sortKeys, onSo
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
       style={{ gridTemplateColumns: `minmax(150px, 1.6fr) repeat(${groups.length * per}, minmax(50px, 1fr))`, ...foldStyle }}>
       {head(false)}
-      {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}
+      {clanRow && <PcRow row={clanRow} clan tier={tier} games={clanGames} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} races={races} />)}
     </div>
     {popEl}
