@@ -257,7 +257,9 @@ export default memo(function GameListPage({
     return { filter: listQuery9, exclude, count: Math.max(0, serverGames.total - exclude.length) };
   }, [allPick, serverGames, pickedSet, listQuery9]);
   // 전체 선택 앞 수 — 서버 목록이면 아직 안 받은 판까지(받은 것 중 못 고르는 줄은 뺀다).
-  const pickTotal = serverGames ? Math.max(0, serverGames.total - (filtered.length - selectable.length)) : selectable.length;
+  // 받는 중이면 달 쪽은 그달 판 수(달 목록이 안다) — 줄이 먼저 서 있어도 수가 맞다(아래 ★ 선택 줄).
+  const pickTotal = serverGames ? Math.max(0, serverGames.total - (filtered.length - selectable.length))
+    : monIdx9 >= 0 ? monList9?.[monIdx9]?.count ?? 0 : selectable.length;
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -284,7 +286,9 @@ export default memo(function GameListPage({
         countLoading={monthMode9 ? !monList9 : serverBusy}
         heading={<GameTabs value={gameTab} onChange={onGameTabChange} />}
       />
-      {selection && filtered.length > 0 && (
+      {/* ★ 받는 중에도 선택 줄을 세워 둔다(2026-11-05, 지적: "목록 로드 시 저 부분이 늦게 떠서 다른 레이아웃들이 한 번 움직임") — 옛: 받은 판이 있을 때만 서서
+          다 받은 뒤 줄이 끼어들며 달 머리 · 표가 한 줄 밀렸다. 다 받았는데 판이 없을 때만 걷는다. */}
+      {selection && (filtered.length > 0 || serverBusy || serverGames === null) && (
         <SelectionBar
           total={pickTotal} count={bulkAll ? bulkAll.count : pickedItems.length}
           onSelectAll={() => {
@@ -300,6 +304,8 @@ export default memo(function GameListPage({
           />
         </SelectionBar>
       )}
+      {/* 달 머리는 달 목록을 받는 중에도 자리를 잡아 둔다(같은 지적 — 늦게 서며 표를 밀지 않게) · 글은 빈칸. */}
+      {monthMode9 && monCur9 === null && <div className="scr-gday-head" aria-hidden><span className="scr-gday-head-date">&nbsp;</span></div>}
       {monthMode9 && monCur9 && (
         <>
           <div className="scr-gday-head">
