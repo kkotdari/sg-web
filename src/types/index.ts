@@ -245,6 +245,8 @@ export type NewGameResult = Omit<GameResult, "id" | "matchNo" | "createdBy" | "r
   chats?: { frame: number; text: string; name?: string }[];
   /** 리플레이 저장자(2026-10-26 · 팀챗/전체 가름). */
   chatSaver?: string | null;
+  /** 업로더 한 번 되올리기(2026-11-05) — 마감한 달의 내전 판에도 리플레이 · 기본 정보를 머지한다(서버 GameResultWrite.restore). */
+  restore?: boolean;
 };
 
 export interface GameResultPage {

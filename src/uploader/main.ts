@@ -80,7 +80,7 @@ function fileOf(job: UploadJob): File {
 if (bridge) {
   bridge.onJob(async (job) => {
     try {
-      return await registerReplayFile(fileOf(job));
+      return await registerReplayFile(fileOf(job), { restore: !!job.restore });
     } catch (e) {
       if (!api.hasToken()) {
         showLogin(true);

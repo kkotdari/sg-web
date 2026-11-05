@@ -549,7 +549,7 @@ export const api = {
     await request<void>(`/api/game-results/${id}/permanent`, { method: "DELETE" });
   },
 
-  /** 제어판 데이터 관리 — 고른 판들의 참값만 지운다(리그·외부 공개 판은 서버가 남긴다 · 2026-10-20). */
+  /** 제어판 데이터 관리 — 고른 판들의 참값만 지운다(리그·외부 공개 판은 서버가 남긴다 · 2026-10-20). 지운 판은 재분석해도 참값을 안 남긴다(되살리기는 makeTruthOf · 2026-11-05). */
   async purgeTruthOf(ids: number[]): Promise<{ deleted: number }> {
     return request<{ deleted: number }>("/api/game-results/admin/purge-truth", { method: "POST", body: JSON.stringify({ ids }) });
   },
@@ -557,29 +557,14 @@ export const api = {
   async recommendGame(id: number, on: boolean): Promise<{ recommendCount: number; recommended: boolean }> {
     return request<{ recommendCount: number; recommended: boolean }>(`/api/game-results/${id}/recommend`, { method: on ? "POST" : "DELETE" });
   },
-  /** 게임 자료 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
-  /** 마감 상태 — 마감한 마지막 날 · 보존 대기 판(pending) · 그중 리플레이 붙은 판(replays) · 보존 때 판째 지울 공방 · 지운 판(dropPending). */
-  async getGamesClose(): Promise<{ closedUntil: string | null; pending: number; dropPending: number; replays: number }> {
-    return request<{ closedUntil: string | null; pending: number; dropPending: number; replays: number }>("/api/game-results/admin/close");
+  /** 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
+  async getGamesClose(): Promise<{ closedUntil: string | null }> {
+    return request<{ closedUntil: string | null }>("/api/game-results/admin/close");
   },
-  /** 보존 대기 판의 리플레이 압축(경기일 폴더 YYYYMMDD) — 받은 뒤에 archiveClosed. */
-  async downloadCloseArchive(): Promise<Blob> {
-    const headers = new Headers();
-    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
-    const res = await fetch(`${API_BASE}/api/game-results/admin/close/archive.zip`, { headers });
-    if (!res.ok) {
-      const body = await res.json().catch(() => null) as { detail?: string } | null;
-      throw new Error(body?.detail ?? "압축 파일을 받지 못했어요.");
-    }
-    return res.blob();
-  },
-  /** 보존 처리 — 마감한 달까지의 공방 · 지운 판은 리플레이째 지우고 나머지는 래더 · 통계용 결과만 남긴다(되돌릴 수 없다). */
-  async archiveClosed(): Promise<{ archived: number; dropped: number }> {
-    return request<{ archived: number; dropped: number }>("/api/game-results/admin/close/archive", { method: "POST" });
-  },
-  /** 그 달("YYYY-MM")까지 마감 — 그날까지의 게임은 등록·삭제가 막히고 참값을 지운다(되돌릴 수 없다). */
-  async closeGames(month: string): Promise<{ closedUntil: string; purged: number; famed: number }> {
-    return request<{ closedUntil: string; purged: number; famed: number }>("/api/game-results/admin/close", { method: "POST", body: JSON.stringify({ month }) });
+  /** 그 달("YYYY-MM")까지 마감(되돌릴 수 없다 · 2026-11-05 바꿈) — 그날까지의 게임은 등록·삭제가 막히고 · 공방 판은 리플레이째 지우고(dropped) ·
+   *  내전 판은 참값 · 색인만 지운다(cleared · 기본 정보 · 리플레이 · 통계는 남는다). */
+  async closeGames(month: string): Promise<{ closedUntil: string; famed: number; dropped: number; cleared: number }> {
+    return request<{ closedUntil: string; famed: number; dropped: number; cleared: number }>("/api/game-results/admin/close", { method: "POST", body: JSON.stringify({ month }) });
   },
   /** 제어판 데이터 관리 — 고른 판들을 리플레이째 지운다(되돌릴 수 없다 · 리그 판은 서버가 남긴다). */
   async deleteGamesOf(ids: number[]): Promise<{ deleted: number }> {
@@ -679,13 +664,9 @@ export const api = {
     return request(`/api/game-results/admin/reanalyze/${encodeURIComponent(batch)}`);
   },
 
-  /** 덤퍼 검사(2026-11-05) — 경기 번호·리플레이 파일(base64) 여럿 × 설정 변형(BWDUMP_ 열쇠)마다 서버가 덤퍼를 돌려 분별 적중·첫 못 푼 태그·핵미사일 죽음을 모은다. 일 열쇠를 준다. */
-  async dumperReport(body: { nos: string[]; files: { name: string; b64: string }[]; variants: { name: string; env: Record<string, string> }[] }): Promise<{ job: string; total: number }> {
-    return request<{ job: string; total: number }>("/api/game-results/admin/dumper-report", { method: "POST", body: JSON.stringify(body) });
-  },
-
-  async dumperReportStatus(job: string): Promise<{ status: string; total: number; done: number; text: string }> {
-    return request(`/api/game-results/admin/dumper-report/${encodeURIComponent(job)}`);
+  /** [참값 생성](2026-11-05) — 고른 판의 참값 끔 표식을 떼고 서버가 다시 굽는다(마감한 달은 여전히 안 남는다). 재분석과 같은 묶음 열쇠(reanalyzeStatus 로 진행). */
+  async makeTruthOf(ids: number[]): Promise<{ batch: string; total: number }> {
+    return request<{ batch: string; total: number }>("/api/game-results/admin/make-truth", { method: "POST", body: JSON.stringify({ ids }) });
   },
 
   async downloadReplayArchive(): Promise<Blob> {

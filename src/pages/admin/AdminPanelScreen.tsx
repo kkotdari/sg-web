@@ -12,7 +12,6 @@ import VersionManageModal from "../../modals/VersionManageModal";
 import ExtShareManageModal from "../../modals/ExtShareManageModal";
 import DeletedGamesModal from "../../modals/DeletedGamesModal";
 import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
-import DumperReportModal from "../../modals/DumperReportModal";
 import { api } from "../../api/client";
 import { useAppStore } from "../../store/appStore";
 import { showAlert } from "../../components/common/AlertDialog";
@@ -57,75 +56,30 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [closedUntil, setClosedUntil] = useState<string | null | undefined>(undefined);
   const [closeMonth, setCloseMonth] = useState(lastMonth);
   const [closing, setClosing] = useState(false);
-  /* ★ 마감 보존(2026-10-23, 요청: "마감 처리 시 그 기간까지의 공방 경기 완전 삭제(리플레이까지) · 새로 마감된 경기들을 날짜별 폴더(YYYYMMDD)에 담아 압축해서 내려받음 ·
-     다운로드 후 래더 통계용 데이터로 보존 · 그 후 리플레이 및 경기 기록 삭제") — 마감하면 곧바로 압축을 받고, **받기에 성공한 뒤에만** [보존 처리]가 열린다.
-     대기(pending)는 마감한 날까지 아직 보존 안 한 판이라 이미 마감한 옛 달도 같은 두 걸음으로 정리된다. 보존한 판은 래더 상세 이력 · 래더 · 통계 셈에만 남는다. */
-  const [closeWait, setCloseWait] = useState({ pending: 0, dropPending: 0, replays: 0 });
-  const [zipDone, setZipDone] = useState(false);
-  const [zipBusy, setZipBusy] = useState(false);
-  const [confirmArchive, setConfirmArchive] = useState(false);
-  const [archiving, setArchiving] = useState(false);
+  /* ★ 마감 규칙(2026-11-05 바꿈, 요청: "마감시 공방게임은 모든정보삭제 내전은 참값이랑 인덱스 제거" · "래더 통계는 영원히 실시간 계산") — 한 걸음으로 끝난다.
+     옛 [압축 받기] → [보존 처리](결과만 남기고 리플레이를 지움)는 없앴다. 내전 판은 기본 정보 · 리플레이 · 통계가 남아 목록 · 래더 · 통계에 그대로 선다. */
   const loadClose = () => api.getGamesClose().then((r) => {
     setClosedUntil(r.closedUntil);
-    setCloseWait({ pending: r.pending, dropPending: r.dropPending, replays: r.replays });
     return r;
   });
   useEffect(() => { loadClose().catch(() => {}); }, []);
   const monthLabel = (ym: string) => `${Number(ym.slice(0, 4))}년 ${Number(ym.slice(5, 7))}월`;
-  const downloadClosed = async (): Promise<boolean> => {
-    setZipBusy(true);
-    try {
-      const blob = await api.downloadCloseArchive();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `games_${(closedUntil ?? "").replaceAll("-", "")}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      setZipDone(true);
-      return true;
-    } catch (e) {
-      showAlert(e instanceof Error ? e.message : "압축 파일을 받지 못했어요.");
-      return false;
-    } finally {
-      setZipBusy(false);
-    }
-  };
   const closeGames = async () => {
     const typed = window.prompt(
-      `${monthLabel(closeMonth)}까지 마감합니다. 그때까지의 게임은 등록(자동·수동)과 삭제가 막히고 외부 공개 목록에서 빠지고 참값(재생 자료)이 지워져요. 추천 3 이상인 판은 명예의 전당으로 옮겨 남겨요.\n` +
-      "이어서 리플레이를 날짜별 폴더로 압축해 내려받고, [보존 처리]를 누르면 공방 · 지운 판은 리플레이째 지우고 나머지는 래더 · 통계용 결과만 남겨요(리그 · 명예의 전당 판은 그대로). 되돌릴 수 없어요.\n" +
+      `${monthLabel(closeMonth)}까지 마감합니다. 그때까지의 게임은 등록(자동·수동)과 삭제가 막히고 외부 공개 목록에서 빠져요. 추천 3 이상인 판은 명예의 전당으로 옮겨 남겨요.\n` +
+      "공방 판은 리플레이까지 모두 지우고, 내전 판은 참값(재생 자료)과 색인만 지워요 — 기본 정보 · 리플레이 · 통계는 남아요(리그 · 명예의 전당 판은 그대로). 되돌릴 수 없어요.\n" +
       "마감하려면 \"마감\"을 입력하세요.",
     );
     if (typed !== "마감") return;
     setClosing(true);
     try {
       const r = await api.closeGames(closeMonth);
-      setZipDone(false);
-      showToast(`${monthLabel(r.closedUntil)}까지 마감했어요 — 참값 ${r.purged}판을 지우고 ${r.famed}판을 명예의 전당에 올렸어요.`, { kind: "ok" });
-      const st = await loadClose();
-      // 받을 리플레이가 있으면 먼저 받고(성공해야) · 없으면 바로 보존 처리를 묻는다.
-      if (st.replays > 0 ? await downloadClosed() : st.pending + st.dropPending > 0) setConfirmArchive(true);
+      showToast(`${monthLabel(r.closedUntil)}까지 마감했어요 — 공방 ${r.dropped}판을 지우고 내전 ${r.cleared}판의 참값 · 색인을 지웠어요 · 명예의 전당 ${r.famed}판.`, { kind: "ok" });
+      await loadClose();
     } catch (e) {
       showAlert(e instanceof Error ? e.message : "마감하지 못했어요.");
     } finally {
       setClosing(false);
-    }
-  };
-  const archiveClosed = async () => {
-    setConfirmArchive(false);
-    setArchiving(true);
-    try {
-      const r = await api.archiveClosed();
-      setZipDone(false);
-      await loadClose();
-      showToast(`보존했어요 — 결과만 남긴 판 ${r.archived} · 리플레이째 지운 판 ${r.dropped}.`, { kind: "ok" });
-    } catch (e) {
-      showAlert(e instanceof Error ? e.message : "보존하지 못했어요.");
-    } finally {
-      setArchiving(false);
     }
   };
   const [togglingNotice, setTogglingNotice] = useState(false);
@@ -200,11 +154,12 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   /* ★ 재분석은 **서버가 한다**(2026-10-26, 요청: "재분석 시 웹에서 하는 작업 거의 없게") — 옛 판은 이 화면이 판마다 리플레이를 받아 읽고(screp ·
      일꾼 여럿) 요약을 보내고 색인까지 구웠다. 이제 고른 판(없으면 전부)을 서버의 분석 일 줄에 한 묶음으로 세우고 진행만 본다 —
      서버가 게임번호 차례로 리플레이를 다시 읽어 요약 · 지형 · 참값 · 곡선 · 색인 · 썸네일을 굽는다. 창을 닫아도 서버는 이어 한다. */
-  const reanalyzeGames = async (only?: number[]) => {
+  /** 서버 묶음 일(재분석 · 참값 생성) — 진행을 버튼에 보이고 실패한 판은 창으로. make 면 [참값 생성](2026-11-05). */
+  const reanalyzeGames = async (only?: number[], make = false) => {
     setRedo({ done: 0, total: 0, failed: 0 });
     setRedoFails(null);
     try {
-      const { batch, total } = await api.reanalyzeGames(only);
+      const { batch, total } = make ? await api.makeTruthOf(only ?? []) : await api.reanalyzeGames(only);
       setRedo({ done: 0, total, failed: 0 });
       let st = await api.reanalyzeStatus(batch);
       while (st.done < st.total) {
@@ -216,10 +171,10 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
         setRedoTotal(st.total);
         setRedoFails(st.fails);
       } else {
-        showToast(`게임 ${st.total}건을 서버가 다시 분석했어요.`, { kind: "ok" });
+        showToast(make ? `게임 ${st.total}건의 참값을 서버가 다시 구웠어요.` : `게임 ${st.total}건을 서버가 다시 분석했어요.`, { kind: "ok" });
       }
     } catch (e) {
-      showAlert(e instanceof Error ? e.message : "게임을 다시 분석하지 못했어요.");
+      showAlert(e instanceof Error ? e.message : make ? "참값을 만들지 못했어요." : "게임을 다시 분석하지 못했어요.");
     } finally {
       setRedo(null);
     }
@@ -274,8 +229,8 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const searchPicks = () => { setPicked(new Set()); void loadPickRows(pickFilter); };
   const pickedIds = [...picked];
   const pickedReplayIds = (pickRows ?? []).filter((r) => picked.has(r.id) && r.game.replay).map((r) => r.id);
-  /** 덤퍼 검사(2026-11-05) — 열림 + 미리 넣을 경기 번호(데이터 관리에서 고른 판). null = 닫힘. */
-  const [dumperNos, setDumperNos] = useState<string[] | null>(null);
+  /** [참값 생성] 묻기(2026-11-05) — 고른 판 중 리플레이 있는 것. */
+  const [confirmMake, setConfirmMake] = useState(false);
   const dataBusy = redo !== null || purging || deletingGames;
   const allShownPicked = pickShown.length > 0 && pickShown.every((r) => picked.has(r.id));
   const toggleAllShown = () => {
@@ -433,17 +388,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     ) : purging || deletingGames ? <Spinner /> : "열기"}
                   </button>
                 </div>
-                <div className="scr-adm-row">
-                  <div className="scr-adm-row-text">
-                    <span className="scr-adm-row-title">덤퍼 검사</span>
-                    <span className="scr-adm-row-desc">
-                      경기 번호나 리플레이 파일 여럿을 서버 덤퍼로 돌려 분별 명령 적중·핵미사일 죽음 리포트를 봐요. 설정 변형(BWDUMP_…)을 같이 견줄 수 있어요. 참값은 안 바뀌어요.
-                    </span>
-                  </div>
-                  <button type="button" className="scr-rect-btn scr-adm-row-btn" onClick={() => setDumperNos([])}>
-                    열기
-                  </button>
-                </div>
 
                 <div className="scr-adm-row">
                   <div className="scr-adm-row-text">
@@ -467,29 +411,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     {closing ? <Spinner /> : "마감"}
                   </button>
                 </div>
-
-                {(closeWait.pending > 0 || closeWait.dropPending > 0) && (
-                  <div className="scr-adm-row">
-                    <div className="scr-adm-row-text">
-                      <span className="scr-adm-row-title">마감 보존</span>
-                      <span className="scr-adm-row-desc">
-                        보존 대기 {closeWait.pending}판 · 리플레이째 지울 공방 · 지운 판 {closeWait.dropPending}판.
-                        {closeWait.replays > 0 ? ` 리플레이 ${closeWait.replays}개 압축을 받아야 보존 처리가 열려요.` : ""}
-                      </span>
-                    </div>
-                    {closeWait.replays > 0 && (
-                      <button type="button" className="scr-rect-btn is-secondary scr-adm-row-btn" onClick={() => { void downloadClosed(); }} disabled={zipBusy || archiving}>
-                        {zipBusy ? <Spinner /> : "압축 받기"}
-                      </button>
-                    )}
-                    <button
-                      type="button" className="scr-rect-btn scr-adm-row-btn" onClick={() => setConfirmArchive(true)}
-                      disabled={archiving || zipBusy || (closeWait.replays > 0 && !zipDone)}
-                    >
-                      {archiving ? <Spinner /> : "보존 처리"}
-                    </button>
-                  </div>
-                )}
 
                 <div className="scr-adm-row">
                   <div className="scr-adm-row-text">
@@ -670,18 +591,18 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 </button>
                 <button
                   type="button" className="scr-rect-btn is-secondary"
-                  disabled={pickedReplayIds.length === 0 || dataBusy}
-                  title="고른 판(리플레이 있는 것)을 서버 덤퍼로 검사해 분별 명령 적중·핵미사일 죽음 리포트를 봐요(참값은 안 바뀌어요)"
-                  onClick={() => { setDumperNos((pickRows ?? []).filter((r) => picked.has(r.id) && r.game.replay).map((r) => r.matchNo)); }}
-                >
-                  덤퍼 검사
-                </button>
-                <button
-                  type="button" className="scr-rect-btn is-secondary"
                   disabled={picked.size === 0 || dataBusy}
                   onClick={() => { setPickerOpen(false); setConfirmPurge(pickedIds); }}
                 >
                   참값 삭제
+                </button>
+                <button
+                  type="button" className="scr-rect-btn is-secondary"
+                  disabled={pickedReplayIds.length === 0 || dataBusy}
+                  title="참값을 지운 판도 다시 구워요(마감한 달은 참값을 남기지 않아요)"
+                  onClick={() => { setPickerOpen(false); setConfirmMake(true); }}
+                >
+                  참값 생성
                 </button>
                 <button
                   type="button" className="scr-rect-btn is-secondary"
@@ -697,12 +618,11 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
         document.body,
       )}
 
-      {dumperNos !== null && <DumperReportModal nos={dumperNos} onClose={() => setDumperNos(null)} />}
 
       {confirmPurge !== null && (
         <ConfirmDialog
           title={`고른 게임 ${confirmPurge.length}건의 참값을 지울까요?`}
-          message="고른 게임의 재생 자료만 지웁니다(리그 경기·외부 공개에 연결된 판은 남겨요). 리플레이 파일과 통계·전술 낱말은 그대로예요. 다시 보려면 그 게임을 재분석하면 다시 구워집니다."
+          message="고른 게임의 재생 자료만 지웁니다(리그 경기·외부 공개에 연결된 판은 남겨요). 리플레이 파일과 통계·전술 낱말은 그대로예요. 지운 판은 재분석해도 참값을 다시 만들지 않아요 — 다시 보려면 [참값 생성]을 누르세요."
           confirmLabel="지우기"
           onConfirm={() => { void purgeTruth(confirmPurge); }}
           onCancel={() => setConfirmPurge(null)}
@@ -759,6 +679,16 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
         document.body,
       )}
 
+      {confirmMake && (
+        <ConfirmDialog
+          title={`고른 게임 ${pickedReplayIds.length}건의 참값을 만들까요?`}
+          message="리플레이가 붙은 게임의 참값(재생 자료)을 서버가 다시 굽습니다. 참값을 지운 판도 다시 만들어요(마감한 달의 판은 여전히 참값을 남기지 않아요). 건수가 많으면 몇 분 걸립니다."
+          confirmLabel="참값 생성"
+          onConfirm={() => { setConfirmMake(false); void reanalyzeGames(pickedReplayIds, true); }}
+          onCancel={() => setConfirmMake(false)}
+        />
+      )}
+
       {confirmRedo && (
         <ConfirmDialog
           title={`고른 게임 ${pickedReplayIds.length}건을 다시 분석할까요?`}
@@ -766,16 +696,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
           confirmLabel="다시 분석"
           onConfirm={() => { setConfirmRedo(false); void reanalyzeGames(pickedReplayIds); }}
           onCancel={() => setConfirmRedo(false)}
-        />
-      )}
-
-      {confirmArchive && (
-        <ConfirmDialog
-          title="마감한 게임을 보존 처리할까요?"
-          message={`${closeWait.replays > 0 ? "압축 파일을 저장했는지 먼저 확인하세요. " : ""}보존할 ${closeWait.pending}판은 리플레이 · 재생 자료 · 데이터를 지우고 결과만 남겨 래더 · 통계 셈과 래더 상세 이력에만 남아요(게임 목록 · 상세에선 빠져요). 공방 · 지운 판 ${closeWait.dropPending}판은 리플레이째 지워요. 되돌릴 수 없어요.`}
-          confirmLabel="보존 처리"
-          onConfirm={() => { void archiveClosed(); }}
-          onCancel={() => setConfirmArchive(false)}
         />
       )}
 
