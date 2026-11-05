@@ -325,14 +325,12 @@ export default memo(function GameListPage({
               aria-label="이전 경기 날" title={older9 ? `${older9} 경기로` : "더 이전 경기가 없어요"}
             >
               <ChevronLeft size={22} strokeWidth={2} aria-hidden="true" />
-              {older9 && <span className="scr-gday-btn-date">{dayLabel9(older9, false)}</span>}
             </button>
             <button
               type="button" className="scr-gday-btn is-newer" disabled={!newer9} onClick={() => goDay9(newer9)}
               aria-label="다음 경기 날" title={newer9 ? `${newer9} 경기로` : "더 최근 경기가 없어요"}
             >
               <ChevronRight size={22} strokeWidth={2} aria-hidden="true" />
-              {newer9 && <span className="scr-gday-btn-date">{dayLabel9(newer9, false)}</span>}
             </button>
           </div>
         </>
