@@ -10,7 +10,7 @@ import { useLockBodyScroll } from "../utils/bodyScrollLock";
 /* 덤퍼 검사(2026-11-05, 요청: "핵있는 판 검사 모듈 … 리플레이 여러개를 같이 보내면 리포트를 내는" · "지금처럼 계속 배포하고 로그로 확인하긴 힘들어") —
    경기 번호(데이터 관리에서 고른 판이 미리 든다)·리플레이 파일 여럿 × 설정 변형마다 서버가 덤퍼를 돌려 리포트 글을 준다(sg-api dumper_report).
    변형은 한 줄에 하나: "이름: BWDUMP_열쇠=값 …"(값 없이 이름만이면 기본). 참값은 저장하지 않는다. */
-const DEFAULT_VARIANTS = "기본\n늦춤0: BWDUMP_NUKEFREE=0";
+const DEFAULT_VARIANTS = "기본";
 
 function parseVariants(text: string): { name: string; env: Record<string, string> }[] {
   return text.split("\n").map((ln) => ln.trim()).filter(Boolean).map((ln) => {
