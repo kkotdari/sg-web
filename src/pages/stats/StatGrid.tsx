@@ -105,7 +105,7 @@ const TIER_HELP9 = (
   <>
     <span>티어 — 몇 인분을 하는지로 매긴 1~4 등급 · 아래를 모두 곱해요</span>
     <span>EAPM: 헛클릭·연타를 뺀 실제 손 빠르기</span>
-    <span>전투: 준 데미지에서 입은 데미지를 뺀 이익이 같은 편 싸움 양에 비해 얼마나 되나(종족 차이는 감안)</span>
+    <span>전투: 준 데미지에서 입은 데미지를 뺀 이익이 같은 편 평균보다 얼마나 더 되나(편이 약해 다 같이 밀려도 제 몫은 0 · 종족 차이는 감안)</span>
     <span>생산: 같은 편보다 병력을 얼마나 더 뽑았나</span>
     <span>승패: 편 전력으로 예상한 것보다 얼마나 더 이겼나</span>
   </>
@@ -162,7 +162,7 @@ function Rate({ s }: { s?: MemberStats }) {
 function ExRaw({ s }: { s: MemberStats }) {
   const x = exOf(s);
   if (x === null) return <Dash />;
-  return <span className="scr-sg-dmg" title="전투 — 준 데미지 − 입은 데미지를 같은 편 평균 싸움 양으로 나눈 값(0 = 본전 · 보정 전)"><b>{fightFmt(x)}</b></span>;
+  return <span className="scr-sg-dmg" title="전투 — (준 − 입은 데미지)가 같은 편 평균보다 얼마나 더 되나 · 편 평균 싸움 양으로 나눔(0 = 같은 편만큼 · 보정 전)"><b>{fightFmt(x)}</b></span>;
 }
 
 function Who({ member }: { member: Member }) {
@@ -277,7 +277,7 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
         </>
       ) : (
         <span className="scr-sg-help-list">
-          <span>전투 — 준 데미지에서 입은 데미지를 뺀 이익을 같은 편 평균 싸움 양으로 나눈 값(보정 전 · 0 = 본전 · 같은 교환비라도 싸움을 많이 할수록 커요) · 얹으면 전투와 <b className="is-dealt">딜</b> · <b className="is-taken">피해</b>(그 경기 참가자 평균의 몇 배) 변화</span>
+          <span>전투 — 준 데미지에서 입은 데미지를 뺀 이익이 같은 편 평균보다 얼마나 더 되나를 편 평균 싸움 양으로 나눈 값(보정 전 · 0 = 같은 편만큼 · 편이 약해 다 같이 밀린 판도 제 몫을 했으면 0 · 같은 교환비라도 싸움을 많이 할수록 커요) · 얹으면 전투와 <b className="is-dealt">딜</b> · <b className="is-taken">피해</b>(그 경기 참가자 평균의 몇 배) 변화</span>
           <span>APM — 분당 행동 수 평균 · EAPM — 그중 유효 행동(같은 명령 연타 · 헛클릭을 뺌)</span>
           {TIER_HELP9}
           <span>종족마다 같은 여섯 칸(티어 · 게임수 · 승률 · 전투 · APM · EAPM) — 티어는 그 종족으로 한 판만으로 잰 등급(팀전 · 맵 전체 조회에서만)</span>

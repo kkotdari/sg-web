@@ -150,9 +150,9 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "prod
     return { key: race ? `${race}:prod` : "prod", label: `${who}생산(분당 병력 값 · 미네랄 + 가스)`, series: [{ label: "생산", cls: "", pick, fmt: int }], mode: "single" };
   }
   if (kind === "exr") {
-    if (race) return { key: `${race}:exr`, label: `${who}전투(준 − 입은 데미지 · 같은 편 싸움 양 기준 · 0 = 본전)`, series: [{ label: "전투", cls: "", pick: (e) => exOf(of(race)(e)), fmt: fightFmt }], mode: "single" };
+    if (race) return { key: `${race}:exr`, label: `${who}전투(준 − 입은 데미지 · 같은 편 평균 대비 · 0 = 같은 편만큼)`, series: [{ label: "전투", cls: "", pick: (e) => exOf(of(race)(e)), fmt: fightFmt }], mode: "single" };
     return {
-      key: "exr", label: "전투(준 − 입은 데미지 · 같은 편 싸움 양 기준 · 0 = 본전)", series: [{ label: "전투", cls: "", pick: (e) => exOf(e.overall), fmt: fightFmt }], mode: "single",
+      key: "exr", label: "전투(준 − 입은 데미지 · 같은 편 평균 대비 · 0 = 같은 편만큼)", series: [{ label: "전투", cls: "", pick: (e) => exOf(e.overall), fmt: fightFmt }], mode: "single",
       more: [statMetric("dmg")],
     };
   }
