@@ -5765,8 +5765,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 
 /* ★ PC 통계 묶음 다섯 칸(2026-11-03, 요청: "경기수/승률/교환비/APM/EAPM 다섯 컬럼을 똑같이 전체/테란/프로토스/저그 반복 · 칸 모양도 똑같이 · 폭이 모자랄 테니 페이지 폭 넓히고") —
    유저 · (티어) · 묶음 넷 × [게임수 | 승률 | 교환비 | APM | EAPM] 같은 폭 · 묶음 머리는 다섯 칸을 덮고 · 묶음 첫 칸에 왼 선. 통계 화면만 1480 까지 넓힌다(다른 목록은 1080 그대로). 폰(.is-m)은 안 탄다. */
-.scr-sg.has-tier:not(.is-m) { grid-template-columns: minmax(150px, 1.6fr) 56px repeat(20, minmax(50px, 1fr)); }
-.scr-sg:not(.is-m):not(.has-tier) { grid-template-columns: minmax(150px, 1.6fr) repeat(20, minmax(50px, 1fr)); }
+/* 종족구성별 전적 표(.scr-sg-comp · 세 칸)는 뺀다(2026-11-06, 지적: "여기 깨진다" — 이 규칙의 무게(0,3,0)가 그 표의 세 칸 틀을 이겨 21칸으로 흘렀다). */
+.scr-sg.has-tier:not(.is-m):not(.scr-sg-comp) { grid-template-columns: minmax(150px, 1.6fr) 56px repeat(20, minmax(50px, 1fr)); }
+.scr-sg:not(.is-m):not(.has-tier):not(.scr-sg-comp) { grid-template-columns: minmax(150px, 1.6fr) repeat(20, minmax(50px, 1fr)); }
 .scr-sg-head > .scr-sg-hgroup.scr-sg-hgroup5 { grid-column: span 5; }
 .scr-sg:not(.is-m) .scr-sg-gstart { box-shadow: inset 1px 0 0 var(--line-faint); }
 /* 주종족 글자(StatGrid Mains · 2026-11-04) — 게임수 앞에 작고 옅게(T · P · Z). */
