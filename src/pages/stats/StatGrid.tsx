@@ -93,7 +93,6 @@ function tierFacts(t: TierEntry): TrendFact[] {
   const out: TrendFact[] = [];
   if (typeof t.eapm === "number") out.push({ label: "EAPM", value: String(Math.round(t.eapm)) });
   if (typeof t.cbt === "number") out.push({ label: "전투 보정", value: pctOf(t.cbt) });   // 교환이익(준 − 입은 · 팀 싸움 양으로 나눔 · 2026-11-06 저녁 "이름도 전투로")
-  if (typeof t.dmg === "number") out.push({ label: "교환량 보정", value: pctOf(t.dmg) });   // 같은 편보다 데미지를 더 · 덜 주고받은 정도(참여도)(2026-11-06 · sg-api tier W_VOL)
   if (typeof t.prod === "number") out.push({ label: "생산 보정", value: pctOf(t.prod) });   // 같은 편보다 병력을 더 · 덜 뽑은 정도(2026-11-06 · sg-api tier W_PROD)
   if (typeof t.adj === "number") out.push({ label: "승패 보정", value: pctOf(t.adj) });
   return out;
@@ -106,7 +105,6 @@ const TIER_HELP9 = (
     <span>티어 — 몇 인분을 하는지로 매긴 1~4 등급 · 아래를 모두 곱해요</span>
     <span>EAPM: 헛클릭·연타를 뺀 실제 손 빠르기</span>
     <span>전투: 준 데미지에서 입은 데미지를 뺀 이익이 같은 편 싸움 양에 비해 얼마나 되나(상대 세기·종족 차이는 감안)</span>
-    <span>교환량: 같은 편보다 싸움에 얼마나 많이 끼었나(주고받은 데미지)</span>
     <span>생산: 같은 편보다 병력을 얼마나 더 뽑았나</span>
     <span>승패: 편 전력으로 예상한 것보다 얼마나 더 이겼나</span>
   </>
