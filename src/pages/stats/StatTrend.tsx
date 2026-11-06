@@ -78,7 +78,8 @@ export function combinedTier(tb: Record<string, TierEntry> | null | undefined): 
     return w > 0 ? ok.reduce((a, t) => a + (f(t) as number) * t.plays, 0) / w : null;
   };
   const ib = avg((t) => t.stdInbun ?? t.inbun) ?? 0;
-  const tier = n < 10 ? null : ib >= 1.6 ? 1 : ib >= 1.0 ? 2 : ib >= 0.8 ? 3 : 4;
+  /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭).*/
+  const tier = n < 10 ? null : ib >= 2.2 ? 1 : ib >= 1.0 ? 2 : ib >= 0.8 ? 3 : 4;
   return { ...ts[0], tier, inbun: ib, stdInbun: ib, plays: n, eapm: avg((t) => t.eapm), cbt: avg((t) => t.cbt), prod: avg((t) => t.prod), dmg: avg((t) => t.dmg), adj: avg((t) => t.adj), ex: avg((t) => t.ex) } as TierEntry;
 }
 /** 칸의 종족 — 종족 셋 · "주종족"(그 사람 주종족 판을 합친 줄 · MemberStatsEntry.main · 2026-11-04) · null 전체. */
