@@ -297,7 +297,7 @@ export interface MemberStats {
   /** 생산 — 뽑은 병력 값(미네랄 + 가스) 합 · 그 판들의 길이 합(초) · 화면은 분당 값(prodOf · 2026-11-06). */
   prodValue?: number | null;
   prodSeconds?: number | null;
-  /** 전투 — Σ(준 − 입은) ÷ Σ그 편 평균 싸움 양 · 0 = 주고받은 만큼 · +는 남김(sg-api 2026-11-06 저녁). */
+  /** 전투 — 분당 (준 − 입은) 데미지 · 0 = 본전 · +는 남김(sg-api 2026-11-06 밤). */
   fight?: number | null;
   fightPlays?: number | null;
 }

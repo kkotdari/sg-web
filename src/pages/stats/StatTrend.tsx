@@ -95,13 +95,13 @@ const int = (v: number) => Math.round(v).toLocaleString();
 const pct = (v: number) => `${Math.round(v)}%`;
 const x100 = (v: number) => (v / 100).toFixed(1);
 const x2 = (v: number) => v.toFixed(2);
-/** 전투 칸 값(2026-11-06 저녁, 요청: "컬럼도 전투로 바꾸고 기준은 0" · 옛 교환비 = 준 ÷ 입은) — sg-api fight: Σ(준 − 입은) ÷ Σ그 편 평균 싸움 양.
- *  교환비가 같아도 같은 편보다 싸움을 많이 한 사람이 높다(같은 날 "똑같은 교환비라도 전투를 많이 한 사람이 높아야"). 없으면 null. */
+/** 전투 칸 값(2026-11-06 저녁, 요청: "컬럼도 전투로 바꾸고 기준은 0" · 밤 "조회 기간의 분당 전투 수치" · 옛 교환비 = 준 ÷ 입은) — sg-api fight: 분당 (준 − 입은) 데미지.
+ *  편 안 비교 · 상대 세기는 없다(같은 날 밤 "팀 내 비교 없어도 됨 · 상대 세기 없어도 됨"). 없으면 null. */
 export function exOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
   return s && s.fightPlays && typeof s.fight === "number" ? s.fight : null;
 }
-/** 전투 값 글자 — 0 기준 부호(+0.31 · −0.12 · 0.00). */
-export const fightFmt = (v: number): string => (v > 0.004 ? `+${v.toFixed(2)}` : v < -0.004 ? `−${(-v).toFixed(2)}` : "0.00");
+/** 전투 값 글자 — 분당 데미지 · 0 기준 부호(+120 · −45 · 0). */
+export const fightFmt = (v: number): string => { const r = Math.round(v); return r > 0 ? `+${r.toLocaleString()}` : r < 0 ? `−${(-r).toLocaleString()}` : "0"; };
 
 /** 생산 — 분당 뽑은 병력 값(미네랄 + 가스 · 2026-11-06, 요청: "생산도 추가 · 피시에 컬럼"). 값이 없으면 null. */
 export function prodOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
@@ -150,9 +150,9 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "prod
     return { key: race ? `${race}:prod` : "prod", label: `${who}생산(분당 병력 값 · 미네랄 + 가스)`, series: [{ label: "생산", cls: "", pick, fmt: int }], mode: "single" };
   }
   if (kind === "exr") {
-    if (race) return { key: `${race}:exr`, label: `${who}전투(준 − 입은 데미지 · 같은 편 평균 대비 · 0 = 같은 편만큼)`, series: [{ label: "전투", cls: "", pick: (e) => exOf(of(race)(e)), fmt: fightFmt }], mode: "single" };
+    if (race) return { key: `${race}:exr`, label: `${who}전투(분당 준 − 입은 데미지 · 0 = 본전)`, series: [{ label: "전투", cls: "", pick: (e) => exOf(of(race)(e)), fmt: fightFmt }], mode: "single" };
     return {
-      key: "exr", label: "전투(준 − 입은 데미지 · 같은 편 평균 대비 · 0 = 같은 편만큼)", series: [{ label: "전투", cls: "", pick: (e) => exOf(e.overall), fmt: fightFmt }], mode: "single",
+      key: "exr", label: "전투(분당 준 − 입은 데미지 · 0 = 본전)", series: [{ label: "전투", cls: "", pick: (e) => exOf(e.overall), fmt: fightFmt }], mode: "single",
       more: [statMetric("dmg")],
     };
   }
