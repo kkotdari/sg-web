@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { PenLine, Upload } from "lucide-react";
+import { PenLine, Trophy, Upload } from "lucide-react";
+import { addFameReplays } from "./fameUpload";
 import { Spinner } from "../../components/common/Feedback";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import ReplayReviewModal from "../../modals/ReplayReviewModal";
@@ -170,6 +171,29 @@ function GamesRouter() {
   /* 게임 목록의 등록은 메뉴(리플레이 등록 · 수기 입력 · 2026-10-23, 요청: "경기결과 수기 입력 폼 필요") — 옛: 곧바로 리플레이 고르기. */
   const [manualOpen, setManualOpen] = useState(false);
 
+  /* ★ 명예의 전당에 리플레이 손 넣기(2026-11-06, 요청: "명예의 전당에 수동으로 리플레이 추가 가능하게 · 회원 없는 경기도") — 운영자 · 명예의 전당 탭의 등록 차림표에만.
+     검토 창 없이 바로 서버로(fameUpload · fame) — 회원 없는 판 · 마감한 달 · 이미 있는 판(표식만 단다)도 된다. */
+  const fameInputRef = useRef<HTMLInputElement>(null);
+  const handleFameFilesChosen = async (e: ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? []).filter((f) => f.name.toLowerCase().endsWith(".rep"));
+    e.target.value = "";
+    if (picked.length === 0) { showAlert("리플레이(.rep) 파일을 골라 주세요."); return; }
+    setParsingReplays(true);
+    try {
+      const r = await addFameReplays(picked.slice(0, MAX_REPLAY_FILES), members);
+      if (r.done > 0) { setGroupRefreshKey((k) => k + 1); feed.reload(); }
+      if (r.failed.length === 0) showToast(`명예의 전당에 ${r.done}판을 넣었어요.`, { kind: "ok" });
+      else showAlert(`명예의 전당에 ${r.done}판을 넣었어요.\n못 넣은 판 ${r.failed.length}개:\n${r.failed.join("\n")}`);
+    } finally {
+      setParsingReplays(false);
+    }
+  };
+  const fameItem = isAdmin && gameTab === "fame" ? (
+    <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); fameInputRef.current?.click(); }}>
+      <Trophy size={14} aria-hidden /> 명예의 전당에 리플레이 추가
+    </button>
+  ) : null;
+
   const handleReplayFilesChosen = async (e: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
     e.target.value = "";
@@ -323,11 +347,12 @@ function GamesRouter() {
             <button type="button" role="menuitem" onClick={() => { setAddMenuOpen(false); setManualOpen(true); }}>
               <PenLine size={14} aria-hidden /> 게임결과 수기 입력
             </button>
+            {fameItem}
           </div>
         </>
       )}
     </div>
-  )), [isMobile, addMenuOpen, parsingReplays]);
+  )), [isMobile, addMenuOpen, parsingReplays, fameItem]);
 
   return (
     <div className="scr-screen scr-feed-screen">
@@ -394,6 +419,7 @@ function GamesRouter() {
               >
                 <PenLine size={14} aria-hidden /> 게임결과 수기 입력
               </button>
+              {fameItem}
             </div>
           </>
         )}
@@ -403,6 +429,7 @@ function GamesRouter() {
         ref={replayInputRef} type="file" accept=".rep" multiple hidden
         onChange={handleReplayFilesChosen}
       />
+      <input ref={fameInputRef} type="file" accept=".rep" multiple hidden onChange={handleFameFilesChosen} />
 
       {bulkConfirm && (
         <ConfirmDialog

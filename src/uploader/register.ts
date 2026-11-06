@@ -75,7 +75,7 @@ async function settleRestore(d: ReplayDraft): Promise<UploadOutcome> {
   }
 }
 
-function payloadOf(r: ReplayDraft): NewGameResult {
+export function payloadOf(r: ReplayDraft): NewGameResult {
   return {
     date: r.date, team1: r.team1, team2: r.team2, result: r.result as GameOutcome, matchType: r.matchType,
     ...(r.gameTypeId !== null ? { gameType: r.gameTypeId } : {}),

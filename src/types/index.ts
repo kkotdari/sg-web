@@ -247,6 +247,8 @@ export type NewGameResult = Omit<GameResult, "id" | "matchNo" | "createdBy" | "r
   chatSaver?: string | null;
   /** 업로더 한 번 되올리기(2026-11-05) — 마감한 달의 내전 판에도 리플레이 · 기본 정보를 머지한다(서버 GameResultWrite.restore). */
   restore?: boolean;
+  /** 명예의 전당에 손으로 넣기(2026-11-06 · 운영자) — 마감한 달 · 회원 없는 판도 등록 · 머지하고 표식을 단다(서버 GameResultWrite.fame). */
+  fame?: boolean;
 };
 
 export interface GameResultPage {
