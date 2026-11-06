@@ -423,11 +423,14 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     return (
       <TrendCtx.Provider value={ctx}>
       {hcolCss && <style>{hcolCss}</style>}
+      {/* 넓은 폰 · 태블릿도 가로 스크롤(2026-11-06, 지적: "모바일 레이아웃인데 PC 로 나오는 구간에서 너무 비좁네") — 칸 최소 폭을 키우고 넘치면 감싸개가 민다(PC 와 같은 .scr-sg-scroll). */}
+      <div className={cx("scr-sg-scroll", !showRaces && "is-fold")}>
       <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
         style={{ "--ncw": groups.length * per, "--ncn": groups.length + (tier ? 1 : 0), ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} mobile races={races} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} mobile races={races} />)}
+      </div>
       </div>
       {popEl}
       </TrendCtx.Provider>
