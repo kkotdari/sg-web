@@ -341,9 +341,10 @@ export const api = {
   async getGameResult(id: number): Promise<GameResult> {
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/${id}`));
   },
-  /** 상세 주소의 낱말(경기 번호 · id)로 한 판 — 숫자만이면 /{id}(서버가 큰 수는 경기 번호로 찾는다), 아니면(꼬리 붙은 번호 "…-2") /by-no(2026-11-06). */
+  /** 상세 주소의 낱말(경기 번호 · id)로 한 판 — 아홉 자리 이하 숫자(id)만 /{id}, 경기 번호(열 자리 넘음 · 꼬리 붙은 "…-2")는 /by-no(2026-11-06).
+   *  ★ 경기 번호를 숫자로 바꾸면 **앞의 0이 떨어진다**(지적: 2005·2002년 판 "0508…"·"0201…" 이 안 열림 — 명예의 전당에 넣은 옛 경기). */
   async getGameResultByRef(ref: string): Promise<GameResult> {
-    if (/^\d+$/.test(ref)) return this.getGameResult(Number(ref));
+    if (/^\d{1,9}$/.test(ref)) return this.getGameResult(Number(ref));
     return gameResultFromWire(await request<WireGameResult>(`/api/game-results/by-no/${encodeURIComponent(ref)}`));
   },
 
