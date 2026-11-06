@@ -47,7 +47,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   useEffect(() => {
     if (game) return undefined;
     let cancelled = false;
-    api.getGameResult(Number(idText))
+    api.getGameResultByRef(idText)   // 꼬리 붙은 경기 번호("…-2")도(옛: Number → NaN → 목록으로 되돌아갔다 · 2026-11-06)
       .then((gr) => { if (!cancelled) setGame(gr); })
       .catch(() => { if (!cancelled) onMiss(); });
     return () => { cancelled = true; };
