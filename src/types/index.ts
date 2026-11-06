@@ -294,6 +294,9 @@ export interface MemberStats {
   dmgDealtRel?: number | null;
   dmgTakenRel?: number | null;
   dmgRelPlays?: number | null;
+  /** 생산 — 뽑은 병력 값(미네랄 + 가스) 합 · 그 판들의 길이 합(초) · 화면은 분당 값(prodOf · 2026-11-06). */
+  prodValue?: number | null;
+  prodSeconds?: number | null;
 }
 
 export interface MemberStatsEntry {

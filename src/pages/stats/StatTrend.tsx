@@ -98,8 +98,14 @@ export function exOf(s: MemberStatsEntry["overall"] | undefined | null): number 
   return s.dmgPlays && d > 0 && t > 0 ? d / t : null;
 }
 
+/** 생산 — 분당 뽑은 병력 값(미네랄 + 가스 · 2026-11-06, 요청: "생산도 추가 · 피시에 컬럼"). 값이 없으면 null. */
+export function prodOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
+  if (!s || !s.prodValue || !s.prodSeconds) return null;
+  return s.prodValue / (s.prodSeconds / 60);
+}
+
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "prod" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
@@ -134,6 +140,10 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "apm"
   /* 보정 교환비(2026-10-28, 요청: "그리드 교환비 표시가 보정 전이라 헷갈림 — 라벨을 보정교환비로 바꾸고 보정값 표시") — 달마다 그 달 판으로 셈한 sg-api tier.ex. */
   if (kind === "ex") return { key: "ex", label: "보정교환비(종족 · 상대 세기 뺌)", series: [{ label: "보정교환비", cls: "", pick: (e) => n(e.tier?.ex), fmt: x2 }], mode: "single" };
   /* 교환비(날 값 · 2026-10-29, 요청: "PC 데미지 컬럼 제거하고 교환비 추가 — 팝업엔 교환비, 딜+피해 그래프 2개") — 교환비 그래프 아래에 데미지(딜 · 피해) 그래프. */
+  if (kind === "prod") {   // 생산(분당 병력 값 · 2026-11-06)
+    const pick = (e: TrendEntry) => { const v = prodOf(race ? of(race)(e) : e.overall); return v === null ? null : Math.round(v); };
+    return { key: race ? `${race}:prod` : "prod", label: `${who}생산(분당 병력 값 · 미네랄 + 가스)`, series: [{ label: "생산", cls: "", pick, fmt: int }], mode: "single" };
+  }
   if (kind === "exr") {
     if (race) return { key: `${race}:exr`, label: `${who}교환비(준 ÷ 입은 데미지)`, series: [{ label: "교환비", cls: "", pick: (e) => exOf(of(race)(e)), fmt: x2 }], mode: "single" };
     return {
