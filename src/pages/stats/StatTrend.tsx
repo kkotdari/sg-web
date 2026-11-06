@@ -79,7 +79,7 @@ export function combinedTier(tb: Record<string, TierEntry> | null | undefined): 
   };
   const ib = avg((t) => t.stdInbun ?? t.inbun) ?? 0;
   const tier = n < 10 ? null : ib >= 1.6 ? 1 : ib >= 1.0 ? 2 : ib >= 0.8 ? 3 : 4;
-  return { ...ts[0], tier, inbun: ib, stdInbun: ib, plays: n, eapm: avg((t) => t.eapm), cbt: avg((t) => t.cbt), adj: avg((t) => t.adj), ex: avg((t) => t.ex) } as TierEntry;
+  return { ...ts[0], tier, inbun: ib, stdInbun: ib, plays: n, eapm: avg((t) => t.eapm), cbt: avg((t) => t.cbt), prod: avg((t) => t.prod), adj: avg((t) => t.adj), ex: avg((t) => t.ex) } as TierEntry;
 }
 /** 칸의 종족 — 종족 셋 · "주종족"(그 사람 주종족 판을 합친 줄 · MemberStatsEntry.main · 2026-11-04) · null 전체. */
 export type StatRace = BaseRace | "주종족";

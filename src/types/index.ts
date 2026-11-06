@@ -334,6 +334,7 @@ export interface TierEntry {
   res: number | null;
   sup: number | null;
   /** 생산 값(병력 미네랄+가스) · 스킬 쓴 횟수 — 같은 편 동료 대비 배수(sg-api tier.py · 2026-10-28). */
+  /** 생산 보정 배수(인분 = EAPM 인분 × cbt × prod × adj · 같은 편보다 병력을 더 뽑은 정도 · 2026-11-06 다시 씀). */
   prod?: number | null;
   skill?: number | null;
   /** 교환비 보정 배수(그 기간 · 티어 팝업의 근거값 · 인분 = EAPM ÷ 120 × cbt × adj · 2026-10-28). */
