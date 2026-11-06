@@ -5792,6 +5792,10 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
 /* 접힌 표(종합만 · StatGrid foldStyle ★) — 칸 틀은 펼친 표 그대로 두고 종합 오른변(--sgclip)에서 잘라 감춘다(종합 칸 너비가 펼침 · 접힘에 안 흔들린다). */
 .scr-sg.is-race9.is-fold { clip-path: inset(0 calc(100% - var(--sgclip, 100%)) 0 0 round 0 var(--radius-sm) var(--radius-sm) 0); }
+/* PC 통계 표 가로 스크롤(StatGrid ★ 가로 스크롤 · 2026-11-06) — 표는 칸 최소 폭 합만큼 넓어지고 감싸개가 민다 · 접힌 표는 감춘 칸으로 안 밀리게 숨긴다. */
+.scr-sg-scroll { overflow-x: auto; overflow-y: visible; }
+.scr-sg-scroll.is-fold { overflow-x: hidden; }
+.scr-sg-scroll > .scr-sg { min-width: min-content; }   /* 칸 최소 폭 합까지만 넓어진다(max-content 는 글 폭대로 2배 넘게 퍼졌다) */
 /* 종족별 펼치기/접기(ClanStatsScreen 정렬 줄 오른끝 · 2026-11-05 표 밖으로 · 옛: 종합 머리 안 absolute). */
 .scr-sg-fold {
   display: inline-flex; align-items: center; gap: 1px; padding: 2px 6px; border-radius: 4px;

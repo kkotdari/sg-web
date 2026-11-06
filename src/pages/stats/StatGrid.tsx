@@ -120,11 +120,10 @@ function TCell({ member, metric, facts, className, children }: { member?: Member
   return (
     <span
       className={cx("scr-sg-c scr-sg-tcell", className, hot && "is-hot")}
-      onPointerEnter={ctx.mobile ? undefined : (e) => { if (e.pointerType === "mouse") ctx.enter(member, metric, e.currentTarget, facts); }}
-      onPointerLeave={ctx.mobile ? undefined : ctx.leave}
-      onClick={ctx.mobile ? (e) => ctx.tap(member, metric, e.currentTarget, facts) : undefined}
-      role={ctx.mobile ? "button" : undefined} tabIndex={ctx.mobile ? 0 : undefined}
-      aria-label={ctx.mobile ? `${member.nickname} ${metric.label} 변화 보기` : undefined}
+      /* PC 도 **누르면** 변화 그래프(2026-11-06, 요청: "피시도 통계 팝오버가 아닌 클릭으로 변경" — 옛: 마우스를 얹으면 뜨고 떠나면 닫힘). 다시 누르거나 밖을 누르면 닫힌다. */
+      onClick={(e) => ctx.tap(member, metric, e.currentTarget, facts)}
+      role="button" tabIndex={0}
+      aria-label={`${member.nickname} ${metric.label} 변화 보기`}
     >
       {children}
     </span>
@@ -321,7 +320,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   }, [pop]);
   useEffect(() => { if (!trend) setPop(null); }, [trend]);
   const popEl = pop && trend ? createPortal(
-    <StatTrendPop anchor={pop} data={trend} mobile={mobile} onEnter={mobile ? undefined : popCancel} onLeave={mobile ? undefined : popLeave} />,
+    <StatTrendPop anchor={pop} data={trend} mobile={mobile} />,
     document.body,
   ) : null;
   const toggle = (k: StatSortKey) => ({ on: sortKeys.includes(k), onClick: () => onSortKeys(toggled(sortKeys, k, multi)) });
@@ -435,11 +434,15 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   return (
     <TrendCtx.Provider value={ctx}>
     {hcolCss && <style>{hcolCss}</style>}
+    {/* ★ 가로 스크롤(2026-11-06, 요청: "폭 최소 폭 늘리고 화면 좁으면 스크롤 생기게") — 칸 최소 폭 유저 150 → 170 · 값 50 → 60px. 그 합이 화면보다 넓으면 표 감싸개가 가로로 민다.
+        종족별을 접은 표(is-fold · 종합만 보임)는 감춘 칸까지 밀리지 않게 가로 넘침을 숨긴다. */}
+    <div className={cx("scr-sg-scroll", !showRaces && "is-fold")}>
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-      style={{ gridTemplateColumns: `minmax(150px, 1.6fr) repeat(${groups.length * per}, minmax(50px, 1fr))`, ...foldStyle }}>
+      style={{ gridTemplateColumns: `minmax(170px, 1.6fr) repeat(${groups.length * per}, minmax(60px, 1fr))`, ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} races={races} />)}
+    </div>
     </div>
     {popEl}
     </TrendCtx.Provider>
