@@ -301,6 +301,26 @@ function GamesRouter() {
     showToast(batchSummary("삭제", done.length, failed.length), { kind: failed.length > 0 ? "warn" : "ok" });
   };
 
+  /* ★ 명예의 전당에서 빼기(2026-11-06, 요청: "빼는 기능도 있어야 해 · 같은 화면에 넣으면 될 듯") — 운영자 · 명예의 전당 탭의 선택 줄 [빼기] → 확인 창 → api.unfameGames.
+     뺀 판은 여느 규칙을 다시 탄다(서버 — 마감한 달의 공방 판은 지워지고 · 내전 판은 참값 · 색인만 지운다). */
+  const [unfameAsk, setUnfameAsk] = useState<DisplayItem[] | null>(null);
+  const [unfameBusy, setUnfameBusy] = useState(false);
+  const askUnfame = useCallback((items: DisplayItem[]) => { if (items.length > 0) { setBulkErr(null); setUnfameAsk(items); } }, []);
+  const runUnfame = async (items: DisplayItem[]) => {
+    const ids = items.flatMap((it) => (it.kind === "gameResult" ? [it.gameResult.id] : []));
+    setUnfameBusy(true);
+    try {
+      const r = await api.unfameGames(ids);
+      setUnfameAsk(null);
+      setGroupRefreshKey((k) => k + 1); feed.reload(); selClear();
+      showToast(`명예의 전당에서 ${r.removed}판을 뺐어요${r.dropped > 0 ? ` · 마감한 달의 공방 ${r.dropped}판은 지워졌어요` : ""}.`, { kind: "ok" });
+    } catch (e) {
+      setBulkErr(e instanceof Error ? e.message : "빼지 못했어요.");
+    } finally {
+      setUnfameBusy(false);
+    }
+  };
+
   const [bulkHide, setBulkHide] = useState<DisplayItem[] | null>(null);
   const askBulkHide = useCallback((items: DisplayItem[], all?: GameBulkAll) => {
     if (items.length === 0 && !all) return;
@@ -373,6 +393,7 @@ function GamesRouter() {
           canPick={canPick}
           onDeleteItems={askBulkDelete}
           onHideItems={askBulkHide}
+          onUnfameItems={isAdmin ? askUnfame : undefined}
           refreshKey={groupRefreshKey}
           titleAction={pcAdd}
         />
@@ -439,6 +460,17 @@ function GamesRouter() {
           error={bulkErr}
           onConfirm={() => { if (!bulkProgress) void runBulkDelete(bulkConfirm); }}
           onCancel={() => { if (!bulkProgress) { setBulkConfirm(null); setBulkAll(null); setBulkErr(null); } }}
+        />
+      )}
+
+      {unfameAsk && (
+        <ConfirmDialog
+          title={`고른 ${unfameAsk.length}판을 명예의 전당에서 뺄까요?`}
+          message="뺀 판은 여느 경기 규칙을 다시 따라요 — 마감한 달의 공방 경기는 리플레이째 지워지고, 내전 경기는 참값 · 색인만 지워져요."
+          confirmLabel={unfameBusy ? "빼는 중..." : "빼기"}
+          error={bulkErr}
+          onConfirm={() => { if (!unfameBusy) void runUnfame(unfameAsk); }}
+          onCancel={() => { if (!unfameBusy) { setUnfameAsk(null); setBulkErr(null); } }}
         />
       )}
 

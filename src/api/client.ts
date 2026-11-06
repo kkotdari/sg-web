@@ -520,6 +520,11 @@ export const api = {
     return { game: gameResultFromWire(res), merged: res.merged === true, deleted: res.deleted === true };
   },
 
+  /** 명예의 전당에서 빼기(운영자 · 2026-11-06) — 뺀 판 · 지운 판(마감한 달의 공방) · 참값 지운 판. */
+  async unfameGames(ids: number[]): Promise<{ removed: number; dropped: number; cleared: number }> {
+    return request<{ removed: number; dropped: number; cleared: number }>("/api/game-results/admin/unfame", { method: "POST", body: JSON.stringify({ ids }) });
+  },
+
   async deleteGameResult(id: number): Promise<void> {
     await request<void>(`/api/game-results/${id}`, { method: "DELETE" });
   },

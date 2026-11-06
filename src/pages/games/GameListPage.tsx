@@ -25,16 +25,28 @@ import {
    일정은 피드에서 제 묶음을 고르고, 게임은 서버 쪽수(아래)로 받는다. 줄은 memo(FeedRow). */
 
 /* ★ 선택 막대 단추 = **숨김 · 삭제**(2026-10-14 컴팩트 네모 · 스크랩은 2026-10-22 기능째 걷었다 — 요청: "스크랩 기능 완전 제거"). 숨김은 게임만 골랐을 때 켜진다. */
-function SelectionActions({ picked, all, onDelete, onHide }: {
+function SelectionActions({ picked, all, onDelete, onHide, onUnfame }: {
   picked: DisplayItem[];
   all: GameBulkAll | null;
   onDelete: (items: DisplayItem[], all?: GameBulkAll) => void;
   onHide: (items: DisplayItem[], all?: GameBulkAll) => void;
+  /** 명예의 전당에서 빼기(운영자 · 명예의 전당 탭만 · 2026-11-06) — 없으면 단추 없음. */
+  onUnfame?: (items: DisplayItem[]) => void;
 }) {
   const games = picked.filter((it) => it.kind === "gameResult");
   const onlyGames = picked.length > 0 && games.length === picked.length;
   return (
     <>
+      {onUnfame && (
+        <button
+          type="button" className="scr-compact-rect-btn"
+          disabled={games.length === 0}
+          onClick={() => onUnfame(games)}
+          title={games.length === 0 ? "고른 게임이 없어요" : "고른 게임을 명예의 전당에서 빼요"}
+        >
+          빼기
+        </button>
+      )}
       <button
         type="button" className="scr-compact-rect-btn"
         disabled={!onlyGames}
@@ -79,7 +91,7 @@ export const tabQuery = (tab: GameTab) => (tab === "fame" ? { fameOnly: true } :
 export default memo(function GameListPage({
   members, view, act,
   gameTab, onGameTabChange,
-  selection, canPick, onDeleteItems, onHideItems, refreshKey, titleAction,
+  selection, canPick, onDeleteItems, onHideItems, onUnfameItems, refreshKey, titleAction,
 }: {
   members: Member[];
   view: RowView;
@@ -88,6 +100,8 @@ export default memo(function GameListPage({
   canPick: (it: DisplayItem) => boolean;
   onDeleteItems: (items: DisplayItem[], all?: GameBulkAll) => void;
   onHideItems: (items: DisplayItem[], all?: GameBulkAll) => void;
+  /** 명예의 전당에서 빼기(운영자 · 2026-11-06) — 명예의 전당 탭에서만 단추가 선다. */
+  onUnfameItems?: (items: DisplayItem[]) => void;
   refreshKey: number;
   gameTab: GameTab;
   onGameTabChange: (next: GameTab) => void;
@@ -301,6 +315,7 @@ export default memo(function GameListPage({
         >
           <SelectionActions
             picked={pickedItems} all={bulkAll} onDelete={onDeleteItems} onHide={onHideItems}
+            onUnfame={gameTab === "fame" ? onUnfameItems : undefined}
           />
         </SelectionBar>
       )}
