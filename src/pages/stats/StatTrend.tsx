@@ -1,7 +1,7 @@
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import { Spinner } from "../../components/common/Feedback";
 import { shiftMonthValue } from "../../utils/date";
-import type { BaseRace, Member, MemberStatsEntry, TierEntry } from "../../types";
+import type { TierCalcRow, BaseRace, Member, MemberStatsEntry, TierEntry } from "../../types";
 
 /* ★ 통계 칸의 **5개월 변화 그래프**(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" → "7개월로 통일하자") ─────────────────────────
    표의 값 칸(게임수 · 승률 · 데미지 · APM · 종족별 게임수 · 승률 · 폰 전적 칸)에 PC 는 마우스를 얹으면, 폰은 누르면 그 사람 · 그 값의 다섯 달
@@ -80,7 +80,11 @@ export function combinedTier(tb: Record<string, TierEntry> | null | undefined): 
   const ib = avg((t) => t.stdInbun ?? t.inbun) ?? 0;
   /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭).*/
   const tier = n < 10 ? null : ib >= 2.2 ? 1 : ib >= 1.0 ? 2 : ib >= 0.8 ? 3 : 4;
-  return { ...ts[0], tier, inbun: ib, stdInbun: ib, plays: n, eapm: avg((t) => t.eapm), cbt: avg((t) => t.cbt), prod: avg((t) => t.prod), dmg: avg((t) => t.dmg), adj: avg((t) => t.adj), ex: avg((t) => t.ex) } as TierEntry;
+  /* 셈 표(calc · 2026-11-06 저녁) — 종족이 하나면 그대로 · 여럿이면 줄마다 배수를 판 수로 가중 평균(점수 · 보정 글자는 못 합쳐 비움 · 인분 줄은 위 ib). */
+  const calc = ts.length === 1 ? ts[0].calc ?? null : (ts[0].calc ?? null) && ts[0].calc!.map((r, i) => (
+    r.name === "인분" ? { ...r, score: "", adj: tier ? `${tier}티어` : "", mult: Math.round(ib * 100) / 100 }
+      : { name: r.name, score: "종족별", adj: "판 수 가중 평균", mult: Math.round((avg((t) => t.calc?.[i]?.mult) ?? r.mult) * 1000) / 1000 }));
+  return { ...ts[0], tier, inbun: ib, stdInbun: ib, plays: n, eapm: avg((t) => t.eapm), cbt: avg((t) => t.cbt), prod: avg((t) => t.prod), dmg: avg((t) => t.dmg), adj: avg((t) => t.adj), ex: avg((t) => t.ex), calc } as TierEntry;
 }
 /** 칸의 종족 — 종족 셋 · "주종족"(그 사람 주종족 판을 합친 줄 · MemberStatsEntry.main · 2026-11-04) · null 전체. */
 export type StatRace = BaseRace | "주종족";
@@ -233,7 +237,7 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
 
 /** 팝오버 머리 아래의 근거값 한 칸(2026-10-28, 요청: "티어 팝업에 그래프 위에 현재 보는 티어의 근거값 두 개") — 지금 보는 기간의 값이다(그래프의 달별 값과 별개). */
 export interface TrendFact { label: string; value: string }
-export interface TrendAnchor { member: Member; metric: StatMetric; rect: { left: number; top: number; width: number; height: number }; facts?: TrendFact[] }
+export interface TrendAnchor { member: Member; metric: StatMetric; rect: { left: number; top: number; width: number; height: number }; facts?: TrendFact[]; calc?: TierCalcRow[] | null }
 
 const POP_W = 340;
 /** PC 팝오버 폭(2026-10-25, 요청: "통계 팝오버 그래프창 크기 키우고 글자들 요소들도 다 키우기") — 그래프는 옛 자(CHART_VB_W)로 그려 폭만 늘어나므로 선·점·글자가 함께 커진다. */
@@ -275,6 +279,19 @@ export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
         <div className="scr-sg-trend-facts">
           {anchor.facts.map((f) => <span key={f.label}><i>{f.label}</i><b>{f.value}</b></span>)}
         </div>
+      )}
+      {/* 티어 셈 과정 표(2026-11-06 저녁, 요청: "정확한 점수 계산 과정과 결과 · 이름 · 점수 · 보정 · 보정후점수") — 배수의 곱이 인분(마지막 줄). */}
+      {anchor.calc && anchor.calc.length > 0 && (
+        <table className="scr-sg-trend-calc">
+          <thead><tr><th>이름</th><th>점수</th><th>보정</th><th>보정후점수</th></tr></thead>
+          <tbody>
+            {anchor.calc.map((r) => (
+              <tr key={r.name} className={r.name === "인분" ? "is-total" : undefined}>
+                <th scope="row">{r.name}</th><td>{r.score}</td><td>{r.adj}</td><td>{r.name === "인분" ? `${r.mult.toFixed(2)}인분` : `×${r.mult.toFixed(2)}`}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
       <StatTrendChart data={data} member={anchor.member} metric={anchor.metric} chartW={mobile ? w - 24 : CHART_VB_W} />
       {anchor.metric.more?.map((mm) => (

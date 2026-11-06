@@ -6,7 +6,7 @@ import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
-import type { BaseRace, Member, MemberStats, TierEntry } from "../../types";
+import type { BaseRace, Member, MemberStats, TierCalcRow, TierEntry } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
    C 의 승률 막대를 얹어(요청: "A에 C의 그래프를 시각적으로 도입")).
@@ -76,10 +76,11 @@ function TierCell({ t, member, race, className, more }: { t?: TierEntry | null; 
   const cl = cx("scr-sg-tier-c", className);
   if (!t) return <TCell member={member} metric={metric} facts={more} className={cl}><Dash /></TCell>;
   /* 그 종족의 게임수 · 승률 · 전투 · APM · EAPM 을 앞에(같은 날 "좁은 폰 — 터치 시 판수 · 교환비 · 승률 · APM 등등 나오고") — 좁은 폰은 이 칸 하나뿐이라. */
-  const facts = [...(more ?? []), ...tierFacts(t).filter((f) => f.label !== "EAPM" || !more?.some((x) => x.label === "EAPM"))];
-  if (t.tier === null) return <TCell member={member} metric={metric} facts={facts} className={cl}><Dash /></TCell>;
+  /* 셈 표(calc · 2026-11-06 저녁)가 있으면 보정 % 줄(tierFacts)은 표가 대신한다 — 근거값 줄은 게임수 · 승률 · 전투 · 생산 · APM · EAPM 만. */
+  const facts = [...(more ?? []), ...(t.calc ? [] : tierFacts(t)).filter((f) => f.label !== "EAPM" || !more?.some((x) => x.label === "EAPM"))];
+  if (t.tier === null) return <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}><Dash /></TCell>;
   return (
-    <TCell member={member} metric={metric} facts={facts} className={cl}>
+    <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}>
       <b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b>
     </TCell>
   );
@@ -116,14 +117,14 @@ const TIER_HELP9 = (
 interface TrendCtxValue {
   mobile: boolean;
   activeKey: string | null;
-  enter: (member: Member, metric: StatMetric, el: HTMLElement, facts?: TrendFact[]) => void;
-  tap: (member: Member, metric: StatMetric, el: HTMLElement, facts?: TrendFact[]) => void;
+  enter: (member: Member, metric: StatMetric, el: HTMLElement, facts?: TrendFact[], calc?: TierCalcRow[] | null) => void;
+  tap: (member: Member, metric: StatMetric, el: HTMLElement, facts?: TrendFact[], calc?: TierCalcRow[] | null) => void;
   leave: () => void;
 }
 const TrendCtx = createContext<TrendCtxValue | null>(null);
 const trendKey = (m: Member, k: StatMetric) => `${m.id}|${k.key}`;
 
-function TCell({ member, metric, facts, className, children }: { member?: Member; metric: StatMetric; facts?: TrendFact[]; className?: string; children: ReactNode }) {
+function TCell({ member, metric, facts, calc, className, children }: { member?: Member; metric: StatMetric; facts?: TrendFact[]; calc?: TierCalcRow[] | null; className?: string; children: ReactNode }) {
   const ctx = useContext(TrendCtx);
   if (!ctx || !member) return <span className={cx("scr-sg-c", className)}>{children}</span>;
   const hot = ctx.activeKey === trendKey(member, metric);
@@ -131,7 +132,7 @@ function TCell({ member, metric, facts, className, children }: { member?: Member
     <span
       className={cx("scr-sg-c scr-sg-tcell", className, hot && "is-hot")}
       /* PC 도 **누르면** 변화 그래프(2026-11-06, 요청: "피시도 통계 팝오버가 아닌 클릭으로 변경" — 옛: 마우스를 얹으면 뜨고 떠나면 닫힘). 다시 누르거나 밖을 누르면 닫힌다. */
-      onClick={(e) => ctx.tap(member, metric, e.currentTarget, facts)}
+      onClick={(e) => ctx.tap(member, metric, e.currentTarget, facts, calc)}
       role="button" tabIndex={0}
       aria-label={`${member.nickname} ${metric.label} 변화 보기`}
     >
@@ -313,8 +314,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const ctx: TrendCtxValue | null = trend ? {
     mobile,
     activeKey: pop ? trendKey(pop.member, pop.metric) : null,
-    enter: (member, metric, el, facts) => { popCancel(); setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? cur : { member, metric, rect: rectOf(el), facts })); },
-    tap: (member, metric, el, facts) => { setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? null : { member, metric, rect: rectOf(el), facts })); },
+    enter: (member, metric, el, facts, calc) => { popCancel(); setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? cur : { member, metric, rect: rectOf(el), facts, calc })); },
+    tap: (member, metric, el, facts, calc) => { setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? null : { member, metric, rect: rectOf(el), facts, calc })); },
     leave: popLeave,
   } : null;
   useEffect(() => () => popCancel(), []);

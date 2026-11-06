@@ -366,7 +366,11 @@ export interface TierEntry {
   /** 주종족(2026-11-04) — 이 티어를 낸 종족들(그 기간 판 30% 이상). */
   mains?: string[] | null;
   level?: number | null;
+  /** 셈 과정 표(2026-11-06 저녁 · sg-api tier calc) — EAPM · 전투 · 생산 · 승패 · 인분 줄 · 인분 = 배수(mult)의 곱. */
+  calc?: TierCalcRow[] | null;
 }
+
+export interface TierCalcRow { name: string; score: string; adj: string; mult: number }
 
 export interface ClanBreakdownEntry {
   label: string;
