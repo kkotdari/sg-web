@@ -194,11 +194,13 @@ function WhoPlain({ member }: { member: Member }) {
    묶음마다 [티어 | 게임수 | 승률 | 교환비 | APM | EAPM](티어는 팀전 · 맵 전체 조회에서만 · sg-api tierByRace — 그 종족으로 한 판만으로 잰 인분). 옛 [전체 · 주종족] 묶음 ·
    보기 모드 라디오 · 유저 옆 전체 티어 칸은 걷었다. 폰: 넓은 폰은 PC 와 같은 칸 · 좁은 폰은 종족마다 [티어 | 게임수](티어 칸이 없는 조회는 [게임수 | 승률]).
    평균 줄: 티어는 "-" · 나머지는 그 종족으로 뛴 클랜원 판. */
-/** 종족 판 근거값(티어 칸 팝업 · 위 TierCell more) — 게임수 · 승률 · 전투 · APM · EAPM. */
+/** 종족 판 근거값(티어 칸 팝업 · 위 TierCell more) — 게임수 · 승률 · 전투 · 생산 · APM · EAPM. */
 function raceFacts(s: MemberStats): TrendFact[] {
   const out: TrendFact[] = [{ label: "게임수", value: s.plays.toLocaleString() }, { label: "승률", value: `${s.winRate}%` }];
   const x = exOf(s);
   if (x !== null) out.push({ label: "전투", value: fightFmt(x) });
+  const pr = prodOf(s);   // 생산(분당 병력 값 · 2026-11-06 저녁, 요청: "생산은 왜 없어")
+  if (pr !== null) out.push({ label: "생산", value: Math.round(pr).toLocaleString() });
   if (typeof s.avgApm === "number") out.push({ label: "APM", value: String(s.avgApm) });
   if (typeof s.avgEapm === "number") out.push({ label: "EAPM", value: String(s.avgEapm) });
   return out;
