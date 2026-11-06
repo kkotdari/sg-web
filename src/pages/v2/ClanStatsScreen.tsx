@@ -95,10 +95,10 @@ const sortLabel = (k: StatSortKey): string => {
   if (k === "apm") return "APM";
   if (k === "eapm") return "EAPM";
   if (k === "tier") return "종합 티어";
-  if (k === "exr") return "교환비";
+  if (k === "exr") return "전투";
   if (k === "prod") return "생산";
   const [who, what] = k.includes(":") ? k.split(":") : ["종합", k];
-  return `${who} ${what === "tier" ? "티어" : what === "rate" ? "승률" : what === "exr" ? "교환비" : what === "prod" ? "생산" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
+  return `${who} ${what === "tier" ? "티어" : what === "rate" ? "승률" : what === "exr" ? "전투" : what === "prod" ? "생산" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
 };
 
 /** 변화 그래프의 기준 — last: 마지막 달(한 달이면 그 달 · 여러 달 a~b 면 b · 달이 아니면 이번 달 — 서버도 dateTo 가 든 달을 마지막으로 센다) · period: 달 셈에 넣을 기간 글자. */

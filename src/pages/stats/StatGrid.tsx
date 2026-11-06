@@ -1,6 +1,6 @@
 import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { StatTrendPop, combinedTier, exOf, prodOf, statMetric, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
+import { StatTrendPop, combinedTier, exOf, fightFmt, prodOf, statMetric, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
@@ -18,7 +18,7 @@ const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
 const CLAN_LABEL = "평균";
 /** 정렬 자 — 표 머리를 눌러 고른다(2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추" → "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개").
  *  APM · 데미지 · 전체(rate · plays) · 종족별("테란:rate" · "테란:plays" …). */
-/** 종족 자 — PC 는 종족마다 다섯(게임수 · 승률 · 교환비 · APM · EAPM · 2026-11-03) · 폰은 게임수 · 승률. */
+/** 종족 자 — PC 는 종족마다 다섯(게임수 · 승률 · 전투 · APM · EAPM · 2026-11-03) · 폰은 게임수 · 승률. */
 /** "주종족:…"(2026-11-04) — 그 사람 주종족 판을 합친 줄(MemberStatsEntry.main). */
 export type StatSortKey = "tier" | "rate" | "plays" | "exr" | "prod" | "apm" | "eapm" | `${StatRace}:${"tier" | "rate" | "plays" | "exr" | "prod" | "apm" | "eapm"}`;
 type SortProps = {
@@ -75,7 +75,7 @@ function TierCell({ t, member, race, className, more }: { t?: TierEntry | null; 
   const metric = statMetric("tier", race ?? null);
   const cl = cx("scr-sg-tier-c", className);
   if (!t) return <TCell member={member} metric={metric} facts={more} className={cl}><Dash /></TCell>;
-  /* 그 종족의 게임수 · 승률 · 교환비 · APM · EAPM 을 앞에(같은 날 "좁은 폰 — 터치 시 판수 · 교환비 · 승률 · APM 등등 나오고") — 좁은 폰은 이 칸 하나뿐이라. */
+  /* 그 종족의 게임수 · 승률 · 전투 · APM · EAPM 을 앞에(같은 날 "좁은 폰 — 터치 시 판수 · 교환비 · 승률 · APM 등등 나오고") — 좁은 폰은 이 칸 하나뿐이라. */
   const facts = [...(more ?? []), ...tierFacts(t).filter((f) => f.label !== "EAPM" || !more?.some((x) => x.label === "EAPM"))];
   if (t.tier === null) return <TCell member={member} metric={metric} facts={facts} className={cl}><Dash /></TCell>;
   return (
@@ -161,7 +161,7 @@ function Rate({ s }: { s?: MemberStats }) {
 function ExRaw({ s }: { s: MemberStats }) {
   const x = exOf(s);
   if (x === null) return <Dash />;
-  return <span className="scr-sg-dmg" title="준 데미지 ÷ 입은 데미지(1.00 = 주고받은 양이 같음 · 보정 전)"><b>{x.toFixed(2)}</b></span>;
+  return <span className="scr-sg-dmg" title="전투 — 준 데미지 − 입은 데미지를 같은 편 평균 싸움 양으로 나눈 값(0 = 본전 · 보정 전)"><b>{fightFmt(x)}</b></span>;
 }
 
 function Who({ member }: { member: Member }) {
@@ -194,11 +194,11 @@ function WhoPlain({ member }: { member: Member }) {
    묶음마다 [티어 | 게임수 | 승률 | 교환비 | APM | EAPM](티어는 팀전 · 맵 전체 조회에서만 · sg-api tierByRace — 그 종족으로 한 판만으로 잰 인분). 옛 [전체 · 주종족] 묶음 ·
    보기 모드 라디오 · 유저 옆 전체 티어 칸은 걷었다. 폰: 넓은 폰은 PC 와 같은 칸 · 좁은 폰은 종족마다 [티어 | 게임수](티어 칸이 없는 조회는 [게임수 | 승률]).
    평균 줄: 티어는 "-" · 나머지는 그 종족으로 뛴 클랜원 판. */
-/** 종족 판 근거값(티어 칸 팝업 · 위 TierCell more) — 게임수 · 승률 · 교환비 · APM · EAPM. */
+/** 종족 판 근거값(티어 칸 팝업 · 위 TierCell more) — 게임수 · 승률 · 전투 · APM · EAPM. */
 function raceFacts(s: MemberStats): TrendFact[] {
   const out: TrendFact[] = [{ label: "게임수", value: s.plays.toLocaleString() }, { label: "승률", value: `${s.winRate}%` }];
   const x = exOf(s);
-  if (x !== null) out.push({ label: "교환비", value: x.toFixed(2) });
+  if (x !== null) out.push({ label: "전투", value: fightFmt(x) });
   if (typeof s.avgApm === "number") out.push({ label: "APM", value: String(s.avgApm) });
   if (typeof s.avgEapm === "number") out.push({ label: "EAPM", value: String(s.avgEapm) });
   return out;
@@ -264,20 +264,20 @@ export function StatHelp({ mobile }: { mobile: boolean }) {
             <span className="scr-sg-help-rec"><b>3</b></span>
           </span>
           <span className="scr-sg-help-list">
-            <span><b>68</b> 게임수 — 전체 판 · 종족 칸은 그 종족 티어(그 종족으로 한 판만으로 잼 · 열 판 미만은 -) · 누르면 그 종족의 게임수 · 승률 · 교환비 · APM · EAPM 과 달별 티어</span>
+            <span><b>68</b> 게임수 — 전체 판 · 종족 칸은 그 종족 티어(그 종족으로 한 판만으로 잼 · 열 판 미만은 -) · 누르면 그 종족의 게임수 · 승률 · 전투 · APM · EAPM 과 달별 티어</span>
             {TIER_HELP9}
             <span>옅은 배경 — 주종족(그 기간 판의 30% 이상을 한 종족 · 여러 개일 수 있어요)</span>
-            <span>넓은 화면(가로 · 태블릿)은 PC 와 같은 칸 — 종족마다 티어 · 게임수 · 승률 · 교환비 · APM · EAPM</span>
+            <span>넓은 화면(가로 · 태블릿)은 PC 와 같은 칸 — 종족마다 티어 · 게임수 · 승률 · 전투 · APM · EAPM</span>
             <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
             <span>값을 누르면 다섯 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 다섯 달)</span>
           </span>
         </>
       ) : (
         <span className="scr-sg-help-list">
-          <span>교환비 — 준 데미지 ÷ 입은 데미지(보정 전 · 1.00 보다 크면 주고받기에서 이김) · 얹으면 교환비와 <b className="is-dealt">딜</b> · <b className="is-taken">피해</b>(그 경기 참가자 평균의 몇 배) 변화</span>
+          <span>전투 — 준 데미지에서 입은 데미지를 뺀 이익을 같은 편 평균 싸움 양으로 나눈 값(보정 전 · 0 = 본전 · 같은 교환비라도 싸움을 많이 할수록 커요) · 얹으면 전투와 <b className="is-dealt">딜</b> · <b className="is-taken">피해</b>(그 경기 참가자 평균의 몇 배) 변화</span>
           <span>APM — 분당 행동 수 평균 · EAPM — 그중 유효 행동(같은 명령 연타 · 헛클릭을 뺌)</span>
           {TIER_HELP9}
-          <span>종족마다 같은 여섯 칸(티어 · 게임수 · 승률 · 교환비 · APM · EAPM) — 티어는 그 종족으로 한 판만으로 잰 등급(팀전 · 맵 전체 조회에서만)</span>
+          <span>종족마다 같은 여섯 칸(티어 · 게임수 · 승률 · 전투 · APM · EAPM) — 티어는 그 종족으로 한 판만으로 잰 등급(팀전 · 맵 전체 조회에서만)</span>
           <span>옅은 배경 — 주종족(그 기간 판의 30% 이상을 한 종족 · 여러 개일 수 있어요)</span>
           <span>머리를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
           <span>값에 마우스를 얹으면 다섯 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 다섯 달)</span>
@@ -348,7 +348,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const races: readonly BaseRace[] = RACES;
   /** 머리 묶음 — 종합 + 종족 셋. */
   const groups: readonly (BaseRace | null)[] = [null, ...races];
-  /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · 교환비 · APM · EAPM(위 RaceCells ★). */
+  /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · 전투 · APM · EAPM(위 RaceCells ★). */
   const per = tier ? 7 : 6;   // 2026-11-06 생산 칸 더함(옛 6 : 5)
   const gridRef = useRef<HTMLDivElement>(null);
   const [clipW, setClipW] = useState<number | null>(null);
@@ -402,8 +402,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     onClickCapture: (e: React.MouseEvent) => { const c = cellOf(e.target); if (c) setHPin((p) => (sameCell(p, c) ? null : c)); },
   };
   /** 종족 묶음 머리 두 줄 — 윗줄 종족 이름(묶음 칸 수만큼 덮음) · 아랫줄 칸 머리. 폰은 좁을 때 칸이 줄어 덮는 수가 CSS 변수(--rspan)다. */
-  const SUBS: readonly (readonly ["티어" | "게임수" | "승률" | "교환비" | "생산" | "APM" | "EAPM", "tier" | "plays" | "rate" | "exr" | "prod" | "apm" | "eapm"])[] =
-    [...(tier ? [["티어", "tier"] as const] : []), ["게임수", "plays"], ["승률", "rate"], ["교환비", "exr"], ["생산", "prod"], ["APM", "apm"], ["EAPM", "eapm"]];
+  const SUBS: readonly (readonly ["티어" | "게임수" | "승률" | "전투" | "생산" | "APM" | "EAPM", "tier" | "plays" | "rate" | "exr" | "prod" | "apm" | "eapm"])[] =
+    [...(tier ? [["티어", "tier"] as const] : []), ["게임수", "plays"], ["승률", "rate"], ["전투", "exr"], ["생산", "prod"], ["APM", "apm"], ["EAPM", "eapm"]];
   const head = (m: boolean) => (
     <div className="scr-sg-row scr-sg-head" role="row">
       <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
