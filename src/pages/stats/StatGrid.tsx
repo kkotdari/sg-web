@@ -76,8 +76,8 @@ function TierCell({ t, member, race, className, more }: { t?: TierEntry | null; 
   const cl = cx("scr-sg-tier-c", className);
   if (!t) return <TCell member={member} metric={metric} facts={more} className={cl}><Dash /></TCell>;
   /* 그 종족의 게임수 · 승률 · 전투 · APM · EAPM 을 앞에(같은 날 "좁은 폰 — 터치 시 판수 · 교환비 · 승률 · APM 등등 나오고") — 좁은 폰은 이 칸 하나뿐이라. */
-  /* 셈 표(calc · 2026-11-06 저녁)가 있으면 보정 % 줄(tierFacts)은 표가 대신한다 — 근거값 줄은 게임수 · 승률 · 전투 · 생산 · APM · EAPM 만. */
-  const facts = [...(more ?? []), ...(t.calc ? [] : tierFacts(t)).filter((f) => f.label !== "EAPM" || !more?.some((x) => x.label === "EAPM"))];
+  /* 셈 표(calc · 2026-11-06 저녁)가 있으면 근거값 줄은 아예 안 보인다(2026-11-07, 요청: "이 부분은 딱히 안 보여줘도 될 듯" — 표에 다 있다). 표가 없는 옛 응답이면 종전대로. */
+  const facts = t.calc ? [] : [...(more ?? []), ...tierFacts(t).filter((f) => f.label !== "EAPM" || !more?.some((x) => x.label === "EAPM"))];
   if (t.tier === null) return <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}><Dash /></TCell>;
   return (
     <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}>
