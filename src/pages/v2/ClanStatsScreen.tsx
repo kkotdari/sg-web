@@ -336,7 +336,7 @@ export default function ClanStatsScreen() {
       /* 종족 티어("테란:tier" …) — 그 종족 판으로 잰 인분 내림차순 · "tier" 는 종합 티어(종족 티어 인분을 판 수로 가중 평균 · StatTrend combinedTier · 2026-11-04). */
       if (key === "tier" || key.endsWith(":tier")) {
         const rc = key === "tier" ? null : (key.split(":")[0] as BaseRace);
-        const pick = (c: Card) => (rc ? c.entry?.tierByRace?.[rc] : combinedTier(c.entry?.tierByRace)) ?? undefined;
+        const pick = (c: Card) => (rc ? c.entry?.tierByRace?.[rc] : c.entry?.tier ?? combinedTier(c.entry?.tierByRace)) ?? undefined;
         const at = pick(a); const bt = pick(b);
         const ai = at?.stdInbun ?? at?.inbun; const bi = bt?.stdInbun ?? bt?.inbun;
         return missingLast(typeof at?.tier !== "number", typeof bt?.tier !== "number")
