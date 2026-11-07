@@ -5818,6 +5818,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg-trend-calc th:last-child, .scr-sg-trend-calc td:last-child { padding-right: 0; text-align: right; }
 .scr-sg-trend-calc thead th { font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line-soft); }
 .scr-sg-trend-calc tbody th { font-weight: 700; }
-.scr-sg-trend-calc td:nth-child(3) { color: var(--muted); white-space: normal; }
+.scr-sg-trend-calc td:nth-child(3) { color: var(--muted); white-space: normal; font-size: var(--fs-9); line-height: 1.3; }
+/* 보정 칸은 글이 길어 한 단계 작게(2026-11-07, 요청: "보정 부분 폰트 크기 줄이기") · PC 도 같은 비율로. */
+.scr-sg-trend-pop:not(.is-m) .scr-sg-trend-calc td:nth-child(3) { font-size: var(--fs-11); }
 .scr-sg-trend-calc td:last-child { font-weight: 700; }
 .scr-sg-trend-calc tr.is-total th, .scr-sg-trend-calc tr.is-total td { border-top: 1px solid var(--line-soft); padding-top: 4px; }
