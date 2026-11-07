@@ -5135,7 +5135,10 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
    안 고른 머리도 같은 안 여백을 가져 켜고 꺼도 글자가 안 움직인다. 폰은 머리 칸이 좁아 글자색만(위). */
 /* (되물림 2026-10-24, 요청: "통계 정렬 아이콘으로 변경 · 피시") — PC 는 칠 대신 **정렬 아이콘**: 글자 옆 ↕(안 고름 · 옅게) / ↓(고름 · 본문색) 에 여럿이면 차례 숫자.
    안 고른 머리도 아이콘 자리를 가져 켜고 꺼도 글자가 안 움직인다. */
-.scr-sg:not(.is-m) .scr-sg-sort { display: inline-flex; align-items: center; gap: 3px; padding: 2px 4px; border-radius: 4px; }
+/* 라벨은 칸 가운데 · 정렬 아이콘은 칸 오른끝에 절대 배치(2026-11-07, 요청: "셀에서 라벨을 가운데에 놓고 정렬 버튼은 오른쪽에 절대 배치") — 단추가 칸을 꽉 채우고
+   라벨만 가운데, 아이콘은 흐름에서 빼 오른쪽에 붙인다(옛: 라벨 + 아이콘 묶음이 가운데). 폰은 아이콘이 글자 아래(아래 .is-m)라 그대로. */
+.scr-sg:not(.is-m) .scr-sg-sort { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 100%; gap: 0; padding: 2px 4px; border-radius: 4px; }
+.scr-sg:not(.is-m) .scr-sg-sort-ic { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .scr-sg-sort-ic { display: inline-flex; align-items: center; gap: 1px; color: var(--dim); }
 .scr-sg-sort.is-on .scr-sg-sort-ic { color: var(--text); }
 .scr-sg-sort-ic i { font-style: normal; font-size: 10px; font-weight: 800; line-height: 1; }
