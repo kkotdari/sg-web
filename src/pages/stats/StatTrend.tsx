@@ -79,7 +79,7 @@ export function combinedTier(tb: Record<string, TierEntry> | null | undefined): 
   };
   const ib = avg((t) => t.stdInbun ?? t.inbun) ?? 0;
   /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭).*/
-  const tier = n < 10 ? null : ib >= 2.2 ? 1 : ib >= 1.0 ? 2 : ib >= 0.8 ? 3 : 4;
+  const tier = n < 10 ? null : ib >= 2.0 ? 1 : ib >= 1.0 ? 2 : ib >= 0.8 ? 3 : 4;
   /* 셈 표(calc · 2026-11-06 저녁) — 종족이 하나면 그대로 · 여럿이면 줄마다 배수를 판 수로 가중 평균(점수 · 보정 글자는 못 합쳐 비움 · 인분 줄은 위 ib). */
   const calc = ts.length === 1 ? ts[0].calc ?? null : (ts[0].calc ?? null) && ts[0].calc!.map((r, i) => (
     r.name === "인분" ? { ...r, score: "", adj: tier ? `${tier}티어` : "", mult: Math.round(ib * 100) / 100 }
