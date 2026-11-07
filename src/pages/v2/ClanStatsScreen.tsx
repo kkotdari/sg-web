@@ -339,9 +339,14 @@ export default function ClanStatsScreen() {
         const pick = (c: Card) => (rc ? c.entry?.tierByRace?.[rc] : c.entry?.tier ?? combinedTier(c.entry?.tierByRace)) ?? undefined;
         const at = pick(a); const bt = pick(b);
         const ai = at?.stdInbun ?? at?.inbun; const bi = bt?.stdInbun ?? bt?.inbun;
+        /* 인분이 같으면 티어 안에서 승패 보정(adj) → 전투 보정(cbt) 높은 쪽(2026-11-07, 요청: "티어로 정렬 시엔 티어 안에서 인분 → 승패 보정 → 전투 보정") — 그래도 같으면 바깥 차례(게임수 …). */
+        const num = (v: number | null | undefined) => (typeof v === "number" ? v : null);
+        const by = (av: number | null, bv: number | null) => missingLast(av === null, bv === null) || dirSign * ((av ?? 0) - (bv ?? 0));
         return missingLast(typeof at?.tier !== "number", typeof bt?.tier !== "number")
           || missingLast(typeof ai !== "number", typeof bi !== "number")
-          || dirSign * ((ai ?? 0) - (bi ?? 0));
+          || dirSign * ((ai ?? 0) - (bi ?? 0))
+          || by(num(at?.adj), num(bt?.adj))
+          || by(num(at?.cbt), num(bt?.cbt));
       }
       if (key === "prod") {   // 생산(분당 병력 값 · 2026-11-06)
         const ax = prodOf(a.stats); const bx = prodOf(b.stats);
