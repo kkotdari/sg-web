@@ -62,6 +62,8 @@ export interface StatGridRow {
   mainRaces?: BaseRace[] | null;
   /** 종족별 티어(2026-11-04 · 표의 티어 칸은 이것만 · sg-api tierByRace). */
   tierByRace?: Record<string, TierEntry> | null;
+  /** 종합 티어(2026-11-07 · 서버가 주종족 판으로 · 셈 표까지 · sg-api tier) — 없으면 종족 표를 합친다. */
+  tier?: TierEntry | null;
 }
 
 /* ★ 팀전 티어 칸(2026-10-27, 요청: "통계에 검색한 조건이 팀전 종류인 경우 팀전 티어 · 컬럼은 유저 옆 · 모바일 유저칸 너비 줄이고") — 셈은 서버(sg-api tier.py · 2026-10-28 처음부터 다시):
