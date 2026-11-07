@@ -252,38 +252,12 @@ function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: bo
 /** 통계 표 도움말(2026-10-22, 요청: "도움말 · 헤더 설명 다 제거하고 '행 누르면…' 자리에 도움말 아이콘 단추 · 툴팁에 표 모양과 설명" → "PC 에도 알아서") —
  *  폰은 말풍선에 한 줄짜리 표 그림(숫자에 단위가 없어서)과 풀이 · PC 는 칸 머리 · 단위가 다 적혀 있어 그림 없이 데미지 뜻과 펼치기만 푼다. */
 export function StatHelp({ mobile }: { mobile: boolean }) {
+  /* 티어 풀이만(2026-11-07, 요청: "도움말은 티어에 관한 거만 남기기" — 전투 · APM 뜻 · 종족 칸 · 주종족 배경 · 정렬 · 그래프 풀이와 폰의 표 그림은 걷었다). */
+  void mobile;
   return (
     <InfoTip
-      label="통계 표" size={16} triggerClassName="scr-infotip scr-sg-help-btn" bubbleClassName="scr-sg-help"
-      text={mobile ? (
-        <>
-          <span className="scr-sg-help-mock" aria-hidden>
-            <span className="scr-sg-help-h">유저</span><span className="scr-sg-help-h">게임수</span><span className="scr-sg-help-h">테란</span><span className="scr-sg-help-h">저그</span>
-            <span className="scr-sg-help-who"><b>닉네임</b></span>
-            <span className="scr-sg-help-rec"><b>68</b></span>
-            <span className="scr-sg-help-rec"><b>2</b></span>
-            <span className="scr-sg-help-rec"><b>3</b></span>
-          </span>
-          <span className="scr-sg-help-list">
-            <span><b>68</b> 게임수 — 전체 판 · 종족 칸은 그 종족 티어(그 종족으로 한 판만으로 잼 · 열 판 미만은 -) · 누르면 그 종족의 게임수 · 승률 · 전투 · APM · EAPM 과 달별 티어</span>
-            {TIER_HELP9}
-            <span>옅은 배경 — 주종족(그 기간 판의 30% 이상을 한 종족 · 여러 개일 수 있어요)</span>
-            <span>넓은 화면(가로 · 태블릿)은 PC 와 같은 칸 — 종족마다 티어 · 게임수 · 승률 · 전투 · APM · EAPM</span>
-            <span>머리를 누르면 그 기준으로 정렬 — 전체 · 종족 머리는 승률 → 게임수 → 끔. 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
-            <span>값을 누르면 다섯 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 다섯 달)</span>
-          </span>
-        </>
-      ) : (
-        <span className="scr-sg-help-list">
-          <span>전투 — 분당 (준 − 입은) 데미지(보정 전 · 0 = 본전 · +면 남김) · 티어는 판 길이에 따른 보통 싸움 양에 견준 값을 써요(팝업 셈 표) · 얹으면 전투와 <b className="is-dealt">딜</b> · <b className="is-taken">피해</b>(그 경기 참가자 평균의 몇 배) 변화</span>
-          <span>APM — 분당 행동 수 평균 · EAPM — 그중 유효 행동(같은 명령 연타 · 헛클릭을 뺌)</span>
-          {TIER_HELP9}
-          <span>종족마다 같은 여섯 칸(티어 · 게임수 · 승률 · 전투 · APM · EAPM) — 티어는 그 종족으로 한 판만으로 잰 등급(팀전 · 맵 전체 조회에서만)</span>
-          <span>옅은 배경 — 주종족(그 기간 판의 30% 이상을 한 종족 · 여러 개일 수 있어요)</span>
-          <span>머리를 누르면 그 기준으로 정렬 — 정렬 줄의 '복수 기준'을 켜면 누른 차례대로 여러 기준이 쌓여요</span>
-          <span>값에 마우스를 얹으면 다섯 달 변화 그래프(여러 달 조회는 그 기간 · 전체 기간은 최근 다섯 달)</span>
-        </span>
-      )}
+      label="티어" size={16} triggerClassName="scr-infotip scr-sg-help-btn" bubbleClassName="scr-sg-help"
+      text={<span className="scr-sg-help-list">{TIER_HELP9}</span>}
     />
   );
 }
