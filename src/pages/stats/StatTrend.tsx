@@ -69,7 +69,11 @@ export const trendEntryOf = (data: StatTrendData, member: Member, month: string)
 /** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.6 · 1.00 · 0.80 · 서버 INBUN_CUTS)
  *  · 판 합이 열 미만이면 등급 없음(서버 TIER_MIN_GAMES). 종족 기록이 없으면 null. 팝업 근거값(EAPM · 교환비 보정 · 승패 보정)도 같은 가중 평균. */
 export function combinedTier(tb: Record<string, TierEntry> | null | undefined): TierEntry | null {
-  const ts = Object.values(tb ?? {}).filter((t) => typeof t?.inbun === "number" && t.inbun > 0 && t.plays > 0);
+  const all = Object.values(tb ?? {}).filter((t) => typeof t?.inbun === "number" && t.inbun > 0 && t.plays > 0);
+  /* ★ 등급이 선 종족(열 판 이상)이 하나라도 있으면 그 종족들만 합친다(2026-11-07, 지적: "종합 상세에 왜 설명만 뜨고 수치는 안 떠" — 딴 종족으로 한두 판 뛴 줄이
+     섞여 늘 '종족별'로 뭉개졌다 · 서버도 주종족 판으로만 티어를 낸다). 등급 선 종족이 없으면(모두 열 판 미만) 전부 합친다. */
+  const ranked = all.filter((t) => typeof t.tier === "number");
+  const ts = ranked.length > 0 ? ranked : all;
   if (ts.length === 0) return null;
   const n = ts.reduce((a, t) => a + t.plays, 0);
   const avg = (f: (t: TierEntry) => number | null | undefined): number | null => {
