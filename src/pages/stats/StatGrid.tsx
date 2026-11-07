@@ -106,7 +106,6 @@ const Dash = () => <span className="scr-sg-dim">-</span>;
 const TIER_HELP9 = (
   <>
     <span>티어 — 몇 인분을 하는지로 매긴 1~4 등급 · 아래를 모두 곱해요</span>
-    <span>EAPM: 헛클릭·연타를 뺀 실제 손 빠르기</span>
     <span>전투: 분당 준 − 입은 데미지(판 길이에 따른 보통 싸움 양에 견줌 · 종족 차이는 감안)</span>
     <span>승패: 편 전력으로 예상한 것보다 얼마나 더 이겼나</span>
   </>
