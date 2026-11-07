@@ -1,6 +1,6 @@
 import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { StatTrendPop, combinedTier, exOf, fightFmt, prodOf, statMetric, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
+import { StatTrendPop, combinedTier, exOf, fightFmt, statMetric, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
@@ -96,7 +96,7 @@ function tierFacts(t: TierEntry): TrendFact[] {
   const out: TrendFact[] = [];
   if (typeof t.eapm === "number") out.push({ label: "EAPM", value: String(Math.round(t.eapm)) });
   if (typeof t.cbt === "number") out.push({ label: "전투 보정", value: pctOf(t.cbt) });   // 교환이익(준 − 입은 · 팀 싸움 양으로 나눔 · 2026-11-06 저녁 "이름도 전투로")
-  if (typeof t.prod === "number") out.push({ label: "생산 보정", value: pctOf(t.prod) });   // 같은 편보다 병력을 더 · 덜 뽑은 정도(2026-11-06 · sg-api tier W_PROD)
+  // 생산 보정은 걷었다(2026-11-07 "뽑기만 많이 뽑고 전투를 못한 건 의미 없어" · 칸도 뺌).   // 같은 편보다 병력을 더 · 덜 뽑은 정도(2026-11-06 · sg-api tier W_PROD)
   if (typeof t.adj === "number") out.push({ label: "승패 보정", value: pctOf(t.adj) });
   return out;
 }
@@ -108,7 +108,6 @@ const TIER_HELP9 = (
     <span>티어 — 몇 인분을 하는지로 매긴 1~4 등급 · 아래를 모두 곱해요</span>
     <span>EAPM: 헛클릭·연타를 뺀 실제 손 빠르기</span>
     <span>전투: 분당 준 − 입은 데미지(판 길이에 따른 보통 싸움 양에 견줌 · 종족 차이는 감안)</span>
-    <span>생산: 분당 뽑은 병력 값(판 길이에 따른 보통 생산에 견줌 · 종족 차이는 감안)</span>
     <span>승패: 편 전력으로 예상한 것보다 얼마나 더 이겼나</span>
   </>
 );
@@ -197,13 +196,11 @@ function WhoPlain({ member }: { member: Member }) {
    묶음마다 [티어 | 게임수 | 승률 | 교환비 | APM | EAPM](티어는 팀전 · 맵 전체 조회에서만 · sg-api tierByRace — 그 종족으로 한 판만으로 잰 인분). 옛 [전체 · 주종족] 묶음 ·
    보기 모드 라디오 · 유저 옆 전체 티어 칸은 걷었다. 폰: 넓은 폰은 PC 와 같은 칸 · 좁은 폰은 종족마다 [티어 | 게임수](티어 칸이 없는 조회는 [게임수 | 승률]).
    평균 줄: 티어는 "-" · 나머지는 그 종족으로 뛴 클랜원 판. */
-/** 종족 판 근거값(티어 칸 팝업 · 위 TierCell more) — 게임수 · 승률 · 전투 · 생산 · APM · EAPM. */
+/** 종족 판 근거값(티어 칸 팝업 · 위 TierCell more) — 게임수 · 승률 · 전투 · APM · EAPM. */
 function raceFacts(s: MemberStats): TrendFact[] {
   const out: TrendFact[] = [{ label: "게임수", value: s.plays.toLocaleString() }, { label: "승률", value: `${s.winRate}%` }];
   const x = exOf(s);
   if (x !== null) out.push({ label: "전투", value: fightFmt(x) });
-  const pr = prodOf(s);   // 생산(분당 병력 값 · 2026-11-06 저녁, 요청: "생산은 왜 없어")
-  if (pr !== null) out.push({ label: "생산", value: Math.round(pr).toLocaleString() });
   if (typeof s.avgApm === "number") out.push({ label: "APM", value: String(s.avgApm) });
   if (typeof s.avgEapm === "number") out.push({ label: "EAPM", value: String(s.avgEapm) });
   return out;
@@ -222,8 +219,7 @@ function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: Membe
       <TCell member={member} metric={statMetric("plays", race)} className={cx(!tier && "scr-sg-gstart", tier ? wide : m)}><Num v={has ? s!.plays.toLocaleString() : null} /></TCell>
       <TCell member={member} metric={statMetric("rate", race)} className={wide}>{!has ? <Dash /> : <Rate s={s!} />}</TCell>
       <TCell member={member} metric={statMetric("exr", race)} className={wide}>{!has ? <Dash /> : <ExRaw s={s!} />}</TCell>
-      {/* 생산(분당 병력 값 · 2026-11-06, 요청: "생산도 추가 · 피시에 컬럼") — 교환비 다음 칸. */}
-      <TCell member={member} metric={statMetric("prod", race)} className={wide}><Num v={has && prodOf(s!) !== null ? Math.round(prodOf(s!)!).toLocaleString() : null} /></TCell>
+      {/* 생산 칸은 걷었다(2026-11-07, 요청: "뽑기만 많이 뽑고 전투를 못한 건 의미 없어 · 컬럼도 제거" · 2026-11-06 더했던 것). */}
       <TCell member={member} metric={statMetric("apm", race)} className={wide}><Num v={has ? s!.avgApm : null} /></TCell>
       <TCell member={member} metric={statMetric("eapm", race)} className={wide}><Num v={has ? s!.avgEapm : null} /></TCell>
     </>
@@ -355,7 +351,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   /** 머리 묶음 — 종합 + 종족 셋. */
   const groups: readonly (BaseRace | null)[] = [null, ...races];
   /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · 전투 · APM · EAPM(위 RaceCells ★). */
-  const per = tier ? 7 : 6;   // 2026-11-06 생산 칸 더함(옛 6 : 5)
+  const per = tier ? 6 : 5;   // 2026-11-07 생산 칸 걷음(2026-11-06 더했던 7 : 6)
   const gridRef = useRef<HTMLDivElement>(null);
   const [clipW, setClipW] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -408,8 +404,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     onClickCapture: (e: React.MouseEvent) => { const c = cellOf(e.target); if (c) setHPin((p) => (sameCell(p, c) ? null : c)); },
   };
   /** 종족 묶음 머리 두 줄 — 윗줄 종족 이름(묶음 칸 수만큼 덮음) · 아랫줄 칸 머리. 폰은 좁을 때 칸이 줄어 덮는 수가 CSS 변수(--rspan)다. */
-  const SUBS: readonly (readonly ["티어" | "게임수" | "승률" | "전투" | "생산" | "APM" | "EAPM", "tier" | "plays" | "rate" | "exr" | "prod" | "apm" | "eapm"])[] =
-    [...(tier ? [["티어", "tier"] as const] : []), ["게임수", "plays"], ["승률", "rate"], ["전투", "exr"], ["생산", "prod"], ["APM", "apm"], ["EAPM", "eapm"]];
+  const SUBS: readonly (readonly ["티어" | "게임수" | "승률" | "전투" | "APM" | "EAPM", "tier" | "plays" | "rate" | "exr" | "prod" | "apm" | "eapm"])[] =
+    [...(tier ? [["티어", "tier"] as const] : []), ["게임수", "plays"], ["승률", "rate"], ["전투", "exr"], ["APM", "apm"], ["EAPM", "eapm"]];
   const head = (m: boolean) => (
     <div className="scr-sg-row scr-sg-head" role="row">
       <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>

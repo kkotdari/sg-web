@@ -5787,8 +5787,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* 종합 묶음 + 펼친 종족 묶음(같은 날 "기본은 종합 · 종족은 접혀 있다가 토글로") — 칸 수는 StatGrid 가 인라인 변수로(--ncw 넓을 때 · --ncn 좁을 때 = [게임수] + 묶음마다 하나). */
 /* 묶음 칸 수 = StatGrid per(2026-11-06 생산 칸 더함 · 5/6 → 6/7 — 옛 값이 남아 넓은 폰 · 태블릿에서 머리 줄이 짧아져 줄이 밀렸다 · 지적: "통계 폭이 유지가 안 됨"). */
 /* 넓은 폰 · 태블릿 칸 최소 폭 28/26 → 46px · 유저 110px(2026-11-06, 지적: "모바일 레이아웃인데 PC 로 나오는 구간에서 너무 비좁네") — 넘치면 .scr-sg-scroll 이 가로로 민다. */
-.scr-sg.is-m.is-race9 { --rspan: 6; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 6), minmax(46px, 1fr)); }
-.scr-sg.is-m.is-race9.has-tier { --rspan: 7; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 7), minmax(46px, 1fr)); }
+.scr-sg.is-m.is-race9 { --rspan: 5; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 5), minmax(46px, 1fr)); }   /* 2026-11-07 생산 칸 걷음(6 · 7 → 5 · 6) */
+.scr-sg.is-m.is-race9.has-tier { --rspan: 6; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 6), minmax(46px, 1fr)); }
 @media (max-width: 600px) {
   .scr-sg.is-m.is-race9, .scr-sg.is-m.is-race9.has-tier { --rspan: 1; grid-template-columns: minmax(min-content, 1.6fr) repeat(var(--ncn, 2), minmax(40px, 1fr)); }
 }
