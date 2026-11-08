@@ -1,6 +1,6 @@
 import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { StatTrendPop, combinedTier, gainOf, partOf, pctFmt, prodOf, statMetric, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
+import { StatTrendPop, calcRowOf, combinedTier, gainOf, partOf, pctFmt, prodOf, statMetric, type CalcKey, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
@@ -161,15 +161,31 @@ function Rate({ s }: { s?: MemberStats }) {
 
 /** ★ 교환 이득 · 교전 참여 · 생산 칸(2026-11-08 밤, 요청: "통계 표의 전투 컬럼은 교환 이득으로 · 그 옆에 교전 참여 · 생산도 추가") — 티어 셈 표의 세 줄과 같은 재료(덤퍼 가치 배분 · sg-api valTaken …).
  *  교환 이득 = 가져간 ÷ 잃은 자원(0% = 본전) · 교전 참여 = 가져간 ÷ 길이 보통(0% = 보통) · 생산 = 분당 뽑은 병력 값. 옛 전투 칸(분당 준 − 입은 데미지) · 그 전 교환비 · 데미지 칸은 걷었다. */
+/** 비율 칸의 % 는 승률처럼 작고 연하게(2026-11-08 밤, 요청: "%는 승률처럼 작고 연하게") — Num 과 같은 꼴(scr-sg-v · 숫자 b · 단위 i). */
+function PctNum({ x }: { x: number }) {
+  const t = pctFmt(x);
+  return <span className="scr-sg-v"><b>{t.slice(0, -1)}</b><i>%</i></span>;
+}
 function GainCell({ s }: { s: MemberStats }) {
   const x = gainOf(s);
   if (x === null) return <Dash />;
-  return <span className="scr-sg-dmg" title="교환 이득 — 가져간 ÷ 잃은 자원(0% = 본전 · 보정 전)"><b>{pctFmt(x)}</b></span>;
+  return <span className="scr-sg-dmg" title="교환 이득 — 가져간 ÷ 잃은 자원(0% = 본전 · 보정 전)"><PctNum x={x} /></span>;
 }
 function PartCell({ s }: { s: MemberStats }) {
   const x = partOf(s);
   if (x === null) return <Dash />;
-  return <span className="scr-sg-dmg" title="교전 참여 — 가져간 자원 ÷ 그 길이 판의 보통(0% = 보통 · 보정 전)"><b>{pctFmt(x)}</b></span>;
+  return <span className="scr-sg-dmg" title="교전 참여 — 가져간 자원 ÷ 그 길이 판의 보통(0% = 보통 · 보정 전)"><PctNum x={x} /></span>;
+}
+/** 보정 뒤 점수 칸(위 calcRowOf ★) — 인분 배수 둘째 자리(1.00 = 보통). */
+function ScoreCell({ r }: { r: TierCalcRow | null }) {
+  if (!r) return <Dash />;
+  return <span className="scr-sg-v" title={`${r.name} — 보정 뒤 점수(인분 배수 · 1.00 = 보통) · 누르면 원점수와 보정 과정`}><b>{r.mult.toFixed(2)}</b></span>;
+}
+/** 팝업의 원점수(보정 뒤 칸일 때) — 표에 보이던 옛 값. */
+function rawFact(s: MemberStats, k: CalcKey): TrendFact[] {
+  const v = k === "exr" ? gainOf(s) : k === "part" ? partOf(s) : prodOf(s);
+  if (v === null) return [];
+  return [{ label: "원점수", value: k === "prod" ? `${Math.round(v).toLocaleString()}/분` : pctFmt(v) }];
 }
 function ProdCell({ s }: { s: MemberStats }) {
   const x = prodOf(s);
@@ -228,15 +244,27 @@ function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: Membe
   const mc = main ? "is-main" : "";
   const m = cx(mobile && "scr-sg-mnum", mc);
   const wide = cx(mobile && "scr-sg-mnum scr-sg-mwide", mc);
+  /* 티어 조회의 사람 줄은 보정 뒤 점수(calcRowOf ★) · 팝업에 원점수와 그 줄의 보정 과정 · 평균 줄은 보정이 없어 "-". 티어 없는 조회는 원점수 칸 그대로. */
+  const scored = !!tier;
+  const sc = (k: CalcKey) => (scored && !clan ? calcRowOf(t, k) : null);
+  const cell = (k: CalcKey, raw: ReactNode) => {
+    const r = sc(k);
+    return (
+      <TCell member={member} metric={statMetric(k, race)} className={wide}
+        facts={r && has ? rawFact(s!, k) : undefined} calc={r ? [r] : undefined}>
+        {!has ? <Dash /> : scored ? (clan ? <Dash /> : <ScoreCell r={r} />) : raw}
+      </TCell>
+    );
+  };
   return (
     <>
       {tier && <TierCell t={clan ? null : t} member={clan ? undefined : member} race={race ?? undefined} className={cx("scr-sg-gstart", m)} more={has ? raceFacts(s!) : undefined} />}
       <TCell member={member} metric={statMetric("plays", race)} className={cx(!tier && "scr-sg-gstart", tier ? wide : m)}><Num v={has ? s!.plays.toLocaleString() : null} /></TCell>
       <TCell member={member} metric={statMetric("rate", race)} className={wide}>{!has ? <Dash /> : <Rate s={s!} />}</TCell>
       {/* 교환 이득 · 교전 참여 · 생산(2026-11-08 밤 ★ GainCell) — 생산 칸은 2026-11-07 걷었다가("뽑기만 많이 뽑고 전투를 못한 건 의미 없어") 세 줄 티어 식과 함께 되살렸다. */}
-      <TCell member={member} metric={statMetric("exr", race)} className={wide}>{!has ? <Dash /> : <GainCell s={s!} />}</TCell>
-      <TCell member={member} metric={statMetric("part", race)} className={wide}>{!has ? <Dash /> : <PartCell s={s!} />}</TCell>
-      <TCell member={member} metric={statMetric("prod", race)} className={wide}>{!has ? <Dash /> : <ProdCell s={s!} />}</TCell>
+      {cell("exr", has ? <GainCell s={s!} /> : null)}
+      {cell("part", has ? <PartCell s={s!} /> : null)}
+      {cell("prod", has ? <ProdCell s={s!} /> : null)}
       <TCell member={member} metric={statMetric("apm", race)} className={wide}><Num v={has ? s!.avgApm : null} /></TCell>
       <TCell member={member} metric={statMetric("eapm", race)} className={wide}><Num v={has ? s!.avgEapm : null} /></TCell>
     </>

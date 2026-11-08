@@ -7,7 +7,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
-import { combinedTier, gainOf, partOf, prodOf, statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
+import { calcRowOf, combinedTier, gainOf, partOf, prodOf, statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -349,6 +349,13 @@ export default function ClanStatsScreen() {
           || by(num(at?.adj), num(bt?.adj))
           || by(num(at?.cbt), num(bt?.cbt));
       }
+      /* 티어 조회의 교환 이득 · 교전 참여 · 생산은 칸에 보이는 보정 뒤 점수로(2026-11-08 밤 "통계표 전부 보정후 점수" · calcRowOf ★). race 는 종족 묶음(없으면 종합). */
+      const scoreOf = (c: Card, k: "exr" | "part" | "prod", rc: BaseRace | null): number | null =>
+        calcRowOf(rc ? c.entry?.tierByRace?.[rc] : c.entry?.tier ?? combinedTier(c.entry?.tierByRace), k)?.mult ?? null;
+      if (showTier && (key === "exr" || key === "part" || key === "prod")) {
+        const ax = scoreOf(a, key, null); const bx = scoreOf(b, key, null);
+        return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
+      }
       if (key === "prod") {   // 생산(분당 병력 값 · 2026-11-06)
         const ax = prodOf(a.stats); const bx = prodOf(b.stats);
         return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
@@ -368,6 +375,10 @@ export default function ClanStatsScreen() {
       const as = race === "주종족" ? a.entry?.main ?? undefined : race ? a.entry?.byRace?.[race] : a.stats;
       const bs = race === "주종족" ? b.entry?.main ?? undefined : race ? b.entry?.byRace?.[race] : b.stats;
       /* 종족 교환비 · APM · EAPM(2026-11-03 · PC 묶음 다섯 칸) — 그 종족 판이 없거나 값이 없으면 뒤로. */
+      if (showTier && race && race !== "주종족" && (what === "exr" || what === "part" || what === "prod")) {
+        const av = scoreOf(a, what, race); const bv = scoreOf(b, what, race);
+        return missingLast(av === null, bv === null) || dirSign * ((av ?? 0) - (bv ?? 0));
+      }
       if (what === "exr" || what === "part" || what === "prod" || what === "apm" || what === "eapm") {
         const vOf = (x: typeof as) => (!x || x.plays === 0 ? null : what === "exr" ? gainOf(x) : what === "part" ? partOf(x) : what === "prod" ? prodOf(x) : what === "apm" ? x.avgApm : x.avgEapm);
         const av = vOf(as); const bv = vOf(bs);
@@ -388,7 +399,7 @@ export default function ClanStatsScreen() {
       return nicknameTiebreak(a, b);
     });
     return sorted;
-  }, [viewMembers, view, shownSort]);
+  }, [viewMembers, view, shownSort, showTier]);
 
 
 
