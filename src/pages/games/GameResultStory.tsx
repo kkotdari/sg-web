@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { formatWhen } from "../../utils/date";
-import { ReplayModule, sceneLinkOf9, type MotionBase } from "scplay";
+import { ReplayModule, sceneLinkOf9, type MotionBase, type ScenePin9 } from "scplay";
 import { createPortal } from "react-dom";
 import { api } from "../../api/client";
 import Comments from "../feed/Comments";
@@ -179,6 +179,26 @@ export default function GameResultStory({
     return out === "shared" ? "공유됨" : out === "copied" ? "링크 복사됨" : undefined;
   }, [gameResult, memberOf]);
   useEffect(() => { preloadKakao(); }, []);
+  /* ★ 장면 핀(2026-11-08, 요청: "어떤 장면에 태그 남겨서 다른 사람들도 그 장면을 보고 좋으면 추천 · 지도 위치와 시각 · 메모") — 재생기(scplay)가 표식 · 카드 · 메모 창을 그리고
+     여기는 서버 일만: 홀로 선 화면(상세 · 게임 페이지)에서 목록을 받고, 꽂기 · 추천 · 지우기 뒤 목록을 다시 받는다. 피드 카드마다는 안 받는다(요청이 카드 수만큼 난다). */
+  const [pins, setPins] = useState<ScenePin9[]>([]);
+  const pinsOn = soleViewNow && active;
+  const reloadPins = useCallback(async (): Promise<void> => {
+    try { setPins((await api.listScenePins(gameResult.id)).items); } catch { /* 핀은 곁가지다 — 못 받아도 재생기는 선다 */ }
+  }, [gameResult.id]);
+  useEffect(() => { if (pinsOn) void reloadPins(); }, [pinsOn, reloadPins]);
+  const onPinAdd = useCallback(async (scene: { t?: number; z?: number; cx?: number; cy?: number; a?: number; tr?: string; memo: string }): Promise<void> => {
+    await api.addScenePin(gameResult.id, { sec: scene.t ?? 0, z: scene.z, cx: scene.cx, cy: scene.cy, a: scene.a, tr: scene.tr, memo: scene.memo });
+    await reloadPins();
+  }, [gameResult.id, reloadPins]);
+  const onPinLike = useCallback(async (pin: ScenePin9, on: boolean): Promise<void> => {
+    const next = await api.likeScenePin(gameResult.id, pin.id, on);
+    setPins((cur) => cur.map((p) => (p.id === next.id ? next : p)));
+  }, [gameResult.id]);
+  const onPinDelete = useCallback(async (pin: ScenePin9): Promise<void> => {
+    await api.deleteScenePin(gameResult.id, pin.id);
+    setPins((cur) => cur.filter((p) => p.id !== pin.id));
+  }, [gameResult.id]);
 
   /* 머리 줄 — 시각 · 맵 이름 길이 · 승패 배지 · 등록자(2026-10-09). 재생기(scplay)의 머리 줄(.scr-story-map-head)을 걷고(요청: "빨간
      상자 타이틀 부분을 제거해서 화면을 더 확보") 게임 페이지에서는 페이지 제목 줄의 칸(headSlot · .scr-crumb-meta)에 포털로 그린다.
@@ -231,6 +251,7 @@ export default function GameResultStory({
         sceneLink={sceneLink}
         clockKey={String(gameResult.matchNo || gameResult.id)}
         onShare={shareScene}
+        pins={pinsOn ? pins : undefined} onPinAdd={pinsOn ? onPinAdd : undefined} onPinLike={pinsOn ? onPinLike : undefined} onPinDelete={pinsOn ? onPinDelete : undefined}   /* 장면 핀(위 ★ · 2026-11-08) */
         onDetailClose={detailClose ?? undefined}
         soleView={soleViewNow}
         askMode={soleViewNow}   /* 게임 상세는 들어올 때 보기 모드(요약 · 풀)를 묻는다 — 재생기가 장면 링크면 안 묻는다(2026-10-23) */
