@@ -5798,6 +5798,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
 /* 접힌 표(종합만 · StatGrid foldStyle ★) — 칸 틀은 펼친 표 그대로 두고 종합 오른변(--sgclip)에서 잘라 감춘다(종합 칸 너비가 펼침 · 접힘에 안 흔들린다). */
 .scr-sg.is-race9.is-fold { clip-path: inset(0 calc(100% - var(--sgclip, 100%)) 0 0 round 0 var(--radius-sm) var(--radius-sm) 0); }
+/* PC 종족 묶음 표의 칸 옆 여백 8 → 5(머리 3)(2026-11-08 밤, 지적: "1920 을 꼭 못 채움") — 칸 최소 폭 52px(StatGrid) 안에 "교환이득" 머리 넷 글자 · "+125%" 가 들게. */
+.scr-sg.is-race9:not(.is-m) .scr-sg-c { padding-left: 5px; padding-right: 5px; }
+.scr-sg.is-race9:not(.is-m) .scr-sg-head > .scr-sg-hsub { padding-left: 3px; padding-right: 3px; }
 /* PC 통계 표 가로 스크롤(StatGrid ★ 가로 스크롤 · 2026-11-06) — 표는 칸 최소 폭 합만큼 넓어지고 감싸개가 민다 · 접힌 표는 감춘 칸으로 안 밀리게 숨긴다. */
 .scr-sg-scroll { overflow-x: auto; overflow-y: visible; }
 .scr-sg-scroll.is-fold { overflow-x: hidden; }

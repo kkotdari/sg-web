@@ -446,7 +446,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
         종족별을 접은 표(is-fold · 종합만 보임)는 감춘 칸까지 밀리지 않게 가로 넘침을 숨긴다. */}
     <div className={cx("scr-sg-scroll", !showRaces && "is-fold")}>
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-      style={{ gridTemplateColumns: `minmax(170px, 1.6fr) repeat(${groups.length * per}, minmax(60px, 1fr))`, ...foldStyle }}>
+      {/* 칸 최소 폭 60 → 52 · 유저 170 → 150(2026-11-08 밤, 지적: "1920 을 꼭 못 채움" — 묶음 여덟 칸 × 넷 = 32 칸이라 60px 이면 2090 으로 1920 화면(본문 1863)을 넘어 늘 가로로 밀렸다 · 150 + 32 × 52 = 1814). */}
+      style={{ gridTemplateColumns: `minmax(150px, 1.6fr) repeat(${groups.length * per}, minmax(52px, 1fr))`, ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} races={races} />)}
