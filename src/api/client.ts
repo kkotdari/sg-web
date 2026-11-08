@@ -706,6 +706,16 @@ export const api = {
     return request<{ batch: string; total: number }>("/api/game-results/admin/make-truth", { method: "POST", body: JSON.stringify({ ids }) });
   },
 
+  /** ★ 마감 자료 내려받기(2026-11-08 밤 · 제어판) — 기간의 판마다 날짜/경기번호 폴더에 리플레이 · 참값 트랙 · 곁 · game.json 을 담은 zip. */
+  async downloadExportArchive(dateFrom: string, dateTo: string): Promise<Blob> {
+    const headers = new Headers();
+    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+    const q = new URLSearchParams({ dateFrom, dateTo });
+    const res = await fetch(`${API_BASE}/api/game-results/admin/export?${q}`, { headers });
+    if (!res.ok) throw new Error("마감 자료를 내려받지 못했어요.");
+    return res.blob();
+  },
+
   async downloadReplayArchive(): Promise<Blob> {
     const headers = new Headers();
     if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);

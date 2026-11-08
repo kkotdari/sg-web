@@ -101,6 +101,32 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [redo, setRedo] = useState<{ done: number; total: number; failed: number } | null>(null);
   const [confirmRedo, setConfirmRedo] = useState(false);
 
+  /** ★ 마감 자료 내려받기(2026-11-08 밤, 요청: "제어판 마감 시 참값 트랙 지우잖아 그거랑 리플레이 파일이랑 압축해서 받기 · 날짜별로 경기별로") —
+   *  마감할 달(closeMonth)의 판을 날짜/경기번호 폴더로 묶은 zip. 마감 전에 받아 둔다. */
+  const [exporting, setExporting] = useState(false);
+  const downloadExport = async () => {
+    if (!closeMonth) return;
+    const [y, m] = closeMonth.split("-").map(Number);
+    const from = `${closeMonth}-01`;
+    const to = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);   // 그 달 마지막 날
+    setExporting(true);
+    try {
+      const blob = await api.downloadExportArchive(from, to);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sg-export_${from}_${to}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      showAlert(e instanceof Error ? e.message : "마감 자료를 내려받지 못했어요.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const downloadReplays = async () => {
     setDownloading(true);
     try {
@@ -417,6 +443,13 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                       />
                     </div>
                   </div>
+                  <button
+                    type="button" className="scr-rect-btn is-secondary scr-adm-row-btn"
+                    onClick={() => { void downloadExport(); }} disabled={exporting || !closeMonth}
+                    title="그 달 판마다 날짜/경기번호 폴더에 리플레이 · 참값 트랙 · 곁 꾸러미 · game.json 을 담은 zip — 마감 전에 받아 두세요"
+                  >
+                    {exporting ? <Spinner /> : "자료 내려받기"}
+                  </button>
                   <button
                     type="button" className="scr-rect-btn scr-adm-row-btn"
                     onClick={() => { void closeGames(); }}
