@@ -180,7 +180,7 @@ export default function GameResultStory({
   }, [gameResult, memberOf]);
   useEffect(() => { preloadKakao(); }, []);
   /* ★ 장면 핀(2026-11-08, 요청: "어떤 장면에 태그 남겨서 다른 사람들도 그 장면을 보고 좋으면 추천 · 지도 위치와 시각 · 메모") — 재생기(scplay)가 표식 · 카드 · 메모 창을 그리고
-     여기는 서버 일만: 홀로 선 화면(상세 · 게임 페이지)에서 목록을 받고, 꽂기 · 추천 · 지우기 뒤 목록을 다시 받는다. 피드 카드마다는 안 받는다(요청이 카드 수만큼 난다). */
+     여기는 서버 일만: 홀로 선 화면(상세 · 게임 페이지)에서 목록을 받고, 꽂기 · 지우기 뒤 목록을 고친다(추천은 같은 날 걷음). 피드 카드마다는 안 받는다(요청이 카드 수만큼 난다). */
   const [pins, setPins] = useState<ScenePin9[]>([]);
   const pinsOn = soleViewNow && active;
   const reloadPins = useCallback(async (): Promise<void> => {
@@ -191,10 +191,6 @@ export default function GameResultStory({
     await api.addScenePin(gameResult.id, { sec: scene.t ?? 0, z: scene.z, cx: scene.cx, cy: scene.cy, a: scene.a, tr: scene.tr, memo: scene.memo });
     await reloadPins();
   }, [gameResult.id, reloadPins]);
-  const onPinLike = useCallback(async (pin: ScenePin9, on: boolean): Promise<void> => {
-    const next = await api.likeScenePin(gameResult.id, pin.id, on);
-    setPins((cur) => cur.map((p) => (p.id === next.id ? next : p)));
-  }, [gameResult.id]);
   const onPinDelete = useCallback(async (pin: ScenePin9): Promise<void> => {
     await api.deleteScenePin(gameResult.id, pin.id);
     setPins((cur) => cur.filter((p) => p.id !== pin.id));
@@ -251,7 +247,7 @@ export default function GameResultStory({
         sceneLink={sceneLink}
         clockKey={String(gameResult.matchNo || gameResult.id)}
         onShare={shareScene}
-        pins={pinsOn ? pins : undefined} onPinAdd={pinsOn ? onPinAdd : undefined} onPinLike={pinsOn ? onPinLike : undefined} onPinDelete={pinsOn ? onPinDelete : undefined}   /* 장면 핀(위 ★ · 2026-11-08) */
+        pins={pinsOn ? pins : undefined} onPinAdd={pinsOn ? onPinAdd : undefined} onPinDelete={pinsOn ? onPinDelete : undefined}   /* 장면 핀(위 ★ · 2026-11-08) */
         onDetailClose={detailClose ?? undefined}
         soleView={soleViewNow}
         askMode={soleViewNow}   /* 게임 상세는 들어올 때 보기 모드(요약 · 풀)를 묻는다 — 재생기가 장면 링크면 안 묻는다(2026-10-23) */

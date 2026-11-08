@@ -580,7 +580,7 @@ export const api = {
   async recommendGame(id: number, on: boolean): Promise<{ recommendCount: number; recommended: boolean }> {
     return request<{ recommendCount: number; recommended: boolean }>(`/api/game-results/${id}/recommend`, { method: on ? "POST" : "DELETE" });
   },
-  /* ── 장면 핀(2026-11-08 · scplay ScenePin9) — 목록 · 꽂기 · 지우기 · 추천 ── */
+  /* ── 장면 핀(2026-11-08 · scplay ScenePin9) — 목록 · 꽂기 · 지우기(추천은 같은 날 걷음) ── */
   async listScenePins(gameId: number): Promise<{ items: ScenePin9[] }> {
     return request<{ items: ScenePin9[] }>(`/api/game-results/${gameId}/pins`);
   },
@@ -589,9 +589,6 @@ export const api = {
   },
   async deleteScenePin(gameId: number, pinId: number): Promise<void> {
     await request<void>(`/api/game-results/${gameId}/pins/${pinId}`, { method: "DELETE" });
-  },
-  async likeScenePin(gameId: number, pinId: number, on: boolean): Promise<ScenePin9> {
-    return request<ScenePin9>(`/api/game-results/${gameId}/pins/${pinId}/like`, { method: on ? "POST" : "DELETE" });
   },
   /** 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
   async getGamesClose(): Promise<{ closedUntil: string | null }> {
