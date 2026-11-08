@@ -66,7 +66,7 @@ const n = (v: number | null | undefined): number | null => (typeof v === "number
 /** 그래프가 쓸 그 달의 줄 — 평균 행(CLAN_MEMBER_ID)은 clanByMonth, 나머지는 byMonth. */
 export const trendEntryOf = (data: StatTrendData, member: Member, month: string): TrendEntry | undefined =>
   member.id === CLAN_MEMBER_ID ? data.clanByMonth?.[month] : data.byMonth[month]?.[member.id];
-/** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.6 · 1.2 · 1.0 · 서버 INBUN_CUTS)
+/** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.8 · 1.2 · 1.0 · 서버 INBUN_CUTS)
  *  · 판 합이 열 미만이면 등급 없음(서버 TIER_MIN_GAMES). 종족 기록이 없으면 null. 팝업 근거값(EAPM · 교환비 보정 · 승패 보정)도 같은 가중 평균. */
 export function combinedTier(tb: Record<string, TierEntry> | null | undefined): TierEntry | null {
   const all = Object.values(tb ?? {}).filter((t) => typeof t?.inbun === "number" && t.inbun > 0 && t.plays > 0);
@@ -83,8 +83,8 @@ export function combinedTier(tb: Record<string, TierEntry> | null | undefined): 
   };
   /* 보여 주는 인분은 소수 둘째 자리 아래로 자른다 — 서버 tier.shown_inbun 과 같게(2026-11-08 밤 "0.996 은 0.99인분으로 나오는 게 나을 듯") · 등급도 이 값으로. */
   const ib = Math.floor((avg((t) => t.stdInbun ?? t.inbun) ?? 0) * 100 + 1e-9) / 100;
-  /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭 · 2026-11-08 밤 1.6 · 1.15 · 1.0 으로 맞춤 — 옛 1.2 · 0.8 이 남아 있었다 · 2026-11-09 2티어 1.2 "1.2인분부터 2티어").*/
-  const tier = n < 10 ? null : ib >= 1.6 ? 1 : ib >= 1.2 ? 2 : ib >= 1.0 ? 3 : 4;
+  /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭 · 2026-11-08 밤 1.6 · 1.15 · 1.0 으로 맞춤 — 옛 1.2 · 0.8 이 남아 있었다 · 2026-11-09 2티어 1.2 "1.2인분부터 2티어" · 1티어 1.8 "1티어 컷 1.8인분으로").*/
+  const tier = n < 10 ? null : ib >= 1.8 ? 1 : ib >= 1.2 ? 2 : ib >= 1.0 ? 3 : 4;
   /* 셈 표(calc · 2026-11-06 저녁) — 종족이 하나면 그대로 · 여럿이면 줄마다 배수를 판 수로 가중 평균(점수 · 보정 글자는 못 합쳐 비움 · 인분 줄은 위 ib). */
   const calc = ts.length === 1 ? ts[0].calc ?? null : (ts[0].calc ?? null) && ts[0].calc!.map((r, i) => (
     r.name === "인분" ? { ...r, score: "", adj: tier ? `${tier}티어` : "", mult: ib }

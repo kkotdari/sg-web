@@ -282,11 +282,7 @@ function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: bo
         {/* 좁은 폰만 전체 게임수(같은 날 "좁은 폰은 전체 게임수 · 종족별 티어") — 넓은 폰 · PC 는 종족 칸이 게임수를 든다.
             평균 줄도 참여 합(2026-11-05, 요청: "폰도 전체 참여한 사람 수의 합으로 · 대신 명수 옆에 몇 게임인지" — 옛: 경기 수 · 경기 수는 ClanStatsScreen 명수 옆). */}
         {/* 티어 없는 조회는 종합 묶음 첫 칸이 게임수라 이 칸을 안 세운다. */}
-        {mobile && tier && (
-          <TCell member={who} metric={statMetric("plays")} className="scr-sg-mnum scr-sg-mnarrow">
-            <Num v={row.stats.plays > 0 ? row.stats.plays.toLocaleString() : null} />
-          </TCell>
-        )}
+        {/* (걷음 · 2026-11-09, 요청: "좁은 폰도 피시랑 똑같이 표시하고 스크롤") 좁은 폰만의 전체 게임수 칸(scr-sg-mnarrow) — 이제 모든 폰이 PC 칸을 다 쓰고 가로로 민다. */}
         {/* 종합(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)") — 전체 판 · 종합 티어(평균 줄은 티어 없음). */}
         {/* 종합 티어 — 서버가 주종족 판으로 낸 것(row.tier · 셈 표까지 · 2026-11-07) 먼저 · 없으면(옛 응답) 종족 표를 합친다. */}
         <RaceCells s={row.stats} t={clan ? null : row.tier ?? combinedTier(row.tierByRace)} race={null} member={who} clan={clan} tier={tier} mobile={mobile} />
@@ -386,6 +382,21 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     return () => ro.disconnect();
   }, [showRaces, mobile, tier]);
   const foldStyle = showRaces || clipW === null ? {} : { "--sgclip": `${clipW}px` } as React.CSSProperties;
+  /* ★ 접힌 표도 가로로 민다(2026-11-09, 요청: "모바일 좁은 폰도 통계에서 피시랑 똑같이 표시하고 스크롤 사용 · 기본은 종족별 접힌 상태로") — 옛: 접으면 감싸개가 가로 넘침을 숨겨(overflow hidden)
+     좁은 폰에선 종합 칸도 다 못 봤다. 이제 크기 상자(.scr-sg-sizer)가 종합 오른변(clipW)에서 자르고 감싸개는 그 폭까지만 민다 — 표 자체는 감싸개 폭(--sgw) 그대로라 칸 너비가 펼침 · 접힘에 안 흔들린다. */
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [sgw, setSgw] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const sc = scrollRef.current;
+    if (!sc) return undefined;
+    const meas = (): void => setSgw(sc.clientWidth);
+    meas();
+    const ro = new ResizeObserver(meas);
+    ro.observe(sc);
+    return () => ro.disconnect();
+  }, [mobile]);
+  const scrollStyle = sgw === null ? undefined : ({ "--sgw": `${sgw}px` } as React.CSSProperties);
+  const sizerStyle = showRaces || clipW === null ? undefined : { width: clipW };
   useEffect(() => { onVisW?.(showRaces ? null : clipW); }, [onVisW, showRaces, clipW]);
   /* ★ 열 강조(2026-11-04, 요청: "마우스 오버나 클릭 시 해당 열 전체에 포인트 효과 — 다크 흰색 톤 · 라이트 푸른 톤 · 버튼 채우기 색") — 얹은 칸(hover)이나 누른 칸(pin · 다시 누르면 끔)의
      열(줄 안 자리)을 모든 줄에서 칠한다(→ --lighting-hover-bg · 아래 <style>). 유저 · 티어 칸은 안 친다. PC 머리 줄은 그 아랫머리도 함께. */
@@ -428,7 +439,6 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const head = (m: boolean) => (
     <div className="scr-sg-row scr-sg-head" role="row">
       <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
-      {m && tier && <span className="scr-sg-c scr-sg-h2 scr-sg-hnarrow scr-sg-mnarrow"><SortHead {...mToggle("plays")}>게임수</SortHead></span>}
       {groups.map((r) => (
         <span key={r ?? "종합"} className="scr-sg-c scr-sg-hgroup scr-sg-gstart" style={{ gridColumn: m ? "span var(--rspan)" : `span ${per}` }}>
           {r ?? "종합"}
@@ -455,12 +465,14 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       <TrendCtx.Provider value={ctx}>
       {hcolCss && <style>{hcolCss}</style>}
       {/* 넓은 폰 · 태블릿도 가로 스크롤(2026-11-06, 지적: "모바일 레이아웃인데 PC 로 나오는 구간에서 너무 비좁네") — 칸 최소 폭을 키우고 넘치면 감싸개가 민다(PC 와 같은 .scr-sg-scroll). */}
-      <div className={cx("scr-sg-scroll", !showRaces && "is-fold")}>
+      <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
+      <div className="scr-sg-sizer" style={sizerStyle}>
       <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-        style={{ "--ncw": groups.length * per, "--ncn": groups.length + (tier ? 1 : 0), ...foldStyle } as React.CSSProperties}>
+        style={{ "--ncw": groups.length * per, ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} mobile races={races} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} mobile races={races} />)}
+      </div>
       </div>
       </div>
       {popEl}
@@ -473,12 +485,14 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     {/* ★ 가로 스크롤(2026-11-06, 요청: "폭 최소 폭 늘리고 화면 좁으면 스크롤 생기게") — 칸 최소 폭 유저 150 → 170 · 값 50 → 60px. 그 합이 화면보다 넓으면 표 감싸개가 가로로 민다.
         종족별을 접은 표(is-fold · 종합만 보임)는 감춘 칸까지 밀리지 않게 가로 넘침을 숨긴다. */}
     {/* 칸 최소 폭 60 → 52 · 유저 170 → 150(2026-11-08 밤, 지적: "1920 을 꼭 못 채움" — 묶음 여덟 칸 × 넷 = 32 칸이라 60px 이면 2090 으로 1920 화면(본문 1863)을 넘어 늘 가로로 밀렸다 · 150 + 32 × 52 = 1814). */}
-    <div className={cx("scr-sg-scroll", !showRaces && "is-fold")}>
+    <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
+    <div className="scr-sg-sizer" style={sizerStyle}>
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
       style={{ gridTemplateColumns: `minmax(150px, 1.6fr) repeat(${groups.length * per}, minmax(52px, 1fr))`, ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} races={races} />)}
+    </div>
     </div>
     </div>
     {popEl}

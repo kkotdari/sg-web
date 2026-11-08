@@ -5256,15 +5256,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 옛 폰 전적 칸(한 칸에 위 판수 · 아래 승률 · .scr-sg-mrec · .scr-sg-mrate)과 전적 묶음 머리(.scr-sg-hgroup4)는 걷었다(2026-10-28 — 게임수 · 승률 칸이 따로). */
 /* ★ 좁은 폰(600px 이하)은 종족 구분 없이 전체 게임수 · 승률만(2026-10-28, 요청: "전적도 일반적 폰 너비에서는 전체 전적만 · 종족 구분 없이" →
    "좁은 폰의 경우 게임수와 승률 두 칸으로 나눠서") — 종족 칸(scr-sg-mwide)을 숨기고 칸 수를 줄인다. 600px 넘는 폰 가로 · 태블릿은 종족 칸까지. */
-@media (max-width: 600px) {
-  .scr-sg.is-m { grid-template-columns: minmax(min-content, 1.6fr) repeat(4, minmax(40px, 1fr)); }
-  .scr-sg.is-m.has-tier { grid-template-columns: minmax(min-content, 1.7fr) repeat(5, minmax(34px, 1fr)); }
-  .scr-sg.is-m .scr-sg-mwide { display: none; }
-}
-/* 좁은 폰 몫 칸(보정교환비 · EAPM 이 앞 · MobileRow ★)은 넓은 폰에서 숨는다 — 넓은 폰은 PC 차례의 scr-sg-mwide 칸을 쓴다. */
-@media (min-width: 601px) {
-  .scr-sg.is-m .scr-sg-mnarrow { display: none; }
-}
+/* (걷음 · 2026-11-09, 요청: "모바일 좁은 폰도 통계에서 피시랑 똑같이 표시하고 스크롤 사용") 좁은 폰(600px 이하)의 줄인 칸 틀(전체 게임수 · 종족마다 한 칸 · scr-sg-mwide 숨김) —
+   이제 모든 폰이 PC 칸을 다 쓰고 .scr-sg-scroll 이 가로로 민다(유저 칸은 왼쪽에 붙음 · 아래 ★ 폰 붙박이 유저 칸). */
 /* 폰 표 도움말(StatHelp · 2026-10-22) — 정렬 줄 오른끝 단추 · 말풍선에 한 줄짜리 표 그림(.scr-sg-help-mock)과 풀이 목록. */
 .scr-sg-help-btn { margin-left: auto; padding: 0 2px; }
 .scr-infotip-bubble.scr-sg-help { max-width: min(300px, 88vw); padding: 10px 12px; white-space: normal; }
@@ -5792,9 +5785,6 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* 넓은 폰 · 태블릿 칸 최소 폭 28/26 → 46px · 유저 110px(2026-11-06, 지적: "모바일 레이아웃인데 PC 로 나오는 구간에서 너무 비좁네") — 넘치면 .scr-sg-scroll 이 가로로 민다. */
 .scr-sg.is-m.is-race9 { --rspan: 7; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 7), minmax(46px, 1fr)); }   /* 2026-11-08 밤 교환 이득 · 교전 참여 · 생산(5 · 6 → 7 · 8 · StatGrid per) */
 .scr-sg.is-m.is-race9.has-tier { --rspan: 8; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 8), minmax(46px, 1fr)); }
-@media (max-width: 600px) {
-  .scr-sg.is-m.is-race9, .scr-sg.is-m.is-race9.has-tier { --rspan: 1; grid-template-columns: minmax(min-content, 1.6fr) repeat(var(--ncn, 2), minmax(40px, 1fr)); }
-}
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
 /* 접힌 표(종합만 · StatGrid foldStyle ★) — 칸 틀은 펼친 표 그대로 두고 종합 오른변(--sgclip)에서 잘라 감춘다(종합 칸 너비가 펼침 · 접힘에 안 흔들린다). */
 .scr-sg.is-race9.is-fold { clip-path: inset(0 calc(100% - var(--sgclip, 100%)) 0 0 round 0 var(--radius-sm) var(--radius-sm) 0); }
@@ -5803,8 +5793,16 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg.is-race9:not(.is-m) .scr-sg-head > .scr-sg-hsub { padding-left: 3px; padding-right: 3px; }
 /* PC 통계 표 가로 스크롤(StatGrid ★ 가로 스크롤 · 2026-11-06) — 표는 칸 최소 폭 합만큼 넓어지고 감싸개가 민다 · 접힌 표는 감춘 칸으로 안 밀리게 숨긴다. */
 .scr-sg-scroll { overflow-x: auto; overflow-y: visible; }
-.scr-sg-scroll.is-fold { overflow-x: hidden; }
-.scr-sg-scroll > .scr-sg { min-width: min-content; }   /* 칸 최소 폭 합까지만 넓어진다(max-content 는 글 폭대로 2배 넘게 퍼졌다) */
+.scr-sg-scroll > .scr-sg-sizer > .scr-sg { min-width: min-content; }   /* 칸 최소 폭 합까지만 넓어진다(max-content 는 글 폭대로 2배 넘게 퍼졌다) */
+/* 접힌 표(2026-11-09 · StatGrid sizerStyle ★) — 크기 상자가 종합 오른변(clipW)에서 자르고 감싸개는 그 폭까지만 민다(옛: 감싸개 overflow hidden 이라 좁은 폰에서 종합 칸도 다 못 봤다).
+   자르기는 clip(붙박이 유저 칸이 감싸개 기준으로 붙게 — hidden 은 제가 스크롤 상자가 되어 sticky 를 가둔다) · 표 폭은 감싸개 폭(--sgw) 그대로(칸 너비가 펼침 · 접힘에 안 흔들린다). */
+.scr-sg-scroll.is-fold > .scr-sg-sizer { overflow: clip; }
+.scr-sg-scroll.is-fold > .scr-sg-sizer > .scr-sg { width: var(--sgw, 100%); }
+/* ★ 폰 붙박이 유저 칸(2026-11-09, 같은 요청) — 가로로 밀어도 유저 칸은 왼쪽에 남는다. 표의 overflow hidden 은 sticky 를 가두므로 폰은 clip(둥근 귀 자르기는 같다).
+   바탕은 페이지 바탕(--void) · 머리 칸은 머리 칠(overlay 6%)을 그 위에 겹친다. */
+.scr-sg.is-m { overflow: clip; }
+.scr-sg.is-m .scr-sg-who { position: sticky; left: 0; z-index: 1; background: var(--void); }
+.scr-sg.is-m .scr-sg-head > .scr-sg-who { background: linear-gradient(rgba(var(--overlay-rgb), 0.06), rgba(var(--overlay-rgb), 0.06)), var(--void); }
 /* 종족별 펼치기/접기(ClanStatsScreen 정렬 줄 오른끝 · 2026-11-05 표 밖으로 · 옛: 종합 머리 안 absolute). */
 .scr-sg-fold {
   display: inline-flex; align-items: center; gap: 1px; padding: 2px 6px; border-radius: 4px;

@@ -163,7 +163,8 @@ export default function ClanStatsScreen() {
   /* 폰은 **늘 펼친 채로 시작**(같은 날, 요청: "모바일 통계는 각 종족 전체 펼친 상태로 시작") — 기억은 PC 만 읽는다(폰에서 접어도 다음엔 펼침). */
   /** 보이는 표 폭(StatGrid onVisW · 접혀 종합만일 때) — 정렬 줄을 그만큼으로 죈다. */
   const [sortW, setSortW] = useState<number | null>(null);
-  const [showRaces, setShowRacesRaw] = useState(() => { if (isMobile) return true; try { return localStorage.getItem("stats.showRaces") === "1"; } catch { return false; } });
+  /* 폰도 기본은 접힘(2026-11-09, 요청: "좁은 폰도 피시랑 똑같이 · 기본은 종족별 접힌 상태로" — 옛: 폰은 늘 펼침) · 폰은 기억하지 않는다(늘 접힌 채 연다). */
+  const [showRaces, setShowRacesRaw] = useState(() => { if (isMobile) return false; try { return localStorage.getItem("stats.showRaces") === "1"; } catch { return false; } });
   const toggleRaces = (): void => {
     const next = !showRaces;
     setShowRacesRaw(next);
