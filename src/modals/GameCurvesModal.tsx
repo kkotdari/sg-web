@@ -24,7 +24,7 @@ import type { GameCurve, GameResult } from "../types";
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
-type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "cm" | "cg" | "dd" | "dt" | "ex";
+type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "cm" | "cg" | "dd" | "dt" | "ex" | "vk" | "vl" | "sk" | "sl" | "vx";
 /** 인구 · 데미지 · 자원 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환" → "인구 데미지 자원 세 개구나 탭이"). */
 type GroupTab = "bl" | "sp" | "dmg" | "rs";
 /** 탭 — bl(건설 줄 · 2026-10-25 "테크가 아니라 건설")은 **한 종류만 보이기**(폰 · PC 창모드)에서만 탭이다(2026-10-25 · 아래 oneKind9 ★). PC 전체화면은 건설 줄이 늘 위에 · 탭은 셋. */
@@ -37,6 +37,13 @@ const EX_CAP = 5;
 const exLine = (dd: readonly number[], dt: readonly number[]): number[] => Array.from({ length: Math.min(dd.length, dt.length) }, (_, m) => {
   const e = Math.max(EX_E, 0.05 * (dd[m] + dt[m]) / 2);
   return Math.min(EX_CAP, (dd[m] + e) / (dt[m] + e));
+});
+/** ★ 교환 이익 줄(2026-11-09, 요청: "데이터 창의 데미지 맨 위 그래프를 교환 이익 그래프로" · "밑에 데미지 주고받은 것도 서플라이로") — 가져간 ÷ 잃은 자원
+ *  (병력 + 건물 · 때린 비율로 나눈 몫 · 티어의 교환 이득과 같은 재료 · 덤퍼 ##VALM##). 작은 때 튀지 않게 양쪽에 max(VAL_E, 두 값 평균의 5%) · EX_CAP 에서 자름. */
+const VAL_E = 50;
+const valExLine = (vk: readonly number[], vl: readonly number[]): number[] => Array.from({ length: Math.min(vk.length, vl.length) }, (_, m) => {
+  const e = Math.max(VAL_E, 0.05 * (vk[m] + vl[m]) / 2);
+  return Math.min(EX_CAP, (vk[m] + e) / (vl[m] + e));
 });
 /** 건설 칩의 시간축 처지(얹은 칩의 때보다 늦은 칩 숨김 · 이미 사라진 칩 딤 · 그 칩으로 가는 선 숨김) — 껐다(2026-10-26, 요청: "건물의 시간축 효과 제거해 줘") · 코드만 남김. */
 const TIME_FX9 = false;
@@ -874,14 +881,19 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 자원 = 그 분에 쥔 미네랄(rm) · 가스(rg) — 판을 나눈다(PC · 2026-10-21, 요청: "자원 그래프 추가" → "미네랄 가스 분리"). */
   const series = useMemo((): ({ key: string; p: GameCurve | null; team: 1 | 2 } & Record<CurveKey, number[]>)[] => {
     const dm = (a: number[] | undefined): number[] => (dmgMin ? a ?? [] : cumsum(a ?? []));
-    const ps = shown.map((p) => { const dd = dm(p.dd); const dt = dm(p.dt); return { p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg, cm: cumsum(p.cm ?? []), cg: cumsum(p.cg ?? []), dd, dt, ex: exLine(dd, dt) }; });
+    const ps = shown.map((p) => {
+      const dd = dm(p.dd); const dt = dm(p.dt); const vk = dm(p.vk); const vl = dm(p.vl);
+      return { p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg, cm: cumsum(p.cm ?? []), cg: cumsum(p.cg ?? []), dd, dt, ex: exLine(dd, dt), vk, vl, sk: dm(p.sk), sl: dm(p.sl), vx: valExLine(vk, vl) };
+    });
     if (!teamOn) return ps.map((q) => ({ key: q.p.playerName, team: teamNo(q.p.team), ...q }));
     const sum = (ms: typeof ps, k: CurveKey): number[] =>
       Array.from({ length: Math.max(0, ...ms.map((q) => q[k].length)) }, (_, m) => ms.reduce((a, q) => a + (q[k][m] ?? 0), 0));
     return ([1, 2] as const).map((t) => {
       const ms = ps.filter((q) => teamNo(q.p.team) === t);
       const dd = sum(ms, "dd"); const dt = sum(ms, "dt");   // 팀 교환비 = 팀 합끼리
-      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg"), cm: sum(ms, "cm"), cg: sum(ms, "cg"), dd, dt, ex: exLine(dd, dt) };
+      const vk = sum(ms, "vk"); const vl = sum(ms, "vl");   // 팀 교환 이익도 팀 합끼리
+      return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg"), cm: sum(ms, "cm"), cg: sum(ms, "cg"), dd, dt, ex: exLine(dd, dt),
+        vk, vl, sk: sum(ms, "sk"), sl: sum(ms, "sl"), vx: valExLine(vk, vl) };
     });
   }, [shown, teamOn, dmgMin]);
   /* 가로 끝 = 곡선 끝과 건물 · 테크 기록 끝 중 늦은 쪽(2026-10-23, 지적: "끝에 줄 맞춰 나오는 거 — 동시에 저렇게 많은 건물을 착공할 리가 없는데") —
@@ -895,7 +907,11 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
     const ticks = (k: CurveKey): number[] => niceTicks(Math.max(0, ...series.flatMap((s) => s[k])));
     /* 준 · 입은 데미지는 한 자(둘 중 큰 쪽)를 같이 쓴다 — 두 판을 나란히 견준다. */
     const dmg = niceTicks(Math.max(0, ...series.flatMap((s) => [...s.dd, ...s.dt])));
-    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg"), cm: ticks("cm"), cg: ticks("cg"), dd: dmg, dt: dmg, ex: exTicks(Math.max(1, ...series.flatMap((s) => s.ex))) };
+    /* 가져간 · 잃은 서플라이 · 자원도 한 자씩(같은 까닭). */
+    const sup = niceTicks(Math.max(0, ...series.flatMap((s) => [...s.sk, ...s.sl])));
+    const val = niceTicks(Math.max(0, ...series.flatMap((s) => [...s.vk, ...s.vl])));
+    return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg"), cm: ticks("cm"), cg: ticks("cg"), dd: dmg, dt: dmg, ex: exTicks(Math.max(1, ...series.flatMap((s) => s.ex))),
+      vk: val, vl: val, sk: sup, sl: sup, vx: exTicks(Math.max(1, ...series.flatMap((s) => s.vx))) };
   }, [series, lastEventMin]);
   const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s) => (s[key].length < 2 ? [] : [s.p
     ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p), ys: s[key] }
@@ -932,6 +948,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 데미지 탭(2026-10-22, 요청: "딜 피해 그래프") — 적에게 준 · 적에게 입은 체력+실드(유닛 + 건물 합). 팀별 합산이어도 두 판 다(같은 날 "팀별 합산이어도 각각").
      옛 판(참값 판 13 아래)은 데이터가 없어 재분석하라는 글. */
   const hasDmg = (players ?? []).some((p) => (p.dd?.length ?? 0) > 1);
+  /* ★ 가치 자료(2026-11-09 · 덤퍼 ##VALM## · 재분석한 판)가 있으면 데미지 탭 = 교환 이익 · 가져간 서플라이 · 잃은 서플라이. 없으면(재분석 전) 옛 데미지 판. */
+  const hasVal = (players ?? []).some((p) => (p.vk?.length ?? 0) > 1);
   /* 판 제목 옆 작은 탭 — 데미지 누적 · 분당(2026-10-22, 요청: "분당 누적도 작은 탭으로" · 옛 '분당' 스위치) · 자원 누적 · 순간(같은 날). */
   const miniTabs = (on: boolean, set: (v: boolean) => void, off: string, onLabel: string): ReactNode => (
     <span className="scr-line-tabs scr-gc-minitabs" role="tablist" aria-label={`${off} · ${onLabel}`}>
@@ -951,6 +969,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
     : tab === "rs" ? (rsNow ? [chartOf("rm", "미네랄", { titleExtra: rsModeEl }), rgEl]
       : hasGather ? [chartOf("cm", "미네랄", { titleExtra: rsModeEl }), chartOf("cg", "가스")] : null)
     /* 데미지 탭 맨 위 = 교환비(2026-10-28) — 누적 · 분당 작은 탭은 맨 위 판 제목 옆으로 옮겼다(세 판이 같이 따른다). */
+    : hasVal ? [chartOf("vx", "교환 이익(가져간 ÷ 잃은 자원)", { titleExtra: miniTabs(dmgMin, setDmgMin, "누적", "분당") }), chartOf("sk", "가져간 서플라이"), chartOf("sl", "잃은 서플라이")]
     : hasDmg ? [chartOf("ex", "교환비(준 ÷ 입은)", { titleExtra: miniTabs(dmgMin, setDmgMin, "누적", "분당") }), chartOf("dd", "준 데미지"), chartOf("dt", "입은 데미지")] : null;
   const tabsEl = (
     <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label={oneKind9 ? "건설 · 인구 · 데미지 · 자원" : "인구 · 데미지 · 자원"}>
