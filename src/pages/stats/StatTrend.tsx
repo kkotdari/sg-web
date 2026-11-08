@@ -99,13 +99,19 @@ const int = (v: number) => Math.round(v).toLocaleString();
 const pct = (v: number) => `${Math.round(v)}%`;
 const x100 = (v: number) => (v / 100).toFixed(1);
 const x2 = (v: number) => v.toFixed(2);
-/** 전투 칸 값(2026-11-06 저녁, 요청: "컬럼도 전투로 바꾸고 기준은 0" · 밤 "조회 기간의 분당 전투 수치" · 옛 교환비 = 준 ÷ 입은) — sg-api fight: 분당 (준 − 입은) 데미지.
- *  편 안 비교 · 상대 세기는 없다(같은 날 밤 "팀 내 비교 없어도 됨 · 상대 세기 없어도 됨"). 없으면 null. */
-export function exOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
-  return s && s.fightPlays && typeof s.fight === "number" ? s.fight : null;
+/** ★ 교환 이득(2026-11-08 밤, 요청: "통계 표의 전투 컬럼은 교환 이득으로 · 그 옆에 교전 참여 · 생산도 추가") — sg-api valTaken ÷ valLost(가져간 ÷ 잃은 자원값 · 티어 식과 같은 재료 · 덤퍼 가치 배분).
+ *  1 = 본전. 화면은 부호 %(pctFmt · +25% = 잃은 것의 1.25배를 가져감). 옛 전투 칸(분당 준 − 입은 데미지 · fight)은 걷었다. 없으면 null. */
+export function gainOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
+  if (!s || !s.valPlays || typeof s.valTaken !== "number" || typeof s.valLost !== "number") return null;
+  return (s.valTaken + 1) / (s.valLost + 1);
 }
-/** 전투 값 글자 — 분당 데미지 · 0 기준 부호(+120 · −45 · 0). */
-export const fightFmt = (v: number): string => { const r = Math.round(v); return r > 0 ? `+${r.toLocaleString()}` : r < 0 ? `−${(-r).toLocaleString()}` : "0"; };
+/** ★ 교전 참여(같은 날) — valTaken ÷ valExpected(가져간 ÷ 그 길이 판의 보통 · sg-api tier LEN_VAL0). 1 = 보통만큼 싸움. */
+export function partOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
+  if (!s || !s.valPlays || typeof s.valTaken !== "number" || typeof s.valExpected !== "number" || s.valExpected <= 0) return null;
+  return s.valTaken / s.valExpected;
+}
+/** 배수 → 부호 %(1.25 → +25% · 0.9 → −10% · 1 → 0%) — 교환 이득 · 교전 참여 칸 글자. */
+export const pctFmt = (v: number): string => { const r = Math.round((v - 1) * 100); return r > 0 ? `+${r}%` : r < 0 ? `−${-r}%` : "0%"; };
 
 /** 생산 — 분당 뽑은 병력 값(미네랄 + 가스 · 2026-11-06, 요청: "생산도 추가 · 피시에 컬럼"). 값이 없으면 null. */
 export function prodOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
@@ -114,7 +120,7 @@ export function prodOf(s: MemberStatsEntry["overall"] | undefined | null): numbe
 }
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "prod" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part" | "prod" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null): StatMetric {
   const who = race ? `${race} ` : "";
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
@@ -153,12 +159,14 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "prod
     const pick = (e: TrendEntry) => { const v = prodOf(race ? of(race)(e) : e.overall); return v === null ? null : Math.round(v); };
     return { key: race ? `${race}:prod` : "prod", label: `${who}생산(분당 병력 값 · 미네랄 + 가스)`, series: [{ label: "생산", cls: "", pick, fmt: int }], mode: "single" };
   }
+  /* ★ 교환 이득 · 교전 참여(2026-11-08 밤 · 위 gainOf · partOf) — 자 "exr" 는 옛 전투 칸 자리를 그대로 쓴다(정렬 자 · 팝업 열쇠). 옛 데미지(딜 · 피해) 곁 그래프는 걷었다. */
   if (kind === "exr") {
-    if (race) return { key: `${race}:exr`, label: `${who}전투(분당 준 − 입은 데미지 · 0 = 본전)`, series: [{ label: "전투", cls: "", pick: (e) => exOf(of(race)(e)), fmt: fightFmt }], mode: "single" };
-    return {
-      key: "exr", label: "전투(분당 준 − 입은 데미지 · 0 = 본전)", series: [{ label: "전투", cls: "", pick: (e) => exOf(e.overall), fmt: fightFmt }], mode: "single",
-      more: [statMetric("dmg")],
-    };
+    const pick = (e: TrendEntry) => gainOf(race ? of(race)(e) : e.overall);
+    return { key: race ? `${race}:exr` : "exr", label: `${who}교환 이득(가져간 ÷ 잃은 자원 · 0% = 본전)`, series: [{ label: "교환 이득", cls: "", pick, fmt: pctFmt }], mode: "single" };
+  }
+  if (kind === "part") {
+    const pick = (e: TrendEntry) => partOf(race ? of(race)(e) : e.overall);
+    return { key: race ? `${race}:part` : "part", label: `${who}교전 참여(가져간 자원 ÷ 판 길이의 보통 · 0% = 보통)`, series: [{ label: "교전 참여", cls: "", pick, fmt: pctFmt }], mode: "single" };
   }
   /* 데미지(kind "dmg") — 딜 · 피해 두 선. 옛 폰 전적 칸(게임수 · 승률 위아래 · "rec" · "crec")은 걷었다(2026-10-28 — 폰도 게임수 · 승률 칸이 따로). */
   return {

@@ -5776,8 +5776,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* 주종족 글자(StatGrid Mains · 2026-11-04) — 게임수 앞에 작고 옅게(T · P · Z). */
 .scr-sg-mains { font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: 0.02em; color: var(--muted); opacity: 0.7; margin-right: 4px; vertical-align: 1px; }
 @media (min-width: 961px) {
-  .scr-stats-screen-v2 { max-width: 1480px; }
-  .scr-main:has(.scr-stats-screen-v2) { max-width: 1480px; }   /* 리그 상세(1920)와 같은 꼴 — 본문 틀도 함께 넓힌다 */
+  .scr-stats-screen-v2 { max-width: 1920px; }   /* 2026-11-08 밤 1480 → 1920(요청: "통계 화면 폭 1920으로" — 묶음마다 교환 이득 · 교전 참여 · 생산 칸이 늘어) · 리그 상세와 같은 폭 */
+  .scr-main:has(.scr-stats-screen-v2) { max-width: 1920px; }   /* 본문 틀도 함께 넓힌다 */
 }
 /* PC 통계 묶음 고르기(2026-11-03, 요청: "전체, 테란, 프로토스, 저그 체크박스로 선택한 것만 보이게") — 표 위 오른쪽 작은 체크 줄. */
 .scr-sg-groups { display: flex; justify-content: flex-end; gap: 12px; margin: 0 0 6px; font-size: var(--fs-caption); color: var(--muted); }
@@ -5790,8 +5790,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* 종합 묶음 + 펼친 종족 묶음(같은 날 "기본은 종합 · 종족은 접혀 있다가 토글로") — 칸 수는 StatGrid 가 인라인 변수로(--ncw 넓을 때 · --ncn 좁을 때 = [게임수] + 묶음마다 하나). */
 /* 묶음 칸 수 = StatGrid per(2026-11-06 생산 칸 더함 · 5/6 → 6/7 — 옛 값이 남아 넓은 폰 · 태블릿에서 머리 줄이 짧아져 줄이 밀렸다 · 지적: "통계 폭이 유지가 안 됨"). */
 /* 넓은 폰 · 태블릿 칸 최소 폭 28/26 → 46px · 유저 110px(2026-11-06, 지적: "모바일 레이아웃인데 PC 로 나오는 구간에서 너무 비좁네") — 넘치면 .scr-sg-scroll 이 가로로 민다. */
-.scr-sg.is-m.is-race9 { --rspan: 5; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 5), minmax(46px, 1fr)); }   /* 2026-11-07 생산 칸 걷음(6 · 7 → 5 · 6) */
-.scr-sg.is-m.is-race9.has-tier { --rspan: 6; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 6), minmax(46px, 1fr)); }
+.scr-sg.is-m.is-race9 { --rspan: 7; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 7), minmax(46px, 1fr)); }   /* 2026-11-08 밤 교환 이득 · 교전 참여 · 생산(5 · 6 → 7 · 8 · StatGrid per) */
+.scr-sg.is-m.is-race9.has-tier { --rspan: 8; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 8), minmax(46px, 1fr)); }
 @media (max-width: 600px) {
   .scr-sg.is-m.is-race9, .scr-sg.is-m.is-race9.has-tier { --rspan: 1; grid-template-columns: minmax(min-content, 1.6fr) repeat(var(--ncn, 2), minmax(40px, 1fr)); }
 }

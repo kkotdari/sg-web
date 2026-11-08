@@ -300,6 +300,11 @@ export interface MemberStats {
   /** 전투 — 분당 (준 − 입은) 데미지 · 0 = 본전 · +는 남김(sg-api 2026-11-06 밤). */
   fight?: number | null;
   fightPlays?: number | null;
+  /** ★ 가치 교환(sg-api 2026-11-08 밤 · 표의 교환 이득 · 교전 참여 칸) — 가져간 · 잃은 · 길이 기대 자원값의 합(새 덤퍼 판만 · valPlays). 교환 이득 = 가져간 ÷ 잃은 · 교전 참여 = 가져간 ÷ 기대. */
+  valTaken?: number | null;
+  valLost?: number | null;
+  valExpected?: number | null;
+  valPlays?: number | null;
 }
 
 export interface MemberStatsEntry {
