@@ -11,7 +11,8 @@ const PAD = CHART_PAD;
 /** 판에 그리는 한 줄 — 게임 그래프(GameCurvesModal)는 사람마다. */
 export type ChartLine = { key: string; label: string; color: string; ys: number[] };
 
-const compact = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K` : `${Math.round(v * 10) / 10}`);
+/* 음수(교환 이익 · 2026-11-09)는 앞에 − 를 달고 크기로 줄인다. */
+const compact = (v: number): string => (v < 0 ? `−${compact(-v)}` : v >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K` : `${Math.round(v * 10) / 10}`);
 
 /** 가로 눈금(분) — 판과 게임 그래프의 테크 줄이 같이 쓴다. */
 function minuteTicks(maxX: number): number[] {
@@ -168,8 +169,10 @@ export function TitleSwitch({ label, on, onChange }: { label: string; on: boolea
   );
 }
 
-export function Chart({ title, titleExtra, lines, note, maxX, maxY, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fs: FS, axisFs: AFS, padB: PB = PAD.b, padR: padROverride, at: atRaw, onAt }: {
+export function Chart({ title, titleExtra, lines, note, maxX, maxY, minY = 0, width, padL, height, focus, onFocus, ticksX: tx, ticksY: ty, fs: FS, axisFs: AFS, padB: PB = PAD.b, padR: padROverride, at: atRaw, onAt }: {
   title: string; lines: ChartLine[]; note?: string; maxX: number; maxY: number;
+  /** 세로 아래끝(기본 0) — 음수가 있는 판(게임 그래프의 교환 이익 · 2026-11-09)은 아래 눈금을 건넨다. */
+  minY?: number;
   /** 제목 줄 오른쪽에 붙는 것(토글 따위). */
   titleExtra?: ReactNode;
   /** 눈금(기본: 세로는 0·반·끝 · 가로는 minuteTicks) — 게임 그래프는 그 판에 맞춘 눈금을 건넨다. */
@@ -215,7 +218,7 @@ export function Chart({ title, titleExtra, lines, note, maxX, maxY, width, padL,
   const CHIP_H = CB.h;
   const at = atRaw === null ? null : Math.max(0, Math.min(maxX, Math.round(atRaw)));
   const x = (i: number) => PL + (i / maxX) * (W - PL - PR);
-  const y = (v: number) => PAD.t + (1 - v / maxY) * (H - PAD.t - PB);
+  const y = (v: number) => PAD.t + (1 - (v - minY) / (maxY - minY || 1)) * (H - PAD.t - PB);
   const ticksY = ty ?? [0, maxY / 2, maxY];
   const ticksX = tx ?? minuteTicks(maxX);
   const pick = (clientX: number): void => {
@@ -284,7 +287,7 @@ export function Chart({ title, titleExtra, lines, note, maxX, maxY, width, padL,
             <g key={v}>
               <line className="scr-rc-grid" x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} />
               {/* 0 · 0분 글자는 안 쓴다(2026-10-21, 요청: "그래프 0 0분 표시 안하기") — 줄은 그대로. */}
-              {v !== 0 && <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: AFS }}>{compact(v)}</text>}
+              {(v !== 0 || minY < 0) && <text className="scr-rc-axis" x={PL - 5} y={y(v)} textAnchor="end" dominantBaseline="middle" style={{ fontSize: AFS }}>{compact(v)}</text>}
             </g>
           ))}
           {/* 세로선의 분은 가로축에(가까운 눈금 글자는 비켜 준다). */}
