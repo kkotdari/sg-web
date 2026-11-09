@@ -1598,6 +1598,9 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 .scr-v2-toolbar-crumb.scr-game-detail-bar { min-height: 30px; }
 /* 폰은 머리 줄이 재생기 아래(GameDetailPage bar ★ · 2026-11-09) — 위 줄 몫으로 당기던 −6px 을 걷는다(카드 아래 여백이 틈). */
 .scr-v2-toolbar-crumb.scr-game-detail-bar.is-below { margin-top: 0; }
+/* 그 줄이 첫 화면에 보이게 재생기 키 예산에서 그 몫을 뺀다(2026-11-09, 실기 지적: "헤더 로우가 완전 가려짐 · 재생기 줄이고") — scplay 가 읽는 --scr-frame-below
+   (카드 아래 여백 + 머리 줄 키 30 + 숨 10). 그 몫이 있으면 재생기는 펴진 브라우저 바 밑까지 늘지 않는다. */
+@media (max-width: 960px) { .scr-game-page-card { --scr-frame-below: calc(var(--card-pad-b, 16px) + 40px); } }
 @container gamebar (max-width: 520px) { .scr-tools .scr-tools-btn.is-extra { display: none; } }
 .scr-tools .scr-tools-btn.is-danger { color: var(--loss); }
 @media (hover: hover) { .scr-tools .scr-tools-btn.is-danger:hover { background: rgba(220, 70, 70, 0.14); } }
