@@ -3,7 +3,7 @@ import type { GameCurve,
   Member, GameResult, ItemComment, CommentTargetType, RankingShift, FeedEntry, FeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
   ScreenKey, AppVersion, AppVersionStatus, AppVersionInfo,
   MapCanon, MapCatalog,
-  GameResultSlot, GameResultPage, GameResultStatsResponse, GameOutcome, GameType, Race,
+  GameResultSlot, GameResultPage, GameResultStatsResponse, MemberStatsEntry, GameOutcome, GameType, Race,
   ReplayNameClassificationEntry, ReplayNameKind, ReplayNameMappingEntry, ReplayNameMappingKind,
   League, LeagueListItem, LeagueCreatePayload, LeagueUpdatePayload,
   LeagueMatchSide, LeagueMatchSet, PlacementRound, PlacementRoundBrief, LeaguePoolKind, LeagueTeamCompositionEntry,
@@ -98,6 +98,8 @@ export interface GameResultStatsParams {
   trendMonths?: number;
   /** 종족별 인분도(팀 구성하기 · 2026-10-31). */
   tierByRace?: boolean;
+  /** 순위·전적만(래더 · 2026-11-09) — 편성·조합·티어·맞대결·지표 평균을 안 셈한다(빠르다). */
+  lite?: boolean;
 }
 
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
@@ -389,8 +391,16 @@ export const api = {
       mapGroup: params.mapGroup,
       trendMonths: params.trendMonths,
       tierByRace: params.tierByRace || undefined,
+      lite: params.lite || undefined,
     });
     return request<GameResultStatsResponse>(`/api/game-results/stats${qs}`);
+  },
+
+  /** 여러 달 래더 순위 한 번에(역대 퀸 · 순위 변동 · 2026-11-09) — 달("YYYY-MM") → 사람 줄(순위·전적만). */
+  async getRankMonths(params: { memberIds: string[]; matchType: GameType; months: string[] }): Promise<Record<string, MemberStatsEntry[]>> {
+    const qs = buildQuery({ memberIds: params.memberIds.join(","), matchType: params.matchType, months: params.months.join(",") });
+    const res = await request<{ months: Record<string, MemberStatsEntry[]> }>(`/api/game-results/stats/rank-months${qs}`);
+    return res.months;
   },
 
   async getEarliestGameResultDate(): Promise<string | null> {

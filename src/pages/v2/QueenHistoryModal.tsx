@@ -8,8 +8,8 @@ import { LADDER_GAME_TYPES } from "../../constants/gameTypes";
 import { api } from "../../api/client";
 import { rankOf } from "./rankOrder";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
-import { currentMonthValue, monthInputToRange, shiftMonthValue } from "../../utils/date";
-import type { GameType, Member, MemberStats } from "../../types";
+import { currentMonthValue, shiftMonthValue } from "../../utils/date";
+import type { GameType, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 /* ★ 역대 퀸(2026-10-20, 요청: "래더에 상성보기 왼쪽에 역대 퀸 버튼 추가하고 누르면 각 월별 1위 리스트 · 맨 위가 오래된 순 ·
    2026년 / 7월 퀸 마크 전적 / 8월 퀸 기수 전적 · 한 줄 한 줄 꽤 크게 아바타랑 닉네임 · 전적은 좀 작게").
@@ -48,14 +48,10 @@ export default function QueenHistoryModal({ poolIds, members, firstMonth, onClos
     if (poolIds.length === 0 || months.length === 0) { setRows([]); return; }
     let cancelled = false;
     const byId = new Map(members.map((m) => [m.id, m]));
-    Promise.all(months.map(async (month): Promise<QueenMonth> => {
-      const { from, to } = monthInputToRange(month);
-      const res = await api.getGameResultStats({
-        memberIds: poolIds, dateFrom: from, dateTo: to,
-        matchType: LADDER_TYPE, race: "all", ratingScope: "period",
-      });
-      const stats: Record<string, (typeof res.members)[number]> = {};
-      res.members.forEach((e) => { stats[e.memberId] = e; });
+    /* 달마다 /stats 를 따로 부르던 것을 **한 번에**(rank-months · 2026-11-09, 지적: "역대퀸 조회가 너무 느림") — 서버가 이력을 한 번만 읽는다. */
+    api.getRankMonths({ memberIds: poolIds, matchType: LADDER_TYPE, months }).then((byMonth) => months.map((month): QueenMonth => {
+      const stats: Record<string, MemberStatsEntry> = {};
+      (byMonth[month] ?? []).forEach((e) => { stats[e.memberId] = e; });
       const queens = [...rankOf(stats, poolIds)]
         .filter(([, r]) => r === 1)
         .map(([id]) => ({ member: byId.get(id), overall: stats[id].overall }))

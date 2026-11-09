@@ -17,7 +17,7 @@ import { monthInputToRange, shiftMonthValue, currentMonthValue } from "../../uti
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { usePageBackground } from "../../hooks/usePageBackground";
 import { cx } from "../../utils/format";
-import type { GameResult, GameResultStatsResponse, GameType, Member, MemberStatsEntry } from "../../types";
+import type { GameResult, GameType, Member, MemberStatsEntry } from "../../types";
 
 const LADDER_TYPE: GameType = LADDER_GAME_TYPES[0];
 /* PC 상세 팝오버(2026-10-24, 요청: "피시에서는 마우스오버시 자동으로 팝오버로 변경하고 폭도 넓힘") — 줄에 마우스를 얹으면 뜨고, 줄·팝오버를 다 떠나면
@@ -139,23 +139,28 @@ export default function LadderScreen() {
     let cancelled = false;
     setError("");
     setDetail({ period: q.period, ranks: {}, games: [], loading: true });
-    const byId = (res: GameResultStatsResponse) => {
+    const byId = (res: { members: MemberStatsEntry[] }) => {
       const map: Record<string, MemberStatsEntry> = {};
       res.members.forEach((e) => { map[e.memberId] = e; });
       return map;
     };
     const statsOf = (from: string, to: string) => api.getGameResultStats({
       memberIds: ids, dateFrom: from, dateTo: to,
-      matchType: LADDER_TYPE, race: "all", ratingScope: "period",
+      matchType: LADDER_TYPE, race: "all", ratingScope: "period", lite: true,   // 순위·전적만(2026-11-09 · 느림 지적)
     });
     const mine = statsOf(q.from, q.to);
-    /* 앞뒤 세 달 — 다음 달들(아직 없는 달)은 묻지 않고 비워 둔다. 조회한 달은 위 mine 을 같이 쓴다. */
+    /* 앞뒤 세 달 — 다음 달들(아직 없는 달)은 묻지 않고 비워 둔다. 조회한 달은 위 mine 을 같이 쓴다. 나머지 달은 **한 번에**(rank-months · 2026-11-09). */
     const nowM = currentMonthValue();
-    const rankP = Promise.all(trendMonths(q.period).map(async (m): Promise<[string, Map<string, number>]> => {
+    const tm = trendMonths(q.period);
+    const others = tm.filter((m) => m <= nowM && m !== q.period);
+    const othersP = others.length
+      ? api.getRankMonths({ memberIds: ids, matchType: LADDER_TYPE, months: others }).catch(() => ({} as Record<string, MemberStatsEntry[]>))
+      : Promise.resolve({} as Record<string, MemberStatsEntry[]>);
+    const rankP = Promise.all(tm.map(async (m): Promise<[string, Map<string, number>]> => {
       if (m > nowM) return [m, new Map()];
-      const { from, to } = monthInputToRange(m);
-      const res = m === q.period ? await mine : await statsOf(from, to).catch(() => null);
-      return [m, res ? rankOf(byId(res), ids) : new Map()];
+      if (m === q.period) return [m, rankOf(byId(await mine), ids)];
+      const list = (await othersP)[m];
+      return [m, list ? rankOf(byId({ members: list }), ids) : new Map()];
     }));
     const gamesP = (async (): Promise<GameResult[]> => {
       const out: GameResult[] = [];
