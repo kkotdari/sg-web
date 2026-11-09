@@ -15,6 +15,9 @@ import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
 /* ★ 게임 상세는 **목록과 무관한 별도 페이지**다(2026-10-19, 요청: "너나와 리그 게임도 목록과 전혀무관하게 변경 · 별도 페이지임 그냥") —
    들어올 때마다 서버에서 받고, 고친 것을 목록에 알리지 않는다. 제 게임을 제 상태로 든다. */
 
+/** 폰 게임 상세의 첫 화면에 보일 댓글 몫(px) — 재생기 키에서 뺀다(위 frameSize ★). */
+const COMMENT_PEEK = 64;
+
 export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, onMiss }: {
   /** 주소의 게임 칸(경기 번호 또는 id). */
   idText: string;
@@ -56,9 +59,11 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
       if (window.innerWidth !== held.w) held = { w: window.innerWidth, h: window.innerHeight };
       const cs = getComputedStyle(cardEl);
       const r = cardEl.getBoundingClientRect();
-      const w = Math.floor(r.width - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0));
+      /* 폭 = 화면 폭(재생기 판은 폰에서 화면 끝까지 · scplay .scr-feed-group-page .scr-motion-frame 100vw — 카드 안쪽 폭을 주면 좌우가 24px 씩 비었다 · 2026-11-09 실기) */
+      const w = document.documentElement.clientWidth;
       const top = r.top + window.scrollY;
-      const below = (parseFloat(cs.marginBottom) || 0) + (barEl?.offsetHeight ?? 30) + safeProbe.offsetHeight + 8;
+      /* 아래 = 카드 아래 여백 + 머리 줄 + **댓글 한 뼘**(COMMENT_PEEK · 같은 날 "댓글도 좀 보이게 더 올려줘") + 안전영역 + 숨 4. */
+      const below = (parseFloat(cs.marginBottom) || 0) + (barEl?.offsetHeight ?? 30) + COMMENT_PEEK + safeProbe.offsetHeight + 4;
       const h = Math.round(held.h - top - below);
       setFrameSize((p) => (p && Math.abs(p.w - w) <= 1 && Math.abs(p.h - h) <= 2 ? p : { w, h }));
     };

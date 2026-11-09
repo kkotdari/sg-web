@@ -1599,6 +1599,12 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 /* 폰은 머리 줄이 재생기 아래(GameDetailPage bar ★ · 2026-11-09) — 위 줄 몫으로 당기던 −6px 을 걷는다(카드 아래 여백이 틈). */
 .scr-v2-toolbar-crumb.scr-game-detail-bar.is-below { margin-top: 0; }
 /* 재생기 키 · 폭은 페이지가 재서 넘긴다(GameDetailPage frameH · frameW ★ · 2026-11-09) — 옛 --scr-frame-below 변수는 걷었다. */
+/* 폰 게임 상세 — 재생기와 머리 줄 사이 · 맨 위 여백을 줄인다(같은 날, 실기 지적: "양옆이랑 위를 왜 이렇게 남긴 거지 · 아래도 살짝 여백 줄여도"). 홈 화면 앱(PWA)의 위 34px 은 흐림 띠 몫이라 그대로. */
+@media (max-width: 960px) {
+  .scr-feed-group-page > .scr-game-page-card { margin-bottom: 6px; }
+  .scr-app .scr-main:has(.scr-game-page-card) { padding-top: calc(4px + var(--safe-top)); }
+  @media (display-mode: standalone) { .scr-app .scr-main:has(.scr-game-page-card) { padding-top: calc(34px + var(--safe-top)); } }
+}
 @container gamebar (max-width: 520px) { .scr-tools .scr-tools-btn.is-extra { display: none; } }
 .scr-tools .scr-tools-btn.is-danger { color: var(--loss); }
 @media (hover: hover) { .scr-tools .scr-tools-btn.is-danger:hover { background: rgba(220, 70, 70, 0.14); } }
