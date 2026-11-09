@@ -40,6 +40,41 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   /* 게임 페이지 제목 줄의 머리 칸 — GameResultStory 가 시각·맵·승패·등록자를 여기에 포털로 그린다(2026-10-09). */
   const [headSlot, setHeadSlot] = useState<HTMLDivElement | null>(null);
   const mobile = useIsMobile();   // 폰은 머리 줄을 재생기 아래로(아래 bar ★)
+  /* ★ 재생기 키 · 폭은 **이 페이지가 정한다**(2026-11-09, 요청: "재생기가 자기 크기를 정할 게 아니라 재생기를 넣는 페이지에서 크기를 파라미터로 · 높이 너비 다") — 폰만:
+     폭 = 카드 안쪽 폭 · 키 = 창 높이 − 카드 위끝(문서) − 카드 아래 여백 − 머리 줄 키 − 아래 안전영역 − 숨 8. 창 높이는 폭이 그대로인 동안 처음 잰 값을 붙든다(주소창이 접고 펴질 때
+     재생기가 들썩이지 않게 · 회전하면 다시). PC 는 안 넘긴다(재생기 옛 셈). */
+  const [cardEl, setCardEl] = useState<HTMLDivElement | null>(null);
+  const [barEl, setBarEl] = useState<HTMLDivElement | null>(null);
+  const [frameSize, setFrameSize] = useState<{ w: number; h: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!mobile || !cardEl) { setFrameSize(null); return undefined; }
+    let held = { w: window.innerWidth, h: window.innerHeight };
+    const safeProbe = document.createElement("div");
+    safeProbe.style.cssText = "position:fixed;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none";
+    document.body.appendChild(safeProbe);
+    const calc = (): void => {
+      if (window.innerWidth !== held.w) held = { w: window.innerWidth, h: window.innerHeight };
+      const cs = getComputedStyle(cardEl);
+      const r = cardEl.getBoundingClientRect();
+      const w = Math.floor(r.width - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0));
+      const top = r.top + window.scrollY;
+      const below = (parseFloat(cs.marginBottom) || 0) + (barEl?.offsetHeight ?? 30) + safeProbe.offsetHeight + 8;
+      const h = Math.round(held.h - top - below);
+      setFrameSize((p) => (p && Math.abs(p.w - w) <= 1 && Math.abs(p.h - h) <= 2 ? p : { w, h }));
+    };
+    calc();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(calc) : null;
+    ro?.observe(document.body);
+    if (barEl) ro?.observe(barEl);
+    window.addEventListener("resize", calc);
+    window.addEventListener("orientationchange", calc);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", calc);
+      window.removeEventListener("orientationchange", calc);
+      safeProbe.remove();
+    };
+  }, [mobile, cardEl, barEl]);
 
   useLayoutEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
   useEffect(() => {
@@ -106,7 +141,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   );
   /* ★ 폰은 머리 줄(← 게임 · 시각 · 맵 · 등록자 · 단추)을 **재생기 아래**에(2026-11-09, 요청: "폰 프레임 모드 시 이 부분을 재생기 아래로 · 재생기 / 헤더 / 댓글") — PC 는 위 그대로. */
   const bar = (
-    <div className={`scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar${mobile ? " is-below" : ""}`}>
+    <div className={`scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar${mobile ? " is-below" : ""}`} ref={setBarEl}>
       <div className="scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle">
         <button type="button" className="scr-crumb-back" onClick={onBack}>
           <ArrowLeft size={14} />
@@ -120,7 +155,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   return (
     <div className="scr-feed-group-page">
       {!mobile && bar}
-      <div className={`scr-game-page-card${sized ? "" : " is-loading"}`}>   {/* 로딩 동안 판 자리를 잡아 둔다(워드마크가 그 안 · 아래 댓글과 안 겹치게) */}
+      <div className={`scr-game-page-card${sized ? "" : " is-loading"}`} ref={setCardEl}>   {/* 로딩 동안 판 자리를 잡아 둔다(워드마크가 그 안 · 아래 댓글과 안 겹치게) */}
         <GameResultStory
           headSlot={headSlot}
           gameResult={game}
@@ -132,6 +167,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
           onShown={() => setShown(true)}
           onSized={() => setSized(true)}
           onBack={onBack}
+          frameH={frameSize?.h} frameW={frameSize?.w}
         />
       </div>
       {/* 댓글은 게임을 받자마자(2026-11-02, 요청: "게임 상세 로딩 중에도 댓글은 보고 쓸 수 있게 변경") — 판(재생기 · 로스터)이 그려지길 안 기다린다.

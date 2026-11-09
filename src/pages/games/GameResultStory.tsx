@@ -22,7 +22,7 @@ import type { GameResult, GameResultSlot, Member } from "../../types";
 
 export default function GameResultStory({
   gameResult, team1, team2, result, memberOf, highlightMemberIds, highlightTerms, active = true,
-  menu, headSlot = null, onShown, onSized, onBack,
+  menu, headSlot = null, onShown, onSized, onBack, frameH, frameW,
 }: {
   gameResult: GameResult;
   team1: GameResultSlot[];
@@ -41,6 +41,9 @@ export default function GameResultStory({
   onSized?: () => void;
   /** 재생기 전체화면의 뒤로가기(‹) — 전체화면을 나가며 게임 목록으로(2026-11-09). */
   onBack?: () => void;
+  /** 재생기 판 키 · 폭(px) — 페이지가 정한다(GameDetailPage 폰 ★). 없으면 재생기가 스스로. */
+  frameH?: number;
+  frameW?: number;
 }) {
   const grid = useReplayMap(gameResult.mapHash);
   const isTester = useAppStore((s) => !!s.user && isTesterRole(s.user.roles));
@@ -251,7 +254,8 @@ export default function GameResultStory({
         onShare={shareScene}
         pins={pinsOn ? pins : undefined} onPinAdd={pinsOn ? onPinAdd : undefined} onPinDelete={pinsOn ? onPinDelete : undefined}   /* 장면 핀(위 ★ · 2026-11-08) */
         onDetailClose={detailClose ?? undefined}
-        onBack={onBack ?? detailClose ?? undefined}   /* 전체화면 ‹ — 게임 목록(상세 페이지) · 상세 모달이면 그 닫기 */
+        onBack={onBack ?? detailClose ?? undefined}
+        frameH={frameH} frameW={frameW}   /* 전체화면 ‹ — 게임 목록(상세 페이지) · 상세 모달이면 그 닫기 */
         soleView={soleViewNow}
         askMode={soleViewNow}   /* 게임 상세는 들어올 때 보기 모드(요약 · 풀)를 묻는다 — 재생기가 장면 링크면 안 묻는다(2026-10-23) */
         veil={soleViewNow}   /* 로딩이 다 끝날 때까지 가린다(위 loadingNow ★) */
