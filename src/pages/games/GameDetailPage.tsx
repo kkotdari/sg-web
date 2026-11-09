@@ -16,7 +16,7 @@ import { isMeleeGame, meleeLineup, teamSummaryName } from "./GameResultSides";
    들어올 때마다 서버에서 받고, 고친 것을 목록에 알리지 않는다. 제 게임을 제 상태로 든다. */
 
 /** 폰 게임 상세의 첫 화면에 보일 댓글 몫(px) — 재생기 키에서 뺀다(위 frameSize ★). */
-const COMMENT_PEEK = 64;
+const COMMENT_PEEK = 28;   // 64 → 28(2026-11-09, 실기 지적: "재생기 세로 너무 줄인 듯 · 살짝은 다시 늘려줘")
 
 export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, onMiss }: {
   /** 주소의 게임 칸(경기 번호 또는 id). */
@@ -146,7 +146,8 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   );
   /* ★ 폰은 머리 줄(← 게임 · 시각 · 맵 · 등록자 · 단추)을 **재생기 아래**에(2026-11-09, 요청: "폰 프레임 모드 시 이 부분을 재생기 아래로 · 재생기 / 헤더 / 댓글") — PC 는 위 그대로. */
   const bar = (
-    <div className={`scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar${mobile ? " is-below" : ""}`} ref={setBarEl}>
+    /* 폰(아래 자리)은 판 키가 선 뒤에 보인다(sized · 댓글과 같은 때 · 2026-11-09, 요청: "헤더도 댓글처럼 자리가 다 정해진 뒤 띄워 주고") — 자리는 그대로 잡아 둔다(재생기 키 셈이 그 키를 잰다). */
+    <div className={`scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar${mobile ? " is-below" : ""}${mobile && !sized ? " is-wait" : ""}`} ref={setBarEl}>
       <div className="scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle">
         <button type="button" className="scr-crumb-back" onClick={onBack}>
           <ArrowLeft size={14} />
