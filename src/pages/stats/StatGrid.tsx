@@ -250,7 +250,7 @@ function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: Membe
   const cell = (k: CalcKey, raw: ReactNode) => {
     const r = sc(k);
     return (
-      <TCell member={member} metric={statMetric(k, race)} className={wide}
+      <TCell member={member} metric={statMetric(k, race, scored && !clan)} className={wide}
         facts={r && has ? rawFact(s!, k) : undefined} calc={r ? [r] : undefined}>
         {!has ? <Dash /> : scored ? (clan ? <Dash /> : <ScoreCell r={r} />) : raw}
       </TCell>

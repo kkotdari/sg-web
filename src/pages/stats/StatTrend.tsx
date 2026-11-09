@@ -127,8 +127,19 @@ export function prodOf(s: MemberStatsEntry["overall"] | undefined | null): numbe
 }
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part" | "prod" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part" | "prod" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null, scored = false): StatMetric {
   const who = race ? `${race} ` : "";
+  /* ★ 보정 뒤 점수 그래프(2026-11-09, 요청: "통계의 셀 팝업의 그래프도 인분(보정 후)로 나타내기") — 표 칸이 보정 뒤 인분 배수(calcRowOf ★)인 티어 조회면 그래프도 달마다
+     그 달 티어 셈 표의 그 줄 배수(1.00 = 보통). 종족 묶음은 그 종족 티어 · 종합은 종합 티어(combinedTier). 원점수는 팝업 글자(원점수 줄)에 남는다. */
+  if (scored && (kind === "exr" || kind === "part" || kind === "prod")) {
+    const k = kind;
+    const tierOf = (e: TrendEntry): TierEntry | null | undefined => (race && race !== "주종족" ? e.tierByRace?.[race] : e.tier ?? combinedTier(e.tierByRace));
+    return {
+      key: `${race ?? ""}:${k}:sc`, label: `${who}${CALC_NAME[k]}(보정 후 인분 배수 · 1.00 = 보통)`,
+      series: [{ label: CALC_NAME[k], cls: "", pick: (e) => n(calcRowOf(tierOf(e), k)?.mult), fmt: x2 }],
+      mode: "single",
+    };
+  }
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
   const gamesOf = (e: TrendEntry) => { const g = n(e.games); return g !== null && g > 0 ? g : null; };

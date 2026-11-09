@@ -125,6 +125,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
           menu={menu}
           onShown={() => setShown(true)}
           onSized={() => setSized(true)}
+          onBack={onBack}
         />
       </div>
       {/* 댓글은 게임을 받자마자(2026-11-02, 요청: "게임 상세 로딩 중에도 댓글은 보고 쓸 수 있게 변경") — 판(재생기 · 로스터)이 그려지길 안 기다린다.
