@@ -1,4 +1,5 @@
 import { memo, useEffect, useLayoutEffect, useState } from "react";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { ArrowLeft } from "lucide-react";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useAppStore } from "../../store/appStore";
@@ -38,6 +39,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
   /* 게임 페이지 제목 줄의 머리 칸 — GameResultStory 가 시각·맵·승패·등록자를 여기에 포털로 그린다(2026-10-09). */
   const [headSlot, setHeadSlot] = useState<HTMLDivElement | null>(null);
+  const mobile = useIsMobile();   // 폰은 머리 줄을 재생기 아래로(아래 bar ★)
 
   useLayoutEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
   useEffect(() => {
@@ -102,18 +104,22 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
       graphDock
     />
   );
+  /* ★ 폰은 머리 줄(← 게임 · 시각 · 맵 · 등록자 · 단추)을 **재생기 아래**에(2026-11-09, 요청: "폰 프레임 모드 시 이 부분을 재생기 아래로 · 재생기 / 헤더 / 댓글") — PC 는 위 그대로. */
+  const bar = (
+    <div className={`scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar${mobile ? " is-below" : ""}`}>
+      <div className="scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle">
+        <button type="button" className="scr-crumb-back" onClick={onBack}>
+          <ArrowLeft size={14} />
+          <span>게임</span>
+        </button>
+        <div className="scr-crumb-meta" ref={setHeadSlot} />
+      </div>
+      <div className="scr-v2-toolbar-actions">{menu}</div>
+    </div>
+  );
   return (
     <div className="scr-feed-group-page">
-      <div className="scr-v2-toolbar scr-v2-toolbar-crumb scr-game-detail-bar">
-        <div className="scr-v2-toolbar-title-row scr-crumb scr-crumb-notitle">
-          <button type="button" className="scr-crumb-back" onClick={onBack}>
-            <ArrowLeft size={14} />
-            <span>게임</span>
-          </button>
-          <div className="scr-crumb-meta" ref={setHeadSlot} />
-        </div>
-        <div className="scr-v2-toolbar-actions">{menu}</div>
-      </div>
+      {!mobile && bar}
       <div className={`scr-game-page-card${sized ? "" : " is-loading"}`}>   {/* 로딩 동안 판 자리를 잡아 둔다(워드마크가 그 안 · 아래 댓글과 안 겹치게) */}
         <GameResultStory
           headSlot={headSlot}
@@ -131,6 +137,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
       {/* 댓글은 게임을 받자마자(2026-11-02, 요청: "게임 상세 로딩 중에도 댓글은 보고 쓸 수 있게 변경") — 판(재생기 · 로스터)이 그려지길 안 기다린다.
           옛: GameResultStory onShown 뒤에만(2026-10-30 "타이틀 외의 다른 부분은 그리지 말고").
           ★ 단, 판 **높이가 확정된 뒤**(sized · 2026-11-02, 요청: "재생기 높이가 확정된 후 로딩바와 댓글 띄우기") — 그 전엔 재생기가 높이를 잡으며 댓글이 출렁였다. */}
+      {mobile && bar}
       {sized && (
         <div className={`scr-feed-card-comment scr-game-page-comment${shown ? "" : " is-loading"}`}>
           <Comments targetType="gameResult" targetId={game.id} />

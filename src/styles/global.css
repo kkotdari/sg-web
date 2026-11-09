@@ -1596,6 +1596,8 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 /* 받는 동안에도 단추 줄 키(30)를 미리 잡는다(2026-10-25, 지적: "이부분 아이콘 로딩되며 높이가 늘어남") — 게임을 받기 전엔 '← 게임'(26)만 있어
    단추 줄(.scr-tools-btn 30)이 붙는 순간 머리 줄이 4px 늘며 아래 재생기를 밀었다. .scr-v2-toolbar-crumb 의 min-height 0 보다 뒤·세게. */
 .scr-v2-toolbar-crumb.scr-game-detail-bar { min-height: 30px; }
+/* 폰은 머리 줄이 재생기 아래(GameDetailPage bar ★ · 2026-11-09) — 위 줄 몫으로 당기던 −6px 을 걷는다(카드 아래 여백이 틈). */
+.scr-v2-toolbar-crumb.scr-game-detail-bar.is-below { margin-top: 0; }
 @container gamebar (max-width: 520px) { .scr-tools .scr-tools-btn.is-extra { display: none; } }
 .scr-tools .scr-tools-btn.is-danger { color: var(--loss); }
 @media (hover: hover) { .scr-tools .scr-tools-btn.is-danger:hover { background: rgba(220, 70, 70, 0.14); } }
