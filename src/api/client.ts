@@ -705,6 +705,17 @@ export const api = {
     });
   },
 
+  /** ★ 분당 총지출 기준 진단(2026-11-10 · 운영자) — 길이 칸마다 지금 기준(now · 병력 기준 × 잠정 배) · 실측 분당 총지출(perMin) · 판 수. */
+  async spendBaseline(q: { dateFrom?: string; dateTo?: string }): Promise<{
+    buckets: { bucket: string; plays: number; perMin: number | null; now: number; armyBase: number }[];
+  }> {
+    const sp = new URLSearchParams();
+    if (q.dateFrom) sp.set("dateFrom", q.dateFrom);
+    if (q.dateTo) sp.set("dateTo", q.dateTo);
+    const qs = sp.toString();
+    return request(`/api/game-results/admin/spend-baseline${qs ? `?${qs}` : ""}`);
+  },
+
   async reanalyzeStatus(batch: string): Promise<{
     total: number; done: number; failed: number; running: number; fails: { id: number; matchNo: string; why: string }[];
   }> {
