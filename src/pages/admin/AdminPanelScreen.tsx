@@ -102,7 +102,8 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [confirmRedo, setConfirmRedo] = useState(false);
 
   /** ★ 마감 자료 내려받기(2026-11-08 밤, 요청: "제어판 마감 시 참값 트랙 지우잖아 그거랑 리플레이 파일이랑 압축해서 받기 · 날짜별로 경기별로") —
-   *  마감할 달(closeMonth)의 판을 날짜/경기번호 폴더로 묶은 zip. 마감 전에 받아 둔다. */
+   *  마감할 달(closeMonth)의 판을 날짜/경기번호 폴더로 묶은 zip. 마감 전에 받아 둔다.
+   *  (2026-11-10, 지적: "너무 느려서 못 씀" → "그냥 리플레이만 받을게") — 리플레이만 담는다(참값 · game.json 걷음 · 압축 없이). */
   const [exporting, setExporting] = useState(false);
   const downloadExport = async () => {
     if (!closeMonth) return;
@@ -446,9 +447,9 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   <button
                     type="button" className="scr-rect-btn is-secondary scr-adm-row-btn"
                     onClick={() => { void downloadExport(); }} disabled={exporting || !closeMonth}
-                    title="그 달 판마다 날짜/경기번호 폴더에 리플레이 · 참값 트랙 · 곁 꾸러미 · game.json 을 담은 zip — 마감 전에 받아 두세요"
+                    title="그 달 판마다 날짜/경기번호 폴더에 리플레이를 담은 zip — 마감 전에 받아 두세요(참값은 리플레이로 재분석하면 다시 나옵니다)"
                   >
-                    {exporting ? <Spinner /> : "자료 내려받기"}
+                    {exporting ? <Spinner /> : "리플레이 받기"}
                   </button>
                   <button
                     type="button" className="scr-rect-btn scr-adm-row-btn"
