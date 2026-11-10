@@ -12,7 +12,6 @@ import VersionManageModal from "../../modals/VersionManageModal";
 import ExtShareManageModal from "../../modals/ExtShareManageModal";
 import DeletedGamesModal from "../../modals/DeletedGamesModal";
 import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
-import SpendBaselineModal from "../../modals/SpendBaselineModal";
 import { api } from "../../api/client";
 import { useAppStore } from "../../store/appStore";
 import { showAlert } from "../../components/common/AlertDialog";
@@ -222,7 +221,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   };
 
   type PickRow = { id: number; matchNo: string; game: GameResult };
-  const [spendBaseOpen, setSpendBaseOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickRows, setPickRows] = useState<PickRow[] | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
@@ -464,15 +462,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                       마감 풀기
                     </button>
                   )}
-                </div>
-
-                {/* 생산 기준 비교(2026-11-10 · SpendBaselineModal ★) — 생산 = 총지출 기준의 비포(지금 상수) · 애프터(실측). */}
-                <div className="scr-adm-row">
-                  <div className="scr-adm-row-text">
-                    <span className="scr-adm-row-title">생산 기준 비교</span>
-                    <span className="scr-adm-row-desc">판 길이마다 지금 생산 기준(비포)과 실측 분당 총지출(애프터)을 견줍니다. 재분석 뒤에 재 보세요.</span>
-                  </div>
-                  <button type="button" className="scr-rect-btn scr-adm-row-btn" onClick={() => setSpendBaseOpen(true)}>열기</button>
                 </div>
 
                 <div className="scr-adm-row">
@@ -773,7 +762,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
       {unhideOpen && (
         <UnhideRequestsModal onClose={() => setUnhideOpen(false)} />
       )}
-      {spendBaseOpen && <SpendBaselineModal onClose={() => setSpendBaseOpen(false)} />}
       {deletedGamesOpen && (
         <DeletedGamesModal onClose={() => setDeletedGamesOpen(false)} />
       )}

@@ -5838,13 +5838,3 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg-trend-calc td:last-child { font-weight: 700; }
 .scr-sg-trend-calc tr.is-total th, .scr-sg-trend-calc tr.is-total td { border-top: 1px solid var(--line-soft); padding-top: 4px; }
 
-/* 생산 기준 비교(2026-11-10 · SpendBaselineModal) */
-.scr-spendbase-note { margin: 0 0 10px; font-size: 12px; line-height: 1.55; color: var(--dim, #8a93a0); }
-.scr-spendbase-form { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.scr-spendbase-err { color: #e5534b; font-size: 12px; margin: 0 0 8px; }
-.scr-spendbase-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; margin-bottom: 10px; }
-.scr-spendbase-table th, .scr-spendbase-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--line-soft, rgba(127, 127, 127, 0.2)); }
-.scr-spendbase-table th:first-child, .scr-spendbase-table td:first-child { text-align: left; }
-.scr-spendbase-table th { font-weight: 700; color: var(--dim, #8a93a0); font-size: 12px; }
-.scr-spendbase-table td.is-up { color: #2fa36b; font-weight: 700; }
-.scr-spendbase-table td.is-down { color: #e5534b; font-weight: 700; }
