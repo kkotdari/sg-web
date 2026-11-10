@@ -184,7 +184,8 @@ export default function ClanStatsScreen() {
   const mapTab = mapTabOf(mapRaw);
   /* ★ 티어(와 보정교환비)는 **팀전 전체 · 맵 전체**일 때만(2026-10-28, 요청: "티어는 맵 전체일 때만 표시 · 팀전 전체 맵 전체일 때만") — 티어는 전체 맵 팀전 판으로
      매기므로 그 조회에서만 칸의 게임수 · 승률과 같은 판을 본다. 옛: 1:1 이 아니면 늘. */
-  const showTier = size === "team" && mapTab === "all";
+  /* (2026-11-10, 요청: "통계에 맵 필터 있잖아 · 그거별로 조회 시 티어 나오게") — 맵 탭에서도 보인다: 서버가 그 맵 판으로 티어를 낸다(tier_rows map_group). 팀전만은 그대로. */
+  const showTier = size === "team";
   /** 실제로 쓰는 정렬 — 티어 칸이 없는 조회엔 티어를 빼고, 남는 게 없으면 전체 승률. */
   const shownSort = useMemo<StatSortKey[]>(() => {
     if (showTier) return sortKeys;
@@ -269,7 +270,7 @@ export default function ClanStatsScreen() {
          (요청: "전체 기간은 최근으로 보여주면 되지" — 서버는 dateTo 가 없으면 한국 시각 이번 달을 마지막으로 센다 · 화면도 currentMonthValue). */
       trendMonths: statTrendMonths(trendBase(debouncedQuery.period).period).length,
       /* 종족별 티어(2026-11-04, 요청: "종족별 티어로 변경 · 전체 티어는 이제 없음") — 표의 티어 칸은 종족마다(StatGrid RaceCells ★) · 달별 변화도. */
-      tierByRace: debouncedQuery.size === "team" && debouncedQuery.map === "all",
+      tierByRace: debouncedQuery.size === "team",   // 맵 탭에서도(2026-11-10 · 서버가 그 맵 판으로)
     }).then((res) => {
       if (cancelled) return;
       const trendBy: Record<string, Record<string, MemberStatsEntry>> = {};
