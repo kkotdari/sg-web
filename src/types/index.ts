@@ -383,9 +383,9 @@ export interface TierEntry {
   calc?: TierCalcRow[] | null;
   /** ★ 판당 WPA(승리 확률 %p · sg-api wpa.py · 2026-11-12) — 보정 전 원점수(통계 표의 WPA 칸 · 티어 칸이 없는 조회는 이 값 그대로). */
   wpa?: number | null;
-  /** ★ 판당 WPA 의 세 몫 [공격 · 생존 · 협동](점 = %p · 합 = wpa · sg-api 2026-11-13) — WPA 팝업. */
+  /** ★ 판당 WPA 의 몫 [공격 · 생존 · 협동 · 장악 · 정찰](점 = %p · 합 = wpa · sg-api 2026-11-13) — WPA 팝업. */
   wpaParts?: number[] | null;
-  /** ★ WPA 세 몫의 인분 [방어 · 공격 · 헬프](1 = 그 조회 판 평균 · sg-api 2026-11-13) — WPA 팝업. */
+  /** ★ WPA 몫의 인분 [방어 · 공격 · 헬프 · 장악 · 정찰](1 = 그 조회 판 평균 · sg-api 2026-11-13) — WPA 팝업. */
   wpaInbun?: number[] | null;
 }
 

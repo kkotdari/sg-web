@@ -182,11 +182,15 @@ function wpaFacts(t: TierEntry | null | undefined): TrendFact[] {
   const v = wpaOf(t);
   if (v === null) return [];
   const out: TrendFact[] = [];
-  const [dfn, atk, hlp] = t?.wpaInbun ?? [];
+  const [dfn, atk, hlp, ctl, sct] = t?.wpaInbun ?? [];
   const ib = (x: number) => `${x.toFixed(2)}인분`;
   if (typeof dfn === "number") out.push({ label: "방어", value: ib(dfn) });
   if (typeof atk === "number") out.push({ label: "공격", value: ib(atk) });
   if (typeof hlp === "number") out.push({ label: "헬프", value: ib(hlp) });
+  /* ★ 장악 · 정찰(2026-11-13, 지적: "비전투성 병력 운용 · 정찰의 효과가 누락" · "WPA 팝업에 장악 정찰도") — 한 자리를 지켜 막은 정도 · 상대 건물을 본 정도(sg-api wpa ★ · 덤퍼 ##ZONE##).
+     새 덤퍼로 다시 분석한 달만 값이 움직인다(옛 판뿐이면 1.00 언저리). */
+  if (typeof ctl === "number") out.push({ label: "장악", value: ib(ctl) });
+  if (typeof sct === "number") out.push({ label: "정찰", value: ib(sct) });
   /* 총은 인분(같은 날 "총 몇인분") — 티어에 드는 WPA 배수(sg-api cbt · 셈 표 WPA 줄 배수 = 티어 조회 칸 값) · 없으면 판당 승리 확률 기여(%p). */
   if (typeof t?.cbt === "number") out.push({ label: "총", value: ib(t.cbt) });
   else out.push({ label: "총 승리 확률 기여", value: `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}%` });
