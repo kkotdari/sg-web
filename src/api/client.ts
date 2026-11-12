@@ -102,6 +102,8 @@ export interface GameResultStatsParams {
   lite?: boolean;
 }
 
+export interface SqlConsoleResult { columns: string[]; rows: unknown[][]; rowCount: number; truncated: boolean; ms: number; wrote: boolean }
+
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
 
 const CLIENT_ENV = import.meta.env.PROD ? "production" : "development";
@@ -969,6 +971,10 @@ export const api = {
     });
   },
 
+  /** DB SQL 콘솔(sg-api admin_console · 관리자만 · 기본 읽기 전용 · 2026-11-13). */
+  async adminSql(sql: string, write: boolean): Promise<SqlConsoleResult> {
+    return request<SqlConsoleResult>("/api/admin/sql", { method: "POST", body: JSON.stringify({ sql, write }) });
+  },
   async adminExtShareLists(): Promise<ExtShareList[]> {
     return request<ExtShareList[]>("/api/ext-share/admin/lists");
   },

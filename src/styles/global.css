@@ -5844,3 +5844,25 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg-trend-calc td:last-child { font-weight: 700; }
 .scr-sg-trend-calc tr.is-total th, .scr-sg-trend-calc tr.is-total td { border-top: 1px solid var(--line-soft); padding-top: 4px; }
 
+
+/* ★ DB SQL 콘솔(2026-11-13 · SqlConsoleModal) — PC 는 넓은 팝업 · 폰은 전체 화면(.is-full). 결과는 md 표 글 그대로(고정폭 · 가로 스크롤). */
+.scr-modal.scr-sqlc-modal { max-width: 960px; height: min(82vh, 820px); height: min(82dvh, 820px); }
+.scr-modal.scr-sqlc-modal.is-full {
+  left: 0; top: 0; transform: none; width: 100vw; max-width: none; height: 100vh; height: 100dvh; max-height: none; border-radius: 0;
+  padding-top: calc(13px + var(--safe-top, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.scr-sqlc-body { gap: 8px; padding-bottom: 12px; }
+.scr-sqlc-input {
+  flex: 0 0 auto; min-height: 120px; height: 150px; resize: vertical; width: 100%; box-sizing: border-box;
+  font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text);
+  background: rgba(var(--overlay-rgb), 0.06); border: 1px solid var(--line-faint); border-radius: 8px; padding: 8px 10px;
+}
+.scr-sqlc-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.scr-sqlc-write { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); cursor: pointer; }
+.scr-sqlc-meta { flex: 1 1 auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.scr-sqlc-bar .scr-rect-btn { display: inline-flex; align-items: center; gap: 4px; }
+.scr-sqlc-out {
+  flex: 1 1 auto; min-height: 0; margin: 0; overflow: auto; white-space: pre;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text);
+  background: rgba(var(--overlay-rgb), 0.04); border-radius: 8px; padding: 8px 10px; user-select: text; -webkit-user-select: text;
+}

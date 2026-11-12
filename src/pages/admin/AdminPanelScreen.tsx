@@ -10,6 +10,7 @@ import { gamePlayable } from "../../utils/gamePlayable";
 import ReplayBatchButton from "../../components/common/ReplayBatchButton";
 import VersionManageModal from "../../modals/VersionManageModal";
 import ExtShareManageModal from "../../modals/ExtShareManageModal";
+import SqlConsoleModal from "../../modals/SqlConsoleModal";
 import DeletedGamesModal from "../../modals/DeletedGamesModal";
 import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
 import { api } from "../../api/client";
@@ -40,6 +41,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [busy, setBusy] = useState(false);
   const [versionManageOpen, setVersionManageOpen] = useState(false);
   const [extShareOpen, setExtShareOpen] = useState(false);
+  const [sqlOpen, setSqlOpen] = useState(false);
   const [deletedGamesOpen, setDeletedGamesOpen] = useState(false);
   const [unhideOpen, setUnhideOpen] = useState(false);
   /* 기다리는 숨김 해제 요청 수 — 줄 제목 옆에 센다(창을 닫으면 다시 센다). */
@@ -538,6 +540,25 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
               </div>
             </section>
 
+            <section className="scr-adm-card">
+              <div className="scr-adm-card-head">
+                <h2 className="scr-adm-card-title">콘솔</h2>
+              </div>
+              <div className="scr-adm-rows">
+                <div className="scr-adm-row">
+                  <div className="scr-adm-row-text">
+                    <span className="scr-adm-row-title">DB SQL 콘솔</span>
+                    <span className="scr-adm-row-desc">
+                      SQL 을 돌려 결과를 md 표로 봅니다. 기본은 읽기 전용 — '쓰기 허용'을 켜야 고친 것이 남아요.
+                    </span>
+                  </div>
+                  <button type="button" className="scr-rect-btn scr-adm-row-btn" onClick={() => setSqlOpen(true)}>
+                    열기
+                  </button>
+                </div>
+              </div>
+            </section>
+
           </>
         )}
       </div>
@@ -756,6 +777,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
         <VersionManageModal onClose={() => setVersionManageOpen(false)} />
       )}
 
+      {sqlOpen && <SqlConsoleModal onClose={() => setSqlOpen(false)} />}
       {extShareOpen && (
         <ExtShareManageModal onClose={() => setExtShareOpen(false)} />
       )}
