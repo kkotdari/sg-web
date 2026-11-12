@@ -83,13 +83,14 @@ export function combinedTier(tb: Record<string, TierEntry> | null | undefined): 
   };
   /* 보여 주는 인분은 소수 둘째 자리 아래로 자른다 — 서버 tier.shown_inbun 과 같게(2026-11-08 밤 "0.996 은 0.99인분으로 나오는 게 나을 듯") · 등급도 이 값으로. */
   const ib = Math.floor((avg((t) => t.stdInbun ?? t.inbun) ?? 0) * 100 + 1e-9) / 100;
-  /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭 · 2026-11-08 밤 1.6 · 1.15 · 1.0 으로 맞춤 — 옛 1.2 · 0.8 이 남아 있었다 · 2026-11-09 2티어 1.2 "1.2인분부터 2티어" · 1티어 1.8 "1티어 컷 1.8인분으로").*/
-  const tier = n < 10 ? null : ib >= 1.8 ? 1 : ib >= 1.2 ? 2 : ib >= 1.0 ? 3 : 4;
+  /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭 · 2026-11-08 밤 1.6 · 1.15 · 1.0 으로 맞춤 — 옛 1.2 · 0.8 이 남아 있었다 · 2026-11-09 2티어 1.2 "1.2인분부터 2티어" · 1티어 1.8 "1티어 컷 1.8인분으로"
+     · 2026-11-12 서버 "티어 1.6 1.2 0.8 로 나눌거야" — 여기만 1.8 · 1.2 · 1.0 으로 남아 있던 것을 맞춤).*/
+  const tier = n < 10 ? null : ib >= 1.6 ? 1 : ib >= 1.2 ? 2 : ib >= 0.8 ? 3 : 4;
   /* 셈 표(calc · 2026-11-06 저녁) — 종족이 하나면 그대로 · 여럿이면 줄마다 배수를 판 수로 가중 평균(점수 · 보정 글자는 못 합쳐 비움 · 인분 줄은 위 ib). */
   const calc = ts.length === 1 ? ts[0].calc ?? null : (ts[0].calc ?? null) && ts[0].calc!.map((r, i) => (
     r.name === "인분" ? { ...r, score: "", adj: tier ? `${tier}티어` : "", mult: ib }
       : { name: r.name, score: "종족별", adj: "판 수 가중 평균", mult: Math.round((avg((t) => t.calc?.[i]?.mult) ?? r.mult) * 1000) / 1000 }));
-  return { ...ts[0], tier, inbun: ib, stdInbun: ib, plays: n, eapm: avg((t) => t.eapm), cbt: avg((t) => t.cbt), prod: avg((t) => t.prod), dmg: avg((t) => t.dmg), adj: avg((t) => t.adj), ex: avg((t) => t.ex), calc } as TierEntry;
+  return { ...ts[0], tier, inbun: ib, stdInbun: ib, plays: n, eapm: avg((t) => t.eapm), cbt: avg((t) => t.cbt), prod: avg((t) => t.prod), dmg: avg((t) => t.dmg), adj: avg((t) => t.adj), ex: avg((t) => t.ex), wpa: avg((t) => t.wpa), calc } as TierEntry;
 }
 /** 칸의 종족 — 종족 셋 · "주종족"(그 사람 주종족 판을 합친 줄 · MemberStatsEntry.main · 2026-11-04) · null 전체. */
 export type StatRace = BaseRace | "주종족";
@@ -104,9 +105,14 @@ const x2 = (v: number) => v.toFixed(2);
  *  1 = 본전. 화면은 부호 %(pctFmt · +25% = 잃은 것의 1.25배를 가져감). 옛 전투 칸(분당 준 − 입은 데미지 · fight)은 걷었다. 없으면 null. */
 /** ★ 통계 표의 교환 이득 · 교전 참여 · 생산 칸 = **보정 뒤 인분 배수**(2026-11-08 밤, 요청: "통계표 전부 보정후 점수(인분점수로 표시) · 원점수와 보정과정은 팝업에서 확인") —
  *  티어 셈 표(calc)의 그 줄(1.00 = 보통 · 줄의 곱이 인분). 티어가 없는 조회(1:1 · 맵 탭)는 칸이 원점수 그대로다. */
-export const CALC_NAME = { exr: "교환 이득", part: "교전 참여", prod: "생산" } as const;
+/* ★★ 2026-11-12 WPA(sg-api wpa.py · 요청: "WPA 적용" · "전투+참전+생산 다 합친게 WPA") — 세 칸(교환 이득 · 교전 참여 · 생산)이 WPA 한 칸이 됐다. 티어 셈 표도 'WPA' 한 줄. */
+export const CALC_NAME = { wpa: "WPA" } as const;
 export type CalcKey = keyof typeof CALC_NAME;
 export const calcRowOf = (t: TierEntry | null | undefined, k: CalcKey): TierCalcRow | null => t?.calc?.find((r) => r.name === CALC_NAME[k]) ?? null;
+/** ★ 판당 WPA 원점수(승리 확률 %p · sg-api TierEntry.wpa) — 싸움마다 편의 승리 확률을 얼마나 올리고 내렸나의 판 평균. 티어(셈)가 없으면 null. */
+export const wpaOf = (t: TierEntry | null | undefined): number | null => (typeof t?.wpa === "number" && Number.isFinite(t.wpa) ? t.wpa : null);
+/** %p 글자 — +12.3%p · −4.0%p. */
+export const wpaFmt = (v: number): string => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}%p`;
 
 export function gainOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
   if (!s || !s.valPlays || typeof s.valTaken !== "number" || typeof s.valLost !== "number") return null;
@@ -127,18 +133,21 @@ export function prodOf(s: MemberStatsEntry["overall"] | undefined | null): numbe
 }
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
-export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part" | "prod" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null, scored = false): StatMetric {
+export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part" | "prod" | "wpa" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null, scored = false): StatMetric {
   const who = race ? `${race} ` : "";
+  const tierOf = (e: TrendEntry): TierEntry | null | undefined => (race && race !== "주종족" ? e.tierByRace?.[race] : e.tier ?? combinedTier(e.tierByRace));
   /* ★ 보정 뒤 점수 그래프(2026-11-09, 요청: "통계의 셀 팝업의 그래프도 인분(보정 후)로 나타내기") — 표 칸이 보정 뒤 인분 배수(calcRowOf ★)인 티어 조회면 그래프도 달마다
      그 달 티어 셈 표의 그 줄 배수(1.00 = 보통). 종족 묶음은 그 종족 티어 · 종합은 종합 티어(combinedTier). 원점수는 팝업 글자(원점수 줄)에 남는다. */
-  if (scored && (kind === "exr" || kind === "part" || kind === "prod")) {
-    const k = kind;
-    const tierOf = (e: TrendEntry): TierEntry | null | undefined => (race && race !== "주종족" ? e.tierByRace?.[race] : e.tier ?? combinedTier(e.tierByRace));
+  if (scored && kind === "wpa") {
     return {
-      key: `${race ?? ""}:${k}:sc`, label: `${who}${CALC_NAME[k]}(보정 후 인분 배수 · 1.00 = 보통)`,
-      series: [{ label: CALC_NAME[k], cls: "", pick: (e) => n(calcRowOf(tierOf(e), k)?.mult), fmt: x2 }],
+      key: `${race ?? ""}:wpa:sc`, label: `${who}WPA(보정 후 인분 배수 · 1.00 = 보통)`,
+      series: [{ label: "WPA", cls: "", pick: (e) => n(calcRowOf(tierOf(e), "wpa")?.mult), fmt: x2 }],
       mode: "single",
     };
+  }
+  /* ★ WPA 원점수(2026-11-12) — 달마다 그 달 판으로 셈한 판당 WPA(승리 확률 %p · 티어가 없는 조회의 칸). */
+  if (kind === "wpa") {
+    return { key: race ? `${race}:wpa` : "wpa", label: `${who}WPA(판당 승리 확률 기여 · %p)`, series: [{ label: "WPA", cls: "", pick: (e) => wpaOf(tierOf(e)), fmt: wpaFmt }], mode: "single" };
   }
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */

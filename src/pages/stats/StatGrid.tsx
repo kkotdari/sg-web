@@ -1,6 +1,6 @@
 import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { StatTrendPop, calcRowOf, combinedTier, gainOf, partOf, pctFmt, prodOf, statMetric, type CalcKey, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
+import { StatTrendPop, calcRowOf, combinedTier, gainOf, partOf, pctFmt, prodOf, statMetric, wpaFmt, wpaOf, type CalcKey, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import InfoTip from "../../components/common/InfoTip";
@@ -18,9 +18,9 @@ const RACES: BaseRace[] = ["테란", "프로토스", "저그"];
 const CLAN_LABEL = "평균";
 /** 정렬 자 — 표 머리를 눌러 고른다(2026-10-22, 요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추" → "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개").
  *  APM · 데미지 · 전체(rate · plays) · 종족별("테란:rate" · "테란:plays" …). */
-/** 종족 자 — PC 는 종족마다 일곱(게임수 · 승률 · 교환 이득 · 교전 참여 · 생산 · APM · EAPM · 2026-11-08 밤) · 폰은 게임수 · 승률. */
+/** 종족 자 — PC 는 종족마다 다섯(게임수 · 승률 · WPA · APM · EAPM · 2026-11-12 — 옛 교환 이득 · 교전 참여 · 생산 셋이 WPA 하나로) · 폰은 게임수 · 승률. */
 /** "주종족:…"(2026-11-04) — 그 사람 주종족 판을 합친 줄(MemberStatsEntry.main). */
-export type StatSortKey = "tier" | "rate" | "plays" | "exr" | "part" | "prod" | "apm" | "eapm" | `${StatRace}:${"tier" | "rate" | "plays" | "exr" | "part" | "prod" | "apm" | "eapm"}`;
+export type StatSortKey = "tier" | "rate" | "plays" | "wpa" | "apm" | "eapm" | `${StatRace}:${"tier" | "rate" | "plays" | "wpa" | "apm" | "eapm"}`;
 type SortProps = {
   sortKeys: readonly StatSortKey[]; onSortKeys: (next: StatSortKey[]) => void;
   /** 복수 기준 정렬(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 꺼져 있으면(기본) 머리를 누른 자 **하나**로 갈아탄다. */
@@ -105,11 +105,10 @@ const Dash = () => <span className="scr-sg-dim">-</span>;
 /** 티어 도움말 — 인분에 곱하는 것만 한 줄씩 · 수치 말고 뜻(2026-11-06, 요청: "티어 점수에 포함되는 것만 뭐: 설명 · 간단 깔끔하게 한줄씩 · 수치가 아니라 의미"). */
 const TIER_HELP9 = (
   <>
-    <span>티어 — 몇 인분을 하는지로 매긴 1~4 등급 · 아래를 모두 곱해요</span>
-    <span>교환 이득: 가져간 자원 ÷ 잃은 자원 — 싸움에서 남겼나 밑졌나(종족 · 상대 · 동료 차이는 감안)</span>
-    <span>교전 참여: 가져간 자원을 그 길이 판의 보통에 견줌 — 싸움을 피하지 않았나</span>
-    <span>생산: 뽑은 병력 값을 그 길이 판의 보통에 견줌 — 자원을 병력으로 바꾸는 힘</span>
-    <span>승패: 편 전력으로 예상한 것보다 얼마나 더 이겼나 — 팀웍 · 운영 · 전략</span>
+    <span>티어 — 몇 인분을 하는지로 매긴 1~4 등급</span>
+    <span>WPA: 싸움마다 우리 편의 이길 확률을 얼마나 올리고 내렸나 — 잡은 몫은 때린 만큼 · 잃은 몫은 잃은 만큼 · 판을 가른 싸움일수록 크게</span>
+    <span>몰매: 상대가 더 많이 왔는데 못 간 동료도 그 손실을 함께 져요(그때 다른 싸움 중이었거나 이미 무너진 동료는 빼요)</span>
+    <span>이길 확률은 그 달 판만으로 재요(그 판 결과는 빼고) · 종족 차이 · 상대 · 동료 세기는 감안 · 승패와 생산은 WPA 안에 들어 있어요</span>
   </>
 );
 
@@ -159,38 +158,23 @@ function Rate({ s }: { s?: MemberStats }) {
 }
 
 
-/** ★ 교환 이득 · 교전 참여 · 생산 칸(2026-11-08 밤, 요청: "통계 표의 전투 컬럼은 교환 이득으로 · 그 옆에 교전 참여 · 생산도 추가") — 티어 셈 표의 세 줄과 같은 재료(덤퍼 가치 배분 · sg-api valTaken …).
- *  교환 이득 = 가져간 ÷ 잃은 자원(0% = 본전) · 교전 참여 = 가져간 ÷ 길이 보통(0% = 보통) · 생산 = 분당 뽑은 병력 값. 옛 전투 칸(분당 준 − 입은 데미지) · 그 전 교환비 · 데미지 칸은 걷었다. */
-/** 비율 칸의 % 는 승률처럼 작고 연하게(2026-11-08 밤, 요청: "%는 승률처럼 작고 연하게") — Num 과 같은 꼴(scr-sg-v · 숫자 b · 단위 i). */
-function PctNum({ x }: { x: number }) {
-  const t = pctFmt(x);
-  return <span className="scr-sg-v"><b>{t.slice(0, -1)}</b><i>%</i></span>;
-}
-function GainCell({ s }: { s: MemberStats }) {
-  const x = gainOf(s);
+/** ★ WPA 칸(2026-11-12, 요청: "WPA 적용" · "전투+참전+생산 다 합친게 WPA") — 옛 교환 이득 · 교전 참여 · 생산 세 칸(2026-11-08 밤)을 걷고 한 칸.
+ *  티어 조회는 보정 뒤 인분 배수(ScoreCell · 셈 표의 WPA 줄) · 티어 칸이 없는 조회는 판당 WPA 원점수(승리 확률 %p · sg-api TierEntry.wpa). */
+function WpaCell({ t }: { t?: TierEntry | null }) {
+  const x = wpaOf(t);
   if (x === null) return <Dash />;
-  return <span className="scr-sg-dmg" title="교환 이득 — 가져간 ÷ 잃은 자원(0% = 본전 · 보정 전)"><PctNum x={x} /></span>;
-}
-function PartCell({ s }: { s: MemberStats }) {
-  const x = partOf(s);
-  if (x === null) return <Dash />;
-  return <span className="scr-sg-dmg" title="교전 참여 — 가져간 자원 ÷ 그 길이 판의 보통(0% = 보통 · 보정 전)"><PctNum x={x} /></span>;
+  const s = wpaFmt(x);
+  return <span className="scr-sg-v" title="WPA — 판당 우리 편 승리 확률을 올린 몫(보정 전 · %p)"><b>{s.slice(0, -2)}</b><i>%p</i></span>;
 }
 /** 보정 뒤 점수 칸(위 calcRowOf ★) — 인분 배수 둘째 자리(1.00 = 보통). */
 function ScoreCell({ r }: { r: TierCalcRow | null }) {
   if (!r) return <Dash />;
   return <span className="scr-sg-v" title={`${r.name} — 보정 뒤 점수(인분 배수 · 1.00 = 보통) · 누르면 원점수와 보정 과정`}><b>{r.mult.toFixed(2)}</b></span>;
 }
-/** 팝업의 원점수(보정 뒤 칸일 때) — 표에 보이던 옛 값. */
-function rawFact(s: MemberStats, k: CalcKey): TrendFact[] {
-  const v = k === "exr" ? gainOf(s) : k === "part" ? partOf(s) : prodOf(s);
-  if (v === null) return [];
-  return [{ label: "원점수", value: k === "prod" ? `${Math.round(v).toLocaleString()}/분` : pctFmt(v) }];
-}
-function ProdCell({ s }: { s: MemberStats }) {
-  const x = prodOf(s);
-  if (x === null) return <Dash />;
-  return <span className="scr-sg-dmg" title="생산 — 분당 뽑은 병력 값(미네랄 + 가스)"><b>{Math.round(x).toLocaleString()}</b></span>;
+/** 팝업의 원점수(보정 뒤 칸일 때) — 판당 WPA(%p). */
+function rawFact(t: TierEntry | null | undefined): TrendFact[] {
+  const v = wpaOf(t);
+  return v === null ? [] : [{ label: "원점수", value: `판당 ${wpaFmt(v)}` }];
 }
 
 function Who({ member }: { member: Member }) {
@@ -223,9 +207,11 @@ function WhoPlain({ member }: { member: Member }) {
    묶음마다 [티어 | 게임수 | 승률 | 교환비 | APM | EAPM](티어는 팀전 · 맵 전체 조회에서만 · sg-api tierByRace — 그 종족으로 한 판만으로 잰 인분). 옛 [전체 · 주종족] 묶음 ·
    보기 모드 라디오 · 유저 옆 전체 티어 칸은 걷었다. 폰: 넓은 폰은 PC 와 같은 칸 · 좁은 폰은 종족마다 [티어 | 게임수](티어 칸이 없는 조회는 [게임수 | 승률]).
    평균 줄: 티어는 "-" · 나머지는 그 종족으로 뛴 클랜원 판. */
-/** 종족 판 근거값(티어 칸 팝업 · 위 TierCell more) — 게임수 · 승률 · 교환 이득 · 교전 참여 · 생산 · APM · EAPM. */
-function raceFacts(s: MemberStats): TrendFact[] {
+/** 종족 판 근거값(티어 칸 팝업 · 위 TierCell more · 셈 표가 없는 옛 응답일 때만 보인다) — 게임수 · 승률 · WPA · 교환 이득 · 교전 참여 · 생산 · APM · EAPM. */
+function raceFacts(s: MemberStats, t?: TierEntry | null): TrendFact[] {
   const out: TrendFact[] = [{ label: "게임수", value: s.plays.toLocaleString() }, { label: "승률", value: `${s.winRate}%` }];
+  const w = wpaOf(t);
+  if (w !== null) out.push({ label: "WPA", value: `판당 ${wpaFmt(w)}` });
   const g = gainOf(s);
   if (g !== null) out.push({ label: "교환 이득", value: pctFmt(g) });
   const p = partOf(s);
@@ -251,20 +237,18 @@ function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: Membe
     const r = sc(k);
     return (
       <TCell member={member} metric={statMetric(k, race, scored && !clan)} className={wide}
-        facts={r && has ? rawFact(s!, k) : undefined} calc={r ? [r] : undefined}>
+        facts={r && has ? rawFact(t) : undefined} calc={r ? [r] : undefined}>
         {!has ? <Dash /> : scored ? (clan ? <Dash /> : <ScoreCell r={r} />) : raw}
       </TCell>
     );
   };
   return (
     <>
-      {tier && <TierCell t={clan ? null : t} member={clan ? undefined : member} race={race ?? undefined} className={cx("scr-sg-gstart", m)} more={has ? raceFacts(s!) : undefined} />}
+      {tier && <TierCell t={clan ? null : t} member={clan ? undefined : member} race={race ?? undefined} className={cx("scr-sg-gstart", m)} more={has ? raceFacts(s!, t) : undefined} />}
       <TCell member={member} metric={statMetric("plays", race)} className={cx(!tier && "scr-sg-gstart", tier ? wide : m)}><Num v={has ? s!.plays.toLocaleString() : null} /></TCell>
       <TCell member={member} metric={statMetric("rate", race)} className={wide}>{!has ? <Dash /> : <Rate s={s!} />}</TCell>
-      {/* 교환 이득 · 교전 참여 · 생산(2026-11-08 밤 ★ GainCell) — 생산 칸은 2026-11-07 걷었다가("뽑기만 많이 뽑고 전투를 못한 건 의미 없어") 세 줄 티어 식과 함께 되살렸다. */}
-      {cell("exr", has ? <GainCell s={s!} /> : null)}
-      {cell("part", has ? <PartCell s={s!} /> : null)}
-      {cell("prod", has ? <ProdCell s={s!} /> : null)}
+      {/* WPA(2026-11-12 ★ WpaCell) — 옛 교환 이득 · 교전 참여 · 생산(2026-11-08 밤) 세 칸 자리. 평균 줄은 사람 몫이라 없다(-). */}
+      {cell("wpa", has && !clan ? <WpaCell t={t} /> : <Dash />)}
       <TCell member={member} metric={statMetric("apm", race)} className={wide}><Num v={has ? s!.avgApm : null} /></TCell>
       <TCell member={member} metric={statMetric("eapm", race)} className={wide}><Num v={has ? s!.avgEapm : null} /></TCell>
     </>
@@ -365,8 +349,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const races: readonly BaseRace[] = RACES;
   /** 머리 묶음 — 종합 + 종족 셋. */
   const groups: readonly (BaseRace | null)[] = [null, ...races];
-  /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · 교환 이득 · 교전 참여 · 생산 · APM · EAPM(위 RaceCells ★ · CSS .is-race9 --rspan 과 같이 간다). */
-  const per = tier ? 8 : 7;   // 2026-11-08 밤 교환 이득 · 교전 참여 · 생산(옛 6 : 5)
+  /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · WPA · APM · EAPM(위 RaceCells ★ · CSS .is-race9 --rspan 과 같이 간다). */
+  const per = tier ? 6 : 5;   // 2026-11-12 WPA 한 칸(옛 8 : 7 — 교환 이득 · 교전 참여 · 생산 · 그 전 6 : 5)
   const gridRef = useRef<HTMLDivElement>(null);
   const [clipW, setClipW] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -434,8 +418,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     onClickCapture: (e: React.MouseEvent) => { const c = cellOf(e.target); if (c) setHPin((p) => (sameCell(p, c) ? null : c)); },
   };
   /** 종족 묶음 머리 두 줄 — 윗줄 종족 이름(묶음 칸 수만큼 덮음) · 아랫줄 칸 머리. 폰은 좁을 때 칸이 줄어 덮는 수가 CSS 변수(--rspan)다. */
-  const SUBS: readonly (readonly ["티어" | "게임수" | "승률" | "교환이득" | "교전참여" | "생산" | "APM" | "EAPM", "tier" | "plays" | "rate" | "exr" | "part" | "prod" | "apm" | "eapm"])[] =
-    [...(tier ? [["티어", "tier"] as const] : []), ["게임수", "plays"], ["승률", "rate"], ["교환이득", "exr"], ["교전참여", "part"], ["생산", "prod"], ["APM", "apm"], ["EAPM", "eapm"]];
+  const SUBS: readonly (readonly ["티어" | "게임수" | "승률" | "WPA" | "APM" | "EAPM", "tier" | "plays" | "rate" | "wpa" | "apm" | "eapm"])[] =
+    [...(tier ? [["티어", "tier"] as const] : []), ["게임수", "plays"], ["승률", "rate"], ["WPA", "wpa"], ["APM", "apm"], ["EAPM", "eapm"]];
   const head = (m: boolean) => (
     <div className="scr-sg-row scr-sg-head" role="row">
       <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>

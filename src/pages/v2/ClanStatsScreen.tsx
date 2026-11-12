@@ -7,7 +7,7 @@ import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
 import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
-import { calcRowOf, combinedTier, gainOf, partOf, prodOf, statTrendMonths, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
+import { calcRowOf, combinedTier, statTrendMonths, wpaOf, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -95,11 +95,9 @@ const sortLabel = (k: StatSortKey): string => {
   if (k === "apm") return "APM";
   if (k === "eapm") return "EAPM";
   if (k === "tier") return "종합 티어";
-  if (k === "exr") return "교환 이득";   // 2026-11-08 밤(옛 전투)
-  if (k === "part") return "교전 참여";
-  if (k === "prod") return "생산";
+  if (k === "wpa") return "WPA";   // 2026-11-12(옛 교환 이득 · 교전 참여 · 생산)
   const [who, what] = k.includes(":") ? k.split(":") : ["종합", k];
-  return `${who} ${what === "tier" ? "티어" : what === "rate" ? "승률" : what === "exr" ? "교환 이득" : what === "part" ? "교전 참여" : what === "prod" ? "생산" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
+  return `${who} ${what === "tier" ? "티어" : what === "rate" ? "승률" : what === "wpa" ? "WPA" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
 };
 
 /** 변화 그래프의 기준 — last: 마지막 달(한 달이면 그 달 · 여러 달 a~b 면 b · 달이 아니면 이번 달 — 서버도 dateTo 가 든 달을 마지막으로 센다) · period: 달 셈에 넣을 기간 글자. */
@@ -351,20 +349,12 @@ export default function ClanStatsScreen() {
           || by(num(at?.adj), num(bt?.adj))
           || by(num(at?.cbt), num(bt?.cbt));
       }
-      /* 티어 조회의 교환 이득 · 교전 참여 · 생산은 칸에 보이는 보정 뒤 점수로(2026-11-08 밤 "통계표 전부 보정후 점수" · calcRowOf ★). race 는 종족 묶음(없으면 종합). */
-      const scoreOf = (c: Card, k: "exr" | "part" | "prod", rc: BaseRace | null): number | null =>
-        calcRowOf(rc ? c.entry?.tierByRace?.[rc] : c.entry?.tier ?? combinedTier(c.entry?.tierByRace), k)?.mult ?? null;
-      if (showTier && (key === "exr" || key === "part" || key === "prod")) {
-        const ax = scoreOf(a, key, null); const bx = scoreOf(b, key, null);
-        return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
-      }
-      if (key === "prod") {   // 생산(분당 병력 값 · 2026-11-06)
-        const ax = prodOf(a.stats); const bx = prodOf(b.stats);
-        return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
-      }
-      if (key === "exr" || key === "part") {   // 교환 이득 · 교전 참여(2026-11-08 밤)
-        const f = key === "exr" ? gainOf : partOf;
-        const ax = f(a.stats); const bx = f(b.stats);
+      /* ★ WPA(2026-11-12 · 옛 교환 이득 · 교전 참여 · 생산) — 티어 조회는 칸에 보이는 보정 뒤 점수(calcRowOf ★)로 · 티어 칸이 없는 조회는 판당 WPA 원점수(TierEntry.wpa)로.
+         race 는 종족 묶음(없으면 종합). */
+      const tierOfCard = (c: Card, rc: BaseRace | null) => (rc ? c.entry?.tierByRace?.[rc] : c.entry?.tier ?? combinedTier(c.entry?.tierByRace));
+      const wpaKey = (c: Card, rc: BaseRace | null): number | null => (showTier ? calcRowOf(tierOfCard(c, rc), "wpa")?.mult ?? null : wpaOf(tierOfCard(c, rc)));
+      if (key === "wpa") {
+        const ax = wpaKey(a, null); const bx = wpaKey(b, null);
         return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
       }
       if (key === "apm" || key === "eapm" || key === "cmd") {
@@ -372,17 +362,17 @@ export default function ClanStatsScreen() {
         return missingLast(a.stats[f] === null, b.stats[f] === null) || dirSign * ((a.stats[f] ?? 0) - (b.stats[f] ?? 0));
       }
       /* 전적 — 전체(plays · rate) 또는 종족별("테란:plays" …)의 판 수 · 승률. 판이 없으면 뒤로. */
-      const [race, what] = key.includes(":") ? (key.split(":") as [BaseRace | "주종족", "rate" | "plays" | "exr" | "part" | "prod" | "apm" | "eapm"]) : [null, key as "rate" | "plays"];
+      const [race, what] = key.includes(":") ? (key.split(":") as [BaseRace | "주종족", "rate" | "plays" | "wpa" | "apm" | "eapm"]) : [null, key as "rate" | "plays"];
       /* "주종족:…"(2026-11-04) — 그 사람 주종족 판을 합친 줄(entry.main). */
       const as = race === "주종족" ? a.entry?.main ?? undefined : race ? a.entry?.byRace?.[race] : a.stats;
       const bs = race === "주종족" ? b.entry?.main ?? undefined : race ? b.entry?.byRace?.[race] : b.stats;
       /* 종족 교환비 · APM · EAPM(2026-11-03 · PC 묶음 다섯 칸) — 그 종족 판이 없거나 값이 없으면 뒤로. */
-      if (showTier && race && race !== "주종족" && (what === "exr" || what === "part" || what === "prod")) {
-        const av = scoreOf(a, what, race); const bv = scoreOf(b, what, race);
+      if (race && race !== "주종족" && what === "wpa") {
+        const av = wpaKey(a, race); const bv = wpaKey(b, race);
         return missingLast(av === null, bv === null) || dirSign * ((av ?? 0) - (bv ?? 0));
       }
-      if (what === "exr" || what === "part" || what === "prod" || what === "apm" || what === "eapm") {
-        const vOf = (x: typeof as) => (!x || x.plays === 0 ? null : what === "exr" ? gainOf(x) : what === "part" ? partOf(x) : what === "prod" ? prodOf(x) : what === "apm" ? x.avgApm : x.avgEapm);
+      if (what === "apm" || what === "eapm") {
+        const vOf = (x: typeof as) => (!x || x.plays === 0 ? null : what === "apm" ? x.avgApm : x.avgEapm);
         const av = vOf(as); const bv = vOf(bs);
         return missingLast(av === null, bv === null) || dirSign * ((av ?? 0) - (bv ?? 0));
       }

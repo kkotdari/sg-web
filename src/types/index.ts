@@ -377,8 +377,10 @@ export interface TierEntry {
   /** 주종족(2026-11-04) — 이 티어를 낸 종족들(그 기간 판 30% 이상). */
   mains?: string[] | null;
   level?: number | null;
-  /** 셈 과정 표(2026-11-06 저녁 · sg-api tier calc) — EAPM · 전투 · 생산 · 승패 · 인분 줄 · 인분 = 배수(mult)의 곱. */
+  /** 셈 과정 표(2026-11-06 저녁 · sg-api tier calc) — EAPM · 전투 · 생산 · 승패 · 인분 줄 · 인분 = 배수(mult)의 곱. 2026-11-12 부터 WPA · 승패 · 인분 줄. */
   calc?: TierCalcRow[] | null;
+  /** ★ 판당 WPA(승리 확률 %p · sg-api wpa.py · 2026-11-12) — 보정 전 원점수(통계 표의 WPA 칸 · 티어 칸이 없는 조회는 이 값 그대로). */
+  wpa?: number | null;
 }
 
 export interface TierCalcRow { name: string; score: string; adj: string; mult: number }
