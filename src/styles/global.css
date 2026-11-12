@@ -2090,6 +2090,13 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 .scr-adm-row-field { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .scr-adm-row-field-label { font-size: var(--fs-caption); color: var(--muted); }
 .scr-adm-close-month { width: auto; }   /* 월 마감 달 고르기(2026-10-22) */
+/* ★ 단추가 여럿인 줄(월 마감 · 리플레이 받기 · 마감 · 마감 풀기)은 좁으면 단추를 글 아래 한 줄로 내린다(2026-11-13, 실기: "폰에서 마감 섹션 레이아웃이 깨짐" —
+   단추 셋(각 92px 이상)이 글 칸을 한 글자 폭으로 눌러 글이 세로로 흘렀다). */
+.scr-adm-row-multi { flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .scr-adm-row-multi > .scr-adm-row-text { flex: 1 1 100%; }
+  .scr-adm-row-multi > .scr-adm-row-btn { flex: 1 1 0; min-width: 0; }
+}
 .scr-adm-row-switch { flex: none; }
 .scr-adm-note { margin: 0; font-size: var(--fs-body); color: var(--muted); text-align: center; }
 

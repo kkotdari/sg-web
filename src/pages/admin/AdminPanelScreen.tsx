@@ -432,7 +432,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   </button>
                 </div>
 
-                <div className="scr-adm-row">
+                <div className="scr-adm-row scr-adm-row-multi">
                   <div className="scr-adm-row-text">
                     <span className="scr-adm-row-title">월 마감</span>
                     {closedUntil && <span className="scr-adm-row-desc">{monthLabel(closedUntil)}까지 마감</span>}
