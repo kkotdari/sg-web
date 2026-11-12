@@ -1,3 +1,4 @@
+import InfoTip from "../../components/common/InfoTip";
 import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrendPop, calcRowOf, combinedTier, gainOf, partOf, pctFmt, prodOf, statMetric, wpaFmt, wpaOf, type CalcKey, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
@@ -296,6 +297,27 @@ function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: bo
 }
 
 /* (걷음 2026-11-13, 요청: "통계 전체 툴팁은 제거하고 WPA에만 툴팁 넣기 · 아주 간단히") 통계 표 도움말 단추(StatHelp · 티어 풀이) — WPA 머리 툴팁 한 줄만 남긴다(아래 head). */
+/** ★ "WPA란?" 글 단추(2026-11-13, 요청: "예전 통계 툴팁 아이콘 자리에 텍스트 버튼 WPA란? 추가 · 툴팁 뜨고 WPA 뜻과 항목별로 어떻게 하면 점수를 얻고 잃는지") —
+ *  정렬 줄 오른끝(옛 StatHelp 자리) · PC 는 얹으면 · 폰은 누르면. 항목은 WPA 팝업과 같은 차례(방어 · 공격 · 헬프 · 장악 · 정찰 · sg-api wpa.py · tier._wpa_inbun). */
+export function WpaHelp() {
+  return (
+    <InfoTip
+      hover trigger="WPA란?" triggerClassName="scr-infotip scr-infotip-text scr-sg-help-btn scr-sg-wpa-help" bubbleClassName="scr-sg-help"
+      text={(
+        <span className="scr-sg-help-list">
+          <span><b>WPA(승리 확률 기여)</b> — 내 플레이로 우리 편이 이길 확률이 얼마나 오르고 내렸나. 1점 = 1%p. 그 달 경기로 맞춘 승리 확률로 잰다 — 판이 기운 뒤보다 팽팽할 때의 플레이가 크게 친다.</span>
+          <span><b>공격</b> + 상대 병력 · 일꾼 · 건물을 잡으면. 여럿이 잡으면 때린 비율로 나눈다.</span>
+          <span><b>방어</b> − 내 병력 · 일꾼 · 건물을 잃으면. 덜 잃을수록 높다.</span>
+          <span><b>헬프</b> − 상대가 더 많은 머릿수로 우리 편을 칠 때 도우러 안 간 사람과 당한 사람이 함께 진다(그때 다른 싸움 중이었으면 빠진다).</span>
+          <span><b>장악</b> + 한 자리를 1분 넘게 지키며 상대와 마주하면(공격 건물 · 벙커 · 마인 포함 · 상대 쪽에 가까울수록 크게). 밀려 물러나면 −(싸우다 죽은 몫은 방어에서만). 본진에 쌓아 두기만 하면 0.</span>
+          <span><b>정찰</b> + 상대 건물을 보고 있으면(최근 3분). 정보를 놓치면 −.</span>
+          <span>상대가 그만큼 하면 우리 편이 똑같이 잃는다. 칸마다 인분은 1 = 그 조회 판 평균 · 다 곱하면 총.</span>
+        </span>
+      )}
+    />
+  );
+}
+
 
 export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false, onVisW }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */

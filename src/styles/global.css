@@ -5283,6 +5283,11 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 폰 표 도움말(StatHelp · 2026-10-22) — 정렬 줄 오른끝 단추 · 말풍선에 한 줄짜리 표 그림(.scr-sg-help-mock)과 풀이 목록. */
 .scr-sg-help-btn { margin-left: auto; padding: 0 2px; }
 .scr-infotip-bubble.scr-sg-help { max-width: min(300px, 88vw); padding: 10px 12px; white-space: normal; }
+/* "WPA란?" 글 단추(WpaHelp · 2026-11-13) — 옛 도움말 아이콘 자리 · 작은 밑줄 글 · 말풍선 폭 넓힘(항목 여섯 줄). */
+.scr-sg-wpa-help { font-size: var(--fs-caption); color: var(--muted); text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; white-space: nowrap; }
+.scr-infotip-bubble.scr-sg-help:has(.scr-sg-help-list) { max-width: min(360px, 90vw); }
+.scr-sg-help-list { display: flex; flex-direction: column; gap: 6px; line-height: 1.5; text-align: left; }
+.scr-sg-help-list b { color: var(--text); font-weight: 700; }
 .scr-sg-help-mock {
   display: grid; grid-template-columns: auto 40px 36px 36px; margin-bottom: 9px; font-size: 11px; line-height: 1.3;
   border-radius: 4px; overflow: hidden; border: 1px solid var(--line-faint);
