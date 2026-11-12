@@ -417,6 +417,9 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     hcol === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:not(.scr-sg-head) > :nth-child(${hcol + 1})${mobile ? "" : `, .scr-sg.is-hcol > .scr-sg-head > :nth-child(${hcol + groups.length + 1})`} { background: var(--lighting-hover-bg); }`,
     hrow === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:nth-child(${hrow + 1}) > .scr-sg-c { background: var(--lighting-hover-bg); }`,
     hrow === null || hcol === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:nth-child(${hrow + 1}) > :nth-child(${hcol + 1}) { background: linear-gradient(var(--lighting-hover-bg), var(--lighting-hover-bg)), var(--lighting-hover-bg); }`,
+    /* ★ 폰 붙박이 유저 칸은 강조돼도 **불투명**(2026-11-13, 실기: "하이라이트된 셀이 유저 틀고정 행까지 넘어가는 오류") — 강조 칠(반투명)이 유저 칸의 페이지 바탕을 덮어
+       가로로 밀린 칸(강조된 티어 칸)이 그 밑에서 비쳐 보였다. 강조를 페이지 바탕 위에 겹친다. */
+    !mobile || hcell === null ? "" : `.scr-sg.is-m.is-hcol > .scr-sg-row:not(.scr-sg-head)${hcol === 0 ? "" : `:nth-child(${(hrow ?? -2) + 1})`} > .scr-sg-c.scr-sg-who { background: linear-gradient(var(--lighting-hover-bg), var(--lighting-hover-bg)), var(--void); }`,
   ].join("\n");
   const hcolProps = {
     onPointerOver: (e: React.PointerEvent) => { if (e.pointerType === "mouse") { const c = cellOf(e.target); setHHover((p) => (sameCell(p, c) ? p : c)); } },
