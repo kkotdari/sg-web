@@ -18,6 +18,8 @@ const cellMd = (v: unknown): string => {
   return s.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 };
 
+const cellText = (v: unknown): string => (v === null || v === undefined ? "NULL" : typeof v === "object" ? JSON.stringify(v) : String(v));
+
 export function toMdTable(r: SqlConsoleResult): string {
   if (!r.columns.length) return `(${r.rowCount}줄 바뀜)`;
   const head = `| ${r.columns.map(cellMd).join(" | ")} |`;
@@ -83,7 +85,21 @@ export default function SqlConsoleModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
           {err && <div className="scr-err" role="alert">{err}</div>}
-          {res && <pre className="scr-sqlc-out">{md}</pre>}
+          {res && (res.columns.length === 0
+            ? <p className="scr-sqlc-meta">{md}</p>
+            : (
+              /* md 표를 보통 md 뷰어 모양으로 그린다(2026-11-13, 요청: "md 형식이 표준 md 뷰잉 양식으로 변환되어") — 복사 단추는 md 글 그대로. */
+              <div className="scr-sqlc-out">
+                <table className="scr-sqlc-table">
+                  <thead><tr>{res.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+                  <tbody>
+                    {res.rows.map((row, ri) => (
+                      <tr key={ri}>{row.map((v, ci) => <td key={ci} className={cx(v === null && "is-null")}>{cellText(v)}</td>)}</tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
         </div>
       </div>
       {askWrite && (
