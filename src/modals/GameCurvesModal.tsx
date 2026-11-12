@@ -24,12 +24,13 @@ import type { GameCurve, GameResult } from "../types";
 
 const BW_PALETTE = ["#f40404", "#0c48cc", "#2cb494", "#88409c", "#f88c14", "#703014", "#cce0d0", "#fcfc38"];
 type ViewMode = "player" | "teamColor" | "teamSum";
-type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "cm" | "cg" | "dd" | "dt" | "ex" | "vk" | "vl" | "sk" | "sl" | "vx";
+type CurveKey = "wk" | "sp" | "sx" | "rm" | "rg" | "cm" | "cg" | "dd" | "dt" | "ex" | "vk" | "vl" | "sk" | "sl" | "vx" | "wp";
 /** 인구 · 데미지 · 자원 판 고르기(2026-10-22, 요청: "데미지와 인구를 탭으로 전환" → "인구 데미지 자원 세 개구나 탭이"). */
-type GroupTab = "bl" | "sp" | "dmg" | "rs";
+type GroupTab = "wpa" | "bl" | "sp" | "dmg" | "rs";
 /** 탭 — bl(건설 줄 · 2026-10-25 "테크가 아니라 건설")은 **한 종류만 보이기**(폰 · PC 창모드)에서만 탭이다(2026-10-25 · 아래 oneKind9 ★). PC 전체화면은 건설 줄이 늘 위에 · 탭은 셋. */
 /* 데미지 탭 이름은 "전투"(2026-11-09, 요청: "데미지 탭 이름도 전투로 변경" — 교환 이익 · 가져간/잃은 서플라이로 바뀌며). */
-const GROUP_TABS: [GroupTab, string][] = [["bl", "건설"], ["sp", "인구"], ["dmg", "전투"], ["rs", "자원"]];
+/* ★ WPA 탭 맨 앞 · 건설 맨 끝(2026-11-13, 요청: "데이터 창에 WPA 그래프 추가 · 전투 앞에 두고 전투같은 형태로 보여주되 누적만" → "WPA를 맨 앞 건설을 맨 마지막으로 이동"). */
+const GROUP_TABS: [GroupTab, string][] = [["wpa", "WPA"], ["dmg", "전투"], ["sp", "인구"], ["rs", "자원"], ["bl", "건설"]];
 const cumsum = (a: readonly number[]): number[] => { let s = 0; return a.map((v) => (s += v)); };
 /** 교환비 줄(2026-10-28, 요청: "데이터 그래프의 데미지 맨 위에 교환비 그래프") — 분마다 준 ÷ 입은(누적이면 누적끼리 · 분당이면 그 분끼리).
  *  둘 다 작은 때 튀지 않게 양쪽에 max(EX_E, 두 값 평균의 5%)를 더하고(sg-api 티어 전투와 같은 꼴) · 판이 한눈에 들게 EX_CAP 에서 자른다. */
@@ -301,7 +302,7 @@ type BuildLane = { key: string; group: string; name: string; color: string; blds
  *  사람마다 칸 · 그 안에 건물 종류마다 작은 칸(처음 지은 차례) · 건물 한 채가 선 하나: 짓는 동안은 점선 · 다 지은 뒤 사라질 때까지 실선(끝까지 남으면 판 끝까지).
  *  같은 종류 여러 채는 겹치지 않게 줄을 나눈다. 변태(레어 · 성큰 …)는 같은 선에서 이어진다 — 변태하는 동안 점선 · 그 뒤 실선 · 그 줄의 첫 변태 시작 자리에 새 이름
  *  (요청: "레어 성큰같이 변태하는 건 라이프타임 선 중간에 변경되게"). 선에 마우스를 얹으면 세로선이 그 건물의 완공(못 지었으면 착공) 때로 · 가로축에 분:초. */
-function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, caps = false, hscroll = false, byKind = false, onByKind }: {
+function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, onFocus, at, onAt, caps = false, hscroll = false, byKind = false, onByKind, separate = false }: {
   lanes: BuildLane[]; maxX: number; ticksX: number[]; w: number; padL: number; padR: number;
   font: { label: number; axis: number };
   /** ★ 칩 **머릿말**(PC · 2026-10-24, 요청: "PC 에서는 건설 칩에 시간과 인구수도 작게 … 칩 안에 머릿말로 · 뭉친 칩엔 처음 것만, 나머지는 팝오버" · 폰도 2026-10-25 "모바일 테크칩에도 시간 인구 표시") — 칩이 두 줄이 된다:
@@ -314,6 +315,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
    *  같은 변태나 애드온은 한 줄 ③ 칩의 건물 이름 오른쪽에 좀 띄우고 현 개수 ④ 숫자 변화 발생 시 이름 없이 시간 · 인구 · 개수만") — 아래 kindUnits9 ★. */
   byKind?: boolean;
   onByKind?: (v: boolean) => void;
+  /** ★ **안 합침**(전체화면 · 2026-11-13, 요청: "건설은 전체화면모드시 근처의 동일건물을 합치지 않고 분리해서 다 표현 · 칩 크기 키우지 말고") — 종류별 줄에서 닿는 칩을 앞 칩에
+   *  합치지 않고 그 종류 줄 아래 빈 단(필요하면 새 단)에 따로 놓는다 · 칩 크기는 그대로 · 같은 종류 칩끼리는 S자 선으로 잇는다. */
+  separate?: boolean;
   focus: string | null;
   onFocus: (key: string) => void;
   at: number | null;
@@ -475,7 +479,10 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
         for (const d9 of all9.filter((r9) => r9.parent === bz.kind && r9 !== bz).sort((p, q) => p.first - q.first)) if (!order9.includes(d9)) order9.push(d9);
       }
       for (const r9 of all9) if (!order9.includes(r9)) order9.push(r9);
-      const out9 = order9.map((rw, ri) => {
+      let rowAt9 = 0;   // 안 합침(separate)이면 종류 줄마다 단을 여럿 쓸 수 있다 — 그 줄이 시작하는 단
+      const out9 = order9.map((rw, ri0) => {
+        const ri = separate ? rowAt9 : ri0;
+        const ends9: number[] = [];   // 안 합침 — 단마다 오른끝
         const name9 = BUILD_LABEL[rw.kind] ?? `#${rw.kind}`;
         const ev9 = rw.ev.slice().sort((p, q) => p[0] - q[0] || q[1] - p[1]);
         const tags: Tag[] = [];
@@ -488,6 +495,13 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
           /* 줄 안 선(2026-10-25, 요청: "선도 있어야 할 듯") — 앞 칩 → 이 칩(par) · 앞 칩 뒤 개수가 0 이면 렌더가 안 긋는다. */
           const t = tag(at9, lab9, "개수", { kind: rw.kind, r: ri, par: tags.length - 1, n: n9 });
           t.w += CNT_W9; t.x = Math.min(x(at9), RIGHT - t.w);   // 개수 뒤 작은 "개"(cntOf9 ★) 몫
+          if (separate) {
+            let j9 = ends9.findIndex((e9) => t.x >= e9 + BL.gap);
+            if (j9 < 0) { j9 = ends9.length; ends9.push(0); }
+            t.r = ri + j9; ends9[j9] = t.x + t.w;
+            tags.push(t);
+            continue;
+          }
           if (pv && t.x < pv.x + pv.w + BL.gap) {
             /* 앞 칩에 닿는다 — 합쳐 개수만 새로(첫 칩이면 이름은 그대로) · 팝오버는 그 때들 */
             const lab2 = tags.length === 1 ? `${name9}\u2002${n9}` : String(n9);
@@ -497,8 +511,9 @@ function BuildLanes({ lanes, maxX, ticksX, w: CW, padL: PL, padR, font, focus, o
           }
           tags.push(t);
         }
-        for (const t of tags) take9(ri, t.x, t.x + t.w);
+        for (const t of tags) take9(t.r, t.x, t.x + t.w);
         if (tags.length === 0) take9(ri, 0, 0);
+        rowAt9 = ri + Math.max(1, ends9.length);
         return { bs: rw.bs.length ? rw.bs : [l.blds[0]], tags, rw };
       });
       /* 줄 사이 선 — 변태·애드온 줄의 첫 칩은 앞 종류 줄(변태 = 바로 전 종류 · 애드온 = 본 건물)에서 그 때 앞에 끝나는 마지막 칩에서 온다(S자 · 변태는 화살촉). */
@@ -831,7 +846,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   /* 인구 그래프의 '일꾼 제외'(2026-10-21, 요청: "인구 그래프 타이틀 옆에 일꾼 제외 라벨드 토글") — 켜면 일꾼 뺀 인구(sx). */
   const [noWorker, setNoWorker] = useState(false);
   const spKey: CurveKey = noWorker ? "sx" : "sp";
-  const [tabRaw, setTab] = useState<GroupTab>("bl");
+  const [tabRaw, setTab] = useState<GroupTab>("wpa");   // 맨 앞 탭(2026-11-13 · 옛 건설)
   /* 데미지는 누적이 기본 · '분당'을 켜면 그 앞 1분 동안의 몫(2026-10-22, 요청: "누적을 기본 · 분당으로 전환 가능"). */
   const [dmgMin, setDmgMin] = useState(false);
   /* 자원은 누적(캔 양) 이 기본 · '순간'이면 그때 쥔 양(2026-10-22, 요청: "자원은 누적 · 순간"). */
@@ -888,7 +903,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
     const dm = (a: number[] | undefined): number[] => (dmgMin ? a ?? [] : cumsum(a ?? []));
     const ps = shown.map((p) => {
       const dd = dm(p.dd); const dt = dm(p.dt); const vk = dm(p.vk); const vl = dm(p.vl);
-      return { p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg, cm: cumsum(p.cm ?? []), cg: cumsum(p.cg ?? []), dd, dt, ex: exLine(dd, dt), vk, vl, sk: dm(p.sk), sl: dm(p.sl), vx: netLine(vk, vl) };
+      return { p, wk: p.wk, sp: p.sp, sx: p.sx, rm: p.rm, rg: p.rg, cm: cumsum(p.cm ?? []), cg: cumsum(p.cg ?? []), dd, dt, ex: exLine(dd, dt), vk, vl, sk: dm(p.sk), sl: dm(p.sl), vx: netLine(vk, vl),
+        wp: cumsum(p.wp ?? []) };   // WPA 는 늘 누적(그 시점까지의 점수 · 2026-11-13)
     });
     if (!teamOn) return ps.map((q) => ({ key: q.p.playerName, team: teamNo(q.p.team), ...q }));
     const sum = (ms: typeof ps, k: CurveKey): number[] =>
@@ -898,7 +914,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       const dd = sum(ms, "dd"); const dt = sum(ms, "dt");   // 팀 교환비 = 팀 합끼리
       const vk = sum(ms, "vk"); const vl = sum(ms, "vl");   // 팀 교환 이익도 팀 합끼리
       return { key: `team${t}`, p: null, team: t, wk: sum(ms, "wk"), sp: sum(ms, "sp"), sx: sum(ms, "sx"), rm: sum(ms, "rm"), rg: sum(ms, "rg"), cm: sum(ms, "cm"), cg: sum(ms, "cg"), dd, dt, ex: exLine(dd, dt),
-        vk, vl, sk: sum(ms, "sk"), sl: sum(ms, "sl"), vx: netLine(vk, vl) };
+        vk, vl, sk: sum(ms, "sk"), sl: sum(ms, "sl"), vx: netLine(vk, vl), wp: sum(ms, "wp") };
     });
   }, [shown, teamOn, dmgMin]);
   /* 가로 끝 = 곡선 끝과 건물 · 테크 기록 끝 중 늦은 쪽(2026-10-23, 지적: "끝에 줄 맞춰 나오는 거 — 동시에 저렇게 많은 건물을 착공할 리가 없는데") —
@@ -916,7 +932,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
     const sup = niceTicks(Math.max(0, ...series.flatMap((s) => [...s.sk, ...s.sl])));
     const val = niceTicks(Math.max(0, ...series.flatMap((s) => [...s.vk, ...s.vl])));
     return { x, xt: niceTicks(x, 7), wk: ticks("wk"), sp: ticks("sp"), sx: ticks("sx"), rm: ticks("rm"), rg: ticks("rg"), cm: ticks("cm"), cg: ticks("cg"), dd: dmg, dt: dmg, ex: exTicks(Math.max(1, ...series.flatMap((s) => s.ex))),
-      vk: val, vl: val, sk: sup, sl: sup, vx: signedTicks(Math.min(0, ...series.flatMap((s) => s.vx)), Math.max(0, ...series.flatMap((s) => s.vx))) };
+      vk: val, vl: val, sk: sup, sl: sup, vx: signedTicks(Math.min(0, ...series.flatMap((s) => s.vx)), Math.max(0, ...series.flatMap((s) => s.vx))),
+      wp: signedTicks(Math.min(0, ...series.flatMap((s) => s.wp)), Math.max(0, ...series.flatMap((s) => s.wp))) };
   }, [series, lastEventMin]);
   const linesOf = (key: CurveKey): ChartLine[] => series.flatMap((s) => (s[key].length < 2 ? [] : [s.p
     ? { key: s.key, label: shortName(nameOf(s.p), font.label), color: colorOf(s.p), ys: s[key] }
@@ -936,7 +953,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const laneW = mobile ? Math.max(box.w, lanePL + padR + sc.x * LANE_PX_MIN) : box.w;
   const lanesEl = (
     <BuildLanes
-      maxX={sc.x} ticksX={sc.xt} w={laneW} padL={lanePL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps hscroll={mobile} byKind={byKind}
+      maxX={sc.x} ticksX={sc.xt} w={laneW} padL={lanePL} padR={padR} font={font} focus={focus} onFocus={pickFocus} at={at} onAt={setAt} caps hscroll={mobile} byKind={byKind} separate={full}
       lanes={shown.map((p) => ({ key: p.playerName, group: teamOn ? `team${teamNo(p.team)}` : p.playerName, name: nameOf(p), color: colorOf(p), blds: p.blds, spt: p.spt }))}
     />
   );
@@ -955,6 +972,8 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
   const hasDmg = (players ?? []).some((p) => (p.dd?.length ?? 0) > 1);
   /* ★ 가치 자료(2026-11-09 · 덤퍼 ##VALM## · 재분석한 판)가 있으면 데미지 탭 = 교환 이익 · 가져간 서플라이 · 잃은 서플라이. 없으면(재분석 전) 옛 데미지 판. */
   const hasVal = (players ?? []).some((p) => (p.vk?.length ?? 0) > 1);
+  /* ★ WPA 탭(2026-11-13) — 서버가 팀전 내전에만 준다(sg-api game_curves wp). */
+  const hasWp = (players ?? []).some((p) => (p.wp?.length ?? 0) > 1);
   /* 판 제목 옆 작은 탭 — 데미지 누적 · 분당(2026-10-22, 요청: "분당 누적도 작은 탭으로" · 옛 '분당' 스위치) · 자원 누적 · 순간(같은 날). */
   const miniTabs = (on: boolean, set: (v: boolean) => void, off: string, onLabel: string): ReactNode => (
     <span className="scr-line-tabs scr-gc-minitabs" role="tablist" aria-label={`${off} · ${onLabel}`}>
@@ -970,14 +989,15 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
      폰·PC 창모드는 탭 넷(테크 = 건설 줄)에서 고른 하나만 그리고, 탭 · 볼 사람 · 개인/팀별이 그 차례로 맨 위에 붙는다(.scr-gc-top). PC 전체화면은 종전(건설 줄 온 폭 + 탭 셋의 두 판 반반). */
   const oneKind9 = !(FULL_OWN9 && full);
   const tab: GroupTab = !oneKind9 && tabRaw === "bl" ? "sp" : tabRaw;
-  const pair: ReactNode[] | null = tab === "sp" ? [spEl, wkEl]
+  const pair: ReactNode[] | null = tab === "wpa" ? (hasWp ? [chartOf("wp", "WPA(누적 · 1점 = 이길 확률 1%p)")] : null)
+    : tab === "sp" ? [spEl, wkEl]
     : tab === "rs" ? (rsNow ? [chartOf("rm", "미네랄", { titleExtra: rsModeEl }), rgEl]
       : hasGather ? [chartOf("cm", "미네랄", { titleExtra: rsModeEl }), chartOf("cg", "가스")] : null)
     /* 데미지 탭 맨 위 = 교환비(2026-10-28) — 누적 · 분당 작은 탭은 맨 위 판 제목 옆으로 옮겼다(세 판이 같이 따른다). */
     : hasVal ? [chartOf("vx", "교환 이익(가져간 − 잃은 자원)", { titleExtra: miniTabs(dmgMin, setDmgMin, "누적", "분당") }), chartOf("sk", "가져간 서플라이"), chartOf("sl", "잃은 서플라이")]
     : hasDmg ? [chartOf("ex", "교환비(준 ÷ 입은)", { titleExtra: miniTabs(dmgMin, setDmgMin, "누적", "분당") }), chartOf("dd", "준 데미지"), chartOf("dt", "입은 데미지")] : null;
   const tabsEl = (
-    <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label={oneKind9 ? "건설 · 인구 · 전투 · 자원" : "인구 · 전투 · 자원"}>
+    <div className="scr-line-tabs scr-gc-tabs" role="tablist" aria-label={oneKind9 ? "WPA · 전투 · 인구 · 자원 · 건설" : "WPA · 전투 · 인구 · 자원"}>
       {GROUP_TABS.filter(([k]) => oneKind9 || k !== "bl").map(([k, label]) => (
         <button key={k} type="button" role="tab" aria-selected={tab === k} className={cx("scr-line-tab-btn", tab === k && "is-on")} onClick={() => setTab(k)}>{label}</button>
       ))}
@@ -1007,7 +1027,7 @@ export default function GameCurvesModal({ game, onClose, dock = false }: { game:
       {oneKind9 && tab === "bl" ? lanesEl : pair === null ? (
         <div className="scr-rc-empty scr-gc-nodmg">
           {tab === "rs" && <>{rsModeEl}<br /></>}
-          {tab === "rs" ? "캔 자원" : "전투"} 데이터가 아직 없어요 — 재분석하면 생겨요
+          {tab === "wpa" ? "WPA 데이터가 없어요 — 내전 팀전 · 재분석한 판만 있어요" : <>{tab === "rs" ? "캔 자원" : "전투"} 데이터가 아직 없어요 — 재분석하면 생겨요</>}
         </div>
       )
         : twoCol ? (

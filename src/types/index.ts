@@ -99,6 +99,8 @@ export interface GameCurve {
   vl?: number[];
   sk?: number[];
   sl?: number[];
+  /** ★ 분마다 그 앞 1분 동안의 WPA(점 = 이길 확률 %p · sg-api 2026-11-13 · 데이터 창 WPA 탭) — 누적은 화면이 더한다. 팀전 내전에 재료가 없으면 빈 줄. */
+  wp?: number[];
   /** 모든 건물의 생애(초) — t 처음 종류 · s 짓기 시작 · d 다 지음(못 지었으면 null) · e 사라짐(끝까지 남았으면 null)
    *  · m 변태들 [새 종류, 변태 시작, 다 됨(못 됐으면 null)](해처리 → 레어 · 크립 → 성큰 …) · PC 건설 줄. */
   /** h — 애드온만: 붙어 있던 본 건물 [같은 사람 blds 안 차례, 붙은 초] · 본 건물이 바뀔 때마다 한 줄(2026-10-22). */
@@ -383,6 +385,8 @@ export interface TierEntry {
   wpa?: number | null;
   /** ★ 판당 WPA 의 세 몫 [공격 · 생존 · 협동](점 = %p · 합 = wpa · sg-api 2026-11-13) — WPA 팝업. */
   wpaParts?: number[] | null;
+  /** ★ WPA 세 몫의 인분 [방어 · 공격 · 헬프](1 = 그 조회 판 평균 · sg-api 2026-11-13) — WPA 팝업. */
+  wpaInbun?: number[] | null;
 }
 
 export interface TierCalcRow { name: string; score: string; adj: string; mult: number }

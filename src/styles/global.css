@@ -5572,8 +5572,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 티어 근거값 줄(2026-10-28, 요청: "티어 팝업에 그래프 위에 현재 보는 티어의 근거값 두 개") — 머리 아래 · 그래프 위 · 이름(옅게) 값(굵게) 짝. */
 /* 이름(한글)과 값(숫자 · 영문)은 글꼴이 달라 기준선(baseline)으로 맞추면 한글이 내려앉아 보였다(2026-10-28, 지적: "얘네 왜 서로 줄이 안 맞아") —
    줄 높이를 하나로 두고 글자 상자 가운데로 맞춘다. */
-.scr-sg-trend-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: -2px 0 6px; font-size: var(--fs-11); line-height: 1.25; }
-.scr-sg-trend-facts span { display: inline-flex; align-items: center; gap: 5px; }
+/* ★ 한 줄에 하나씩(2026-11-13, 요청: "한줄에 하나씩 · 항목도") — 이름은 왼쪽 · 값은 오른쪽 끝(옛: 옆으로 흘려 여러 개가 한 줄). */
+.scr-sg-trend-facts { display: flex; flex-direction: column; gap: 3px; margin: -2px 0 8px; font-size: var(--fs-11); line-height: 1.25; }
+.scr-sg-trend-facts span { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .scr-sg-trend-facts span > * { line-height: 1.25; }
 .scr-sg-trend-facts i { font-style: normal; color: var(--muted); }
 .scr-sg-trend-facts b { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }

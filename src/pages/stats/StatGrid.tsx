@@ -175,18 +175,21 @@ function ScoreCell({ r }: { r: TierCalcRow | null }) {
   if (!r) return <Dash />;
   return <span className="scr-sg-v"><b>{r.mult.toFixed(2)}</b></span>;
 }
-/** ★ WPA 팝업(2026-11-13, 요청: "WPA는 협동점수 · 적극성 점수 등등 말은 너가 정해주고 쉽게 몇가지로 점수화 · 보정 공식같은거 다 치우고") — 판당 세 몫과 합(1점 = 이길 확률 1%p).
- *  공격 = 상대 유닛 · 건물을 잡아 올린 몫 · 생존 = 내가 잃어서 깎인 몫 · 협동 = 몰매 때 못 가서 함께 진 몫(sg-api wpaParts) · 티어 조회면 인분 배수도. */
-function wpaFacts(t: TierEntry | null | undefined, r: TierCalcRow | null): TrendFact[] {
+/** ★ WPA 팝업 — 한 줄에 하나씩 **방어 · 공격 · 헬프**(인분 · 1인분 = 그 조회 판 평균)와 **총 승리 확률 기여**(판당 %p)(2026-11-13, 요청:
+ *  "방어 +N% · 공격 · 헬프 · 총 승리 확률 기여 +N% 약간 이런식으로" → "인분도 괜찮고 · 방어 0.9인분 · 공격 0.8인분 · 헬프 0.5인분" — 옛 득점 · 실점 · 합계 / 공격 · 생존 · 협동 점수).
+ *  방어 = 덜 잃은 정도 · 공격 = 상대를 잡아 올린 정도 · 헬프 = 몰매 때 함께 싸운 정도(sg-api wpaInbun · tier._wpa_inbun) · 총 = 티어에 드는 WPA 배수(인분). */
+function wpaFacts(t: TierEntry | null | undefined): TrendFact[] {
   const v = wpaOf(t);
   if (v === null) return [];
-  const [atk, live, team] = t?.wpaParts ?? [];
   const out: TrendFact[] = [];
-  if (typeof atk === "number") out.push({ label: "공격 점수", value: wpaFmt(atk) });
-  if (typeof live === "number") out.push({ label: "생존 점수", value: wpaFmt(live) });
-  if (typeof team === "number") out.push({ label: "협동 점수", value: wpaFmt(team) });
-  out.push({ label: "WPA(판당 합)", value: wpaFmt(v) });
-  if (r) out.push({ label: "인분 배수", value: `×${r.mult.toFixed(2)}` });
+  const [dfn, atk, hlp] = t?.wpaInbun ?? [];
+  const ib = (x: number) => `${x.toFixed(2)}인분`;
+  if (typeof dfn === "number") out.push({ label: "방어", value: ib(dfn) });
+  if (typeof atk === "number") out.push({ label: "공격", value: ib(atk) });
+  if (typeof hlp === "number") out.push({ label: "헬프", value: ib(hlp) });
+  /* 총은 인분(같은 날 "총 몇인분") — 티어에 드는 WPA 배수(sg-api cbt · 셈 표 WPA 줄 배수 = 티어 조회 칸 값) · 없으면 판당 승리 확률 기여(%p). */
+  if (typeof t?.cbt === "number") out.push({ label: "총", value: ib(t.cbt) });
+  else out.push({ label: "총 승리 확률 기여", value: `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}%` });
   return out;
 }
 
@@ -250,7 +253,7 @@ function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: Membe
     const r = sc(k);
     return (
       <TCell member={member} metric={statMetric(k, race, scored && !clan)} className={wide}
-        facts={has && !clan ? wpaFacts(t, r) : undefined}>
+        facts={has && !clan ? wpaFacts(t) : undefined}>
         {!has ? <Dash /> : scored ? (clan ? <Dash /> : <ScoreCell r={r} />) : raw}
       </TCell>
     );
