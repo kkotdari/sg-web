@@ -5251,6 +5251,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg.is-m.has-tier .scr-sg-name { min-width: 4em; }
 .scr-sg.is-m .scr-sg-tier-c { padding-left: 2px; padding-right: 2px; }
 .scr-sg.is-m .scr-sg-tier { width: 20px; height: 20px; border-radius: 4px; font-size: 11px; }
+/* ★ 등급 없는 사람의 지금 인분(2026-11-13 · StatGrid TierCell) — 배지 없이 옅은 숫자(등급이 아직 아님을 배지와 가르게). */
+.scr-sg-inbun-pend { font-size: 11px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
+.scr-sg.is-m .scr-sg-inbun-pend { font-size: 10px; letter-spacing: -0.04em; }
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }
 .scr-sg.is-m .scr-sg-race { flex-direction: column; gap: 3px; }
 .scr-sg.is-m .scr-sg-who { justify-content: flex-start; gap: 4px; padding-left: 6px; padding-right: 2px; }

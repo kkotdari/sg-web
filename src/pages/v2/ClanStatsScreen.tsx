@@ -132,8 +132,9 @@ function chipsOfUrl(raw: string): string[] {
 }
 
 /* ★ 통계 잠시 닫음(2026-11-12, 요청: "통계 페이지 임시 작업중이라고 팝업띄우고 비활성화" → "뒤는 보이게") — 화면은 그대로 그려 뒤가 보이고, 누르기 · 포커스만 막는다(inert).
-   가운데에 닫기 없는 작업 중 팝업(배경 막 없이 · .scr-modal-overlay 는 display contents). 머리줄 · 아래 탭은 막지 않아 다른 화면으로 갈 수 있다. 다시 열려면 false. */
-const STATS_PAUSED = true;
+   가운데에 닫기 없는 작업 중 팝업(배경 막 없이 · .scr-modal-overlay 는 display contents). 머리줄 · 아래 탭은 막지 않아 다른 화면으로 갈 수 있다. 다시 닫으려면 true.
+   (2026-11-13 다시 엶 — 요청: "통계 열고") */
+const STATS_PAUSED = false;
 
 function StatsPausedNotice() {
   return createPortal(
