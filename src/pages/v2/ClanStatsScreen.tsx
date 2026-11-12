@@ -7,7 +7,7 @@ import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodToRange } from "../../utils/date";
-import StatGrid, { CompGrid, StatHelp, type StatSortKey } from "../stats/StatGrid";
+import StatGrid, { CompGrid, type StatSortKey } from "../stats/StatGrid";
 import { calcRowOf, combinedTier, statTrendMonths, wpaOf, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
@@ -515,8 +515,7 @@ export default function ClanStatsScreen() {
             <RotateCcw size={12} aria-hidden /> 초기화
           </button>
         )}
-        {/* 표 도움말 단추 — 정렬 줄 오른끝(옛 폰 "행을 눌러서 그래프 보기" 글 자리 · 2026-10-22, 요청: "도움말과 헤더 설명 다 제거하고 그 자리에 도움말 아이콘 단추" → "PC 에도 알아서"). */}
-        <StatHelp mobile={isMobile} />
+        {/* (걷음 2026-11-13, 요청: "통계 전체 툴팁은 제거") 표 도움말 단추(StatHelp). */}
         {/* 종족별 펼치기/접기 — 표 밖 정렬 줄 오른끝(2026-11-05, 요청: "저 펴고 접는 버튼은 표 외부로 이동" · 옛: 표 종합 머리 오른끝 · 2026-11-04). */}
         <button type="button" className={cx("scr-sg-fold", showRaces && "is-on")} aria-expanded={showRaces} onClick={toggleRaces}
           title={showRaces ? "종족별 접기 — 종합만" : "종족별 펼치기 — 테란 · 프로토스 · 저그"}>

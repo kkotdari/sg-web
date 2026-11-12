@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { StatTrendPop, calcRowOf, combinedTier, gainOf, partOf, pctFmt, prodOf, statMetric, wpaFmt, wpaOf, type CalcKey, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
 import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
-import InfoTip from "../../components/common/InfoTip";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
 import type { BaseRace, Member, MemberStats, TierCalcRow, TierEntry } from "../../types";
@@ -83,10 +82,9 @@ function TierCell({ t, member, race, className, more }: { t?: TierEntry | null; 
   if (t.tier === null) {
     /* ★ 등급 없는 사람(판이 문턱 아래)은 지금 인분(2026-11-13, 요청: "티어 없는 사람은 현재 인분 점수 표시") — 옛: "-". 서버 인분은 이미 둘째 자리 자름(shown_inbun). */
     const ib = t.stdInbun ?? t.inbun;
-    const need = t.calc?.find((r) => r.name === "인분")?.adj;
     return (
       <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}>
-        {typeof ib === "number" ? <span className="scr-sg-inbun-pend" title={`지금 ${ib.toFixed(2)}인분 · 티어는 ${need ?? "판이 차면"}`}>{ib.toFixed(2)}</span> : <Dash />}
+        {typeof ib === "number" ? <span className="scr-sg-inbun-pend">{ib.toFixed(2)}</span> : <Dash />}
       </TCell>
     );
   }
@@ -111,15 +109,8 @@ function tierFacts(t: TierEntry): TrendFact[] {
 }
 
 const Dash = () => <span className="scr-sg-dim">-</span>;
-/** 티어 도움말 — 인분에 곱하는 것만 한 줄씩 · 수치 말고 뜻(2026-11-06, 요청: "티어 점수에 포함되는 것만 뭐: 설명 · 간단 깔끔하게 한줄씩 · 수치가 아니라 의미"). */
-const TIER_HELP9 = (
-  <>
-    <span>티어 — 몇 인분을 하는지로 매긴 1~4 등급</span>
-    <span>WPA: 싸움마다 우리 편의 이길 확률을 얼마나 올리고 내렸나 — 잡은 몫은 때린 만큼 · 잃은 몫은 잃은 만큼 · 판을 가른 싸움일수록 크게</span>
-    <span>몰매: 상대가 더 많이 왔는데 못 간 동료도 그 손실을 함께 져요(그때 다른 싸움 중이었거나 이미 무너진 동료는 빼요)</span>
-    <span>이길 확률은 그 달 판만으로 재요(그 판 결과는 빼고) · 종족 차이 · 상대 · 동료 세기는 감안 · 승패와 생산은 WPA 안에 들어 있어요</span>
-  </>
-);
+/** WPA 머리 툴팁(2026-11-13, 요청: "WPA에만 툴팁 · 아주 간단히"). */
+const WPA_TIP = "WPA — 싸움으로 우리 편이 이길 확률을 올린 점수(판당 · 1점 = 1%p)";
 
 /* ★ 값 칸의 변화 그래프 손잡이(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" · StatTrend.tsx) — 표가 문맥으로 내려 주고
    TCell 이 칸마다 단다: PC 는 마우스를 얹으면(enter · 떠나면 잠깐 뒤 닫힘 — 팝오버로 건너갈 틈) · 폰은 누르면(tap · 다시 누르거나 밖을 누르면 닫힘). 자료(trend)가
@@ -177,17 +168,26 @@ function WpaCell({ t }: { t?: TierEntry | null }) {
   const x = wpaOf(t);
   if (x === null) return <Dash />;
   const s = wpaFmt(x);
-  return <span className="scr-sg-v" title="WPA — 판당 우리 편 승리 확률을 올린 몫(보정 전 · %p)"><b>{s.slice(0, -2)}</b><i>%p</i></span>;
+  return <span className="scr-sg-v"><b>{s.slice(0, -1)}</b><i>점</i></span>;
 }
 /** 보정 뒤 점수 칸(위 calcRowOf ★) — 인분 배수 둘째 자리(1.00 = 보통). */
 function ScoreCell({ r }: { r: TierCalcRow | null }) {
   if (!r) return <Dash />;
-  return <span className="scr-sg-v" title={`${r.name} — 보정 뒤 점수(인분 배수 · 1.00 = 보통) · 누르면 원점수와 보정 과정`}><b>{r.mult.toFixed(2)}</b></span>;
+  return <span className="scr-sg-v"><b>{r.mult.toFixed(2)}</b></span>;
 }
-/** 팝업의 원점수(보정 뒤 칸일 때) — 판당 WPA(%p). */
-function rawFact(t: TierEntry | null | undefined): TrendFact[] {
+/** ★ WPA 팝업(2026-11-13, 요청: "WPA는 협동점수 · 적극성 점수 등등 말은 너가 정해주고 쉽게 몇가지로 점수화 · 보정 공식같은거 다 치우고") — 판당 세 몫과 합(1점 = 이길 확률 1%p).
+ *  공격 = 상대 유닛 · 건물을 잡아 올린 몫 · 생존 = 내가 잃어서 깎인 몫 · 협동 = 몰매 때 못 가서 함께 진 몫(sg-api wpaParts) · 티어 조회면 인분 배수도. */
+function wpaFacts(t: TierEntry | null | undefined, r: TierCalcRow | null): TrendFact[] {
   const v = wpaOf(t);
-  return v === null ? [] : [{ label: "원점수", value: `판당 ${wpaFmt(v)}` }];
+  if (v === null) return [];
+  const [atk, live, team] = t?.wpaParts ?? [];
+  const out: TrendFact[] = [];
+  if (typeof atk === "number") out.push({ label: "공격 점수", value: wpaFmt(atk) });
+  if (typeof live === "number") out.push({ label: "생존 점수", value: wpaFmt(live) });
+  if (typeof team === "number") out.push({ label: "협동 점수", value: wpaFmt(team) });
+  out.push({ label: "WPA(판당 합)", value: wpaFmt(v) });
+  if (r) out.push({ label: "인분 배수", value: `×${r.mult.toFixed(2)}` });
+  return out;
 }
 
 function Who({ member }: { member: Member }) {
@@ -250,7 +250,7 @@ function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: Membe
     const r = sc(k);
     return (
       <TCell member={member} metric={statMetric(k, race, scored && !clan)} className={wide}
-        facts={r && has ? rawFact(t) : undefined} calc={r ? [r] : undefined}>
+        facts={has && !clan ? wpaFacts(t, r) : undefined}>
         {!has ? <Dash /> : scored ? (clan ? <Dash /> : <ScoreCell r={r} />) : raw}
       </TCell>
     );
@@ -288,18 +288,7 @@ function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: bo
   );
 }
 
-/** 통계 표 도움말(2026-10-22, 요청: "도움말 · 헤더 설명 다 제거하고 '행 누르면…' 자리에 도움말 아이콘 단추 · 툴팁에 표 모양과 설명" → "PC 에도 알아서") —
- *  폰은 말풍선에 한 줄짜리 표 그림(숫자에 단위가 없어서)과 풀이 · PC 는 칸 머리 · 단위가 다 적혀 있어 그림 없이 데미지 뜻과 펼치기만 푼다. */
-export function StatHelp({ mobile }: { mobile: boolean }) {
-  /* 티어 풀이만(2026-11-07, 요청: "도움말은 티어에 관한 거만 남기기" — 전투 · APM 뜻 · 종족 칸 · 주종족 배경 · 정렬 · 그래프 풀이와 폰의 표 그림은 걷었다). */
-  void mobile;
-  return (
-    <InfoTip
-      label="티어" size={16} triggerClassName="scr-infotip scr-sg-help-btn" bubbleClassName="scr-sg-help"
-      text={<span className="scr-sg-help-list">{TIER_HELP9}</span>}
-    />
-  );
-}
+/* (걷음 2026-11-13, 요청: "통계 전체 툴팁은 제거하고 WPA에만 툴팁 넣기 · 아주 간단히") 통계 표 도움말 단추(StatHelp · 티어 풀이) — WPA 머리 툴팁 한 줄만 남긴다(아래 head). */
 
 export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false, onVisW }: SortProps & {
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
@@ -449,7 +438,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
             /* 폰: 좁을 때는 종족마다 첫 칸(티어 · 티어 없는 조회는 게임수) 만 · 넓을 때 다(RaceCells 와 같은 가름). */
             const wideOnly = m && i >= 1;
             return (
-              <span key={k} className={cx("scr-sg-c scr-sg-hsub", i === 0 && "scr-sg-gstart", m && "scr-sg-race-head", wideOnly && "scr-sg-mwide")}>
+              <span key={k} className={cx("scr-sg-c scr-sg-hsub", i === 0 && "scr-sg-gstart", m && "scr-sg-race-head", wideOnly && "scr-sg-mwide")}
+                title={k === "wpa" ? WPA_TIP : undefined}>
                 <SortHead {...(m ? mToggle : pcToggle)((r ? `${r}:${k}` : k) as StatSortKey)}>{h}</SortHead>
               </span>
             );

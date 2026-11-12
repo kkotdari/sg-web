@@ -109,12 +109,14 @@ const x2 = (v: number) => v.toFixed(2);
  *  티어 셈 표(calc)의 그 줄(1.00 = 보통 · 줄의 곱이 인분). 티어가 없는 조회(1:1 · 맵 탭)는 칸이 원점수 그대로다. */
 /* ★★ 2026-11-12 WPA(sg-api wpa.py · 요청: "WPA 적용" · "전투+참전+생산 다 합친게 WPA") — 세 칸(교환 이득 · 교전 참여 · 생산)이 WPA 한 칸이 됐다. 티어 셈 표도 'WPA' 한 줄. */
 export const CALC_NAME = { wpa: "WPA" } as const;
+/** 셈 표 줄 이름 → 팝업 글자(2026-11-13 쉽게). */
+const CALC_LABEL: Record<string, string> = { WPA: "WPA 점수", 승패: "승패 점수" };
 export type CalcKey = keyof typeof CALC_NAME;
 export const calcRowOf = (t: TierEntry | null | undefined, k: CalcKey): TierCalcRow | null => t?.calc?.find((r) => r.name === CALC_NAME[k]) ?? null;
 /** ★ 판당 WPA 원점수(승리 확률 %p · sg-api TierEntry.wpa) — 싸움마다 편의 승리 확률을 얼마나 올리고 내렸나의 판 평균. 티어(셈)가 없으면 null. */
 export const wpaOf = (t: TierEntry | null | undefined): number | null => (typeof t?.wpa === "number" && Number.isFinite(t.wpa) ? t.wpa : null);
-/** %p 글자 — +12.3%p · −4.0%p. */
-export const wpaFmt = (v: number): string => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}%p`;
+/** 점 글자 — +12.3점 · −4.0점(1점 = 이길 확률 1%p · 2026-11-13 "쉽게 몇가지로 점수화"). */
+export const wpaFmt = (v: number): string => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}점`;
 
 export function gainOf(s: MemberStatsEntry["overall"] | undefined | null): number | null {
   if (!s || !s.valPlays || typeof s.valTaken !== "number" || typeof s.valLost !== "number") return null;
@@ -149,7 +151,7 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part
   }
   /* ★ WPA 원점수(2026-11-12) — 달마다 그 달 판으로 셈한 판당 WPA(승리 확률 %p · 티어가 없는 조회의 칸). */
   if (kind === "wpa") {
-    return { key: race ? `${race}:wpa` : "wpa", label: `${who}WPA(판당 승리 확률 기여 · %p)`, series: [{ label: "WPA", cls: "", pick: (e) => wpaOf(tierOf(e)), fmt: wpaFmt }], mode: "single" };
+    return { key: race ? `${race}:wpa` : "wpa", label: `${who}WPA(판당 점수 · 1점 = 이길 확률 1%p)`, series: [{ label: "WPA", cls: "", pick: (e) => wpaOf(tierOf(e)), fmt: wpaFmt }], mode: "single" };
   }
   /* 평균 행(2026-10-25): PC 게임수 칸 = 경기 수(games) · 폰 전적 칸 = 위 참여(사람 판수 합) · 아래 경기 수. */
   /* 경기가 없던 달(0)은 점·선을 안 놓는다(2026-10-25, 요청: "경기수는 자료가 없는 달거 그래프표시 안되게" — 옛: 0 으로 찍혔다). */
@@ -323,12 +325,15 @@ export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
       )}
       {/* 티어 셈 과정 표(2026-11-06 저녁, 요청: "정확한 점수 계산 과정과 결과 · 이름 · 점수 · 보정 · 보정후점수") — 배수의 곱이 인분(마지막 줄). */}
       {anchor.calc && anchor.calc.length > 0 && (
+        /* ★ 쉽게(2026-11-13, 요청: "티어는 WPA 점수와 승패 보정에 의한 점수를 쉽게 표현 · 보정 공식같은거 다 치우고") — 항목 · 점수 · 배수 세 칸 · 보정 글자 칸 걷음. */
         <table className="scr-sg-trend-calc">
-          <thead><tr><th>이름</th><th>점수</th><th>보정</th><th>보정후점수</th></tr></thead>
+          <thead><tr><th>항목</th><th>점수</th><th>배수</th></tr></thead>
           <tbody>
             {anchor.calc.map((r) => (
               <tr key={r.name} className={r.name === "인분" ? "is-total" : undefined}>
-                <th scope="row">{r.name}</th><td>{r.score}</td><td>{r.adj}</td><td>{r.name === "인분" ? `${r.mult.toFixed(2)}인분` : `×${r.mult.toFixed(2)}`}</td>
+                <th scope="row">{CALC_LABEL[r.name] ?? r.name}</th>
+                <td>{r.name === "인분" ? r.adj : r.score}</td>
+                <td>{r.name === "인분" ? `${r.mult.toFixed(2)}인분` : `×${r.mult.toFixed(2)}`}</td>
               </tr>
             ))}
           </tbody>
