@@ -31,7 +31,7 @@ export function toMdTable(r: SqlConsoleResult): string {
 export default function SqlConsoleModal({ onClose }: { onClose: () => void }) {
   useLockBodyScroll();
   const mobile = useIsMobile();
-  const [sql, setSql] = useState("SELECT now()");
+  const [sql, setSql] = useState("");
   const [write, setWrite] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
