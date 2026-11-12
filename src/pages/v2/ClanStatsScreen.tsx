@@ -319,7 +319,9 @@ export default function ClanStatsScreen() {
   const trend: StatTrendData | null = useMemo(() => {
     if (!view || view.key !== debouncedSignature || !view.trend) return null;   // 전체 기간도 최근 다섯 달(위 trendMonths ★)
     const { last, period } = trendBase(debouncedQuery.period);
-    return { period: last, months: statTrendMonths(period), byMonth: view.trend, clanByMonth: view.trendClan ?? undefined, loading: false };
+    /* ★ '오늘' 조회는 팝업에 그래프 없이(2026-11-13, 요청: "오늘로 조회시 팝업에 그래프 제거") — 달별 그래프가 오늘과 무관하다. 근거값 · 셈 표만. */
+    return { period: last, months: statTrendMonths(period), byMonth: view.trend, clanByMonth: view.trendClan ?? undefined, loading: false,
+      noChart: debouncedQuery.period === PERIOD_TODAY };
   }, [view, debouncedSignature, debouncedQuery.period]);
 
   const viewMembers = useMemo(() => {

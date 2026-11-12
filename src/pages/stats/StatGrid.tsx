@@ -126,6 +126,8 @@ const TIER_HELP9 = (
    없으면(아직 안 옴 · 평균 줄) 손잡이가 없는 보통 칸이다. */
 interface TrendCtxValue {
   mobile: boolean;
+  /** 그래프 없는 팝업(StatTrendData.noChart · '오늘' 조회) — 근거값 · 셈 표가 없는 칸은 아예 안 연다. */
+  noChart: boolean;
   activeKey: string | null;
   enter: (member: Member, metric: StatMetric, el: HTMLElement, facts?: TrendFact[], calc?: TierCalcRow[] | null) => void;
   tap: (member: Member, metric: StatMetric, el: HTMLElement, facts?: TrendFact[], calc?: TierCalcRow[] | null) => void;
@@ -136,7 +138,9 @@ const trendKey = (m: Member, k: StatMetric) => `${m.id}|${k.key}`;
 
 function TCell({ member, metric, facts, calc, className, children }: { member?: Member; metric: StatMetric; facts?: TrendFact[]; calc?: TierCalcRow[] | null; className?: string; children: ReactNode }) {
   const ctx = useContext(TrendCtx);
-  if (!ctx || !member) return <span className={cx("scr-sg-c", className)}>{children}</span>;
+  /* '오늘' 조회(그래프 없음 · 2026-11-13)는 보여 줄 근거값 · 셈 표가 있는 칸만 연다 — 게임수 · 승률 · APM 칸은 그래프뿐이라 보통 칸. */
+  const empty = !!ctx?.noChart && !(facts && facts.length > 0) && !(calc && calc.length > 0);
+  if (!ctx || !member || empty) return <span className={cx("scr-sg-c", className)}>{children}</span>;
   const hot = ctx.activeKey === trendKey(member, metric);
   return (
     <span
@@ -320,6 +324,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const rectOf = (el: HTMLElement) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height }; };
   const ctx: TrendCtxValue | null = trend ? {
     mobile,
+    noChart: !!trend.noChart,
     activeKey: pop ? trendKey(pop.member, pop.metric) : null,
     enter: (member, metric, el, facts, calc) => { popCancel(); setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? cur : { member, metric, rect: rectOf(el), facts, calc })); },
     tap: (member, metric, el, facts, calc) => { setPop((cur) => (cur && trendKey(cur.member, cur.metric) === trendKey(member, metric) ? null : { member, metric, rect: rectOf(el), facts, calc })); },

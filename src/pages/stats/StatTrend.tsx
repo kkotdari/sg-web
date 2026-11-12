@@ -43,6 +43,8 @@ export interface StatTrendData {
   clanByMonth?: Record<string, TrendEntry | undefined>;
   /** 앞 달들을 아직 받는 중. */
   loading: boolean;
+  /** ★ 그래프 없이(2026-11-13, 요청: "오늘로 조회시 팝업에 그래프 제거") — '오늘' 조회는 달별 그래프가 그 기간과 무관해 팝업에 근거값 · 셈 표만. */
+  noChart?: boolean;
 }
 
 export interface TrendSeries {
@@ -332,8 +334,8 @@ export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
           </tbody>
         </table>
       )}
-      <StatTrendChart data={data} member={anchor.member} metric={anchor.metric} chartW={mobile ? w - 24 : CHART_VB_W} />
-      {anchor.metric.more?.map((mm) => (
+      {!data.noChart && <StatTrendChart data={data} member={anchor.member} metric={anchor.metric} chartW={mobile ? w - 24 : CHART_VB_W} />}
+      {!data.noChart && anchor.metric.more?.map((mm) => (
         <Fragment key={mm.key}>
           <div className="scr-sg-trend-head scr-sg-trend-more">
             <span>{mm.label}</span>
