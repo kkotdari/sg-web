@@ -2540,6 +2540,8 @@ html.scr-light-theme .scr-notice-switch-on { background: var(--lighting-accent, 
 .scr-confirm-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--fs-subhead); margin-bottom: 10px; color: var(--text); }
 .scr-confirm-icon { color: var(--muted); flex-shrink: 0; }
 .scr-confirm-msg { font-size: var(--fs-body); color: var(--muted); line-height: 1.6; margin: 0 0 16px; }
+/* ★ 통계 잠시 닫음(2026-11-12 · ClanStatsScreen STATS_PAUSED) — 화면은 보이되(뒤는 보이게) 누를 수 없다. inert 를 모르는 옛 브라우저도 막히게 pointer-events 를 함께 끈다(휠은 뒤 화면을 그대로 민다). */
+.scr-stats-screen-v2.is-paused { pointer-events: none; user-select: none; }
 
 .scr-outcome-input-opts { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 16px; }
 .scr-outcome-input-opts .scr-rect-btn { white-space: normal; line-height: 1.4; }

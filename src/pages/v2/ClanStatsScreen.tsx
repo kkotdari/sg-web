@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { ChevronsLeft, ChevronsRight, RotateCcw, Users } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ChevronsLeft, ChevronsRight, RotateCcw, Users, Wrench } from "lucide-react";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
@@ -128,6 +129,25 @@ function chipsOfUrl(raw: string): string[] {
     } catch { /* 옛 글로 읽는다 */ }
   }
   return raw.split(/[\s,]+/).filter(Boolean);
+}
+
+/* ★ 통계 잠시 닫음(2026-11-12, 요청: "통계 페이지 임시 작업중이라고 팝업띄우고 비활성화" → "뒤는 보이게") — 화면은 그대로 그려 뒤가 보이고, 누르기 · 포커스만 막는다(inert).
+   가운데에 닫기 없는 작업 중 팝업(배경 막 없이 · .scr-modal-overlay 는 display contents). 머리줄 · 아래 탭은 막지 않아 다른 화면으로 갈 수 있다. 다시 열려면 false. */
+const STATS_PAUSED = true;
+
+function StatsPausedNotice() {
+  return createPortal(
+    <div className="scr-modal-overlay">
+      <div className="scr-modal scr-modal-sm scr-modal-confirm scr-stats-paused" role="alertdialog" aria-label="통계 작업 중">
+        <div className="scr-confirm-head">
+          <Wrench size={18} className="scr-confirm-icon" />
+          <span>통계 작업 중</span>
+        </div>
+        <p className="scr-confirm-msg">통계 페이지는 임시로 작업 중이에요. 작업이 끝나면 다시 열게요.</p>
+      </div>
+    </div>,
+    document.body,
+  );
 }
 
 export default function ClanStatsScreen() {
@@ -396,7 +416,9 @@ export default function ClanStatsScreen() {
 
 
   return (
-    <div className="scr-screen scr-stats-screen-v2">
+    <>
+    {STATS_PAUSED && <StatsPausedNotice />}
+    <div className={cx("scr-screen scr-stats-screen-v2", STATS_PAUSED && "is-paused")} inert={STATS_PAUSED}>
       <div className="scr-v2-toolbar">
         <div className="scr-v2-toolbar-title-row">
           <h1 className="scr-title scr-v2-toolbar-title">통계</h1>
@@ -527,5 +549,6 @@ export default function ClanStatsScreen() {
       </div>
 
     </div>
+    </>
   );
 }
