@@ -12,6 +12,23 @@ import { cx } from "../utils/format";
 /* ★ DB SQL 콘솔(2026-11-13, 요청: "제어판 맨 아래 콘솔 메뉴 · 버튼 누르면 db sql 콘솔이 열리고(피시는 팝업창 · 폰은 전체 모달) · sql 입력과 결과 로우 md 표로 노출") —
    sg-api POST /api/admin/sql(관리자만 · 기본 읽기 전용 · '쓰기 허용'을 켜야 고친 것이 남는다 · 줄 500 까지 · 15초). Ctrl/⌘ + Enter 로 실행. */
 
+/* ★ 줄임말(2026-11-13, 요청: "sql 콘솔창에 acclog 엔터시 아래 쿼리 수행") — 입력이 줄임말 하나뿐일 때 Enter 를 누르면 그 쿼리로 펼쳐 바로 실행한다
+   (펼친 쿼리가 입력 칸에 남아 고쳐 다시 돌릴 수 있다 · 읽기 쿼리라 '쓰기 허용'과 상관없이 읽기로). 그 밖의 글에서 Enter 는 줄 바꿈 그대로(실행은 Ctrl/⌘ + Enter). */
+const SQL_ALIASES: Record<string, string> = {
+  acclog: [
+    "SELECT",
+    "\tTO_CHAR(a.logged_in_at, 'HH24:MI:SS') AS WHEN",
+    "\t, b.nickname",
+    "\t, a.screen_code",
+    "\t, a.detail",
+    "\t, a.client_kind",
+    "FROM access_history a",
+    "LEFT JOIN members b ON a.member_pk = b.pk",
+    "ORDER BY a.id DESC",
+    "LIMIT 50;",
+  ].join("\n"),
+};
+
 const cellMd = (v: unknown): string => {
   if (v === null || v === undefined) return "NULL";
   const s = typeof v === "string" ? v : typeof v === "object" ? JSON.stringify(v) : String(v);
@@ -38,18 +55,18 @@ export default function SqlConsoleModal({ onClose }: { onClose: () => void }) {
   const [res, setRes] = useState<SqlConsoleResult | null>(null);
   const [askWrite, setAskWrite] = useState(false);
 
-  const exec = async () => {
-    if (busy || !sql.trim()) return;
+  const exec = async (text: string, w: boolean) => {
+    if (busy || !text.trim()) return;
     setBusy(true); setErr(null);
     try {
-      setRes(await api.adminSql(sql, write));
+      setRes(await api.adminSql(text, w));
     } catch (e) {
       setRes(null); setErr((e as Error).message);
     } finally {
       setBusy(false);
     }
   };
-  const run = () => { if (write) setAskWrite(true); else void exec(); };
+  const run = () => { if (write) setAskWrite(true); else void exec(sql, false); };
   const md = res ? toMdTable(res) : "";
 
   return createPortal(
@@ -64,7 +81,12 @@ export default function SqlConsoleModal({ onClose }: { onClose: () => void }) {
           <textarea
             className="scr-sqlc-input" value={sql} spellCheck={false} autoCapitalize="off" autoCorrect="off"
             onChange={(e) => setSql(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(); } }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+              if (e.ctrlKey || e.metaKey) { e.preventDefault(); run(); return; }
+              const alias = !e.shiftKey && !e.altKey ? SQL_ALIASES[sql.trim().toLowerCase()] : undefined;   // 위 ★ 줄임말
+              if (alias) { e.preventDefault(); setSql(alias); void exec(alias, false); }
+            }}
             placeholder="SELECT …"
           />
           <div className="scr-sqlc-bar">
@@ -107,7 +129,7 @@ export default function SqlConsoleModal({ onClose }: { onClose: () => void }) {
           title="쓰기로 실행할까요?"
           message="DB 를 바로 고칩니다 — 되돌릴 수 없어요."
           confirmLabel="실행"
-          onConfirm={() => { setAskWrite(false); void exec(); }}
+          onConfirm={() => { setAskWrite(false); void exec(sql, true); }}
           onCancel={() => setAskWrite(false)}
         />
       )}
