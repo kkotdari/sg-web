@@ -11,6 +11,7 @@ import ReplayBatchButton from "../../components/common/ReplayBatchButton";
 import VersionManageModal from "../../modals/VersionManageModal";
 import ExtShareManageModal from "../../modals/ExtShareManageModal";
 import SqlConsoleModal from "../../modals/SqlConsoleModal";
+import WpaDetailModal from "../../modals/WpaDetailModal";
 import DeletedGamesModal from "../../modals/DeletedGamesModal";
 import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
 import { api } from "../../api/client";
@@ -42,6 +43,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [versionManageOpen, setVersionManageOpen] = useState(false);
   const [extShareOpen, setExtShareOpen] = useState(false);
   const [sqlOpen, setSqlOpen] = useState(false);
+  const [wpaOpen, setWpaOpen] = useState(false);
   const [deletedGamesOpen, setDeletedGamesOpen] = useState(false);
   const [unhideOpen, setUnhideOpen] = useState(false);
   /* 기다리는 숨김 해제 요청 수 — 줄 제목 옆에 센다(창을 닫으면 다시 센다). */
@@ -432,6 +434,19 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                   </button>
                 </div>
 
+                {/* ★ WPA 상세보기(2026-11-13, 요청: "관리자페이지 데이터 섹션에 WPA 상세보기" — WpaDetailModal ★). */}
+                <div className="scr-adm-row">
+                  <div className="scr-adm-row-text">
+                    <span className="scr-adm-row-title">WPA 상세보기</span>
+                    <span className="scr-adm-row-desc">
+                      통계와 같은 조건(기간·인원·맵·유저)에 종족까지 골라, 사람마다 판수·승률·WPA 다섯 항목·티어를 한 표로 봅니다.
+                    </span>
+                  </div>
+                  <button type="button" className="scr-rect-btn scr-adm-row-btn" onClick={() => setWpaOpen(true)}>
+                    열기
+                  </button>
+                </div>
+
                 <div className="scr-adm-row scr-adm-row-multi">
                   <div className="scr-adm-row-text">
                     <span className="scr-adm-row-title">월 마감</span>
@@ -778,6 +793,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
       )}
 
       {sqlOpen && <SqlConsoleModal onClose={() => setSqlOpen(false)} />}
+      {wpaOpen && <WpaDetailModal onClose={() => setWpaOpen(false)} />}
       {extShareOpen && (
         <ExtShareManageModal onClose={() => setExtShareOpen(false)} />
       )}

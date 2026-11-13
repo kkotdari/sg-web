@@ -5883,3 +5883,34 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sqlc-table th { font-weight: 700; background: linear-gradient(rgba(var(--overlay-rgb), 0.08), rgba(var(--overlay-rgb), 0.08)), var(--void); position: sticky; top: 0; }   /* 붙박이 머리는 불투명(밑 줄이 비치지 않게) */
 .scr-sqlc-table tbody tr:nth-child(2n) td { background: rgba(var(--overlay-rgb), 0.035); }
 .scr-sqlc-table td.is-null { color: var(--muted); font-style: italic; }
+
+/* ★ WPA 상세보기(2026-11-13 · WpaDetailModal) — 관리자 · 통계와 같은 조건 + 종족 · 사람마다 한 줄(판수 · 승률 · WPA 다섯 항목 + 전체 · APM · EAPM · 티어 · 티어인분).
+   PC 는 넓은 팝업 · 폰은 전체 화면(.is-full · SQL 콘솔과 같은 틀). 표는 머리 두 줄과 이름 칸이 붙박이(세로 · 가로 스크롤) · 붙박이 칸은 불투명. */
+.scr-modal.scr-wpad-modal { max-width: 1120px; height: min(86vh, 900px); height: min(86dvh, 900px); }
+.scr-modal.scr-wpad-modal.is-full {
+  left: 0; top: 0; transform: none; width: 100vw; max-width: none; height: 100vh; height: 100dvh; max-height: none; border-radius: 0;
+  padding-top: calc(13px + var(--safe-top, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.scr-wpad-body { gap: 8px; padding-bottom: 12px; }
+.scr-wpad-body .scr-line-tabs { margin: 0; }
+.scr-wpad-period { flex-wrap: wrap; }
+.scr-wpad-period .scr-sg-wpa-help { margin-left: auto; }
+.scr-wpad-search { margin: 0; }
+.scr-wpad-meta { min-height: 16px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* 스크롤은 표 칸에서만(가로 · 세로) — 낮은 화면(폰 가로 등)에서 조건 칸에 밀려 표가 납작해지지 않게 바닥 높이를 두고, 그보다 낮으면 팝업 몸이 통째로 내려간다. */
+.scr-wpad-out { flex: 1 1 auto; min-height: 240px; overflow: auto; overscroll-behavior: contain; transition: opacity 0.15s; }
+.scr-wpad-out.is-busy { opacity: 0.55; }
+.scr-wpad-table { border-collapse: separate; border-spacing: 0; font-size: 13px; line-height: 1.4; color: var(--text); font-variant-numeric: tabular-nums; }
+.scr-wpad-table thead { position: sticky; top: 0; z-index: 2; }
+.scr-wpad-table th, .scr-wpad-table td { padding: 5px 10px; border-bottom: 1px solid var(--line-faint); text-align: right; white-space: nowrap; background: var(--void); }
+.scr-wpad-table th { font-weight: 700; color: var(--dim); background: linear-gradient(rgba(var(--overlay-rgb), 0.08), rgba(var(--overlay-rgb), 0.08)), var(--void); }
+.scr-wpad-table th.is-group { text-align: center; color: var(--text); }
+.scr-wpad-table th.is-sort > button { all: unset; display: inline-flex; align-items: center; gap: 2px; cursor: pointer; }
+.scr-wpad-table th.is-sort > button:focus-visible { outline: 1px dotted currentColor; outline-offset: 2px; }
+.scr-wpad-table th.is-sort.is-on { color: var(--text); }
+.scr-wpad-table th.is-sort > button > i { font-style: normal; font-size: 11px; }
+.scr-wpad-table .is-name { position: sticky; left: 0; z-index: 1; text-align: left; }
+.scr-wpad-table td.is-name { font-weight: 600; }
+.scr-wpad-table tbody tr:nth-child(2n) td { background: linear-gradient(rgba(var(--overlay-rgb), 0.035), rgba(var(--overlay-rgb), 0.035)), var(--void); }
+.scr-wpad-table .is-wpa-first { border-left: 1px solid var(--line-soft); }
+.scr-wpad-table .is-wpa-total { border-right: 1px solid var(--line-soft); font-weight: 700; }
