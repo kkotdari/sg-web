@@ -185,15 +185,16 @@ function wpaFacts(t: TierEntry | null | undefined): TrendFact[] {
   const v = wpaOf(t);
   if (v === null) return [];
   const out: TrendFact[] = [];
-  const [dfn, atk, jn, ctl, sct] = t?.wpaInbun ?? [];
+  const v9 = t?.wpaInbun ?? [];
+  const [dfn, atk, jn] = v9;
+  /* ★ 정찰(2026-11-13, 지적: "정찰의 효과가 누락" · "WPA 팝업에 장악 정찰도") — 상대 건물을 본 정도(sg-api wpa ★ 정찰).
+     ★ 장악은 걷었다(같은 날, 지적: "제어판에서 보니까 장악이 확실히 이상한데 · 약한 사람들이 장악이 높게 나와" → "장악은 그럼 화면과 덤퍼 등에서도 빼야겠네").
+     인분은 넷짜리 [방어 · 공격 · 합류 · 정찰]와 옛 다섯짜리 [… · 장악 · 정찰] 둘 다 읽는다(sg-api 와 배포 때가 어긋나도 정찰 자리가 맞게). */
+  const sct = v9.length >= 5 ? v9[4] : v9[3];
   const ib = (x: number) => `${x.toFixed(2)}인분`;
   if (typeof dfn === "number") out.push({ label: "방어", value: ib(dfn) });
   if (typeof atk === "number") out.push({ label: "공격", value: ib(atk) });
   if (typeof jn === "number") out.push({ label: "합류", value: ib(jn) });
-  /* ★ 장악 · 정찰(2026-11-13, 지적: "비전투성 병력 운용 · 정찰의 효과가 누락" · "WPA 팝업에 장악 정찰도") — 한 자리를 지켜 막은 정도 · 상대 건물을 본 정도(sg-api wpa ★ · 덤퍼 ##ZONE##).
-     ★ 장악은 상대 쪽 절반에서 지킨 것만(같은 날 "무조건 상대 본진 앞에 둔다고 좋은 게 아닌 게 그사이 내 기지는 비어서 견제나 드랍에 취약해" — sg-api wpa ★ 공격 · 수비 장악:
-     이기는 데 도움이 됐는지를 그 달 데이터로 재 오르거나 내린다 · 우리 쪽 수비는 승리 확률 모형에만). 공격 장악을 가르는 새 덤퍼로 다시 분석한 달만 값이 움직인다(옛 판뿐이면 1.00 언저리). */
-  if (typeof ctl === "number") out.push({ label: "장악", value: ib(ctl) });
   if (typeof sct === "number") out.push({ label: "정찰", value: ib(sct) });
   /* 총은 인분(같은 날 "총 몇인분") — 티어에 드는 WPA 배수(sg-api cbt · 셈 표 WPA 줄 배수 = 티어 조회 칸 값) · 없으면 판당 승리 확률 기여(%p). */
   if (typeof t?.cbt === "number") out.push({ label: "총", value: ib(t.cbt) });
@@ -301,7 +302,7 @@ function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: bo
 
 /* (걷음 2026-11-13, 요청: "통계 전체 툴팁은 제거하고 WPA에만 툴팁 넣기 · 아주 간단히") 통계 표 도움말 단추(StatHelp · 티어 풀이) — WPA 머리 툴팁 한 줄만 남긴다(아래 head). */
 /** ★ "WPA란?" 글 단추(2026-11-13, 요청: "예전 통계 툴팁 아이콘 자리에 텍스트 버튼 WPA란? 추가 · 툴팁 뜨고 WPA 뜻과 항목별로 어떻게 하면 점수를 얻고 잃는지") —
- *  정렬 줄 오른끝(옛 StatHelp 자리) · PC 는 얹으면 · 폰은 누르면. 항목은 WPA 팝업과 같은 차례(방어 · 공격 · 합류 · 장악 · 정찰 · sg-api wpa.py · tier._wpa_inbun).
+ *  정렬 줄 오른끝(옛 StatHelp 자리) · PC 는 얹으면 · 폰은 누르면. 항목은 WPA 팝업과 같은 차례(방어 · 공격 · 합류 · 정찰 · sg-api wpa.py · tier._wpa_inbun · 장악은 2026-11-13 걷음).
  *  ★ 공통 풀이는 모두 구분선 위(같은 날, 요청: "wpa툴팁에서 상세항목들 위의 공통해당 내용은 모두 구분선 위로 넣기") — 아래는 항목만. */
 export function WpaHelp() {
   return (
@@ -319,7 +320,6 @@ export function WpaHelp() {
           <span><b>공격</b> 상대 병력 · 일꾼 · 건물을 잡으면 올라요.</span>
           <span><b>방어</b> 내 걸 잃으면 내려가요. 덜 잃을수록 좋아요.</span>
           <span><b>합류</b> 우리 편이 머릿수에서 밀려 싸울 때, 비어 있던 내가 안 가면 내려가요.</span>
-          <span><b>장악</b> 상대 쪽에서 한 자리를 1분 넘게 지키면, 그게 이기는 데 도움이 됐는지에 따라 오르거나 내려가요. 우리 쪽에서 지킨 건 안 쳐요.</span>
           <span><b>정찰</b> 상대 건물을 보고 있으면 올라요.</span>
         </span>
       )}

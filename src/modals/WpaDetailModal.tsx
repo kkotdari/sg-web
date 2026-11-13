@@ -24,23 +24,25 @@ import type { BaseRace, MemberStats, MemberStatsEntry, TierEntry } from "../type
    나오는거는 판수/승률/WPA는 각 5개항목, 전체로 총 6개/APM/EAPM/티어/티어인분 컬럼으로 표시 · 종족은 선택한거만(전체 또는 선택)표시") —
    통계 화면과 같은 요청(sg-api /stats · 기간 · 인원 · 맵 · statQuery)으로 받는다. 종족 탭이 전체면 그 사람의 모든 판(overall · 종합 티어 tier),
    종족을 고르면 그 종족으로 뛴 판(byRace · 종족 티어 tierByRace)만 — 그 판이 없는 사람은 빠진다.
-   WPA 다섯 항목은 통계 WPA 팝업과 같은 인분(1 = 그 조회 판 평균 · sg-api tier._wpa_inbun) · 전체는 티어에 드는 WPA 배수(cbt · 인분) — 칸에 얹으면 판당 %p.
+   WPA 항목은 통계 WPA 팝업과 같은 인분(1 = 그 조회 판 평균 · sg-api tier._wpa_inbun) · 전체는 티어에 드는 WPA 배수(cbt · 인분) — 칸에 얹으면 판당 %p.
+   ★ 장악은 걷었다(같은 날, 지적: "제어판에서 보니까 장악이 확실히 이상한데 · 약한 사람들이 장악이 높게 나와" → "장악은 그럼 화면과 덤퍼 등에서도 빼야겠네") — 항목 넷 + 전체.
    머리를 누르면 그 칸으로 정렬(한 번 더 누르면 거꾸로) · 처음은 티어인분 높은 순. */
 
 type RaceTab = "all" | BaseRace;
 const RACE_TABS: { value: RaceTab; label: string }[] = [
   { value: "all", label: "전체" }, { value: "테란", label: "테란" }, { value: "프로토스", label: "프로토스" }, { value: "저그", label: "저그" },
 ];
-/** WPA 다섯 항목(wpaInbun 차례) — wpaParts(%p)는 차례가 [공격 · 생존 · 합류 · 장악 · 정찰]이라 pct 자리로 맞춘다. */
+/** WPA 항목 넷 — inbun = wpaInbun [방어 · 공격 · 합류 · 정찰] 자리 · pct = wpaParts(%p) [공격 · 생존 · 합류 · 정찰] 자리.
+ *  옛 다섯짜리 응답(… · 장악 · 정찰)이면 정찰은 한 칸 뒤(partAt — sg-api 와 배포 때가 어긋나도 정찰 자리가 맞게). */
 const PARTS = [
-  { label: "방어", pct: 1, tip: "내 걸 잃으면 내려가요. 덜 잃을수록 좋아요." },
-  { label: "공격", pct: 0, tip: "상대 병력 · 일꾼 · 건물을 잡으면 올라요." },
-  { label: "합류", pct: 2, tip: "우리 편이 머릿수에서 밀려 싸울 때, 비어 있던 내가 안 가면 내려가요." },
-  { label: "장악", pct: 3, tip: "상대 쪽에서 한 자리를 1분 넘게 지킨 게 이기는 데 도움이 됐는지에 따라 오르거나 내려가요." },
-  { label: "정찰", pct: 4, tip: "상대 건물을 보고 있으면 올라요." },
+  { label: "방어", inbun: 0, pct: 1, tip: "내 걸 잃으면 내려가요. 덜 잃을수록 좋아요." },
+  { label: "공격", inbun: 1, pct: 0, tip: "상대 병력 · 일꾼 · 건물을 잡으면 올라요." },
+  { label: "합류", inbun: 2, pct: 2, tip: "우리 편이 머릿수에서 밀려 싸울 때, 비어 있던 내가 안 가면 내려가요." },
+  { label: "정찰", inbun: 3, pct: 3, tip: "상대 건물을 보고 있으면 올라요." },
 ] as const;
+const partAt = (arr: number[] | null | undefined, i: number): number | undefined => (arr ? arr[i === 3 && arr.length >= 5 ? 4 : i] : undefined);
 
-type ColKey = "name" | "plays" | "rate" | "wpa0" | "wpa1" | "wpa2" | "wpa3" | "wpa4" | "wpa" | "apm" | "eapm" | "tier" | "inbun";
+type ColKey = "name" | "plays" | "rate" | "wpa0" | "wpa1" | "wpa2" | "wpa3" | "wpa" | "apm" | "eapm" | "tier" | "inbun";
 interface Row { id: string; name: string; s: MemberStats; t: TierEntry | null }
 
 const num = (v: number | null | undefined): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -55,7 +57,7 @@ function valueOf(r: Row, k: ColKey): number | string | null {
     case "eapm": return num(r.s.avgEapm);
     case "tier": return num(r.t?.tier);
     case "inbun": return inbunOf(r.t);
-    default: return num(r.t?.wpaInbun?.[Number(k.slice(3))]);
+    default: return num(partAt(r.t?.wpaInbun, PARTS[Number(k.slice(3))].inbun));
   }
 }
 /** 판당 %p 글자(칸에 얹을 때) — 없으면 빈 글자. */
@@ -206,7 +208,7 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
               loading ? <LoadingMark /> : <div className="scr-empty">결과가 없어요</div>
             ) : (
               <table className="scr-wpad-table">
-                {/* 머리 두 줄 — WPA 한 칸 아래 다섯 항목 + 전체(위 ★ "각 5개항목, 전체로 총 6개") · 나머지는 두 줄을 차지한다. */}
+                {/* 머리 두 줄 — WPA 한 칸 아래 항목 넷 + 전체(위 ★ — 처음 요청은 "각 5개항목, 전체로 총 6개" · 장악을 걷어 넷) · 나머지는 두 줄을 차지한다. */}
                 <thead>
                   <tr>
                     {head("name", "이름", { rowSpan: 2, className: "is-name" })}
@@ -230,7 +232,7 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
                       <td>{r.s.plays.toLocaleString()}</td>
                       <td>{r.s.plays > 0 ? `${r.s.winRate}%` : "-"}</td>
                       {PARTS.map((p, i) => (
-                        <td key={p.label} className={cx("is-wpa", i === 0 && "is-wpa-first")} title={pctTip(r.t?.wpaParts?.[p.pct])}>{f2(r.t?.wpaInbun?.[i])}</td>
+                        <td key={p.label} className={cx("is-wpa", i === 0 && "is-wpa-first")} title={pctTip(partAt(r.t?.wpaParts, p.pct))}>{f2(partAt(r.t?.wpaInbun, p.inbun))}</td>
                       ))}
                       <td className="is-wpa is-wpa-total" title={pctTip(r.t?.wpa)}>{f2(r.t?.cbt)}</td>
                       <td>{fInt(r.s.avgApm)}</td>
