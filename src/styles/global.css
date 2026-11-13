@@ -1060,6 +1060,16 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-period { display: inline-flex; align-items: center; gap: 6px; flex: none; }
 /* 셋은 같은 키(2026-10-26, 지적: "월선택만 액티브시 버튼이 큼" — 달력 아이콘(14) 때문에 월 단추만 2px 높았다) */
 .scr-stats-period .scr-compact-rect-btn { height: 24px; }
+/* ★ 날짜 지정 창(2026-11-13 · DayRangePicker) — 시작 ~ 끝 한 줄 · 아래 한 줄 도움말(하루 = 정오 ~ 정오). 창 폭은 attachPopover 가 300(좁은 폰은 화면 폭). */
+.scr-dayrange-row { display: flex; align-items: center; gap: 6px; }
+.scr-dayrange-row .scr-input { flex: 1 1 0; min-width: 0; height: 30px; padding: 0 6px; }
+/* ★ 폰 거르기 접기(2026-11-13 · ClanStatsScreen folded) — 기간 줄 오른끝 [필터 ⌄] · 펴면 꺾쇠가 위로 · 접힌 채 기본 아닌 거르기가 걸려 있으면 점.
+   팀 구성하기는 편 쪽 첫 줄 오른끝(.scr-stats-tb-row). */
+.scr-stats-fold-btn { margin-left: auto; height: 24px; padding: 0 6px 0 8px; font-size: 12px; gap: 2px; flex: none; }
+.scr-stats-fold-chev { transition: transform .15s; }
+.scr-stats-fold-btn.is-on .scr-stats-fold-chev { transform: rotate(180deg); }
+.scr-stats-fold-dot { width: 6px; height: 6px; margin-left: 3px; border-radius: 50%; background: var(--accent); }
+.scr-stats-tb-row { display: flex; justify-content: flex-end; }
 
 .scr-clan-dash {
   display: flex; flex-direction: column; gap: 12px;

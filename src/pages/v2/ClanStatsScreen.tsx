@@ -1,13 +1,16 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronsLeft, ChevronsRight, RotateCcw, Users, Wrench } from "lucide-react";
+import { ChevronDown, ChevronsLeft, ChevronsRight, RotateCcw, Users, Wrench } from "lucide-react";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
+import DayRangePicker from "../../components/common/DayRangePicker";
 import { currentMonthValue, MONTH_PERIOD_RE } from "../../utils/date";
-import { CLAN_TYPE, MAP_DEFAULT, MAP_TABS, mapTabOf, PERIOD_ALL, PERIOD_TODAY, SIZE_TABS, sizeTabOf, SOLO_TYPE, statRange, useTodayFrom } from "../stats/statQuery";
+import {
+  CLAN_TYPE, DAY_PERIOD_RE, dayPeriodLabel, MAP_DEFAULT, MAP_TABS, mapTabOf, PERIOD_ALL, PERIOD_TODAY, SIZE_TABS, sizeTabOf, SOLO_TYPE, statRange, todayDay, useTodayFrom,
+} from "../stats/statQuery";
 import StatGrid, { CompGrid, WpaHelp, type StatSortKey } from "../stats/StatGrid";
 import { calcRowOf, combinedTier, statTrendMonths, wpaOf, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -30,8 +33,13 @@ const sortLabel = (k: StatSortKey): string => {
   return `${who} ${what === "tier" ? "티어" : what === "rate" ? "승률" : what === "wpa" ? "WPA" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
 };
 
-/** 변화 그래프의 기준 — last: 마지막 달(한 달이면 그 달 · 여러 달 a~b 면 b · 달이 아니면 이번 달 — 서버도 dateTo 가 든 달을 마지막으로 센다) · period: 달 셈에 넣을 기간 글자. */
+/** 변화 그래프의 기준 — last: 마지막 달(한 달이면 그 달 · 여러 달 a~b 면 b · 날짜 지정이면 그 날들이 걸친 달 · 그 밖은 이번 달 — 서버도 dateTo 가 든 달을 마지막으로 센다) ·
+ *  period: 달 셈에 넣을 기간 글자. */
 const trendBase = (period: string): { last: string; period: string } => {
+  if (DAY_PERIOD_RE.test(period)) {
+    const [a, b] = period.split("~").map((d) => d.slice(0, 7));
+    return { last: b, period: a === b ? b : `${a}~${b}` };
+  }
   if (!MONTH_PERIOD_RE.test(period)) { const m = currentMonthValue(); return { last: m, period: m }; }
   const [a, b] = period.split("~");
   return { last: b || a, period };
@@ -160,6 +168,16 @@ export default function ClanStatsScreen() {
     );
   }, []);
   const todayFrom = useTodayFrom(period === PERIOD_TODAY);
+  /* ★ 날짜 지정(2026-11-13 · statQuery DAY_PERIOD_RE ★) — 누르면 오늘([오늘] 단추는 걷었다 · 요청: "오늘 보기 버튼은 제거" → "날짜 지정의 기본값이 오늘").
+     오늘은 옛 PERIOD_TODAY 그대로라 정오를 넘으면 저절로 다음 날로 간다(useTodayFrom) · 날을 고르면 "YYYY-MM-DD~YYYY-MM-DD" · 오늘 하루를 다시 고르면 PERIOD_TODAY 로. */
+  const dayOn = period === PERIOD_TODAY || DAY_PERIOD_RE.test(period);
+  const [dayA, dayB] = DAY_PERIOD_RE.test(period) ? period.split("~") : [todayFrom.slice(0, 10), todayFrom.slice(0, 10)];
+  const pickDays = (a: string, b: string): void => setPeriod(a === b && a === todayDay() ? PERIOD_TODAY : `${a}~${b}`);
+  /* ★ 폰은 거르기를 접은 채로 연다(2026-11-13, 요청: "모바일에선 처음에 접은 상태로 노출(최상단은 현재의 기간 필터 한줄만 보이기)") — 접히면 기간 줄만 ·
+     팀 구성하기 · 규모 탭 · 맵 탭 · 유저 칩은 [필터]를 눌러 편다. 기억하지 않는다(늘 접힌 채 연다). 기본이 아닌 거르기(규모 · 맵 · 유저)가 걸려 있으면 [필터]에 점. */
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const folded = isMobile && !filtersOpen;
+  const filterOn = size !== "team" || mapTab !== MAP_DEFAULT || users.length > 0;
   const queryKey = useMemo(
     () => ({
       /* 서버엔 늘 클랜원 전부 — 클랜원 전체 줄·종족구성별 전적이 유저 검색에 안 흔들리게(2026-10-21, 요청: "유저 필터가 들어가도 클랜원 전체 데이터는
@@ -251,9 +269,10 @@ export default function ClanStatsScreen() {
   const trend: StatTrendData | null = useMemo(() => {
     if (!view || view.key !== debouncedSignature || !view.trend) return null;   // 전체 기간도 최근 다섯 달(위 trendMonths ★)
     const { last, period } = trendBase(debouncedQuery.period);
-    /* ★ '오늘' 조회는 팝업에 그래프 없이(2026-11-13, 요청: "오늘로 조회시 팝업에 그래프 제거") — 달별 그래프가 오늘과 무관하다. 근거값 · 셈 표만. */
+    /* ★ '오늘' 조회는 팝업에 그래프 없이(2026-11-13, 요청: "오늘로 조회시 팝업에 그래프 제거") — 달별 그래프가 오늘과 무관하다. 근거값 · 셈 표만.
+       날짜 지정(같은 날 · DAY_PERIOD_RE)도 — 달별 막대가 고른 날들과 안 맞는다. */
     return { period: last, months: statTrendMonths(period), byMonth: view.trend, clanByMonth: view.trendClan ?? undefined, loading: false,
-      noChart: debouncedQuery.period === PERIOD_TODAY };
+      noChart: debouncedQuery.period === PERIOD_TODAY || DAY_PERIOD_RE.test(debouncedQuery.period) };
   }, [view, debouncedSignature, debouncedQuery.period]);
 
   const viewMembers = useMemo(() => {
@@ -350,6 +369,13 @@ export default function ClanStatsScreen() {
 
 
 
+  const teamBuilderBtn = (
+    <button type="button" className="scr-compact-rect-btn scr-stats-tb-btn" onClick={() => setTeamBuilder(true)}>
+      <Users size={13} aria-hidden /> 팀 구성하기
+      <span className="scr-tb-beta">beta</span>
+    </button>
+  );
+
   return (
     <>
     {STATS_PAUSED && <StatsPausedNotice />}
@@ -357,7 +383,8 @@ export default function ClanStatsScreen() {
       <div className="scr-v2-toolbar">
         <div className="scr-v2-toolbar-title-row">
           <h1 className="scr-title scr-v2-toolbar-title">통계</h1>
-          {/* 기간 셋은 배타(2026-10-26 · 위 PERIOD_TODAY ★) — 켜진 것만 채움 단추 · 나머지는 테두리. 달 고르기 창 안의 '전체 기간'은 밖 단추로 옮겼다. */}
+          {/* 기간 셋은 배타(2026-10-26 · 위 PERIOD_TODAY ★) — 켜진 것만 채움 단추 · 나머지는 테두리. 달 고르기 창 안의 '전체 기간'은 밖 단추로 옮겼다.
+              [오늘]은 걷고 [날짜 지정](기본 오늘)으로(2026-11-13 · 위 dayOn ★). */}
           <div className="scr-stats-period">
             <MonthCalendar
               value={MONTH_PERIOD_RE.test(period) ? period : currentMonthValue()} onChange={setPeriod}
@@ -368,17 +395,25 @@ export default function ClanStatsScreen() {
             />
             <button type="button" className={cx("scr-compact-rect-btn", period !== PERIOD_ALL && "is-secondary")}
               aria-pressed={period === PERIOD_ALL} onClick={() => setPeriod(PERIOD_ALL)}>전체기간</button>
-            <button type="button" className={cx("scr-compact-rect-btn", period !== PERIOD_TODAY && "is-secondary")}
-              aria-pressed={period === PERIOD_TODAY} onClick={() => setPeriod(PERIOD_TODAY)} title="정오부터 다음 날 정오 전까지">오늘</button>
+            <DayRangePicker
+              from={dayA} to={dayB} active={dayOn} label={dayPeriodLabel(dayA, dayB)} max={todayDay()}
+              onChange={pickDays} onActivate={() => setPeriod(PERIOD_TODAY)}
+            />
           </div>
-          <button type="button" className="scr-compact-rect-btn scr-stats-tb-btn" onClick={() => setTeamBuilder(true)}>
-            <Users size={13} aria-hidden /> 팀 구성하기
-            <span className="scr-tb-beta">beta</span>
-          </button>
+          {/* 폰: 기간 줄 오른끝에 [필터](위 folded ★) · 팀 구성하기는 편 쪽 첫 줄로. PC: 늘 다 보이고 팀 구성하기는 이 줄 오른끝. */}
+          {isMobile ? (
+            <button type="button" className={cx("scr-sg-fold scr-stats-fold-btn", filtersOpen && "is-on")} aria-expanded={filtersOpen}
+              onClick={() => setFiltersOpen((v) => !v)} title={filtersOpen ? "거르기 접기 — 기간만" : "거르기 펴기 — 팀 구성하기 · 규모 · 맵 · 유저"}>
+              필터{filterOn && !filtersOpen && <i className="scr-stats-fold-dot" aria-label="걸린 거르기 있음" />}
+              <ChevronDown size={13} aria-hidden className="scr-stats-fold-chev" />
+            </button>
+          ) : teamBuilderBtn}
         </div>
       </div>
+      {isMobile && !folded && <div className="scr-stats-tb-row">{teamBuilderBtn}</div>}
       {teamBuilder && <TeamBuilderModal onClose={() => setTeamBuilder(false)} />}
 
+      {!folded && (<>
       <div className="scr-line-tabs scr-stats-size-tabs" role="tablist" aria-label="팀 규모">
         {SIZE_TABS.map((t) => (
           <Fragment key={t.value}>
@@ -413,6 +448,7 @@ export default function ClanStatsScreen() {
       <div className="scr-stats-search">
         <ChipInput values={users} onChange={setUsers} options={userOpts} placeholder="유저 닉네임" />
       </div>
+      </>)}
       {/* 종족구성별 전적은 한 규모(4:4 · 3:3 · 2:2)를 골랐을 때만(2026-10-20, 요청: "팀전 전체에서 종족구성별 전적 숨기기") — 1:1 엔 구성이 없다.
           클랜원 전체는 아래 표(StatGrid)의 맨 윗줄로 옮겼다(2026-10-20). */}
       {view?.clan && size !== "1" && size !== "team" && (

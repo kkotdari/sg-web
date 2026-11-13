@@ -77,9 +77,31 @@ export function useTodayFrom(on: boolean): string {
   return from;
 }
 
-/** 기간 글자(달 · 달~달 · 전체 · 오늘) → 서버 dateFrom/dateTo — day = 열쇠에 든 '오늘' 시작(useTodayFrom). 달이 아닌 글자는 이번 달. */
+/* ★ 날짜 지정(2026-11-13, 요청: "통계화면에도 필터에 날짜 지정 추가" → "기본값은 당월이고 날짜 지정의 기본값이 오늘" · "오늘 보기 버튼은 제거") —
+   기간 글자 "YYYY-MM-DD~YYYY-MM-DD"(앞 ≤ 뒤 · 끝 날 포함). 하루는 '오늘'과 같이 정오 ~ 다음 날 정오(TODAY_CUT_H) — 날짜 지정의 기본이 오늘이라
+   같은 날을 골랐을 때 [오늘]과 같은 판이 들게. 서버는 시각이 든 경계를 판의 실제 시작 시각으로 자른다(시작 시각이 없는 판은 없다 · 2026-11-13 운영 DB 558판 모두). */
+export const DAY_PERIOD_RE = /^\d{4}-\d{2}-\d{2}~\d{4}-\d{2}-\d{2}$/;
+/** 지금의 '오늘'(정오 경계) 날짜 "YYYY-MM-DD" — 정오 전이면 어제. */
+export const todayDay = (): string => todayRange().from.slice(0, 10);
+/** 고른 날 [a, b](끝 날 포함) → [a 정오, b 다음 날 정오). */
+export function dayRange(a: string, b: string): { from: string; to: string } {
+  const hm = `${String(TODAY_CUT_H).padStart(2, "0")}:00`;
+  return { from: `${a}T${hm}`, to: todayRangeFrom(`${b}T${hm}`).to };
+}
+/** 고른 날 글자 — "11.13" · "11.1~11.13"(올해가 아니면 앞에 "25."). */
+export function dayPeriodLabel(a: string, b: string): string {
+  const year = todayDay().slice(0, 4);
+  const one = (d: string): string => {
+    const [y, m, dd] = d.split("-");
+    return `${y === year ? "" : `${y.slice(2)}.`}${Number(m)}.${Number(dd)}`;
+  };
+  return a === b ? one(a) : `${one(a)}~${one(b)}`;
+}
+
+/** 기간 글자(달 · 달~달 · 전체 · 오늘 · 날~날) → 서버 dateFrom/dateTo — day = 열쇠에 든 '오늘' 시작(useTodayFrom). 그 밖의 글자는 이번 달. */
 export function statRange(period: string, day?: string): { from: string; to: string } {
   if (period === PERIOD_ALL) return { from: "", to: "" };
   if (period === PERIOD_TODAY) return todayRangeFrom(day || todayRange().from);
+  if (DAY_PERIOD_RE.test(period)) { const [a, b] = period.split("~"); return dayRange(a, b); }
   return monthPeriodToRange(MONTH_PERIOD_RE.test(period) ? period : currentMonthValue());
 }
