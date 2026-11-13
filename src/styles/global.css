@@ -1077,7 +1077,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-fold-chev { transition: transform .15s; }
 .scr-stats-fold-btn.is-on .scr-stats-fold-chev { transform: rotate(180deg); }
 .scr-stats-fold-dot { width: 6px; height: 6px; margin-left: 3px; border-radius: 50%; background: var(--accent); }
-.scr-stats-tb-row { display: flex; justify-content: flex-end; }
+/* ★ 통계 머리 두 줄(2026-11-13, 요청: "팀 구성하기는 통계 타이틀 옆 오른쪽 · 필터는 타이틀에서 한 줄 아래로") — 제목 줄(제목 · 팀 구성하기 오른끝) / 기간 · 필터 줄. */
+.scr-stats-screen-v2 > .scr-v2-toolbar { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "filter"; row-gap: 8px; }
+.scr-stats-screen-v2 > .scr-v2-toolbar > .scr-stats-filter-row { grid-area: filter; transform: none; }
 
 .scr-clan-dash {
   display: flex; flex-direction: column; gap: 12px;

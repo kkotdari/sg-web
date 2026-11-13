@@ -26,6 +26,30 @@ export default function DayRangePicker({ from, to, active, label, max, onChange,
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
+  const fromRef = useRef<HTMLInputElement>(null);
+  const toRef = useRef<HTMLInputElement>(null);
+  /** 창을 연 뒤 고른 칸(2026-11-13, 요청: "한 날짜 선택 시 바로 반대 날짜 선택 창으로 · 둘 다 선택 시 닫힘"). */
+  const picked = useRef({ from: false, to: false });
+  useEffect(() => { if (open) picked.current = { from: false, to: false }; }, [open]);
+  /** 다른 칸의 고르기 창을 바로 연다 — showPicker 가 없거나 막히면 칸에 손만 옮긴다. */
+  const openPicker = (el: HTMLInputElement | null): void => {
+    if (!el) return;
+    window.setTimeout(() => {
+      try { el.showPicker(); } catch { el.focus(); }
+    }, 0);
+  };
+  const pickFrom = (v: string): void => {
+    onChange(v, v > to ? v : to);
+    picked.current.from = true;
+    if (picked.current.to) setOpen(false);
+    else openPicker(toRef.current);
+  };
+  const pickTo = (v: string): void => {
+    onChange(v < from ? v : from, v);
+    picked.current.to = true;
+    if (picked.current.from) setOpen(false);
+    else openPicker(fromRef.current);
+  };
 
   useEffect(() => {
     if (!open || !ref.current || !popRef.current) return;
@@ -73,11 +97,11 @@ export default function DayRangePicker({ from, to, active, label, max, onChange,
       {open && createPortal(
         <div className="scr-month-cal-pop scr-dayrange-pop" ref={popRef} role="dialog" aria-label="날짜 고르기">
           <div className="scr-dayrange-row">
-            <input type="date" className="scr-input scr-input-sm" aria-label="시작 날짜" value={from} max={max}
-              onChange={(e) => { const v = e.target.value; if (v) onChange(v, v > to ? v : to); }} />
+            <input ref={fromRef} type="date" className="scr-input scr-input-sm" aria-label="시작 날짜" value={from} max={max}
+              onChange={(e) => { const v = e.target.value; if (v) pickFrom(v); }} />
             <span aria-hidden>~</span>
-            <input type="date" className="scr-input scr-input-sm" aria-label="끝 날짜" value={to} max={max}
-              onChange={(e) => { const v = e.target.value; if (v) onChange(v < from ? v : from, v); }} />
+            <input ref={toRef} type="date" className="scr-input scr-input-sm" aria-label="끝 날짜" value={to} max={max}
+              onChange={(e) => { const v = e.target.value; if (v) pickTo(v); }} />
           </div>
           <p className="scr-month-cal-hint">하루는 정오부터 다음 날 정오 전까지</p>
         </div>,

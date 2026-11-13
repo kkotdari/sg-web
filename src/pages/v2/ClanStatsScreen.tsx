@@ -381,8 +381,13 @@ export default function ClanStatsScreen() {
     {STATS_PAUSED && <StatsPausedNotice />}
     <div className={cx("scr-screen scr-stats-screen-v2", STATS_PAUSED && "is-paused")} inert={STATS_PAUSED}>
       <div className="scr-v2-toolbar">
+        {/* ★ 팀 구성하기는 제목 줄 오른끝 · 기간 · 필터는 제목 한 줄 아래(2026-11-13, 요청: "팀 구성하기 버튼이 필터 안에 들어가 버림 · 밖으로 빼서 통계 타이틀 옆 오른쪽 ·
+            필터는 타이틀에서 한 줄 아래로") — 옛: 폰은 [필터]를 펴야 팀 구성하기가 보였고 · PC 는 기간 줄이 제목 옆이었다. */}
         <div className="scr-v2-toolbar-title-row">
           <h1 className="scr-title scr-v2-toolbar-title">통계</h1>
+          {teamBuilderBtn}
+        </div>
+        <div className="scr-v2-toolbar-title-row scr-stats-filter-row">
           {/* 기간 셋은 배타(2026-10-26 · 위 PERIOD_TODAY ★) — 켜진 것만 채움 단추 · 나머지는 테두리. 달 고르기 창 안의 '전체 기간'은 밖 단추로 옮겼다.
               [오늘]은 걷고 [날짜 지정](기본 오늘)으로(2026-11-13 · 위 dayOn ★). */}
           <div className="scr-stats-period">
@@ -400,17 +405,16 @@ export default function ClanStatsScreen() {
               onChange={pickDays} onActivate={() => setPeriod(PERIOD_TODAY)}
             />
           </div>
-          {/* 폰: 기간 줄 오른끝에 [필터](위 folded ★) · 팀 구성하기는 편 쪽 첫 줄로. PC: 늘 다 보이고 팀 구성하기는 이 줄 오른끝. */}
-          {isMobile ? (
+          {/* 폰: 기간 줄 오른끝에 [필터](위 folded ★). */}
+          {isMobile && (
             <button type="button" className={cx("scr-sg-fold scr-stats-fold-btn", filtersOpen && "is-on")} aria-expanded={filtersOpen}
-              onClick={() => setFiltersOpen((v) => !v)} title={filtersOpen ? "거르기 접기 — 기간만" : "거르기 펴기 — 팀 구성하기 · 규모 · 맵 · 유저"}>
+              onClick={() => setFiltersOpen((v) => !v)} title={filtersOpen ? "거르기 접기 — 기간만" : "거르기 펴기 — 규모 · 맵 · 유저"}>
               필터{filterOn && !filtersOpen && <i className="scr-stats-fold-dot" aria-label="걸린 거르기 있음" />}
               <ChevronDown size={13} aria-hidden className="scr-stats-fold-chev" />
             </button>
-          ) : teamBuilderBtn}
+          )}
         </div>
       </div>
-      {isMobile && !folded && <div className="scr-stats-tb-row">{teamBuilderBtn}</div>}
       {teamBuilder && <TeamBuilderModal onClose={() => setTeamBuilder(false)} />}
 
       {!folded && (<>
