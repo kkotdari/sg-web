@@ -2,13 +2,14 @@ import { memo, useEffect, useReducer, useState, type ReactNode, type RefObject }
 import { useReplayMapTick } from "scplay";
 import { RowCheck } from "../../components/common/Selection";
 import { cx } from "../../utils/format";
-import { formatAgo, formatKoreanTime } from "../../utils/date";
+import { formatAgo, formatKoreanTime, formatWhen } from "../../utils/date";
 
 /** 게임 줄의 때 — 날짜(오늘 · 어제 · 요일 · 날짜) 아래 줄에 시각(2026-11-04, 요청: "게임 목록 타임스탬프에 시각도 표시 · 시각은 날짜 아래 줄") —
  *  시작 시각을 아는 경기(withClock · gameStartedAt)만. 다른 줄(글 · 리그 예정)은 옛 한 줄 그대로. */
 function whenNode(item: { kind: string; time: number; withClock: boolean }): ReactNode {
-  const day = formatAgo(item.time);
-  if (item.kind !== "gameResult" || !item.withClock) return day;
+  if (item.kind !== "gameResult" || !item.withClock) return formatAgo(item.time);
+  /* 시각이 아래 줄에 붙으니 날짜 칸은 '몇 분 · 몇 시간 전' 대신 "오늘"(2026-11-13, 요청: "몇 분 전 몇 시간 전 대신 오늘 · 옆에 시각이 붙으니까"). */
+  const day = formatWhen(item.time);
   return <span className="scr-when2"><span>{day}</span><span className="scr-when2-clock">{formatKoreanTime(new Date(item.time))}</span></span>;
 }
 import { gamePlayable } from "../../utils/gamePlayable";

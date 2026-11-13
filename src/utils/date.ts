@@ -83,15 +83,7 @@ export function formatWhen(
   const ms = d.getTime();
   if (!Number.isFinite(ms)) return empty;
 
-  if (withClock) {
-    const diffMs = now.getTime() - ms;
-    if (diffMs >= 0 && d.toDateString() === now.toDateString()) {   // 오늘만 '분·시간 전'(어제부터는 아래 공통 규칙)
-      const mins = Math.floor(diffMs / 60000);
-      if (mins < 1) return "방금 전";
-      if (mins < 60) return `${mins}분 전`;
-      return `${Math.floor(diffMs / (60 * 60 * 1000))}시간 전`;
-    }
-  }
+  /* (걷음 2026-11-13, 요청: "몇 분 전 · 몇 시간 전 대신 오늘을 써야 할 것 같아 · 옆에 시각이 붙으니까") 시각을 붙이는 꼴의 오늘 '분·시간 전' — 이제 "오늘 14:05". */
   const time = withClock ? ` ${formatKoreanTime(d)}` : "";
   const dayStart = (x: Date) => { const c = new Date(x); c.setHours(0, 0, 0, 0); return c.getTime(); };
   const diffDays = Math.round((dayStart(d) - dayStart(now)) / 86_400_000);
