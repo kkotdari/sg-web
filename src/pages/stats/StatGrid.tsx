@@ -301,7 +301,8 @@ function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: bo
 
 /* (걷음 2026-11-13, 요청: "통계 전체 툴팁은 제거하고 WPA에만 툴팁 넣기 · 아주 간단히") 통계 표 도움말 단추(StatHelp · 티어 풀이) — WPA 머리 툴팁 한 줄만 남긴다(아래 head). */
 /** ★ "WPA란?" 글 단추(2026-11-13, 요청: "예전 통계 툴팁 아이콘 자리에 텍스트 버튼 WPA란? 추가 · 툴팁 뜨고 WPA 뜻과 항목별로 어떻게 하면 점수를 얻고 잃는지") —
- *  정렬 줄 오른끝(옛 StatHelp 자리) · PC 는 얹으면 · 폰은 누르면. 항목은 WPA 팝업과 같은 차례(방어 · 공격 · 합류 · 장악 · 정찰 · sg-api wpa.py · tier._wpa_inbun). */
+ *  정렬 줄 오른끝(옛 StatHelp 자리) · PC 는 얹으면 · 폰은 누르면. 항목은 WPA 팝업과 같은 차례(방어 · 공격 · 합류 · 장악 · 정찰 · sg-api wpa.py · tier._wpa_inbun).
+ *  ★ 공통 풀이는 모두 구분선 위(같은 날, 요청: "wpa툴팁에서 상세항목들 위의 공통해당 내용은 모두 구분선 위로 넣기") — 아래는 항목만. */
 export function WpaHelp() {
   return (
     <InfoTip
@@ -311,15 +312,15 @@ export function WpaHelp() {
           {/* ★ 머리(2026-11-13, 요청: "WPA(Win P... 이렇게 풀어쓴거부터 시작하고 아랫줄에 간단 설명 하고 구분선 넣고 그 아랫줄부터 상세 설명") */}
           <b className="scr-sg-help-title">WPA(Win Probability Added)</b>
           <span>내 플레이로 우리 편이 이길 확률이 얼마나 올랐는지예요.</span>
-          <span className="scr-sg-help-sep" aria-hidden="true" />
           <span>팽팽할 때 한 플레이일수록 크게 쳐요.</span>
           <span><b>인분</b> — 1.00이면 평균만큼 한 거예요. 1.20이면 20% 더, 0.80이면 20% 덜이에요. 판이 적으면 1에 가깝게 나와요.</span>
+          <span>항목 인분을 다 곱하면 WPA 인분이 돼요.</span>
+          <span className="scr-sg-help-sep" aria-hidden="true" />
           <span><b>공격</b> 상대 병력 · 일꾼 · 건물을 잡으면 올라요.</span>
           <span><b>방어</b> 내 걸 잃으면 내려가요. 덜 잃을수록 좋아요.</span>
           <span><b>합류</b> 우리 편이 머릿수에서 밀려 싸울 때, 비어 있던 내가 안 가면 내려가요.</span>
           <span><b>장악</b> 상대 쪽에서 한 자리를 1분 넘게 지키면, 그게 이기는 데 도움이 됐는지에 따라 오르거나 내려가요. 우리 쪽에서 지킨 건 안 쳐요.</span>
           <span><b>정찰</b> 상대 건물을 보고 있으면 올라요.</span>
-          <span>항목 인분을 다 곱하면 WPA 인분이 돼요.</span>
         </span>
       )}
     />
