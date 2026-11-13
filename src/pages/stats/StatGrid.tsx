@@ -177,18 +177,19 @@ function ScoreCell({ r }: { r: TierCalcRow | null }) {
   if (!r) return <Dash />;
   return <span className="scr-sg-v"><b>{r.mult.toFixed(2)}</b></span>;
 }
-/** ★ WPA 팝업 — 한 줄에 하나씩 **방어 · 공격 · 헬프**(인분 · 1인분 = 그 조회 판 평균)와 **총 승리 확률 기여**(판당 %p)(2026-11-13, 요청:
+/** ★ WPA 팝업 — 한 줄에 하나씩 **방어 · 공격 · 합류**(인분 · 1인분 = 그 조회 판 평균)와 **총 승리 확률 기여**(판당 %p)(2026-11-13, 요청:
  *  "방어 +N% · 공격 · 헬프 · 총 승리 확률 기여 +N% 약간 이런식으로" → "인분도 괜찮고 · 방어 0.9인분 · 공격 0.8인분 · 헬프 0.5인분" — 옛 득점 · 실점 · 합계 / 공격 · 생존 · 협동 점수).
- *  방어 = 덜 잃은 정도 · 공격 = 상대를 잡아 올린 정도 · 헬프 = 몰매 때 함께 싸운 정도(sg-api wpaInbun · tier._wpa_inbun) · 총 = 티어에 드는 WPA 배수(인분). */
+ *  방어 = 덜 잃은 정도 · 공격 = 상대를 잡아 올린 정도 · 합류 = 몰매 때 비어 있던 내가 와서 함께 싸운 정도(sg-api wpaInbun · tier._wpa_inbun) · 총 = 티어에 드는 WPA 배수(인분).
+ *  ★ 헬프 → 합류(같은 날, 요청: "헬프라기보다 협동? 뭐 이런 적당한 이름" — sg-api wpa ★ 합류: 몰매 당한 사람 제 몫은 방어로 옮겨 합류는 '안 와서'만). */
 function wpaFacts(t: TierEntry | null | undefined): TrendFact[] {
   const v = wpaOf(t);
   if (v === null) return [];
   const out: TrendFact[] = [];
-  const [dfn, atk, hlp, ctl, sct] = t?.wpaInbun ?? [];
+  const [dfn, atk, jn, ctl, sct] = t?.wpaInbun ?? [];
   const ib = (x: number) => `${x.toFixed(2)}인분`;
   if (typeof dfn === "number") out.push({ label: "방어", value: ib(dfn) });
   if (typeof atk === "number") out.push({ label: "공격", value: ib(atk) });
-  if (typeof hlp === "number") out.push({ label: "헬프", value: ib(hlp) });
+  if (typeof jn === "number") out.push({ label: "합류", value: ib(jn) });
   /* ★ 장악 · 정찰(2026-11-13, 지적: "비전투성 병력 운용 · 정찰의 효과가 누락" · "WPA 팝업에 장악 정찰도") — 한 자리를 지켜 막은 정도 · 상대 건물을 본 정도(sg-api wpa ★ · 덤퍼 ##ZONE##).
      새 덤퍼로 다시 분석한 달만 값이 움직인다(옛 판뿐이면 1.00 언저리). */
   if (typeof ctl === "number") out.push({ label: "장악", value: ib(ctl) });
@@ -299,7 +300,7 @@ function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: bo
 
 /* (걷음 2026-11-13, 요청: "통계 전체 툴팁은 제거하고 WPA에만 툴팁 넣기 · 아주 간단히") 통계 표 도움말 단추(StatHelp · 티어 풀이) — WPA 머리 툴팁 한 줄만 남긴다(아래 head). */
 /** ★ "WPA란?" 글 단추(2026-11-13, 요청: "예전 통계 툴팁 아이콘 자리에 텍스트 버튼 WPA란? 추가 · 툴팁 뜨고 WPA 뜻과 항목별로 어떻게 하면 점수를 얻고 잃는지") —
- *  정렬 줄 오른끝(옛 StatHelp 자리) · PC 는 얹으면 · 폰은 누르면. 항목은 WPA 팝업과 같은 차례(방어 · 공격 · 헬프 · 장악 · 정찰 · sg-api wpa.py · tier._wpa_inbun). */
+ *  정렬 줄 오른끝(옛 StatHelp 자리) · PC 는 얹으면 · 폰은 누르면. 항목은 WPA 팝업과 같은 차례(방어 · 공격 · 합류 · 장악 · 정찰 · sg-api wpa.py · tier._wpa_inbun). */
 export function WpaHelp() {
   return (
     <InfoTip
@@ -310,7 +311,7 @@ export function WpaHelp() {
           <span><b>인분</b> — 1.00이면 평균만큼 한 거예요. 1.20이면 20% 더, 0.80이면 20% 덜이에요. 판이 적으면 1에 가깝게 나와요.</span>
           <span><b>공격</b> 상대 병력 · 일꾼 · 건물을 잡으면 올라요.</span>
           <span><b>방어</b> 내 걸 잃으면 내려가요. 덜 잃을수록 좋아요.</span>
-          <span><b>헬프</b> 우리 편이 여럿한테 맞을 때 안 도와주면 내려가요.</span>
+          <span><b>합류</b> 우리 편이 머릿수에서 밀려 싸울 때, 비어 있던 내가 안 가면 내려가요.</span>
           <span><b>장악</b> 상대 앞에서 한 자리를 1분 넘게 지키면 올라요. 밀려나면 내려가요. 본진에만 있으면 0이에요.</span>
           <span><b>정찰</b> 상대 건물을 보고 있으면 올라요.</span>
           <span>항목 인분을 다 곱하면 WPA 인분이 돼요.</span>
