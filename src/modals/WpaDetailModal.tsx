@@ -214,15 +214,15 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
                     {head("name", "이름", { rowSpan: 2, className: "is-name" })}
                     {head("plays", "판수", { rowSpan: 2 })}
                     {head("rate", "승률", { rowSpan: 2 })}
-                    <th colSpan={PARTS.length + 1} className="is-wpa is-wpa-first is-group" title="승리 확률 기여 — 항목은 인분(1 = 이 조회 판 평균) · 칸에 얹으면 판당 %p">WPA</th>
+                    <th colSpan={PARTS.length + 1} className="is-group" title="승리 확률 기여 — 항목은 인분(1 = 이 조회 판 평균) · 칸에 얹으면 판당 %p">WPA</th>
                     {head("apm", "APM", { rowSpan: 2 })}
                     {head("eapm", "EAPM", { rowSpan: 2 })}
                     {head("tier", "티어", { rowSpan: 2 })}
                     {head("inbun", "티어인분", { rowSpan: 2, title: "티어의 잣대 — WPA 전체 × 승패 보정(인분)" })}
                   </tr>
                   <tr>
-                    {PARTS.map((p, i) => head(`wpa${i}` as ColKey, p.label, { title: `${p.label} — ${p.tip}`, className: cx("is-wpa", i === 0 && "is-wpa-first") }))}
-                    {head("wpa", "전체", { title: "WPA 전체 — 티어에 드는 WPA 배수(인분)", className: "is-wpa is-wpa-total" })}
+                    {PARTS.map((p, i) => head(`wpa${i}` as ColKey, p.label, { title: `${p.label} — ${p.tip}` }))}
+                    {head("wpa", "전체", { title: "WPA 전체 — 티어에 드는 WPA 배수(인분)", className: "is-wpa-total" })}
                   </tr>
                 </thead>
                 <tbody>
@@ -231,10 +231,10 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
                       <td className="is-name">{r.name}</td>
                       <td>{r.s.plays.toLocaleString()}</td>
                       <td>{r.s.plays > 0 ? `${r.s.winRate}%` : "-"}</td>
-                      {PARTS.map((p, i) => (
-                        <td key={p.label} className={cx("is-wpa", i === 0 && "is-wpa-first")} title={pctTip(partAt(r.t?.wpaParts, p.pct))}>{f2(partAt(r.t?.wpaInbun, p.inbun))}</td>
+                      {PARTS.map((p) => (
+                        <td key={p.label} title={pctTip(partAt(r.t?.wpaParts, p.pct))}>{f2(partAt(r.t?.wpaInbun, p.inbun))}</td>
                       ))}
-                      <td className="is-wpa is-wpa-total" title={pctTip(r.t?.wpa)}>{f2(r.t?.cbt)}</td>
+                      <td className="is-wpa-total" title={pctTip(r.t?.wpa)}>{f2(r.t?.cbt)}</td>
                       <td>{fInt(r.s.avgApm)}</td>
                       <td>{fInt(r.s.avgEapm)}</td>
                       <td>{typeof r.t?.tier === "number" ? <b className={cx("scr-sg-tier", `is-t${Math.min(r.t.tier, 4)}`)}>{r.t.tier}</b> : "-"}</td>

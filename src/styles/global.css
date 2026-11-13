@@ -5900,17 +5900,22 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* 스크롤은 표 칸에서만(가로 · 세로) — 낮은 화면(폰 가로 등)에서 조건 칸에 밀려 표가 납작해지지 않게 바닥 높이를 두고, 그보다 낮으면 팝업 몸이 통째로 내려간다. */
 .scr-wpad-out { flex: 1 1 auto; min-height: 240px; overflow: auto; overscroll-behavior: contain; transition: opacity 0.15s; }
 .scr-wpad-out.is-busy { opacity: 0.55; }
+/* 선(2026-11-13, 지적: "제어판 wpa창에 표 선이 좀 이상해서 정리 필요" — 옛: 아래 선만 + WPA 묶음 양옆만 진한 세로선(머리 'WPA' 칸은 오른 선이 빠져 어긋남) ·
+   붙박이 이름 칸 경계 없음) — SQL 콘솔 표처럼 칸마다 고른 격자: 오른 · 아래 선 + 첫 머리 줄은 위 · 이름 칸은 왼 선. 선이 칸에 붙어 붙박이 칸과 같이 움직이고 겹선이 없다. */
 .scr-wpad-table { border-collapse: separate; border-spacing: 0; font-size: 13px; line-height: 1.4; color: var(--text); font-variant-numeric: tabular-nums; }
 .scr-wpad-table thead { position: sticky; top: 0; z-index: 2; }
-.scr-wpad-table th, .scr-wpad-table td { padding: 5px 10px; border-bottom: 1px solid var(--line-faint); text-align: right; white-space: nowrap; background: var(--void); }
+.scr-wpad-table th, .scr-wpad-table td {
+  padding: 5px 10px; text-align: right; vertical-align: middle; white-space: nowrap; background: var(--void);
+  border: 0 solid var(--line-faint); border-right-width: 1px; border-bottom-width: 1px;
+}
+.scr-wpad-table thead tr:first-child th { border-top-width: 1px; }
 .scr-wpad-table th { font-weight: 700; color: var(--dim); background: linear-gradient(rgba(var(--overlay-rgb), 0.08), rgba(var(--overlay-rgb), 0.08)), var(--void); }
 .scr-wpad-table th.is-group { text-align: center; color: var(--text); }
 .scr-wpad-table th.is-sort > button { all: unset; display: inline-flex; align-items: center; gap: 2px; cursor: pointer; }
 .scr-wpad-table th.is-sort > button:focus-visible { outline: 1px dotted currentColor; outline-offset: 2px; }
 .scr-wpad-table th.is-sort.is-on { color: var(--text); }
 .scr-wpad-table th.is-sort > button > i { font-style: normal; font-size: 11px; }
-.scr-wpad-table .is-name { position: sticky; left: 0; z-index: 1; text-align: left; }
+.scr-wpad-table .is-name { position: sticky; left: 0; z-index: 1; text-align: left; border-left-width: 1px; }
 .scr-wpad-table td.is-name { font-weight: 600; }
 .scr-wpad-table tbody tr:nth-child(2n) td { background: linear-gradient(rgba(var(--overlay-rgb), 0.035), rgba(var(--overlay-rgb), 0.035)), var(--void); }
-.scr-wpad-table .is-wpa-first { border-left: 1px solid var(--line-soft); }
-.scr-wpad-table .is-wpa-total { border-right: 1px solid var(--line-soft); font-weight: 700; }
+.scr-wpad-table .is-wpa-total { font-weight: 700; }
