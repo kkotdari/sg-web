@@ -4502,6 +4502,11 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
   animation: scr-toast-in 180ms ease-out both;
 }
 .scr-toast.is-out { animation: scr-toast-out 220ms ease-in both; }
+/* 반투명 토스트(Toast faint · 2026-11-13, 요청: "반투명한 토스트 10초간") — 오래 떠 있어도 뒤 화면이 비치게 · 뒤를 살짝 흐려 글은 읽힌다. */
+.scr-toast.is-faint {
+  background: rgba(247, 248, 250, 0.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
 .scr-toast-text { min-width: 0; overflow-wrap: anywhere; }
 .scr-toast-icon { flex: 0 0 auto; }
 .scr-toast-warn { border-left: 4px solid #e0a11b; }

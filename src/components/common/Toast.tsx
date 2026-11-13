@@ -11,6 +11,8 @@ export type ToastItem = {
   ms: number;
   out?: boolean;
   at?: { x: number; y: number };
+  /** 반투명(뒤가 비친다 · 오래 떠 있는 알림용 — 2026-11-13 통계 정확도 작업 알림). */
+  faint?: boolean;
 };
 
 const MAX = 3;
@@ -34,7 +36,7 @@ function drop(id: number): void {
 }
 
 export function showToast(
-  text: string, opts?: { kind?: ToastKind; ms?: number; at?: { x: number; y: number } },
+  text: string, opts?: { kind?: ToastKind; ms?: number; at?: { x: number; y: number }; faint?: boolean },
 ): number {
   const kind = opts?.kind ?? "info";
   const ms = Math.max(600, opts?.ms ?? DEFAULT_MS);
@@ -45,7 +47,7 @@ export function showToast(
   }
   seq += 1;
   const id = seq;
-  items = [...items, { id, text, kind, ms, at: opts?.at }].slice(-MAX);
+  items = [...items, { id, text, kind, ms, at: opts?.at, faint: opts?.faint }].slice(-MAX);
   emit();
   window.setTimeout(() => drop(id), ms);
   return id;
@@ -74,7 +76,7 @@ export default function ToastHost(): React.ReactElement | null {
         return (
           <div
             key={it.id}
-            className={`scr-toast scr-toast-${it.kind}${it.out ? " is-out" : ""}`}
+            className={`scr-toast scr-toast-${it.kind}${it.faint ? " is-faint" : ""}${it.out ? " is-out" : ""}`}
             onClick={() => drop(it.id)}
           >
             <Icon size={16} className="scr-toast-icon" aria-hidden />

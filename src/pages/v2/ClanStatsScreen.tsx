@@ -16,6 +16,7 @@ import { api } from "../../api/client";
 import { memberMatchesTerm, normalizeSearchText } from "../../utils/memberSearch";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { cx } from "../../utils/format";
+import { showToast } from "../../components/common/Toast";
 import type { BaseRace, ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 /** 정렬 자 이름 — 정렬 줄("정렬: 전체 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid · 2026-10-22, 요청: "정렬은 머리 터치로 변경" →
@@ -63,6 +64,9 @@ function chipsOfUrl(raw: string): string[] {
    가운데에 닫기 없는 작업 중 팝업(배경 막 없이 · .scr-modal-overlay 는 display contents). 머리줄 · 아래 탭은 막지 않아 다른 화면으로 갈 수 있다. 다시 닫으려면 true.
    (2026-11-13 다시 엶 — 요청: "통계 열고") */
 const STATS_PAUSED = false;
+/* ★ 정확도 작업 알림(2026-11-13, 요청: "통계화면 반투명한 토스트 10초간 띄우기 · 현재 정확도 높이는 작업중이라 변경될 수 있다고") — 들어올 때마다 10초 · 반투명(뒤 표가 비친다) ·
+   누르면 바로 닫힌다. 작업이 끝나면 false. */
+const ACCURACY_NOTICE = true;
 
 function StatsPausedNotice() {
   return createPortal(
@@ -82,6 +86,9 @@ function StatsPausedNotice() {
 export default function ClanStatsScreen() {
   const members = useAppStore((s) => s.members);
   const isMobile = useIsMobile();
+  useEffect(() => {
+    if (ACCURACY_NOTICE) showToast("지금 정확도를 높이는 작업 중이라 수치가 바뀔 수 있어요.", { kind: "info", ms: 10_000, faint: true });
+  }, []);
   /* 유저 검색 = 칩 입력(2026-10-21, 요청: "통계 검색창 칩형태로 변경(게임목록처럼)") — 칩을 담거나 빼는 순간 걸린다 · 주소 u= 는 칩 배열(JSON).
      옛 한 줄 검색어(띄어쓰기로 이은 글)로 들어오면 낱말마다 칩 하나로 읽는다. */
   const [userRaw, setUserRaw] = useUrlState("u");
