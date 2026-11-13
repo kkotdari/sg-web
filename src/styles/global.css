@@ -211,11 +211,19 @@ html {
   background: var(--void);
   color-scheme: dark;
   --safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-top, 0px));
+  /* ★ 맨 위 내용이 시작할 자리(2026-11-13, 실기: "PWA 에서 위 노티 영역 흐림에 들어가는 부분 · 전수조사 · 가로 모드도") — 홈 화면 앱(PWA)은 투명 상태바 아래 띠에 iOS 가
+     흐림을 겹쳐 안전 영역 + 20px 까지 흐리다(본문 .scr-main 은 이미 34 = 14 + 20). 전체 화면 창 · 붙박이 머리 · 시트는 이 값을 쓴다. 노치가 없는 쪽(가로 · PC)은 + 0
+     (min — 안전 영역이 0 이면 띠도 없다). 좌우(가로 노치)는 --safe-x. */
+  --safe-top-ui: var(--safe-top);
+  --safe-x: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   --vv-bottom-inset: 0px;
   --scr-float-bottom: max(
     calc(var(--vv-bottom-inset, 0px) + 6px),
     calc(env(safe-area-inset-bottom, 0px) * 0.45 + 6px)
   );
+}
+@media (display-mode: standalone) {
+  html { --safe-top-ui: calc(var(--safe-top) + min(var(--safe-top), 20px)); }
 }
 @media (display-mode: standalone), (display-mode: fullscreen) {
   :root {
@@ -283,13 +291,13 @@ button, a, [role="button"], summary, label, select { touch-action: manipulation;
 }
 .scr-rail-left { left: 0; border-right: 1px solid var(--line-soft); background: repeating-linear-gradient(180deg, transparent 0 38px, var(--line-soft) 38px 39px); }
 .scr-rail-right { right: 0; border-left: 1px solid var(--line-soft); background: repeating-linear-gradient(180deg, transparent 0 38px, var(--line-soft) 38px 39px); }
-.scr-auth-wrap { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(32px + env(safe-area-inset-top, 0px)) 16px 32px; position: relative; }
+.scr-auth-wrap { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(32px + var(--safe-top-ui)) max(16px, var(--safe-x)) 32px; position: relative; }
 .scr-auth-hero { display: flex; flex-direction: column; align-items: center; width: 100%; }
 @media (display-mode: standalone) {
   .scr-auth-hero { transform: translateY(-3%); }
 }
 .scr-auth-theme-btn {
-  position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px; z-index: 2;
+  position: absolute; top: calc(16px + var(--safe-top-ui)); right: max(16px, var(--safe-x)); z-index: 2;
   background: transparent; border: none;
 }
 .scr-auth-logo { display: flex; align-items: center; justify-content: center; margin: 18px 0 8px; z-index: 1; min-height: 64px; }
@@ -609,7 +617,7 @@ html.scr-light-theme { --header-bg: rgba(255, 255, 255, 0.9); }
 .scr-pv {
   position: fixed; inset: 0; z-index: 160;
   display: flex; align-items: center; justify-content: center;
-  padding: calc(24px + var(--safe-top)) 24px calc(24px + env(safe-area-inset-bottom, 0px));
+  padding: calc(24px + var(--safe-top-ui)) max(24px, var(--safe-x)) calc(24px + env(safe-area-inset-bottom, 0px));
 }
 .scr-pv-card {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -639,7 +647,7 @@ html.scr-light-theme .scr-pv-card::before { background: rgba(244, 246, 250, 0.86
 .scr-pv.is-closing .scr-pv-card::before, .scr-pv.is-closing .scr-pv-bar { opacity: 0; }
 @keyframes scr-pv-in { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 960px) {
-  .scr-pv { padding: calc(10px + var(--safe-top)) 8px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .scr-pv { padding: calc(10px + var(--safe-top-ui)) max(8px, var(--safe-x)) calc(10px + env(safe-area-inset-bottom, 0px)); }
   .scr-pv-card { padding: 6px; gap: 6px; border-radius: 12px; }
   .scr-pv-bar { gap: 6px; }
   .scr-pv-navs { gap: 8px; }
@@ -700,8 +708,8 @@ html.scr-light-theme .scr-save-shield { background: rgba(244, 246, 250, 0.42); }
 .scr-modal {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 100;
   width: min(calc(100vw - 32px), 100%); max-width: 420px; padding: 13px 16px 0;
-  max-height: calc(100vh - var(--safe-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
-  max-height: calc(100dvh - var(--safe-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
+  max-height: calc(100vh - var(--safe-top-ui, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
+  max-height: calc(100dvh - var(--safe-top-ui, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
   display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius);
   border: none;
   box-shadow:
@@ -1018,7 +1026,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 }
 .scr-inapp-notice {
   position: fixed; z-index: 120; left: 0; right: 0; margin-inline: auto;
-  top: calc(var(--safe-area-top, 0px) + 8px);
+  top: calc(var(--safe-top-ui, 0px) + 8px);
   width: fit-content; max-width: min(520px, calc(100vw - 16px));
   display: flex; flex-direction: column; gap: 8px;
   padding: 11px 12px; border-radius: 14px;
@@ -1474,7 +1482,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
 }
 .scr-pv-opt:focus { outline: none; }
 .scr-members-toolbar::after { display: none; }
-.scr-game-result-list-panel-v2 .scr-game-result-date-head { top: var(--safe-top); }
+.scr-game-result-list-panel-v2 .scr-game-result-date-head { top: var(--safe-top-ui); }   /* 붙박이 날짜 머리도 흐림 띠 아래(2026-11-13) */
 .scr-game-result-list-panel-v2 .scr-game-result-cards { padding: 0; }
 .scr-game-result-list-panel-v2 .scr-game-result-date-head { margin: 0 0 14px; }
 .scr-game-result-list-panel-v2 .scr-game-result-date-head { padding-left: 8px; }
@@ -1947,7 +1955,7 @@ html.scr-page-bg.scr-page-bg-light.scr-light-theme .scr-main::before {
   .scr-header-inner { padding: 6px 16px 2px; gap: 12px; justify-content: flex-end; }
   .scr-user { display: none; }
   .scr-main {
-    --main-pad-x: 16px; padding: 8px var(--main-pad-x) 48px;
+    --main-pad-x: max(16px, var(--safe-x)); padding: 8px var(--main-pad-x) 48px;   /* 가로 노치 비움(2026-11-13) */
     --card-pad-bx: 0px; --card-head-pad-l: 0px;
   }
   .scr-v2-toolbar { padding-bottom: 4px; min-height: calc(var(--field-h-sm) + 4px); }
@@ -2195,7 +2203,7 @@ body *::-webkit-scrollbar-corner { background: transparent; }
 @media (max-width: 960px) {
   /* 화면 가득은 폰 모달 공통 규칙(.scr-modal:not(…):not(…) · 뒤쪽)이 한다 — 여기선 좌우 여백만 좁게(2026-10-21, 요청: "왼쪽 패딩 줄이고 · 오른쪽도 패딩 줄여").
      공통 규칙보다 세게 쓴다. 아래 여백은 창 몸(아래)이 갖는다. (2026-10-26 걷기에서 함께 지워져 2026-10-27 되살림) */
-  .scr-modal.scr-modal.scr-modal-graph:not(.scr-modal-confirm):not(.scr-modal-fit) { padding-left: 10px; padding-right: 10px; padding-bottom: 0; }
+  .scr-modal.scr-modal.scr-modal-graph:not(.scr-modal-confirm):not(.scr-modal-fit) { padding-left: max(10px, var(--safe-x)); padding-right: max(10px, var(--safe-x)); padding-bottom: 0; }
   /* 아래 여백 넉넉히(요청) — 폰 모달 공통 몸 규칙(.scr-modal:not(…):not(…) > .scr-modal-body · 뒤쪽)이 패딩을 0 16 으로 덮어 그보다 세게 쓴다. */
   .scr-modal.scr-modal-graph:not(.scr-modal-confirm):not(.scr-modal-fit) > .scr-modal-body {
     margin: 0 -10px; padding: 4px 10px calc(56px + env(safe-area-inset-bottom, 0px));
@@ -2316,7 +2324,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
     top: auto;
     bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px);
     transform: translate(-50%, 0);
-    height: calc(100dvh - var(--safe-top, 0px) - var(--mobile-footer-h, 69px) - 28px);
+    height: calc(100dvh - var(--safe-top-ui, 0px) - var(--mobile-footer-h, 69px) - 28px);
   }
 }
 .scr-redo-pick-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
@@ -2361,7 +2369,7 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
     top: auto;
     bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px);
     transform: translate(-50%, 0);
-    height: calc(100dvh - var(--safe-top, 0px) - var(--mobile-footer-h, 69px) - 28px);
+    height: calc(100dvh - var(--safe-top-ui, 0px) - var(--mobile-footer-h, 69px) - 28px);
   }
 }
 .scr-trash-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; padding-bottom: 14px; }
@@ -3458,7 +3466,7 @@ span.scr-league-set-game { cursor: default; }
 html.scr-light-theme .scr-league-present { --league-line: rgba(0,0,0,0.18); }
 .scr-league-present-head {
   display: flex; align-items: center; gap: 16px; flex: 0 0 auto; flex-wrap: wrap;
-  padding: calc(10px + var(--safe-top)) 20px 10px;
+  padding: calc(10px + var(--safe-top-ui)) max(20px, var(--safe-x)) 10px;
 }
 .scr-league-present-name { font-size: var(--fs-subhead); font-weight: 800; }
 .scr-league-present-tabs { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; }
@@ -3612,7 +3620,7 @@ html.scr-light-theme .scr-league-bracket-rail-chip { background: rgba(0,0,0,0.05
 .scr-rivalry-overlay {
   position: fixed; inset: 0; z-index: 100;
   display: flex; align-items: safe center; justify-content: center;
-  padding: calc(12px + var(--safe-top)) 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: calc(12px + var(--safe-top-ui)) max(12px, var(--safe-x)) calc(12px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto; overscroll-behavior: none;
   background: rgba(4, 6, 10, 0.62);
   -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
@@ -3663,7 +3671,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 }
 .scr-feed-row-wrap + .scr-feed-row-wrap { border-top: 0.5px solid var(--scr-row-line); }
 .scr-feed-row {
-  scroll-margin-top: calc(var(--safe-top, 0px) + 12px);
+  scroll-margin-top: calc(var(--safe-top-ui, 0px) + 12px);
   display: grid; align-items: stretch; gap: 0; width: 100%;
   grid-template-columns: minmax(0, 1fr);
   padding: 0 var(--scr-row-pad-x); background: transparent; border: none; cursor: pointer;
@@ -4267,7 +4275,7 @@ input.scr-schedule-title { font-weight: 800; }
     inset: 0; transform: none;
     width: auto; max-width: none; height: auto; max-height: none;
     border-radius: 0;
-    padding: calc(10px + var(--safe-top)) 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: calc(10px + var(--safe-top-ui)) max(16px, var(--safe-x)) calc(12px + env(safe-area-inset-bottom, 0px));   /* 흐림 띠 아래 · 가로 노치 비움(2026-11-13) */
     box-shadow: none;
   }
   .scr-modal:not(.scr-modal-confirm):not(.scr-modal-fit)::before { border-radius: 0; }
@@ -4285,7 +4293,7 @@ input.scr-schedule-title { font-weight: 800; }
   display: flex; flex-direction: column;
   border-radius: 0;
   margin: 0; border-top: none;
-  padding: var(--safe-top, 0px) 20px max(
+  padding: var(--safe-top-ui, 0px) max(20px, var(--safe-x)) max(
     calc(var(--vv-bottom-inset, 0px) + 10px),
     calc(env(safe-area-inset-bottom, 0px) + 10px),
     18px
@@ -4631,8 +4639,8 @@ input.scr-extshare-adm-name { flex: 1 1 auto; }
 input.scr-extshare-adm-pass { flex: 0 0 148px; }
 .scr-modal.scr-extshare-modal {
   max-width: 620px;
-  height: calc(100vh - var(--safe-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
-  height: calc(100dvh - var(--safe-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
+  height: calc(100vh - var(--safe-top-ui, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
+  height: calc(100dvh - var(--safe-top-ui, 0px) - env(safe-area-inset-bottom, 0px) - 32px);
 }
 @media (max-width: 660px) {
   .scr-extshare-adm-row { flex-wrap: wrap; }
@@ -4658,8 +4666,8 @@ input.scr-extshare-adm-pass { flex: 0 0 148px; }
 
 .scr-modal.scr-tb-modal {
   max-width: 560px;
-  height: min(720px, calc(100vh - var(--safe-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px));
-  height: min(720px, calc(100dvh - var(--safe-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px));
+  height: min(720px, calc(100vh - var(--safe-top-ui, 0px) - env(safe-area-inset-bottom, 0px) - 32px));
+  height: min(720px, calc(100dvh - var(--safe-top-ui, 0px) - env(safe-area-inset-bottom, 0px) - 32px));
 }
 .scr-tb-title { display: inline-flex; align-items: center; gap: 6px; }
 .scr-tb-beta {
@@ -5879,7 +5887,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-modal.scr-sqlc-modal { max-width: 960px; height: min(82vh, 820px); height: min(82dvh, 820px); }
 .scr-modal.scr-sqlc-modal.is-full {
   left: 0; top: 0; transform: none; width: 100vw; max-width: none; height: 100vh; height: 100dvh; max-height: none; border-radius: 0;
-  padding-top: calc(13px + var(--safe-top, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-top: calc(13px + var(--safe-top-ui, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: max(16px, var(--safe-x)); padding-right: max(16px, var(--safe-x));
 }
 .scr-sqlc-body { gap: 8px; padding-bottom: 12px; }
 .scr-sqlc-input {
@@ -5906,7 +5914,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-modal.scr-wpad-modal { max-width: 1120px; height: min(86vh, 900px); height: min(86dvh, 900px); }
 .scr-modal.scr-wpad-modal.is-full {
   left: 0; top: 0; transform: none; width: 100vw; max-width: none; height: 100vh; height: 100dvh; max-height: none; border-radius: 0;
-  padding-top: calc(13px + var(--safe-top, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-top: calc(13px + var(--safe-top-ui, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: max(16px, var(--safe-x)); padding-right: max(16px, var(--safe-x));
 }
 .scr-wpad-body { gap: 8px; padding-bottom: 12px; }
 .scr-wpad-body .scr-line-tabs { margin: 0; }
