@@ -311,7 +311,8 @@ export function WpaHelp() {
       text={(
         <span className="scr-sg-help-list">
           {/* ★ 머리(2026-11-13, 요청: "WPA(Win P... 이렇게 풀어쓴거부터 시작하고 아랫줄에 간단 설명 하고 구분선 넣고 그 아랫줄부터 상세 설명") */}
-          <b className="scr-sg-help-title">WPA(Win Probability Added)</b>
+          {/* 한글 이름까지(2026-11-13, 요청: "WPA(Win Probability Added, 승리 확률 기여도) · 한글 이름도 정확히 명시하기 툴팁에") */}
+          <b className="scr-sg-help-title">WPA(Win Probability Added, 승리 확률 기여도)</b>
           <span>내 플레이로 우리 편이 이길 확률이 얼마나 올랐는지예요.</span>
           <span>팽팽할 때 한 플레이일수록 크게 쳐요.</span>
           <span><b>인분</b> — 1.00이면 평균만큼 한 거예요. 1.20이면 20% 더, 0.80이면 20% 덜이에요. 판이 적으면 1에 가깝게 나와요.</span>
