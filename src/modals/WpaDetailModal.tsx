@@ -11,7 +11,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { useLockBodyScroll } from "../utils/bodyScrollLock";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { memberMatchesTerm, normalizeSearchText } from "../utils/memberSearch";
-import { currentMonthValue, MONTH_PERIOD_RE } from "../utils/date";
+import { currentMonthValue, MONTH_PERIOD_RE, todayStr } from "../utils/date";
 import { cx } from "../utils/format";
 import { WpaHelp } from "../pages/stats/StatGrid";
 import { combinedTier } from "../pages/stats/StatTrend";
@@ -29,6 +29,8 @@ import type { BaseRace, MemberStats, MemberStatsEntry, TierEntry } from "../type
    머리를 누르면 그 칸으로 정렬(한 번 더 누르면 거꾸로) · 처음은 티어인분 높은 순. */
 
 type RaceTab = "all" | BaseRace;
+/* ★ 날짜 지정(2026-11-13, 요청: "관리자 wpa 창에서는 날짜를 정확히 지정해서 볼수있게") — 통계의 기간 셋(달 · 전체기간 · 오늘)에 더해 시작 · 끝 날짜(끝 날 포함). */
+const PERIOD_CUSTOM = "custom";
 const RACE_TABS: { value: RaceTab; label: string }[] = [
   { value: "all", label: "전체" }, { value: "테란", label: "테란" }, { value: "프로토스", label: "프로토스" }, { value: "저그", label: "저그" },
 ];
@@ -79,18 +81,24 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
   const [users, setUsers] = useState<string[]>([]);
   const [sort, setSort] = useState<{ key: ColKey; asc: boolean }>({ key: "inbun", asc: false });
   const todayFrom = useTodayFrom(period === PERIOD_TODAY);
+  const [dFrom, setDFrom] = useState(() => `${todayStr().slice(0, 8)}01`);   // 날짜 지정(위 ★) — 처음은 이번 달 1일 ~ 오늘
+  const [dTo, setDTo] = useState(() => todayStr());
 
   /* 서버엔 늘 클랜원 전부 — 유저 칩 · 종족 탭은 받은 줄을 거르기만 한다(바꿔도 다시 안 불러온다 · 통계 화면과 같은 규칙). */
-  const queryKey = JSON.stringify({ ids: activeMembers.map((m) => m.id).sort(), period, day: period === PERIOD_TODAY ? todayFrom : "", size, map: mapTab });
+  const custom = period === PERIOD_CUSTOM;
+  const queryKey = JSON.stringify({
+    ids: activeMembers.map((m) => m.id).sort(), period, day: period === PERIOD_TODAY ? todayFrom : "", size, map: mapTab,
+    from: custom ? dFrom : "", to: custom ? dTo : "",
+  });
   const debouncedKey = useDebouncedValue(queryKey, 300);
   const [data, setData] = useState<{ key: string; byId: Record<string, MemberStatsEntry> } | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
-    const q = JSON.parse(debouncedKey) as { ids: string[]; period: string; day: string; size: SizeTab; map: MapTab };
+    const q = JSON.parse(debouncedKey) as { ids: string[]; period: string; day: string; size: SizeTab; map: MapTab; from: string; to: string };
     if (q.ids.length === 0) { setData({ key: debouncedKey, byId: {} }); return undefined; }
     let cancelled = false;
     setError("");
-    const r = statRange(q.period, q.day);
+    const r = q.period === PERIOD_CUSTOM ? { from: q.from, to: q.to } : statRange(q.period, q.day);
     api.getGameResultStats({
       memberIds: q.ids, dateFrom: r.from, dateTo: r.to, race: "all",
       matchType: q.size === "1" ? SOLO_TYPE : CLAN_TYPE,
@@ -174,6 +182,17 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
               aria-pressed={period === PERIOD_ALL} onClick={() => setPeriod(PERIOD_ALL)}>전체기간</button>
             <button type="button" className={cx("scr-compact-rect-btn", period !== PERIOD_TODAY && "is-secondary")}
               aria-pressed={period === PERIOD_TODAY} onClick={() => setPeriod(PERIOD_TODAY)} title="정오부터 다음 날 정오 전까지">오늘</button>
+            <button type="button" className={cx("scr-compact-rect-btn", !custom && "is-secondary")}
+              aria-pressed={custom} onClick={() => setPeriod(PERIOD_CUSTOM)} title="시작 · 끝 날짜를 골라 그 사이(끝 날 포함) 판만">날짜 지정</button>
+            {custom && (
+              <span className="scr-wpad-dates">
+                <input type="date" className="scr-input scr-input-sm" aria-label="시작 날짜" value={dFrom} max={todayStr()}
+                  onChange={(e) => { const v = e.target.value; if (v) { setDFrom(v); if (v > dTo) setDTo(v); } }} />
+                <span aria-hidden>~</span>
+                <input type="date" className="scr-input scr-input-sm" aria-label="끝 날짜" value={dTo} max={todayStr()}
+                  onChange={(e) => { const v = e.target.value; if (v) { setDTo(v); if (v < dFrom) setDFrom(v); } }} />
+              </span>
+            )}
             <WpaHelp />
           </div>
           <div className="scr-line-tabs scr-stats-size-tabs" role="tablist" aria-label="팀 규모">

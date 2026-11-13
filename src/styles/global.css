@@ -5902,6 +5902,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-wpad-body .scr-line-tabs { margin: 0; }
 .scr-wpad-period { flex-wrap: wrap; }
 .scr-wpad-period .scr-sg-wpa-help { margin-left: auto; }
+.scr-wpad-dates { display: inline-flex; align-items: center; gap: 4px; }   /* 날짜 지정(WpaDetailModal ★) — 시작 ~ 끝 */
+.scr-wpad-dates .scr-input { height: 24px; padding: 0 6px; }
 .scr-wpad-search { margin: 0; }
 .scr-wpad-meta { min-height: 16px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* 스크롤은 표 칸에서만(가로 · 세로) — 낮은 화면(폰 가로 등)에서 조건 칸에 밀려 표가 납작해지지 않게 바닥 높이를 두고, 그보다 낮으면 팝업 몸이 통째로 내려간다. */
