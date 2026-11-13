@@ -308,7 +308,11 @@ export function WpaHelp() {
       hover trigger="WPA란?" triggerClassName="scr-infotip scr-infotip-text scr-sg-help-btn scr-sg-wpa-help" bubbleClassName="scr-sg-help"
       text={(
         <span className="scr-sg-help-list">
-          <span><b>WPA</b> — 내 플레이로 우리 편이 이길 확률이 얼마나 올랐는지예요. 팽팽할 때 한 플레이일수록 크게 쳐요.</span>
+          {/* ★ 머리(2026-11-13, 요청: "WPA(Win P... 이렇게 풀어쓴거부터 시작하고 아랫줄에 간단 설명 하고 구분선 넣고 그 아랫줄부터 상세 설명") */}
+          <b className="scr-sg-help-title">WPA(Win Probability Added)</b>
+          <span>내 플레이로 우리 편이 이길 확률이 얼마나 올랐는지예요.</span>
+          <span className="scr-sg-help-sep" aria-hidden="true" />
+          <span>팽팽할 때 한 플레이일수록 크게 쳐요.</span>
           <span><b>인분</b> — 1.00이면 평균만큼 한 거예요. 1.20이면 20% 더, 0.80이면 20% 덜이에요. 판이 적으면 1에 가깝게 나와요.</span>
           <span><b>공격</b> 상대 병력 · 일꾼 · 건물을 잡으면 올라요.</span>
           <span><b>방어</b> 내 걸 잃으면 내려가요. 덜 잃을수록 좋아요.</span>

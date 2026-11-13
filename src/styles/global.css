@@ -5303,6 +5303,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-help b.is-dealt { color: var(--win, #16a34a); }
 .scr-sg-help b.is-taken { color: var(--loss, #dc2626); }
 .scr-sg-help-list { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.4; }
+/* "WPA란?" 머리(WpaHelp · 2026-11-13, 요청: "풀어쓴 거부터 시작 · 아랫줄 간단 설명 · 구분선 · 그 아래 상세") — 풀어 쓴 이름은 한 단계 크게 · 구분선은 표 그림과 같은 옅은 줄. */
+.scr-sg-help-list .scr-sg-help-title { font-size: 13px; }
+.scr-sg-help-sep { display: block; height: 0; border-top: 1px solid var(--line-faint); margin: 3px 0; }
 /* 폰 표 머리 글자 fs-11 → 13px(2026-10-22, 요청: "헤더 폰트 키우기"). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-c { font-size: 13px; }
 /* 좁은 칸 머리(APM · 데미지 · 종족)는 11px(데미지가 38px 칸에 들게) · 종족은 10px · 자간 좁게(프로토스가 36px 칸에 들게). */
