@@ -26,7 +26,8 @@ import type { BaseRace, MemberStats, MemberStatsEntry, TierEntry } from "../type
    종족을 고르면 그 종족으로 뛴 판(byRace · 종족 티어 tierByRace)만 — 그 판이 없는 사람은 빠진다.
    WPA 항목은 통계 WPA 팝업과 같은 인분(1 = 그 조회 판 평균 · sg-api tier._wpa_inbun) · 전체는 티어에 드는 WPA 배수(cbt · 인분) — 칸에 얹으면 판당 %p.
    ★ 장악은 걷었다(같은 날, 지적: "제어판에서 보니까 장악이 확실히 이상한데 · 약한 사람들이 장악이 높게 나와" → "장악은 그럼 화면과 덤퍼 등에서도 빼야겠네") — 항목 넷 + 전체.
-   머리를 누르면 그 칸으로 정렬(한 번 더 누르면 거꾸로) · 처음은 티어인분 높은 순. */
+   머리를 누르면 그 칸으로 정렬(한 번 더 누르면 거꾸로) · 처음은 WPA 전체 높은 순.
+   ★ 티어 · 티어인분 칸은 걷었다(같은 날, 요청: "제어판 WPA에서 티어랑 티어인분컬럼은 제거") — WPA 만 본다. */
 
 type RaceTab = "all" | BaseRace;
 /* ★ 날짜 지정(2026-11-13, 요청: "관리자 wpa 창에서는 날짜를 정확히 지정해서 볼수있게") — 통계의 기간 셋(달 · 전체기간 · 오늘)에 더해 시작 · 끝 날짜(끝 날 포함). */
@@ -44,11 +45,10 @@ const PARTS = [
 ] as const;
 const partAt = (arr: number[] | null | undefined, i: number): number | undefined => (arr ? arr[i === 3 && arr.length >= 5 ? 4 : i] : undefined);
 
-type ColKey = "name" | "plays" | "rate" | "wpa0" | "wpa1" | "wpa2" | "wpa3" | "wpa" | "apm" | "eapm" | "tier" | "inbun";
+type ColKey = "name" | "plays" | "rate" | "wpa0" | "wpa1" | "wpa2" | "wpa3" | "wpa" | "apm" | "eapm";
 interface Row { id: string; name: string; s: MemberStats; t: TierEntry | null }
 
 const num = (v: number | null | undefined): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
-const inbunOf = (t: TierEntry | null): number | null => num(t?.stdInbun ?? t?.inbun);
 function valueOf(r: Row, k: ColKey): number | string | null {
   switch (k) {
     case "name": return r.name;
@@ -57,8 +57,6 @@ function valueOf(r: Row, k: ColKey): number | string | null {
     case "wpa": return num(r.t?.cbt);
     case "apm": return num(r.s.avgApm);
     case "eapm": return num(r.s.avgEapm);
-    case "tier": return num(r.t?.tier);
-    case "inbun": return inbunOf(r.t);
     default: return num(partAt(r.t?.wpaInbun, PARTS[Number(k.slice(3))].inbun));
   }
 }
@@ -79,7 +77,7 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
   const [mapTab, setMapTab] = useState<MapTab>(MAP_DEFAULT);
   const [race, setRace] = useState<RaceTab>("all");
   const [users, setUsers] = useState<string[]>([]);
-  const [sort, setSort] = useState<{ key: ColKey; asc: boolean }>({ key: "inbun", asc: false });
+  const [sort, setSort] = useState<{ key: ColKey; asc: boolean }>({ key: "wpa", asc: false });
   const todayFrom = useTodayFrom(period === PERIOD_TODAY);
   const [dFrom, setDFrom] = useState(() => `${todayStr().slice(0, 8)}01`);   // 날짜 지정(위 ★) — 처음은 이번 달 1일 ~ 오늘
   const [dTo, setDTo] = useState(() => todayStr());
@@ -144,15 +142,15 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
       } else if (av !== bv) {
         return dir * (av - bv);
       }
-      /* 같으면 티어인분 높은 순 → 판 수 많은 순 → 이름 */
-      const ai = inbunOf(a.t); const bi = inbunOf(b.t);
+      /* 같으면 WPA 전체 높은 순 → 판 수 많은 순 → 이름 */
+      const ai = num(a.t?.cbt); const bi = num(b.t?.cbt);
       if (ai !== bi) return ai === null ? 1 : bi === null ? -1 : bi - ai;
       return b.s.plays - a.s.plays || a.name.localeCompare(b.name);
     });
   }, [data, users, activeMembers, race, sort]);
 
-  /* 머리 누르기 — 같은 칸이면 거꾸로 · 다른 칸이면 그 칸의 처음 차례(티어는 1티어부터 · 이름은 가나다 · 나머지는 큰 값부터). */
-  const pick = (key: ColKey): void => setSort((cur) => (cur.key === key ? { key, asc: !cur.asc } : { key, asc: key === "tier" || key === "name" }));
+  /* 머리 누르기 — 같은 칸이면 거꾸로 · 다른 칸이면 그 칸의 처음 차례(이름은 가나다 · 나머지는 큰 값부터). */
+  const pick = (key: ColKey): void => setSort((cur) => (cur.key === key ? { key, asc: !cur.asc } : { key, asc: key === "name" }));
   const head = (k: ColKey, label: ReactNode, o: { title?: string; className?: string; rowSpan?: number } = {}) => (
     <th key={k} rowSpan={o.rowSpan} className={cx("is-sort", sort.key === k && "is-on", o.className)} title={o.title}
       aria-sort={sort.key === k ? (sort.asc ? "ascending" : "descending") : "none"}>
@@ -236,8 +234,6 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
                     <th colSpan={PARTS.length + 1} className="is-group" title="승리 확률 기여 — 항목은 인분(1 = 이 조회 판 평균) · 칸에 얹으면 판당 %p">WPA</th>
                     {head("apm", "APM", { rowSpan: 2 })}
                     {head("eapm", "EAPM", { rowSpan: 2 })}
-                    {head("tier", "티어", { rowSpan: 2 })}
-                    {head("inbun", "티어인분", { rowSpan: 2, title: "티어의 잣대 — WPA 전체 × 승패 보정(인분)" })}
                   </tr>
                   <tr>
                     {PARTS.map((p, i) => head(`wpa${i}` as ColKey, p.label, { title: `${p.label} — ${p.tip}` }))}
@@ -256,8 +252,6 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
                       <td className="is-wpa-total" title={pctTip(r.t?.wpa)}>{f2(r.t?.cbt)}</td>
                       <td>{fInt(r.s.avgApm)}</td>
                       <td>{fInt(r.s.avgEapm)}</td>
-                      <td>{typeof r.t?.tier === "number" ? <b className={cx("scr-sg-tier", `is-t${Math.min(r.t.tier, 4)}`)}>{r.t.tier}</b> : "-"}</td>
-                      <td>{f2(inbunOf(r.t))}</td>
                     </tr>
                   ))}
                 </tbody>
