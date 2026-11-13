@@ -95,7 +95,7 @@ export default function ClanStatsScreen() {
   const members = useAppStore((s) => s.members);
   const isMobile = useIsMobile();
   useEffect(() => {
-    if (ACCURACY_NOTICE) showToast("지금 정확도를 높이는 작업 중이라 수치가 바뀔 수 있어요.", { kind: "info", ms: 10_000, faint: true });
+    if (ACCURACY_NOTICE) showToast("지금 정확도를 높이는 작업 중이라 수치가 바뀔 수 있어요.", { kind: "info", ms: 10_000, faint: true, bottom: true });
   }, []);
   /* 유저 검색 = 칩 입력(2026-10-21, 요청: "통계 검색창 칩형태로 변경(게임목록처럼)") — 칩을 담거나 빼는 순간 걸린다 · 주소 u= 는 칩 배열(JSON).
      옛 한 줄 검색어(띄어쓰기로 이은 글)로 들어오면 낱말마다 칩 하나로 읽는다. */

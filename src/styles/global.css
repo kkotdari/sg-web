@@ -4511,6 +4511,11 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 @media (min-width: 961px) and (hover: hover) {
   .scr-toastwrap { left: calc(50% + var(--rail-w) / 2); }
 }
+/* 아래쪽 토스트(Toast bottom · 2026-11-13, 요청: "통계 임시 토스트 아래쪽에 뜨게") — 폰은 아래 탭 바 위 · PC 는 바닥에서 32px. */
+.scr-toastwrap.is-bottom { top: auto; bottom: 32px; transform: translateX(-50%); }
+@media (max-width: 960px) {
+  .scr-toastwrap.is-bottom { bottom: calc(var(--mobile-footer-h, 69px) + var(--scr-float-bottom, 6px) + 12px); }
+}
 .scr-toast {
   pointer-events: auto; cursor: pointer;
   display: flex; align-items: center; gap: 8px;

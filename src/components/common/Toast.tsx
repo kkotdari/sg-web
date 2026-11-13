@@ -13,6 +13,8 @@ export type ToastItem = {
   at?: { x: number; y: number };
   /** 반투명(뒤가 비친다 · 오래 떠 있는 알림용 — 2026-11-13 통계 정확도 작업 알림). */
   faint?: boolean;
+  /** 화면 아래쪽에 띄운다(가운데 대신 · 2026-11-13 통계 정확도 작업 알림 — 요청: "아래쪽에 뜨게"). */
+  bottom?: boolean;
 };
 
 const MAX = 3;
@@ -36,7 +38,7 @@ function drop(id: number): void {
 }
 
 export function showToast(
-  text: string, opts?: { kind?: ToastKind; ms?: number; at?: { x: number; y: number }; faint?: boolean },
+  text: string, opts?: { kind?: ToastKind; ms?: number; at?: { x: number; y: number }; faint?: boolean; bottom?: boolean },
 ): number {
   const kind = opts?.kind ?? "info";
   const ms = Math.max(600, opts?.ms ?? DEFAULT_MS);
@@ -47,7 +49,7 @@ export function showToast(
   }
   seq += 1;
   const id = seq;
-  items = [...items, { id, text, kind, ms, at: opts?.at, faint: opts?.faint }].slice(-MAX);
+  items = [...items, { id, text, kind, ms, at: opts?.at, faint: opts?.faint, bottom: opts?.bottom }].slice(-MAX);
   emit();
   window.setTimeout(() => drop(id), ms);
   return id;
@@ -65,26 +67,34 @@ export default function ToastHost(): React.ReactElement | null {
     return () => { listeners.delete(setList); };
   }, []);
   if (list.length === 0) return null;
-  const at = [...list].reverse().find((x) => x.at)?.at;
+  const mid = list.filter((x) => !x.bottom);
+  const low = list.filter((x) => x.bottom);
+  const at = [...mid].reverse().find((x) => x.at)?.at;
+  const card = (it: ToastItem) => {
+    const Icon = ICON[it.kind];
+    return (
+      <div
+        key={it.id}
+        className={`scr-toast scr-toast-${it.kind}${it.faint ? " is-faint" : ""}${it.out ? " is-out" : ""}`}
+        onClick={() => drop(it.id)}
+      >
+        <Icon size={16} className="scr-toast-icon" aria-hidden />
+        <span className="scr-toast-text">{it.text}</span>
+      </div>
+    );
+  };
   return createPortal(
-    <div
-      className="scr-toastwrap" role="status" aria-live="polite"
-      style={at ? { left: `${Math.round(at.x)}px`, top: `${Math.round(at.y)}px` } : undefined}
-    >
-      {list.map((it) => {
-        const Icon = ICON[it.kind];
-        return (
-          <div
-            key={it.id}
-            className={`scr-toast scr-toast-${it.kind}${it.faint ? " is-faint" : ""}${it.out ? " is-out" : ""}`}
-            onClick={() => drop(it.id)}
-          >
-            <Icon size={16} className="scr-toast-icon" aria-hidden />
-            <span className="scr-toast-text">{it.text}</span>
-          </div>
-        );
-      })}
-    </div>,
+    <>
+      {mid.length > 0 && (
+        <div
+          className="scr-toastwrap" role="status" aria-live="polite"
+          style={at ? { left: `${Math.round(at.x)}px`, top: `${Math.round(at.y)}px` } : undefined}
+        >
+          {mid.map(card)}
+        </div>
+      )}
+      {low.length > 0 && <div className="scr-toastwrap is-bottom" role="status" aria-live="polite">{low.map(card)}</div>}
+    </>,
     document.body,
   );
 }
