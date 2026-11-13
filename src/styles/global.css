@@ -5876,7 +5876,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sqlc-write { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); cursor: pointer; }
 .scr-sqlc-meta { flex: 1 1 auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .scr-sqlc-bar .scr-rect-btn { display: inline-flex; align-items: center; gap: 4px; }
-.scr-sqlc-out { flex: 1 1 auto; min-height: 0; margin: 0; overflow: auto; user-select: text; -webkit-user-select: text; }
+/* 두 겹 스크롤(SqlConsoleModal ★ 한 번에 한 방향만) — 바깥은 가로만 · 안은 세로만(바깥 높이로 늘림 · 폭은 표 폭) · 둘 다 튕김 없음. */
+.scr-sqlc-out { display: flex; flex: 1 1 auto; min-height: 0; margin: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior: none; user-select: text; -webkit-user-select: text; }
+.scr-sqlc-out-v { flex: none; min-width: 100%; overflow-x: hidden; overflow-y: auto; overscroll-behavior: none; }
 /* md 뷰어 표(GitHub 모양 — 칸 테두리 · 머리 굵게 · 줄무늬) · 칸은 줄바꿈 안 함(가로 스크롤). */
 .scr-sqlc-table { border-collapse: collapse; font-size: 13px; line-height: 1.5; color: var(--text); font-variant-numeric: tabular-nums; }
 .scr-sqlc-table th, .scr-sqlc-table td { border: 1px solid var(--line-faint); padding: 5px 12px; text-align: left; white-space: nowrap; max-width: 480px; overflow: hidden; text-overflow: ellipsis; }
@@ -5898,7 +5900,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-wpad-search { margin: 0; }
 .scr-wpad-meta { min-height: 16px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* 스크롤은 표 칸에서만(가로 · 세로) — 낮은 화면(폰 가로 등)에서 조건 칸에 밀려 표가 납작해지지 않게 바닥 높이를 두고, 그보다 낮으면 팝업 몸이 통째로 내려간다. */
-.scr-wpad-out { flex: 1 1 auto; min-height: 240px; overflow: auto; overscroll-behavior: contain; transition: opacity 0.15s; }
+.scr-wpad-out { flex: 1 1 auto; min-height: 240px; overflow: auto; overscroll-behavior: none; transition: opacity 0.15s; }   /* 튕김 없음(SQL 결과창과 같게) */
 .scr-wpad-out.is-busy { opacity: 0.55; }
 /* 선(2026-11-13, 지적: "제어판 wpa창에 표 선이 좀 이상해서 정리 필요" — 옛: 아래 선만 + WPA 묶음 양옆만 진한 세로선(머리 'WPA' 칸은 오른 선이 빠져 어긋남) ·
    붙박이 이름 칸 경계 없음) — SQL 콘솔 표처럼 칸마다 고른 격자: 오른 · 아래 선 + 첫 머리 줄은 위 · 이름 칸은 왼 선. 선이 칸에 붙어 붙박이 칸과 같이 움직이고 겹선이 없다. */

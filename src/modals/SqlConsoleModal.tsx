@@ -111,7 +111,10 @@ export default function SqlConsoleModal({ onClose }: { onClose: () => void }) {
             ? <p className="scr-sqlc-meta">{md}</p>
             : (
               /* md 표를 보통 md 뷰어 모양으로 그린다(2026-11-13, 요청: "md 형식이 표준 md 뷰잉 양식으로 변환되어") — 복사 단추는 md 글 그대로. */
+              /* ★ 한 번에 한 방향만(2026-11-13, 요청: "sql 결과창 드래그 세로 가로 동시에 안되게 · 바운스도 안되게") — 바깥 겹은 가로만 · 안 겹은 세로만 민다:
+                 손가락이 처음 민 쪽의 겹이 그 끌기를 맡아 대각선으로 함께 밀리지 않는다(관성은 그대로) · 두 겹 다 튕김 없음(overscroll-behavior none) · 머리 붙박이는 안 겹 기준. */
               <div className="scr-sqlc-out">
+                <div className="scr-sqlc-out-v">
                 <table className="scr-sqlc-table">
                   <thead><tr>{res.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
                   <tbody>
@@ -120,6 +123,7 @@ export default function SqlConsoleModal({ onClose }: { onClose: () => void }) {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             ))}
         </div>
