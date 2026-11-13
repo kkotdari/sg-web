@@ -191,7 +191,8 @@ function wpaFacts(t: TierEntry | null | undefined): TrendFact[] {
   if (typeof atk === "number") out.push({ label: "공격", value: ib(atk) });
   if (typeof jn === "number") out.push({ label: "합류", value: ib(jn) });
   /* ★ 장악 · 정찰(2026-11-13, 지적: "비전투성 병력 운용 · 정찰의 효과가 누락" · "WPA 팝업에 장악 정찰도") — 한 자리를 지켜 막은 정도 · 상대 건물을 본 정도(sg-api wpa ★ · 덤퍼 ##ZONE##).
-     새 덤퍼로 다시 분석한 달만 값이 움직인다(옛 판뿐이면 1.00 언저리). */
+     ★ 장악은 상대 쪽 절반에서 지킨 것만(같은 날 "무조건 상대 본진 앞에 둔다고 좋은 게 아닌 게 그사이 내 기지는 비어서 견제나 드랍에 취약해" — sg-api wpa ★ 공격 · 수비 장악:
+     이기는 데 도움이 됐는지를 그 달 데이터로 재 오르거나 내린다 · 우리 쪽 수비는 승리 확률 모형에만). 공격 장악을 가르는 새 덤퍼로 다시 분석한 달만 값이 움직인다(옛 판뿐이면 1.00 언저리). */
   if (typeof ctl === "number") out.push({ label: "장악", value: ib(ctl) });
   if (typeof sct === "number") out.push({ label: "정찰", value: ib(sct) });
   /* 총은 인분(같은 날 "총 몇인분") — 티어에 드는 WPA 배수(sg-api cbt · 셈 표 WPA 줄 배수 = 티어 조회 칸 값) · 없으면 판당 승리 확률 기여(%p). */
@@ -312,7 +313,7 @@ export function WpaHelp() {
           <span><b>공격</b> 상대 병력 · 일꾼 · 건물을 잡으면 올라요.</span>
           <span><b>방어</b> 내 걸 잃으면 내려가요. 덜 잃을수록 좋아요.</span>
           <span><b>합류</b> 우리 편이 머릿수에서 밀려 싸울 때, 비어 있던 내가 안 가면 내려가요.</span>
-          <span><b>장악</b> 상대 앞에서 한 자리를 1분 넘게 지키면 올라요. 밀려나면 내려가요. 본진에만 있으면 0이에요.</span>
+          <span><b>장악</b> 상대 쪽에서 한 자리를 1분 넘게 지키면, 그게 이기는 데 도움이 됐는지에 따라 오르거나 내려가요. 우리 쪽에서 지킨 건 안 쳐요.</span>
           <span><b>정찰</b> 상대 건물을 보고 있으면 올라요.</span>
           <span>항목 인분을 다 곱하면 WPA 인분이 돼요.</span>
         </span>
