@@ -38,7 +38,7 @@ const RACE_TABS: { value: RaceTab; label: string }[] = [
 /** WPA 항목 넷 — inbun = wpaInbun [방어 · 공격 · 합류 · 정찰] 자리 · pct = wpaParts(%p) [공격 · 생존 · 합류 · 정찰] 자리.
  *  옛 다섯짜리 응답(… · 장악 · 정찰)이면 정찰은 한 칸 뒤(partAt — sg-api 와 배포 때가 어긋나도 정찰 자리가 맞게). */
 const PARTS = [
-  { label: "방어", inbun: 0, pct: 1, tip: "내 걸 잃으면 내려가요. 덜 잃을수록 좋아요." },
+  { label: "방어", inbun: 0, pct: 1, tip: "싸운 만큼에 비해 덜 잃을수록 올라요. 안 싸워서 덜 잃은 건 안 쳐요." },
   { label: "공격", inbun: 1, pct: 0, tip: "상대 병력 · 일꾼 · 건물을 잡으면 올라요." },
   { label: "합류", inbun: 2, pct: 2, tip: "우리 편이 머릿수에서 밀려 싸울 때, 비어 있던 내가 안 가면 내려가요." },
   { label: "정찰", inbun: 3, pct: 3, tip: "상대 건물을 보고 있으면 올라요." },

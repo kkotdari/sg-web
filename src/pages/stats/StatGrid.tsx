@@ -319,7 +319,7 @@ export function WpaHelp() {
           <span>항목 인분을 다 곱하면 WPA 인분이 돼요.</span>
           <span className="scr-sg-help-sep" aria-hidden="true" />
           <span><b>공격</b> 상대 병력 · 일꾼 · 건물을 잡으면 올라요.</span>
-          <span><b>방어</b> 내 걸 잃으면 내려가요. 덜 잃을수록 좋아요.</span>
+          <span><b>방어</b> 싸운 만큼에 비해 덜 잃을수록 올라요. 안 싸워서 덜 잃은 건 안 쳐요.</span>
           <span><b>합류</b> 우리 편이 머릿수에서 밀려 싸울 때, 비어 있던 내가 안 가면 내려가요.</span>
           <span><b>정찰</b> 상대 건물을 보고 있으면 올라요.</span>
         </span>
