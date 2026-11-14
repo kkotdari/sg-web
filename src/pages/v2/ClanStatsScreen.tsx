@@ -432,8 +432,9 @@ export default function ClanStatsScreen() {
                   <ChevronDown size={13} aria-hidden className="scr-stats-fold-chev" />
                 </button>
               )}
+              {/* 문구(2026-11-14 같은 날, 지적: "문구 수정하자 그전달만 더하는게 아니자나") — 옛 "그 달 + 전 달 기록을 합친 …" · 서버는 앞의 넉 달을 달마다 절반씩 줄여 섞는다(sg-api tier PAST_RHO). */}
               <span className="scr-stats-period-hint" title="앞의 넉 달 기록을 한 달 전 ½ · 두 달 전 ¼ … 무게로 같이 세요(판 수 · 승률은 그 달 것 그대로)">
-                그 달 + 전 달 기록을 합친 실제 실력을 보여줘요
+                그 달 + 지난 몇 달 기록을 합친 실제 실력을 보여줘요
               </span>
             </div>
             <div className={cx("scr-stats-period-row", dayOn && "is-on")}>
