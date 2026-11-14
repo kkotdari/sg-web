@@ -18,6 +18,8 @@ interface MonthCalendarProps {
   range?: boolean;
   /** 달이 아닌 기간(밖의 [전체기간]·[오늘])이 켜진 동안 — 단추를 테두리 꼴로 · 글자 "월 선택"(통계 · 2026-10-26 배타 기간 단추). */
   idle?: boolean;
+  /** 달력 아이콘만 있는 테두리 단추(통계 · 2026-11-14, 요청: "달력만 버튼 월은 텍스트로") — 달 글자는 밖에서 따로 그린다. */
+  iconOnly?: boolean;
 }
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -25,7 +27,7 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const yearOf = (m: string) => Number(m.slice(0, 4));
 
 export default function MonthCalendar({
-  value, onChange, minMonth, maxMonth, allValue, allLabel = "전체 기간", className, range = false, idle = false,
+  value, onChange, minMonth, maxMonth, allValue, allLabel = "전체 기간", className, range = false, idle = false, iconOnly = false,
 }: MonthCalendarProps) {
   const [open, setOpen] = useState(false);
   const isAll = allValue !== undefined && value === allValue;
@@ -83,13 +85,13 @@ export default function MonthCalendar({
     <div className={cx("scr-month-cal", className)} ref={ref}>
       <button
         type="button"
-        className={cx("scr-month-cal-trigger scr-compact-rect-btn", open && "scr-month-cal-open", idle && "is-secondary")}
+        className={cx("scr-month-cal-trigger scr-compact-rect-btn", open && "scr-month-cal-open", (idle || iconOnly) && "is-secondary", iconOnly && "scr-month-cal-icon")}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
-        aria-haspopup="dialog" aria-expanded={open}
+        aria-haspopup="dialog" aria-expanded={open} aria-label={iconOnly ? "달 고르기" : undefined} title={iconOnly ? "달 고르기" : undefined}
       >
         <CalendarDays size={14} aria-hidden />
-        <span>{idle ? "월 선택" : isAll ? allLabel : monthPeriodLabel(value)}</span>
+        {!iconOnly && <span>{idle ? "월 선택" : isAll ? allLabel : monthPeriodLabel(value)}</span>}
       </button>
       {open && createPortal(
         <div className="scr-month-cal-pop" ref={popRef} role="dialog" aria-label="기간 고르기">

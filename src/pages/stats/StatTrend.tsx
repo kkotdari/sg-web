@@ -110,8 +110,9 @@ const x2 = (v: number) => v.toFixed(2);
 /* ★★ 2026-11-12 WPA(sg-api wpa.py · 요청: "WPA 적용" · "전투+참전+생산 다 합친게 WPA") — 세 칸(교환 이득 · 교전 참여 · 생산)이 WPA 한 칸이 됐다. 티어 셈 표도 'WPA' 한 줄. */
 export const CALC_NAME = { wpa: "WPA" } as const;
 /** 셈 표 줄 이름 → 팝업 글자(2026-11-13 쉽게). */
-/* ★ 지난 달(2026-11-14 · sg-api tier PAST_RHO) — 한 달 조회는 앞 달 판을 달마다 절반씩 줄여 같이 센다("그 사람의 지금 실력"). WPA 줄 = 그 달 판만의 배수 ·
-   지난 달 줄 = 앞 달을 섞어 달라진 만큼 · 둘의 곱이 인분. 승패 줄은 서버가 승패 보정을 끄며 안 온다(옛 응답이면 그대로 보인다). */
+/* ★ 지난 달(2026-11-14 · sg-api tier PAST_RHO) — 한 달 조회(통계의 월 선택)는 앞 달 판을 달마다 절반씩 줄여 같이 센다("그 사람의 지금 실력").
+   같은 날 밤부터 WPA 줄이 곧 **섞은 값**이다(요청: "월 선택 → wpa 를 아예 이번달+전달 합친걸로" — 표의 WPA 칸 · WPA 팝업의 총 · 판당 점수 · 몫도) · 날짜 지정은 그 기간 판만.
+   낮의 '지난 달' 줄(WPA 줄 = 그 달 판만 · 지난 달 줄 = 섞어 달라진 만큼 · 둘의 곱이 인분)은 서버가 안 보낸다 — 이름표는 옛 응답용으로 남긴다. 승패 줄도 같다(서버가 승패 보정을 껐다). */
 const CALC_LABEL: Record<string, string> = { WPA: "WPA 점수", 승패: "승패 점수", "지난 달": "지난 달 반영" };
 export type CalcKey = keyof typeof CALC_NAME;
 export const calcRowOf = (t: TierEntry | null | undefined, k: CalcKey): TierCalcRow | null => t?.calc?.find((r) => r.name === CALC_NAME[k]) ?? null;

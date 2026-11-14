@@ -1,15 +1,15 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronsLeft, ChevronsRight, RotateCcw, Users, Wrench } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw, Users, Wrench } from "lucide-react";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import DayRangePicker from "../../components/common/DayRangePicker";
-import { currentMonthValue, MONTH_PERIOD_RE } from "../../utils/date";
+import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodLabel, shiftMonthValue } from "../../utils/date";
 import {
-  CLAN_TYPE, DAY_PERIOD_RE, dayPeriodLabel, MAP_DEFAULT, MAP_TABS, mapTabOf, PERIOD_ALL, PERIOD_TODAY, SIZE_TABS, sizeTabOf, SOLO_TYPE, statRange, todayDay, useTodayFrom,
+  CLAN_TYPE, DAY_PERIOD_RE, MAP_DEFAULT, MAP_TABS, mapTabOf, monthOfPeriod, PERIOD_TODAY, SIZE_TABS, sizeTabOf, SOLO_TYPE, statRange, todayDay, useTodayFrom,
 } from "../stats/statQuery";
 import StatGrid, { CompGrid, WpaHelp, type StatSortKey } from "../stats/StatGrid";
 import { calcRowOf, combinedTier, statTrendMonths, wpaOf, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
@@ -139,7 +139,11 @@ export default function ClanStatsScreen() {
   }, [activeMembers, users]);
 
   /* 기간 기본값 = 이번 달(2026-10-28, 요청: "조회 최근달로 변경" · 같은 날 "최근 3개월로" → "최근 2개월로"를 거쳐 돌아옴). */
-  const [period, setPeriod] = useUrlState("period", currentMonthValue());
+  /* ★ 기간 두 갈래(2026-11-14 · statQuery monthOfPeriod ★) — 주소의 period 는 달 하나("YYYY-MM") 아니면 날짜 지정('오늘' · 날~날). 옛 주소(전체 기간 · 여러 달)는
+     달 하나로 읽어(periodRaw → period) 조회 · 열쇠 · 그래프가 다 그 달을 본다. */
+  const [periodRaw, setPeriod] = useUrlState("period", currentMonthValue());
+  const monthSel = monthOfPeriod(periodRaw);
+  const period = monthSel ?? periodRaw;
   const [sizeRaw, setSize] = useUrlState("size", "team");
   const size = sizeTabOf(sizeRaw);
   const [mapRaw, setMap] = useUrlState("map", MAP_DEFAULT);
@@ -167,11 +171,21 @@ export default function ClanStatsScreen() {
       `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`,
     );
   }, []);
-  const todayFrom = useTodayFrom(period === PERIOD_TODAY);
-  /* ★ 날짜 지정(2026-11-13 · statQuery DAY_PERIOD_RE ★) — 누르면 오늘([오늘] 단추는 걷었다 · 요청: "오늘 보기 버튼은 제거" → "날짜 지정의 기본값이 오늘").
+  /* ★ 날짜 지정(2026-11-13 · statQuery DAY_PERIOD_RE ★) — 기본은 오늘([오늘] 단추는 걷었다 · 요청: "오늘 보기 버튼은 제거" → "날짜 지정의 기본값이 오늘").
      오늘은 옛 PERIOD_TODAY 그대로라 정오를 넘으면 저절로 다음 날로 간다(useTodayFrom) · 날을 고르면 "YYYY-MM-DD~YYYY-MM-DD" · 오늘 하루를 다시 고르면 PERIOD_TODAY 로. */
-  const dayOn = period === PERIOD_TODAY || DAY_PERIOD_RE.test(period);
-  const [dayA, dayB] = DAY_PERIOD_RE.test(period) ? period.split("~") : [todayFrom.slice(0, 10), todayFrom.slice(0, 10)];
+  const dayOn = monthSel === null;
+  /* ★ 두 줄 · 라디오(2026-11-14, 요청: "기간 필터를 두줄로 나누고 각 앞에 라디오 버튼 추가해서 선택") — 꺼진 줄도 제 값을 기억해 보여 준다: 달 줄은 마지막에 본 달(처음엔 이번 달) ·
+     날짜 줄은 마지막에 고른 날(처음엔 오늘). 라디오를 누르면 그 줄의 값으로 켜고, 꺼진 줄의 화살표 · 달력 · 날짜 칸을 만져도 그 값으로 켠다. */
+  const [monthKeep, setMonthKeep] = useState(() => monthSel ?? currentMonthValue());
+  const [daysKeep, setDaysKeep] = useState(() => (monthSel === null ? periodRaw : PERIOD_TODAY));
+  useEffect(() => {
+    if (monthSel !== null) setMonthKeep(monthSel);
+    else setDaysKeep(periodRaw);
+  }, [monthSel, periodRaw]);
+  const month = monthSel ?? monthKeep;
+  const dayPeriod = dayOn ? period : daysKeep;
+  const todayFrom = useTodayFrom(dayPeriod === PERIOD_TODAY);
+  const [dayA, dayB] = DAY_PERIOD_RE.test(dayPeriod) ? dayPeriod.split("~") : [todayFrom.slice(0, 10), todayFrom.slice(0, 10)];
   const pickDays = (a: string, b: string): void => setPeriod(a === b && a === todayDay() ? PERIOD_TODAY : `${a}~${b}`);
   /* ★ 폰은 거르기를 접은 채로 연다(2026-11-13, 요청: "모바일에선 처음에 접은 상태로 노출(최상단은 현재의 기간 필터 한줄만 보이기)") — 접히면 기간 줄만 ·
      팀 구성하기 · 규모 탭 · 맵 탭 · 유저 칩은 [필터]를 눌러 편다. 기억하지 않는다(늘 접힌 채 연다). 기본이 아닌 거르기(규모 · 맵 · 유저)가 걸려 있으면 [필터]에 점. */
@@ -390,31 +404,47 @@ export default function ClanStatsScreen() {
           {teamBuilderBtn}
         </div>
         <div className="scr-v2-toolbar-title-row scr-stats-filter-row">
-          {/* 기간 셋은 배타(2026-10-26 · 위 PERIOD_TODAY ★) — 켜진 것만 채움 단추 · 나머지는 테두리. 달 고르기 창 안의 '전체 기간'은 밖 단추로 옮겼다.
-              [오늘]은 걷고 [날짜 지정](기본 오늘)으로(2026-11-13 · 위 dayOn ★). */}
-          <div className="scr-stats-period">
-            <MonthCalendar
-              value={MONTH_PERIOD_RE.test(period) ? period : currentMonthValue()} onChange={setPeriod}
-              maxMonth={currentMonthValue()}
-              idle={!MONTH_PERIOD_RE.test(period)}
-              range
-              className="scr-v2-toolbar-month"
-            />
-            <button type="button" className={cx("scr-compact-rect-btn", period !== PERIOD_ALL && "is-secondary")}
-              aria-pressed={period === PERIOD_ALL} onClick={() => setPeriod(PERIOD_ALL)}>전체기간</button>
-            <DayRangePicker
-              from={dayA} to={dayB} active={dayOn} label={dayPeriodLabel(dayA, dayB)} max={todayDay()}
-              onChange={pickDays} onActivate={() => setPeriod(PERIOD_TODAY)}
-            />
+          {/* ★ 기간 두 줄 · 라디오(2026-11-14, 요청: "기간 필터를 두줄로 나누고 각 앞에 라디오 버튼 추가해서 선택 · 1번째줄은 월 선택 — 달력이 월 오른쪽으로 · 달력만 버튼 월은 텍스트로 ·
+              좌우 화살표로 한달씩 점프 · 옆에 설명 · 2번째 줄은 날짜지정 라벨 옆에 인풋창 두개를 이미 보여주기 · 전체기간은 삭제 · 월 선택 → 기간이 아닌 월 한 개만")
+              — 달 줄은 그 달 + 앞 달 기록을 합친 실력(서버가 꼭 한 달 조회에만 섞는다 · statQuery monthOfPeriod ★) · 날짜 줄은 그 기간 판만.
+              옛(2026-10-26 ~ 11-13): 한 줄에 배타 단추 셋 — [월 선택 ▾(달 · 연속 달)] [전체기간] [날짜 지정 ▾(눌러 여는 창)] · 켜진 것만 채움 단추. */}
+          <div className="scr-stats-period" role="radiogroup" aria-label="기간">
+            <div className={cx("scr-stats-period-row", !dayOn && "is-on")}>
+              <label className="scr-checkbox-field scr-stats-period-pick">
+                <input type="radio" name="scr-stats-period" checked={!dayOn} onChange={() => setPeriod(month)} aria-label="월 선택" />
+              </label>
+              <div className="scr-stats-month">
+                <button type="button" className="scr-month-cal-nav" aria-label="이전 달" onClick={() => setPeriod(shiftMonthValue(month, -1))}>
+                  <ChevronLeft size={15} aria-hidden />
+                </button>
+                <span className="scr-stats-month-text">{monthPeriodLabel(month)}</span>
+                <button type="button" className="scr-month-cal-nav" aria-label="다음 달" disabled={month >= currentMonthValue()}
+                  onClick={() => setPeriod(shiftMonthValue(month, 1))}>
+                  <ChevronRight size={15} aria-hidden />
+                </button>
+                <MonthCalendar value={month} onChange={setPeriod} maxMonth={currentMonthValue()} iconOnly className="scr-v2-toolbar-month" />
+              </div>
+              {/* 폰: 첫 줄(달 줄) 오른끝에 [필터](위 folded ★) — 설명보다 앞에 둬야 설명이 아랫줄로 내려가도 첫 줄에 남는다 · 줄 안에 둬서 날짜 줄이 화면 폭을 다 쓴다. */}
+              {isMobile && (
+                <button type="button" className={cx("scr-sg-fold scr-stats-fold-btn", filtersOpen && "is-on")} aria-expanded={filtersOpen}
+                  onClick={() => setFiltersOpen((v) => !v)} title={filtersOpen ? "거르기 접기 — 기간만" : "거르기 펴기 — 규모 · 맵 · 유저"}>
+                  필터{filterOn && !filtersOpen && <i className="scr-stats-fold-dot" aria-label="걸린 거르기 있음" />}
+                  <ChevronDown size={13} aria-hidden className="scr-stats-fold-chev" />
+                </button>
+              )}
+              <span className="scr-stats-period-hint" title="앞의 넉 달 기록을 한 달 전 ½ · 두 달 전 ¼ … 무게로 같이 세요(판 수 · 승률은 그 달 것 그대로)">
+                그 달 + 전 달 기록을 합친 실제 실력을 보여줘요
+              </span>
+            </div>
+            <div className={cx("scr-stats-period-row", dayOn && "is-on")}>
+              <label className="scr-checkbox-field scr-stats-period-pick">
+                <input type="radio" name="scr-stats-period" checked={dayOn} onChange={() => setPeriod(dayPeriod)} />
+                <span>날짜 지정</span>
+              </label>
+              <DayRangePicker from={dayA} to={dayB} max={todayDay()} onChange={pickDays} />
+              <span className="scr-stats-period-hint">실제 그 기간만의 실력을 보여줘요</span>
+            </div>
           </div>
-          {/* 폰: 기간 줄 오른끝에 [필터](위 folded ★). */}
-          {isMobile && (
-            <button type="button" className={cx("scr-sg-fold scr-stats-fold-btn", filtersOpen && "is-on")} aria-expanded={filtersOpen}
-              onClick={() => setFiltersOpen((v) => !v)} title={filtersOpen ? "거르기 접기 — 기간만" : "거르기 펴기 — 규모 · 맵 · 유저"}>
-              필터{filterOn && !filtersOpen && <i className="scr-stats-fold-dot" aria-label="걸린 거르기 있음" />}
-              <ChevronDown size={13} aria-hidden className="scr-stats-fold-chev" />
-            </button>
-          )}
         </div>
       </div>
       {teamBuilder && <TeamBuilderModal onClose={() => setTeamBuilder(false)} />}

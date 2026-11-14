@@ -98,6 +98,16 @@ export function dayPeriodLabel(a: string, b: string): string {
   return a === b ? one(a) : `${one(a)}~${one(b)}`;
 }
 
+/* ★ 기간 두 갈래(2026-11-14, 요청: "기간 필터를 두줄로 나누고 각 앞에 라디오 버튼 · 전체기간은 삭제 · 월 선택 → 기간이 아닌 월 한 개만 · 날짜 지정 → 순수하게 그 기간 걸로") —
+   통계 화면의 기간은 **달 하나**("YYYY-MM") 아니면 **날짜 지정**('오늘' · 날~날)이다. 서버는 꼭 한 달 조회(시각 없는 1일 ~ 끝날)면 앞 달 기록을 섞어 그 사람의 지금 실력을 내고
+   (티어 · WPA 둘 다 · sg-api tier ★ 지난 달 섞기 · 섞은 WPA), 시각이 든 경계(날짜 지정 — 정오 ~ 정오)면 그 기간 판만 쓴다(sg-api service._whole_month ★).
+   옛 주소의 전체 기간("all")은 이번 달로 · 여러 달("a~b" · 2026-10-22 연속 달 고르기)은 끝 달로 읽는다. 관리자 WPA 상세보기(WpaDetailModal)는 제 기간 단추를 그대로 쓴다. */
+/** 기간 글자 → 달 하나("YYYY-MM") — 날짜 지정('오늘' · 날~날)이면 null. */
+export function monthOfPeriod(period: string): string | null {
+  if (period === PERIOD_TODAY || DAY_PERIOD_RE.test(period)) return null;
+  return MONTH_PERIOD_RE.test(period) ? period.split("~").pop() as string : currentMonthValue();
+}
+
 /** 기간 글자(달 · 달~달 · 전체 · 오늘 · 날~날) → 서버 dateFrom/dateTo — day = 열쇠에 든 '오늘' 시작(useTodayFrom). 그 밖의 글자는 이번 달. */
 export function statRange(period: string, day?: string): { from: string; to: string } {
   if (period === PERIOD_ALL) return { from: "", to: "" };
