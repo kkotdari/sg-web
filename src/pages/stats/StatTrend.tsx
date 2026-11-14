@@ -68,7 +68,7 @@ const n = (v: number | null | undefined): number | null => (typeof v === "number
 /** 그래프가 쓸 그 달의 줄 — 평균 행(CLAN_MEMBER_ID)은 clanByMonth, 나머지는 byMonth. */
 export const trendEntryOf = (data: StatTrendData, member: Member, month: string): TrendEntry | undefined =>
   member.id === CLAN_MEMBER_ID ? data.clanByMonth?.[month] : data.byMonth[month]?.[member.id];
-/** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.4 · 1.0 · 0.6 · 서버 INBUN_CUTS)
+/** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.6 · 1.1 · 0.6 · 서버 INBUN_CUTS)
  *  · 판 합이 열 미만이면 등급 없음(서버 TIER_MIN_GAMES). 종족 기록이 없으면 null. 팝업 근거값(EAPM · 교환비 보정 · 승패 보정)도 같은 가중 평균. */
 export function combinedTier(tb: Record<string, TierEntry> | null | undefined): TierEntry | null {
   const all = Object.values(tb ?? {}).filter((t) => typeof t?.inbun === "number" && t.inbun > 0 && t.plays > 0);
@@ -87,7 +87,7 @@ export function combinedTier(tb: Record<string, TierEntry> | null | undefined): 
   const ib = Math.floor((avg((t) => t.stdInbun ?? t.inbun) ?? 0) * 100 + 1e-9) / 100;
   /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭 · 2026-11-08 밤 1.6 · 1.15 · 1.0 으로 맞춤 — 옛 1.2 · 0.8 이 남아 있었다 · 2026-11-09 2티어 1.2 "1.2인분부터 2티어" · 1티어 1.8 "1티어 컷 1.8인분으로"
      · 2026-11-12 서버 "티어 1.6 1.2 0.8 로 나눌거야" — 여기만 1.8 · 1.2 · 1.0 으로 남아 있던 것을 맞춤).*/
-  const tier = n < 10 ? null : ib >= 1.4 ? 1 : ib >= 1.0 ? 2 : ib >= 0.6 ? 3 : 4;   // 2026-11-13 "통계 티어 커트를 1.4 1.0 0.6 으로"(서버 INBUN_CUTS 와 같이)
+  const tier = n < 10 ? null : ib >= 1.6 ? 1 : ib >= 1.1 ? 2 : ib >= 0.6 ? 3 : 4;   // 2026-11-14 "문턱은 1.6 1.1 0.6 으로 변경 (0.5인분 단위)"(서버 INBUN_CUTS 와 같이 · 옛 2026-11-13 1.4 · 1.0 · 0.6)
   /* 셈 표(calc · 2026-11-06 저녁) — 종족이 하나면 그대로 · 여럿이면 줄마다 배수를 판 수로 가중 평균(점수 · 보정 글자는 못 합쳐 비움 · 인분 줄은 위 ib). */
   const calc = ts.length === 1 ? ts[0].calc ?? null : (ts[0].calc ?? null) && ts[0].calc!.map((r, i) => (
     r.name === "인분" ? { ...r, score: "", adj: tier ? `${tier}티어` : "", mult: ib }
@@ -110,7 +110,9 @@ const x2 = (v: number) => v.toFixed(2);
 /* ★★ 2026-11-12 WPA(sg-api wpa.py · 요청: "WPA 적용" · "전투+참전+생산 다 합친게 WPA") — 세 칸(교환 이득 · 교전 참여 · 생산)이 WPA 한 칸이 됐다. 티어 셈 표도 'WPA' 한 줄. */
 export const CALC_NAME = { wpa: "WPA" } as const;
 /** 셈 표 줄 이름 → 팝업 글자(2026-11-13 쉽게). */
-const CALC_LABEL: Record<string, string> = { WPA: "WPA 점수", 승패: "승패 점수" };
+/* ★ 지난 달(2026-11-14 · sg-api tier PAST_RHO) — 한 달 조회는 앞 달 판을 달마다 절반씩 줄여 같이 센다("그 사람의 지금 실력"). WPA 줄 = 그 달 판만의 배수 ·
+   지난 달 줄 = 앞 달을 섞어 달라진 만큼 · 둘의 곱이 인분. 승패 줄은 서버가 승패 보정을 끄며 안 온다(옛 응답이면 그대로 보인다). */
+const CALC_LABEL: Record<string, string> = { WPA: "WPA 점수", 승패: "승패 점수", "지난 달": "지난 달 반영" };
 export type CalcKey = keyof typeof CALC_NAME;
 export const calcRowOf = (t: TierEntry | null | undefined, k: CalcKey): TierCalcRow | null => t?.calc?.find((r) => r.name === CALC_NAME[k]) ?? null;
 /** ★ 판당 WPA 원점수(승리 확률 %p · sg-api TierEntry.wpa) — 싸움마다 편의 승리 확률을 얼마나 올리고 내렸나의 판 평균. 티어(셈)가 없으면 null. */
