@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw, Users, Wrench } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw, Users, Wrench } from "lucide-react";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { LoadingMark } from "../../components/common/Feedback";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
@@ -187,11 +187,8 @@ export default function ClanStatsScreen() {
   const todayFrom = useTodayFrom(dayPeriod === PERIOD_TODAY);
   const [dayA, dayB] = DAY_PERIOD_RE.test(dayPeriod) ? dayPeriod.split("~") : [todayFrom.slice(0, 10), todayFrom.slice(0, 10)];
   const pickDays = (a: string, b: string): void => setPeriod(a === b && a === todayDay() ? PERIOD_TODAY : `${a}~${b}`);
-  /* ★ 폰은 거르기를 접은 채로 연다(2026-11-13, 요청: "모바일에선 처음에 접은 상태로 노출(최상단은 현재의 기간 필터 한줄만 보이기)") — 접히면 기간 줄만 ·
-     팀 구성하기 · 규모 탭 · 맵 탭 · 유저 칩은 [필터]를 눌러 편다. 기억하지 않는다(늘 접힌 채 연다). 기본이 아닌 거르기(규모 · 맵 · 유저)가 걸려 있으면 [필터]에 점. */
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const folded = isMobile && !filtersOpen;
-  const filterOn = size !== "team" || mapTab !== MAP_DEFAULT || users.length > 0;
+  /* ★ 폰의 거르기 접기는 걷었다(2026-11-14, 요청: "모바일도 필터 접기 모드 없애기") — 규모 탭 · 맵 탭 · 유저 칩이 PC 처럼 늘 보인다.
+     옛(2026-11-13 "모바일에선 처음에 접은 상태로 노출(최상단은 현재의 기간 필터 한줄만 보이기)"): 기간 첫 줄 오른끝 [필터 ⌄] 로 펴고 · 접힌 채 걸린 거르기가 있으면 점. */
   const queryKey = useMemo(
     () => ({
       /* 서버엔 늘 클랜원 전부 — 클랜원 전체 줄·종족구성별 전적이 유저 검색에 안 흔들리게(2026-10-21, 요청: "유저 필터가 들어가도 클랜원 전체 데이터는
@@ -424,14 +421,6 @@ export default function ClanStatsScreen() {
                 </button>
                 <MonthCalendar value={month} onChange={setPeriod} maxMonth={currentMonthValue()} iconOnly className="scr-v2-toolbar-month" />
               </div>
-              {/* 폰: 첫 줄(달 줄) 오른끝에 [필터](위 folded ★) — 설명보다 앞에 둬야 설명이 아랫줄로 내려가도 첫 줄에 남는다 · 줄 안에 둬서 날짜 줄이 화면 폭을 다 쓴다. */}
-              {isMobile && (
-                <button type="button" className={cx("scr-sg-fold scr-stats-fold-btn", filtersOpen && "is-on")} aria-expanded={filtersOpen}
-                  onClick={() => setFiltersOpen((v) => !v)} title={filtersOpen ? "거르기 접기 — 기간만" : "거르기 펴기 — 규모 · 맵 · 유저"}>
-                  필터{filterOn && !filtersOpen && <i className="scr-stats-fold-dot" aria-label="걸린 거르기 있음" />}
-                  <ChevronDown size={13} aria-hidden className="scr-stats-fold-chev" />
-                </button>
-              )}
               {/* 문구(2026-11-14 같은 날, 지적: "문구 수정하자 그전달만 더하는게 아니자나") — 옛 "그 달 + 전 달 기록을 합친 …" · 서버는 앞의 넉 달을 달마다 절반씩 줄여 섞는다(sg-api tier PAST_RHO). */}
               <span className="scr-stats-period-hint" title="앞의 넉 달 기록을 한 달 전 ½ · 두 달 전 ¼ … 무게로 같이 세요(판 수 · 승률은 그 달 것 그대로)">
                 그 달 + 지난 몇 달 기록을 합친 실제 실력을 보여줘요
@@ -450,7 +439,6 @@ export default function ClanStatsScreen() {
       </div>
       {teamBuilder && <TeamBuilderModal onClose={() => setTeamBuilder(false)} />}
 
-      {!folded && (<>
       <div className="scr-line-tabs scr-stats-size-tabs" role="tablist" aria-label="팀 규모">
         {SIZE_TABS.map((t) => (
           <Fragment key={t.value}>
@@ -485,7 +473,6 @@ export default function ClanStatsScreen() {
       <div className="scr-stats-search">
         <ChipInput values={users} onChange={setUsers} options={userOpts} placeholder="유저 닉네임" />
       </div>
-      </>)}
       {/* 종족구성별 전적은 한 규모(4:4 · 3:3 · 2:2)를 골랐을 때만(2026-10-20, 요청: "팀전 전체에서 종족구성별 전적 숨기기") — 1:1 엔 구성이 없다.
           클랜원 전체는 아래 표(StatGrid)의 맨 윗줄로 옮겼다(2026-10-20). */}
       {view?.clan && size !== "1" && size !== "team" && (
