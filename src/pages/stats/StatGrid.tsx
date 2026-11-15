@@ -71,43 +71,11 @@ export interface StatGridRow {
    무게를 더 준 q 제곱 평균 · 기간 뒤 판은 안 써서 지난 달 티어가 고정).
    1.6(2026-10-28 · 옛 1.5) / 1.00 / 0.80 인분 기준선에 바로 댄다(절대 기준 · 빈 등급 있음). 1 이 가장 높다.
    칸은 숫자 배지 하나 · 얹거나 누르면 달별 티어 변화 그래프. 머리로 정렬하면 인분 내림차순. 판이 열 미만이면 "-". */
-function TierCell({ t, member, race, className, more }: { t?: TierEntry | null; member?: Member; race?: BaseRace; className?: string; more?: TrendFact[] }) {
-  /* 근거 말풍선 → 달별 변화 그래프(2026-10-28, 요청: "티어 팝업을 다른 항목처럼 변화 그래프 팝업으로") — 다른 칸과 같은 손잡이(TCell). 칸은 배지 그대로.
-     종족 티어(2026-11-04 · race) — 그 종족 판으로 잰 티어(tierByRace)와 그 달별 변화. */
-  const metric = statMetric("tier", race ?? null);
-  const cl = cx("scr-sg-tier-c", className);
-  if (!t) return <TCell member={member} metric={metric} facts={more} className={cl}><Dash /></TCell>;
-  /* 그 종족의 게임수 · 승률 · 전투 · APM · EAPM 을 앞에(같은 날 "좁은 폰 — 터치 시 판수 · 교환비 · 승률 · APM 등등 나오고") — 좁은 폰은 이 칸 하나뿐이라. */
-  /* 셈 표(calc · 2026-11-06 저녁)가 있으면 근거값 줄은 아예 안 보인다(2026-11-07, 요청: "이 부분은 딱히 안 보여줘도 될 듯" — 표에 다 있다). 표가 없는 옛 응답이면 종전대로. */
-  const facts = t.calc ? [] : [...(more ?? []), ...tierFacts(t).filter((f) => f.label !== "EAPM" || !more?.some((x) => x.label === "EAPM"))];
-  if (t.tier === null) {
-    /* ★ 등급 없는 사람(판이 문턱 아래)은 지금 인분(2026-11-13, 요청: "티어 없는 사람은 현재 인분 점수 표시") — 옛: "-". 서버 인분은 이미 둘째 자리 자름(shown_inbun). */
-    const ib = t.stdInbun ?? t.inbun;
-    return (
-      <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}>
-        {typeof ib === "number" ? <span className="scr-sg-inbun-pend">{ib.toFixed(2)}</span> : <Dash />}
-      </TCell>
-    );
-  }
-  return (
-    <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}>
-      <b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b>
-    </TCell>
-  );
-}
+/* (걷음 2026-11-15 · WpaTierCell 로 합침) 옛 티어 칸 TierCell — 배지 하나 · 티어 없는 사람은 지금 인분(scr-sg-inbun-pend). */
 
 /* ★ 티어 근거값(2026-10-28, 요청: "티어 팝업에 그래프 위에 현재 보는 티어의 근거값 두 개 표시 — eapm 과 상대승률" · 교환비를 넣으며 셋) — 인분 = EAPM ÷ 120 ×
    교환비 보정 × 승패 보정 이라 그 셋: 이 기간 평균 EAPM · 교환비 보정(싸움에서 남기고 밑진 정도 · 센 상대 몫 뺌 · %) · 승패 보정(같은 편·상대 편으로 예상한 것보다
    더/덜 이긴 정도 · 그 기간 판으로 · %). 인분은 안 쓴다(같은 날 요청: "팝업에 인분 표시 안 하고"). */
-const pctOf = (x: number): string => { const p = Math.round((x - 1) * 100); return p > 0 ? `+${p}%` : p < 0 ? `−${-p}%` : "±0%"; };
-function tierFacts(t: TierEntry): TrendFact[] {
-  const out: TrendFact[] = [];
-  if (typeof t.eapm === "number") out.push({ label: "EAPM", value: String(Math.round(t.eapm)) });
-  if (typeof t.cbt === "number") out.push({ label: "전투 보정", value: pctOf(t.cbt) });   // 교환이익(준 − 입은 · 팀 싸움 양으로 나눔 · 2026-11-06 저녁 "이름도 전투로")
-  // 생산 보정은 걷었다(2026-11-07 "뽑기만 많이 뽑고 전투를 못한 건 의미 없어" · 칸도 뺌).   // 같은 편보다 병력을 더 · 덜 뽑은 정도(2026-11-06 · sg-api tier W_PROD)
-  if (typeof t.adj === "number") out.push({ label: "승패 보정", value: pctOf(t.adj) });
-  return out;
-}
 
 const Dash = () => <span className="scr-sg-dim">-</span>;
 /** WPA 머리 툴팁(2026-11-13, 요청: "WPA에만 툴팁 · 아주 간단히"). */
@@ -171,6 +139,24 @@ function WpaCell({ t }: { t?: TierEntry | null }) {
   if (x === null) return <Dash />;
   const s = wpaFmt(x);
   return <span className="scr-sg-v"><b>{s.slice(0, -1)}</b><i>점</i></span>;
+}
+/** ★ WPA/티어 한 칸(2026-11-15, 요청: "WPA가 결국 티어기준이네 지금 · wpa랑 티어 하나로 합치고 점수 티어 순으로 표시하는게 나을듯 · 티어 없는애들은 점수만 · 헤더는 WPA/티어") —
+ *  티어 조회에서 옛 티어 칸 · WPA 칸 둘을 한 칸으로. 점수 = 티어의 잣대 인분(stdInbun · 서버가 둘째 자리 자름 — 승패 보정 · EAPM · 생산을 끈 뒤로 WPA 배수와 같다) 뒤에 티어 배지.
+ *  티어가 없는 사람(판이 문턱 아래)은 점수만(배지 자리는 비워 숫자 줄을 맞춘다). 팝업은 WPA 팝업(방어 · 공격 · 합류 · 정찰)과 셈 표 · 그래프는 보정 뒤 WPA. */
+function WpaTierCell({ t, member, race, className, more }: { t?: TierEntry | null; member?: Member; race?: BaseRace; className?: string; more?: TrendFact[] }) {
+  const metric = statMetric("wpa", race ?? null, true);
+  const cl = cx("scr-sg-tier-c", className);
+  const ib = t ? (t.stdInbun ?? t.inbun ?? calcRowOf(t, "wpa")?.mult ?? null) : null;
+  if (!t || typeof ib !== "number") return <TCell member={member} metric={metric} facts={more} className={cl}><Dash /></TCell>;
+  const facts = [...(t.calc ? [] : more ?? []), ...wpaFacts(t)];
+  return (
+    <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}>
+      <span className="scr-sg-wt">
+        <b className="scr-sg-wt-v">{ib.toFixed(2)}</b>
+        {typeof t.tier === "number" ? <b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b> : <i className="scr-sg-wt-gap" aria-hidden />}
+      </span>
+    </TCell>
+  );
 }
 /** 보정 뒤 점수 칸(위 calcRowOf ★) — 인분 배수 둘째 자리(1.00 = 보통). */
 function ScoreCell({ r }: { r: TierCalcRow | null }) {
@@ -269,11 +255,12 @@ function RaceCells({ s, t, race, member, clan, tier, mobile, main }: { s?: Membe
   };
   return (
     <>
-      {tier && <TierCell t={clan ? null : t} member={clan ? undefined : member} race={race ?? undefined} className={cx("scr-sg-gstart", m)} more={has ? raceFacts(s!, t) : undefined} />}
+      {/* 티어 조회 — WPA/티어 한 칸(위 WpaTierCell ★) · 평균 줄은 "-" */}
+      {tier && <WpaTierCell t={clan ? null : t} member={clan ? undefined : member} race={race ?? undefined} className={cx("scr-sg-gstart", m)} more={has ? raceFacts(s!, t) : undefined} />}
       <TCell member={member} metric={statMetric("plays", race)} className={cx(!tier && "scr-sg-gstart", tier ? wide : m)}><Num v={has ? s!.plays.toLocaleString() : null} /></TCell>
       <TCell member={member} metric={statMetric("rate", race)} className={wide}>{!has ? <Dash /> : <Rate s={s!} />}</TCell>
       {/* WPA(2026-11-12 ★ WpaCell) — 옛 교환 이득 · 교전 참여 · 생산(2026-11-08 밤) 세 칸 자리. 평균 줄은 사람 몫이라 없다(-). */}
-      {cell("wpa", has && !clan ? <WpaCell t={t} /> : <Dash />)}
+      {!tier && cell("wpa", has && !clan ? <WpaCell t={t} /> : <Dash />)}
       <TCell member={member} metric={statMetric("apm", race)} className={wide}><Num v={has ? s!.avgApm : null} /></TCell>
       <TCell member={member} metric={statMetric("eapm", race)} className={wide}><Num v={has ? s!.avgEapm : null} /></TCell>
     </>
@@ -392,7 +379,9 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   /** 머리 묶음 — 종합 + 종족 셋. */
   const groups: readonly (BaseRace | null)[] = [null, ...races];
   /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · WPA · APM · EAPM(위 RaceCells ★ · CSS .is-race9 --rspan 과 같이 간다). */
-  const per = tier ? 6 : 5;   // 2026-11-12 WPA 한 칸(옛 8 : 7 — 교환 이득 · 교전 참여 · 생산 · 그 전 6 : 5)
+  const per = 5;   // 2026-11-15 티어 조회는 WPA/티어 한 칸(옛 6 : 5) · 2026-11-12 WPA 한 칸(옛 8 : 7 — 교환 이득 · 교전 참여 · 생산 · 그 전 6 : 5)
+  /* 칸 틀 — WPA/티어 칸(묶음 첫 칸)은 숫자 + 배지라 넓게(PC 70px · 폰 62px) · 나머지는 옛 최소 폭. */
+  const colsOf = (who: string, first: string, rest: string): string => `${who} ${groups.map(() => [tier ? first : rest, ...Array(per - 1).fill(rest)].join(" ")).join(" ")}`;
   const gridRef = useRef<HTMLDivElement>(null);
   const [clipW, setClipW] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -463,8 +452,9 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     onClickCapture: (e: React.MouseEvent) => { const c = cellOf(e.target); if (c) setHPin((p) => (sameCell(p, c) ? null : c)); },
   };
   /** 종족 묶음 머리 두 줄 — 윗줄 종족 이름(묶음 칸 수만큼 덮음) · 아랫줄 칸 머리. 폰은 좁을 때 칸이 줄어 덮는 수가 CSS 변수(--rspan)다. */
-  const SUBS: readonly (readonly ["티어" | "게임수" | "승률" | "WPA" | "APM" | "EAPM", "tier" | "plays" | "rate" | "wpa" | "apm" | "eapm"])[] =
-    [...(tier ? [["티어", "tier"] as const] : []), ["게임수", "plays"], ["승률", "rate"], ["WPA", "wpa"], ["APM", "apm"], ["EAPM", "eapm"]];
+  const SUBS: readonly (readonly ["WPA/티어" | "게임수" | "승률" | "WPA" | "APM" | "EAPM", "tier" | "plays" | "rate" | "wpa" | "apm" | "eapm"])[] =
+    tier ? [["WPA/티어", "tier"], ["게임수", "plays"], ["승률", "rate"], ["APM", "apm"], ["EAPM", "eapm"]]
+      : [["게임수", "plays"], ["승률", "rate"], ["WPA", "wpa"], ["APM", "apm"], ["EAPM", "eapm"]];
   const head = (m: boolean) => (
     <div className="scr-sg-row scr-sg-head" role="row">
       <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
@@ -481,7 +471,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
             const wideOnly = m && i >= 1;
             return (
               <span key={k} className={cx("scr-sg-c scr-sg-hsub", i === 0 && "scr-sg-gstart", m && "scr-sg-race-head", wideOnly && "scr-sg-mwide")}
-                title={k === "wpa" ? WPA_TIP : undefined}>
+                title={k === "wpa" || k === "tier" ? WPA_TIP : undefined}>
                 <SortHead {...(m ? mToggle : pcToggle)((r ? `${r}:${k}` : k) as StatSortKey)}>{h}</SortHead>
               </span>
             );
@@ -498,7 +488,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
       <div className="scr-sg-sizer" style={sizerStyle}>
       <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-        style={{ "--ncw": groups.length * per, ...foldStyle } as React.CSSProperties}>
+        style={{ "--ncw": groups.length * per, gridTemplateColumns: colsOf("minmax(110px, 2fr)", "minmax(62px, 1.3fr)", "minmax(46px, 1fr)"), ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} mobile races={races} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} mobile races={races} />)}
@@ -518,7 +508,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
     <div className="scr-sg-sizer" style={sizerStyle}>
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-      style={{ gridTemplateColumns: `minmax(150px, 1.6fr) repeat(${groups.length * per}, minmax(52px, 1fr))`, ...foldStyle }}>
+      style={{ gridTemplateColumns: colsOf("minmax(150px, 1.6fr)", "minmax(70px, 1.3fr)", "minmax(52px, 1fr)"), ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} races={races} />)}
