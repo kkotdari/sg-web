@@ -20,6 +20,7 @@ import { memberMatchesTerm, normalizeSearchText } from "../../utils/memberSearch
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { cx } from "../../utils/format";
 import { showToast } from "../../components/common/Toast";
+import StatsPoll from "../../components/stats/StatsPoll";
 import type { BaseRace, ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 /** 정렬 자 이름 — 정렬 줄("정렬: 전체 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid · 2026-10-22, 요청: "정렬은 머리 터치로 변경" →
@@ -73,8 +74,9 @@ function chipsOfUrl(raw: string): string[] {
    (2026-11-13 다시 엶 — 요청: "통계 열고") */
 const STATS_PAUSED = false;
 /* ★ 정확도 작업 알림(2026-11-13, 요청: "통계화면 반투명한 토스트 10초간 띄우기 · 현재 정확도 높이는 작업중이라 변경될 수 있다고") — 들어올 때마다 10초 · 반투명(뒤 표가 비친다) ·
-   누르면 바로 닫힌다. 작업이 끝나면 false. */
-const ACCURACY_NOTICE = true;
+   누르면 바로 닫힌다. 작업이 끝나면 false.
+   (2026-11-15 걷음, 요청: "통계 들어가면 지금 토스트 없애고 대신 아래쪽에 poll 뜨게" — components/stats/StatsPoll ★) */
+const ACCURACY_NOTICE = false;
 
 function StatsPausedNotice() {
   return createPortal(
@@ -392,6 +394,7 @@ export default function ClanStatsScreen() {
   return (
     <>
     {STATS_PAUSED && <StatsPausedNotice />}
+    {!STATS_PAUSED && <StatsPoll />}
     <div className={cx("scr-screen scr-stats-screen-v2", STATS_PAUSED && "is-paused")} inert={STATS_PAUSED}>
       <div className="scr-v2-toolbar">
         {/* ★ 팀 구성하기는 제목 줄 오른끝 · 기간 · 필터는 제목 한 줄 아래(2026-11-13, 요청: "팀 구성하기 버튼이 필터 안에 들어가 버림 · 밖으로 빼서 통계 타이틀 옆 오른쪽 ·

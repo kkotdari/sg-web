@@ -602,6 +602,13 @@ export const api = {
   async deleteScenePin(gameId: number, pinId: number): Promise<void> {
     await request<void>(`/api/game-results/${gameId}/pins/${pinId}`, { method: "DELETE" });
   },
+  /* ── 설문(2026-11-15 · sg-api /polls · 통계 설문 StatsPoll) — 한 사람에 한 번 ── */
+  async getPollState(key: string): Promise<{ answered: boolean }> {
+    return request<{ answered: boolean }>(`/api/polls/${encodeURIComponent(key)}/mine`);
+  },
+  async answerPoll(key: string, body: { choice: number; comment: string }): Promise<void> {
+    await request<void>(`/api/polls/${encodeURIComponent(key)}`, { method: "POST", body: JSON.stringify(body) });
+  },
   /** 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
   async getGamesClose(): Promise<{ closedUntil: string | null }> {
     return request<{ closedUntil: string | null }>("/api/game-results/admin/close");
