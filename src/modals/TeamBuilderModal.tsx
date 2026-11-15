@@ -29,10 +29,10 @@ interface Row {
   plays: number;
   /** 인분을 가져온 달("YYYY-MM") · 전체 기간이면 "all". */
   month: string;
-  /** 주종족(가장 많이 한 종족 · 전체 기간) — 결과 로스터의 종족 글자 · 프로토스 상한(PROTOSS_CAP ★)의 재료. */
+  /** 주종족(가장 많이 한 종족 · 전체 기간) — 결과 로스터의 종족 글자 · 승률 식의 종족 항(teamBalance RACE_LOGIT ★). */
   race: Race | null;
   blocked: boolean;
-  /** 부종(두 번째로 많이 한 종족) — 프로토스 상한에 걸려 부종으로 설 때. */
+  /** 부종(두 번째로 많이 한 종족) — 목록에 작게 보인다. */
   alt: { race: BaseRace; plays: number; winRate: number } | null;
   /** 종족별 인분(2026-10-31, 요청: "종족별 인분까지 계산해야지") — 종족마다 최신 달부터 거슬러 그 종족 기록이 있는 첫 달 것(없으면 전체 기간). */
   byRace: Partial<Record<string, RaceInbun>>;
@@ -42,24 +42,9 @@ interface RaceInbun { inbun: number; tier: number | null; plays: number; month: 
 const inbunOf = (r: Row): number | null => (r.race ? r.byRace[r.race]?.inbun : undefined) ?? r.inbun;
 const raceRec = (r: Row, race: string | null | undefined): RaceInbun | null => (race ? r.byRace[race] ?? null : null);
 
-/* ★ 프로토스는 **팀당 2명까지**(2026-10-24, 요청: "종족은 프 2까지만 가능 · 프 주종이 4명을 넘으면 한 명은 부종으로 — 가장 부종이 높은 사람이") —
-   고른 사람 중 프 주종이 팀 수 × 2(= 4)를 넘으면 넘친 수만큼 **부종 인분이 가장 높은 사람**(없으면 부종 승률)부터 부종으로 세운다 — 그 뒤 세기는 부종 인분(inbunOf).
-   부종 기록이 없는 사람은 못 바꾼다 — 그래도 넘치면 상한을 못 지킨 채 짠다(결과에 적는다). 팀 가름(buildTeams)에는 '양 팀 다 프 ≤ 2' 제약을 건다. */
-const PROTOSS_CAP = 2;
+/* (걷음 2026-11-15, 요청: "Q2 + 종족으로 옮기고 프로토스 제약은 없애") 프로토스 팀당 2명 상한(PROTOSS_CAP · 넘치면 부종 인분이 높은 사람부터 부종으로 · 2026-10-24) —
+   승률 식에 종족 항이 들어가(utils/teamBalance RACE_LOGIT ★) 프로토스가 몰린 편은 그만큼 세게 쳐 저절로 고루 갈린다. 모두 주종으로 선다. */
 const RACE_ORDER: BaseRace[] = ["테란", "프로토스", "저그"];
-const protossOk = (rows: Map<string, Row>) => (a: string[], b: string[]): boolean =>
-  [a, b].every((ids) => ids.filter((id) => rows.get(id)?.race === "프로토스").length <= PROTOSS_CAP);
-function applyProtossCap(chosen: Row[]): { rows: Row[]; switched: string[]; short: number } {
-  const over = chosen.filter((r) => r.race === "프로토스").length - PROTOSS_CAP * 2;
-  if (over <= 0) return { rows: chosen, switched: [], short: 0 };
-  const altIb = (r: Row): number => raceRec(r, r.alt?.race)?.inbun ?? -1;
-  const cands = chosen.filter((r) => r.race === "프로토스" && r.alt)
-    .sort((a, b) => (altIb(b) - altIb(a)) || (b.alt!.winRate - a.alt!.winRate) || (b.alt!.plays - a.alt!.plays));
-  const pick = new Set(cands.slice(0, over).map((r) => r.member.id));
-  const rows = chosen.map((r) => (pick.has(r.member.id) && r.alt ? { ...r, race: r.alt.race } : r));
-  return { rows, switched: [...pick], short: Math.max(0, over - pick.size) };
-}
-
 /** 티어 등급 문턱(sg-api tier.py TIER_MIN_GAMES) — 그보다 적으면 '표본 적음'. */
 const TIER_MIN_GAMES = 10;
 const inbunText = (v: number | null): string => (v === null ? "-" : `${v.toFixed(2)}인분`);
@@ -102,7 +87,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   /** 고른 사람(누른 차례 — 맨 위로 올라간다). */
   const [picked, setPicked] = useState<string[]>([]);
-  const [result, setResult] = useState<{ splits: BalanceSplit[]; rows: Map<string, Row>; switched: string[]; short: number; capped: boolean; at: number; exact: boolean } | null>(null);
+  const [result, setResult] = useState<{ splits: BalanceSplit[]; rows: Map<string, Row>; at: number; exact: boolean } | null>(null);
   const refMonth = useMemo(() => currentMonthValue(), []);
 
   useEffect(() => {
@@ -177,19 +162,15 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
   const build = (): void => {
     const picked0 = pickable.filter((r) => pickedSet.has(r.member.id));
     if (picked0.length < 2) { showAlert("두 명 이상 골라 주세요."); return; }
-    const cap = applyProtossCap(picked0);
-    const rowsMap = new Map(cap.rows.map((r) => [r.member.id, r]));
-    const players = cap.rows.map((r) => ({ id: r.member.id, inbun: inbunOf(r) ?? 1 }));
-    /* '양 팀 다 프 ≤ 2' 로 먼저 짜고, 그 제약으로 한 조합도 안 나오면 제약 없이(capped 거짓 · 결과에 적는다). */
-    let out = buildTeams(players, 40, protossOk(rowsMap));
-    let capped = true;
-    if (out.splits.length === 0) { out = buildTeams(players, 40); capped = false; }
+    const rowsMap = new Map(picked0.map((r) => [r.member.id, r]));
+    const players = picked0.map((r) => ({ id: r.member.id, inbun: inbunOf(r) ?? 1, race: r.race }));
+    const out = buildTeams(players, 40);
     if (out.splits.length === 0) { showAlert("팀을 나누지 못했어요."); return; }
     /* ★ 다른 조합은 **승리 확률이 가장 반반에 가까운 것과 같은(%p 반올림) 것만**(2026-10-24 요청 "최소 승리 확률 차 1개 또는 동률인 경우만"). */
     const gapOf = (sp: BalanceSplit) => { const a = Math.round(sp.pA * 100); return Math.abs(a - (100 - a)); };
     const best = Math.min(...out.splits.map(gapOf));
     const splits = out.splits.filter((sp) => gapOf(sp) === best);
-    setResult({ splits, rows: rowsMap, switched: cap.switched, short: cap.short, capped, at: 0, exact: out.exact });
+    setResult({ splits, rows: rowsMap, at: 0, exact: out.exact });
   };
 
   const split = result ? result.splits[result.at] : null;
@@ -239,17 +220,6 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
                   <span className="scr-tb-gap-note">동률 조합 {result.splits.length}개 중 {result.at + 1}번째</span>
                 )}
               </div>
-
-              {(result.switched.length > 0 || result.short > 0 || !result.capped) && (
-                <p className="scr-tb-note">
-                  프로토스는 팀당 {PROTOSS_CAP}명까지예요.
-                  {result.switched.length > 0 && (
-                    <> {result.switched.map((id, i) => <span key={id}>{i > 0 && ", "}<b>{byId.get(id)?.member.nickname}</b> 님은 부종({resRows.get(id)?.race})으로</span>)} 세웠어요(부종 기록이 가장 좋은 분부터).</>
-                  )}
-                  {result.short > 0 && <> 부종 기록이 있는 분이 모자라 {result.short}명은 그대로 두었어요.</>}
-                  {!result.capped && <> 이 인원으로는 상한을 지키는 조합이 없어 상한 없이 짰어요.</>}
-                </p>
-              )}
 
               <div className="scr-tb-actions">
                 <button type="button" className="scr-rect-btn" onClick={() => setResult(null)}>
