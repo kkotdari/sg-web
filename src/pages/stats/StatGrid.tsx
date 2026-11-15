@@ -380,7 +380,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const groups: readonly (BaseRace | null)[] = [null, ...races];
   /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · WPA · APM · EAPM(위 RaceCells ★ · CSS .is-race9 --rspan 과 같이 간다). */
   const per = 5;   // 2026-11-15 티어 조회는 WPA/티어 한 칸(옛 6 : 5) · 2026-11-12 WPA 한 칸(옛 8 : 7 — 교환 이득 · 교전 참여 · 생산 · 그 전 6 : 5)
-  /* 칸 틀 — WPA/티어 칸(묶음 첫 칸)은 숫자 + 배지라 넓게(PC 70px · 폰 62px) · 나머지는 옛 최소 폭. */
+  /* 칸 틀 — WPA/티어 칸(묶음 첫 칸)은 숫자 + 배지라 넓게(PC 84px · 폰 76px · 2026-11-15 "wpa 티어 칸 늘리고" · 옛 70 · 62) · 나머지는 옛 최소 폭.
+     폰 유저 칸 110 → 92px · 2fr → 1.3fr(같은 날 "폰 유저 폭 줄이고"). */
   const colsOf = (who: string, first: string, rest: string): string => `${who} ${groups.map(() => [tier ? first : rest, ...Array(per - 1).fill(rest)].join(" ")).join(" ")}`;
   const gridRef = useRef<HTMLDivElement>(null);
   const [clipW, setClipW] = useState<number | null>(null);
@@ -488,7 +489,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
       <div className="scr-sg-sizer" style={sizerStyle}>
       <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-        style={{ "--ncw": groups.length * per, gridTemplateColumns: colsOf("minmax(110px, 2fr)", "minmax(62px, 1.3fr)", "minmax(46px, 1fr)"), ...foldStyle } as React.CSSProperties}>
+        style={{ "--ncw": groups.length * per, gridTemplateColumns: colsOf("minmax(92px, 1.3fr)", "minmax(76px, 1.5fr)", "minmax(46px, 1fr)"), ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} mobile races={races} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} mobile races={races} />)}
@@ -508,7 +509,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
     <div className="scr-sg-sizer" style={sizerStyle}>
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-      style={{ gridTemplateColumns: colsOf("minmax(150px, 1.6fr)", "minmax(70px, 1.3fr)", "minmax(52px, 1fr)"), ...foldStyle }}>
+      style={{ gridTemplateColumns: colsOf("minmax(150px, 1.6fr)", "minmax(84px, 1.5fr)", "minmax(52px, 1fr)"), ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} races={races} />)}
