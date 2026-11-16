@@ -93,6 +93,10 @@ function StatsPausedNotice() {
   );
 }
 
+/** ★ 티어 칸 위아래 표 화면 스위치(2026-11-16, 요청: "기능은 살려두되 화면에 실제 출시는 안 할게") — false 면 다이얼을 안 세우고 내 표도 안 받는다
+ *  (서버 sg-api tier_votes · 덤 셈은 그대로 — 표가 없으니 덤도 0). 출시는 이 값만 true 로. */
+const TIER_VOTE_ON = false;
+
 export default function ClanStatsScreen() {
   const members = useAppStore((s) => s.members);
   const isMobile = useIsMobile();
@@ -157,7 +161,7 @@ export default function ClanStatsScreen() {
   /* ★ 티어 칸 위아래 표(StatGrid StatVoteCtl ★ · 2026-11-16, 요청: "사람별로 11월 전체 팀전 티어 조회 때만") — 한 달 · 팀전 전체 · 맵 전체 · 로그인한 사람에게,
      서버가 그 달을 열어 둔 때만(sg-api tier_votes VOTE_MONTHS) 다이얼이 선다. 누르면 내 표를 바로 바꾸고(낙관) 서버에 낸 뒤 표를 다시 받는다(덤 · 티어 · 차례가 서버 셈으로). */
   const me = useAppStore((s) => s.user);
-  const voteMonth = monthSel !== null && size === "team" && mapTab === "all" && me ? monthSel : null;
+  const voteMonth = TIER_VOTE_ON && monthSel !== null && size === "team" && mapTab === "all" && me ? monthSel : null;
   const [voteMine, setVoteMine] = useState<{ month: string; mine: Record<string, number> } | null>(null);
   const [voteBusy, setVoteBusy] = useState<string | null>(null);
   const [statsTick, setStatsTick] = useState(0);
