@@ -384,13 +384,15 @@ export interface TierEntry {
   /** 몇 인분(티어의 잣대 · 편의 힘은 인분의 합) · EAPM 만으로 본 인분(EAPM ÷ 120). */
   inbun?: number | null;
   statInbun?: number | null;
-  /** = inbun(정렬이 쓴다) · 옛 판 수준(늘 null). */
+  /** = inbun(정렬이 쓴다). */
   stdInbun?: number | null;
   /** 보정 교환비(그 기간 · 표의 교환비 칸 · 2026-10-28) — 종족 몫 · 상대 세기 몫을 뺀 교환비(1 = 보통 · 맵 탭과 상관없이 전체 맵 팀전 판). */
   ex?: number | null;
   /** 주종족(2026-11-04) — 이 티어를 낸 종족들(그 기간 판 30% 이상). */
   mains?: string[] | null;
+  /** ★ 경기 수준 배수(sg-api quality.py · 2026-11-16 · 그 기간 모두 같다 · inbun 은 이미 곱한 값) · levelPct = 판들의 초반 운영이 고정 기준보다 몇 % 좋은가. 잰 판이 없으면 null. */
   level?: number | null;
+  levelPct?: number | null;
   /** 셈 과정 표(2026-11-06 저녁 · sg-api tier calc) — EAPM · 전투 · 생산 · 승패 · 인분 줄 · 인분 = 배수(mult)의 곱. 2026-11-12 부터 WPA · 승패 · 인분 줄. */
   calc?: TierCalcRow[] | null;
   /** ★ 판당 WPA(승리 확률 %p · sg-api wpa.py · 2026-11-12) — 보정 전 원점수(통계 표의 WPA 칸 · 티어 칸이 없는 조회는 이 값 그대로). */

@@ -343,6 +343,16 @@ export default function ClanStatsScreen() {
     return view.clanFormats.filter((f) => f.label.includes(":")).reduce((n, f) => n + f.plays, 0);
   }, [view, size]);
 
+  /* ★ 경기 수준(2026-11-16, 요청: "조회한 기간의 경기수준(판 질) 넣기 · 경기수준: 기준보다 0.2% 높음 이런 식으로 · 높으면 초록 낮으면 빨강톤") —
+     sg-api quality.py · TierEntry.levelPct(그 기간 판들의 초반 운영이 고정 기준(7~11월 평균)보다 몇 % 좋은가 · 그 기간 모두 같다). 티어 조회에서 잰 판이 있을 때만. */
+  const levelPct = useMemo((): number | null => {
+    if (!showTier || !view) return null;
+    for (const e of Object.values(view.stats)) {
+      if (typeof e?.tier?.levelPct === "number") return e.tier.levelPct;
+      for (const t of Object.values(e?.tierByRace ?? {})) if (typeof t?.levelPct === "number") return t.levelPct;
+    }
+    return null;
+  }, [showTier, view]);
   const cards = useMemo(() => {
     const list = viewMembers.map((m) => {
       const entry = view?.stats[m.id];
@@ -528,6 +538,12 @@ export default function ClanStatsScreen() {
           {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다. */}
           {/* 명수 옆 경기 수(2026-11-05, 요청: "명수 옆에 몇 게임인지 · 폰 피시 모두" — 표 평균 줄의 게임수는 참여 합이라 경기 수는 여기서). */}
           <span className="scr-clan-dash-sub">{viewMembers.length}명 · {clanGames.toLocaleString()}게임</span>
+          {levelPct !== null && (
+            <span className={cx("scr-stats-level", levelPct >= 0.05 ? "is-up" : levelPct <= -0.05 ? "is-dn" : null)}
+              title="그 기간 판들의 초반 운영(분당 채취 · 쥔 돈)을 고정 기준(2026년 7~11월 평균)과 견준 값 — 모두의 인분에 같은 비율로 곱해져요(20% 좋으면 ×1.2)">
+              경기 수준: {Math.abs(levelPct) < 0.05 ? "기준과 같음" : `기준보다 ${Math.abs(levelPct).toFixed(1)}% ${levelPct > 0 ? "높음" : "낮음"}`}
+            </span>
+          )}
           {/* (걷음 2026-10-22, 요청: "통계 그래프 제거") 전부 펼치기·접기 — 펼칠 그래프가 없다. */}
         </header>
       )}

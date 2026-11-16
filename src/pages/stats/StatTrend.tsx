@@ -146,10 +146,10 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part
   /* ★ 보정 뒤 점수 그래프(2026-11-09, 요청: "통계의 셀 팝업의 그래프도 인분(보정 후)로 나타내기") — 표 칸이 보정 뒤 인분 배수(calcRowOf ★)인 티어 조회면 그래프도 달마다
      그 달 티어 셈 표의 그 줄 배수(1.00 = 보통). 종족 묶음은 그 종족 티어 · 종합은 종합 티어(combinedTier). 원점수는 팝업 글자(원점수 줄)에 남는다. */
   /* ★ 그래프 = 칸의 점수(인분)(2026-11-16, 요청: "티어 팝업 그래프에 운영까지 반영된 걸로 나와야") — 옛: 셈 표 'WPA' 줄 배수만(판 수준 · 위아래 표가 빠졌다).
-     이제 달마다 그 달의 인분(stdInbun — WPA × 판 수준(sg-api quality.py) · 표 칸 WpaTierCell 과 같은 값) · 인분이 없는 옛 응답은 WPA 줄 배수. */
+     이제 달마다 그 달의 인분(stdInbun — WPA × 경기 수준(sg-api quality.py) · 표 칸 WpaTierCell 과 같은 값) · 인분이 없는 옛 응답은 WPA 줄 배수. */
   if (scored && kind === "wpa") {
     return {
-      key: `${race ?? ""}:wpa:sc`, label: `${who}점수(인분 · WPA × 판 수준 · 1.00 = 보통)`,
+      key: `${race ?? ""}:wpa:sc`, label: `${who}점수(인분 · WPA × 경기 수준 · 1.00 = 보통)`,
       series: [{ label: "인분", cls: "", pick: (e) => { const t = tierOf(e); return n(t?.stdInbun ?? t?.inbun ?? calcRowOf(t, "wpa")?.mult); }, fmt: x2 }],
       mode: "single",
     };
