@@ -22,6 +22,10 @@ interface DayRangePickerProps {
   /** 고를 수 있는 마지막 날(YYYY-MM-DD · 오늘). 프리셋도 이 날을 '오늘'로 센다. */
   max: string;
   onChange: (from: string, to: string) => void;
+  /** 전체 기간이 켜진 동안(단추 글자 "전체 기간" · 프리셋 [전체] 켜짐) — from · to 는 달력을 열 자리(오늘)만 준다. */
+  all?: boolean;
+  /** 프리셋 [전체](2026-11-16, 요청: "오늘 어제 일주일 전체 네 개로") — 없으면 [전체]를 안 그린다. */
+  onAll?: () => void;
   className?: string;
 }
 
@@ -37,14 +41,14 @@ const label = (a: string, b: string): string => {
   return `${dot(a)} ~ ${a.slice(0, 4) === b.slice(0, 4) ? dot(b.slice(5)) : dot(b)}`;
 };
 
-/** 프리셋(요청: "오늘 어제 최근 일주일") — 최근 일주일은 오늘을 넣은 이레. */
+/** 프리셋(요청: "오늘 어제 최근 일주일" → 같은 날 "오늘 어제 일주일 전체 네 개로 · 최근 일주일 → 일주일") — 일주일은 오늘을 넣은 이레 · [전체]는 아래에서 따로(onAll). */
 const PRESETS: { key: string; text: string; range: (today: string) => [string, string] }[] = [
   { key: "today", text: "오늘", range: (t) => [t, t] },
   { key: "yesterday", text: "어제", range: (t) => [addDays(t, -1), addDays(t, -1)] },
-  { key: "week", text: "최근 일주일", range: (t) => [addDays(t, -6), t] },
+  { key: "week", text: "일주일", range: (t) => [addDays(t, -6), t] },
 ];
 
-export default function DayRangePicker({ from, to, max, onChange, className }: DayRangePickerProps) {
+export default function DayRangePicker({ from, to, max, onChange, all = false, onAll, className }: DayRangePickerProps) {
   const [open, setOpen] = useState(false);
   /** 첫 칸(연 동안만) — 다음 칸이 다른 끝이다. */
   const [anchor, setAnchor] = useState<string | null>(null);
@@ -103,11 +107,11 @@ export default function DayRangePicker({ from, to, max, onChange, className }: D
   };
 
   /* 달력에 칠할 것 — 고르는 중이면 첫 칸 ~ 손이 간 날(미리 보기), 아니면 지금 기간. */
-  const shown: DateRange = anchor !== null
+  const shown: DateRange | undefined = anchor !== null
     ? (() => { const h = hover ?? anchor; const [lo, hi] = anchor <= h ? [anchor, h] : [h, anchor]; return { from: toDate(lo), to: toDate(hi) }; })()
-    : { from: toDate(from), to: toDate(to) };
+    : all ? undefined : { from: toDate(from), to: toDate(to) };
   const maxDate = toDate(max);
-  const presetOn = (p: (typeof PRESETS)[number]) => { const [a, b] = p.range(max); return a === from && b === to; };
+  const presetOn = (p: (typeof PRESETS)[number]) => { const [a, b] = p.range(max); return !all && a === from && b === to; };
 
   return (
     <div className={cx("scr-month-cal scr-drp", className)} ref={ref}>
@@ -119,7 +123,7 @@ export default function DayRangePicker({ from, to, max, onChange, className }: D
         title="시작 · 끝 날짜 사이(끝 날 포함) 판만 · 하루는 정오부터 다음 날 정오 전까지"
       >
         <CalendarDays size={14} aria-hidden />
-        <span className="scr-drp-text">{label(from, to)}</span>
+        <span className="scr-drp-text">{all ? "전체 기간" : label(from, to)}</span>
       </button>
       {open && createPortal(
         <div className="scr-month-cal-pop scr-drp-pop" ref={popRef} role="dialog" aria-label="날짜 고르기">
@@ -133,6 +137,14 @@ export default function DayRangePicker({ from, to, max, onChange, className }: D
                 {p.text}
               </button>
             ))}
+            {onAll && (
+              <button
+                type="button" className={cx("scr-month-cal-all scr-drp-preset", all && "scr-month-cal-cell-on")}
+                onClick={() => { onAll(); setOpen(false); }}
+              >
+                전체
+              </button>
+            )}
           </div>
           <DayPicker
             mode="range"
@@ -147,7 +159,7 @@ export default function DayRangePicker({ from, to, max, onChange, className }: D
             onMonthChange={setMonth}
             endMonth={maxDate}
             disabled={{ after: maxDate }}
-            modifiers={anchor !== null ? { picking: shown } : undefined}
+            modifiers={anchor !== null && shown ? { picking: shown } : undefined}
             modifiersClassNames={{ picking: "is-picking" }}
             formatters={{ formatCaption: (d) => `${d.getFullYear()}년 ${d.getMonth() + 1}월` }}
             components={{

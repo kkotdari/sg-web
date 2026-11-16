@@ -9,7 +9,7 @@ import MonthCalendar from "../../components/common/MonthCalendar";
 import DayRangePicker from "../../components/common/DayRangePicker";
 import { currentMonthValue, fmt, MONTH_PERIOD_RE, monthPeriodLabel, serverMs, shiftMonthValue } from "../../utils/date";
 import {
-  CLAN_TYPE, DAY_PERIOD_RE, MAP_DEFAULT, MAP_TABS, mapTabOf, monthOfPeriod, PERIOD_TODAY, SIZE_TABS, sizeTabOf, SOLO_TYPE, statRange, todayDay, useTodayFrom,
+  CLAN_TYPE, DAY_PERIOD_RE, MAP_DEFAULT, MAP_TABS, mapTabOf, monthOfPeriod, PERIOD_ALL, PERIOD_TODAY, SIZE_TABS, sizeTabOf, SOLO_TYPE, statRange, todayDay, useTodayFrom,
 } from "../stats/statQuery";
 import StatGrid, { CompGrid, WpaHelp, type StatSortKey, type StatVoteCtl } from "../stats/StatGrid";
 import { calcRowOf, combinedTier, statTrendMonths, wpaOf, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
@@ -512,7 +512,8 @@ export default function ClanStatsScreen() {
                 <span>기간 지정</span>
               </label>
               {/* ★ 라벨 "날짜 지정" → "기간 지정" · 줄 끝 설명("실제 그 기간만의 실력을 보여줘요")은 걷었다(2026-11-16, 요청: "날짜 지정-> 기간 지정으로 라벨바꾸고 도움말 제거"). */}
-              <DayRangePicker from={dayA} to={dayB} max={todayDay()} onChange={pickDays} />
+              <DayRangePicker from={dayA} to={dayB} max={todayDay()} onChange={pickDays}
+                all={dayPeriod === PERIOD_ALL} onAll={() => setPeriod(PERIOD_ALL)} />
             </div>
           </div>
         </div>
