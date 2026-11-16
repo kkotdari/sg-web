@@ -97,12 +97,28 @@ function StatsPausedNotice() {
  *  (서버 sg-api tier_votes · 덤 셈은 그대로 — 표가 없으니 덤도 0). 출시는 이 값만 true 로. */
 const TIER_VOTE_ON = false;
 
-/** ★ 가입한 뒤의 기간인가(2026-11-16, 요청: "통계 목록에 노출되는 사람은 가입일 이후인 사람만" · "클랜 전체 줄도 조회되는 사람 수로") — 조회 기간 끝(to · YYYY-MM-DD)이
- *  가입일(createdAt · 이 기기 날짜)보다 앞이면 false(예: 10월에 가입한 사람은 7 · 8 · 9월 조회에 없다). 끝이 없으면(전체 기간) 늘 true. */
-function joinedBy(m: Member, to: string): boolean {
-  if (!to || !m.createdAt) return true;
-  const t = serverMs(m.createdAt);
-  return !Number.isFinite(t) || fmt(new Date(t)) <= to;
+/** ISO 때 → 이 기기 날짜(YYYY-MM-DD) · 못 읽으면 null. */
+function dayOf(iso: string | null | undefined): string | null {
+  const t = serverMs(iso);
+  return Number.isFinite(t) ? fmt(new Date(t)) : null;
+}
+/** ★ 통계에 드는 사람(2026-11-16) — 그 기간에 회원이던 사람만.
+ *  · 가입(요청: "통계 목록에 노출되는 사람은 가입일 이후인 사람만" · "클랜 전체 줄도 조회되는 사람 수로") — 조회 기간 끝(to)이 가입일보다 앞이면 뺀다(10월 가입자는 7 · 8 · 9월 조회에 없다).
+ *  · 탈퇴(요청: "탈퇴일이 조회 기간 시작보다 앞인 경우도 제외") — 탈퇴한 사람은 탈퇴일이 조회 기간 시작(from) 이후면 넣는다(그 기간에 회원이었다) · 앞이면 뺀다.
+ *    전체 기간(시작 · 끝이 없음)은 탈퇴자도 다 넣는다. 탈퇴일을 모르는 옛 응답의 탈퇴자는 옛처럼 뺀다. 정지(suspended)는 옛처럼 늘 뺀다.
+ *  서버에 보내는 명단이라 목록 · 명수 · 클랜 전체(평균) 줄 · 편성 집계가 다 이 사람들로만이다. */
+function statMembers(members: readonly Member[], range: { from: string; to: string }): Member[] {
+  return members.filter((m) => {
+    if (m.status === "suspended") return false;
+    const joined = dayOf(m.createdAt);
+    if (range.to && joined && joined > range.to) return false;
+    if (m.status === "withdrawn") {
+      const left = dayOf(m.withdrawnAt);
+      if (!left) return false;
+      if (range.from && left < range.from) return false;
+    }
+    return true;
+  });
 }
 
 export default function ClanStatsScreen() {
@@ -147,10 +163,11 @@ export default function ClanStatsScreen() {
     if (!isMobile) try { localStorage.setItem("stats.showRaces", next ? "1" : "0"); } catch { /* 저장 못 해도 이번 화면은 된다 */ }
     if (!next) { const rest = sortKeys.filter((k) => !k.includes(":")); setSortKeys(rest.length > 0 ? rest : ["tier"]); }
   };
+  /* 목록 거르기의 바탕 — 정지만 뺀 사람(탈퇴자도 그 기간에 회원이었으면 서버 명단 · 아래 statMembers ★ 에 들어 줄이 선다 · 유저 검색으로도 찾는다). */
   const matchedMembers = useMemo(() => {
     const terms = users.map((u) => normalizeSearchText(u).trim()).filter(Boolean);
-    return activeMembers.filter((m) => terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t)));
-  }, [activeMembers, users]);
+    return members.filter((m) => m.status !== "suspended" && (terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t))));
+  }, [members, users]);
 
   /* 기간 기본값 = 이번 달(2026-10-28, 요청: "조회 최근달로 변경" · 같은 날 "최근 3개월로" → "최근 2개월로"를 거쳐 돌아옴). */
   /* ★ 기간 두 갈래(2026-11-14 · statQuery monthOfPeriod ★) — 주소의 period 는 달 하나("YYYY-MM") 아니면 날짜 지정('오늘' · 날~날). 옛 주소(전체 기간 · 여러 달)는
@@ -244,14 +261,14 @@ export default function ClanStatsScreen() {
          그거에 무관해야"). 검색은 아래 줄만 거른다(viewMembers) · 그래서 칩을 바꿔도 다시 안 불러온다. */
       /* ★ 가입한 뒤의 기간만(2026-11-16 · 아래 viewMembers 옛 거르기를 여기로 — 같은 날 "클랜 전체 줄도 조회되는 사람 수로 계산") — 조회 기간의 끝이 가입일보다
          앞인 사람은 서버에 안 보낸다 → 목록 · 명수 · 클랜 전체(평균) 줄 · 편성 집계가 다 그 사람들로만. 전체 기간(끝이 없음)은 다. */
-      memberIds: activeMembers.filter((m) => joinedBy(m, statRange(period, period === PERIOD_TODAY ? todayFrom : "").to)).map((m) => m.id).sort().join(","),
+      memberIds: statMembers(members, statRange(period, period === PERIOD_TODAY ? todayFrom : "")).map((m) => m.id).sort().join(","),
       period,
       /* [오늘]이면 그 '오늘'의 시작도 열쇠에 — 정오를 넘으면 다시 불러온다(위 useTodayFrom ★). */
       day: period === PERIOD_TODAY ? todayFrom : "",
       size,
       map: mapTab,
     }),
-    [activeMembers, period, todayFrom, size, mapTab],
+    [members, period, todayFrom, size, mapTab],
   );
   const queryKeySignature = useMemo(() => JSON.stringify(queryKey), [queryKey]);
   const debouncedSignature = useDebouncedValue(queryKeySignature, 300);
@@ -337,7 +354,7 @@ export default function ClanStatsScreen() {
       noChart: debouncedQuery.period === PERIOD_TODAY || DAY_PERIOD_RE.test(debouncedQuery.period) };
   }, [view, debouncedSignature, debouncedQuery.period]);
 
-  /* 가입일 거르기(2026-11-16 · "통계 목록에 노출되는 사람은 가입일 이후인 사람만")는 서버에 보내는 사람(queryKey.memberIds)에서 한다 — view.memberIds 가 이미 그 사람들. */
+  /* 가입 · 탈퇴 거르기(2026-11-16 · 위 statMembers ★)는 서버에 보내는 사람(queryKey.memberIds)에서 한다 — view.memberIds 가 이미 그 사람들. */
   const viewMembers = useMemo(() => {
     if (!view) return [];
     const byId = new Map(members.map((m) => [m.id, m]));

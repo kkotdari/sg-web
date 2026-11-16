@@ -27,6 +27,8 @@ export interface Member {
   status: MemberStatus;
   createdAt: string;
   updatedAt: string;
+  /** ★ 탈퇴한 때(2026-11-16 · sg-api members.withdrawn_at — 통계는 그 기간에 회원이던 사람만) · 탈퇴 안 했으면 null. */
+  withdrawnAt?: string | null;
 }
 
 export interface SignupPayload {
