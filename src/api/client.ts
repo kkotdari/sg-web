@@ -11,6 +11,7 @@ import type { GameCurve,
   ExtShareList, ExtShareAddResult,
   DeletedGameResult,
   GameUnhideRequest,
+  PollSummary, PollResult,
 } from "../types";
 import type { ParsedReplay, ReplayMapGrid } from "scplay";
 import { putMapThumbs, type MapThumb } from "../utils/mapThumbs";
@@ -608,6 +609,14 @@ export const api = {
   },
   async answerPoll(key: string, body: { choice: number; comment: string }): Promise<void> {
     await request<void>(`/api/polls/${encodeURIComponent(key)}`, { method: "POST", body: JSON.stringify(body) });
+  },
+  /** 운영자 — 답이 든 설문 목록(마지막 답이 최근인 차례 · 제어판 '설문 결과'). */
+  async listPolls(): Promise<PollSummary[]> {
+    return request<PollSummary[]>("/api/polls");
+  },
+  /** 운영자 — 한 설문의 고르기별 수 · 답 전부. */
+  async getPollResult(key: string): Promise<PollResult> {
+    return request<PollResult>(`/api/polls/${encodeURIComponent(key)}`);
   },
   /** 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
   async getGamesClose(): Promise<{ closedUntil: string | null }> {

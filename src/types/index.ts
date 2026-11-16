@@ -743,3 +743,18 @@ export interface FeedPage {
   items: FeedEntry[];
   nextCursor: string | null;
 }
+
+/* ── 설문(sg-api /polls · 공통 양식 polls/defs — 2026-11-16 제어판 '설문 결과') ── */
+/** 답이 든 설문 한 줄(운영자). */
+export interface PollSummary {
+  key: string;
+  total: number;
+  firstAt: string;
+  lastAt: string;
+}
+/** 설문 결과(운영자) — counts[i] = i+1 번을 고른 사람 수 · 답은 최근 차례. */
+export interface PollResult {
+  counts: number[];
+  total: number;
+  answers: { nickname: string; choice: number; comment: string; createdAt: string }[];
+}

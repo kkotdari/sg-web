@@ -2392,6 +2392,52 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
   }
 }
 .scr-trash-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; padding-bottom: 14px; }
+/* ★ 설문 결과(modals/PollResultsModal · 제어판 '설문 결과' · 2026-11-16 공통 양식) — 설문 고르기 알약 · 문항 · 고르기별 막대(누르면 그 답만) · 답 목록. 높이는 위 .scr-trash 와 같은 틀. */
+.scr-pollres { display: flex; flex-direction: column; height: min(78vh, 720px); }
+@media (max-width: 960px) {
+  .scr-pollres {
+    top: auto;
+    bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px);
+    transform: translate(-50%, 0);
+    height: calc(100dvh - var(--safe-top-ui, 0px) - var(--mobile-footer-h, 69px) - 28px);
+  }
+}
+.scr-pollres-body { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: hidden; padding-bottom: 14px; }
+.scr-pollres-empty { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 24px 0; color: var(--muted); font-size: var(--fs-caption); }
+.scr-pollres-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.scr-pollres-tab > em { margin-left: 2px; font-style: normal; font-weight: 600; opacity: 0.6; }
+.scr-pill-btn.scr-pollres-tab.is-on, .scr-pollres-tools .scr-pill-btn.is-on { background: var(--point, #e9ac52); border-color: var(--point, #e9ac52); color: var(--card-bg, #0d0d0e); }
+.scr-pollres-card { display: flex; flex-direction: column; gap: 8px; min-height: 0; flex: 1; }
+.scr-pollres-q { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.4; }
+.scr-pollres-q code { font-size: 13px; }
+.scr-pollres-em { margin: 0; font-size: 13px; font-weight: 800; color: var(--point, #e9ac52); }
+.scr-pollres-meta { margin: 0; font-size: var(--fs-caption); color: var(--muted); }
+.scr-pollres-mean { margin: 0; font-size: 13px; }
+.scr-pollres-mean > b { font-size: 16px; color: var(--point, #e9ac52); }
+.scr-pollres-mean > span { color: var(--muted); font-size: var(--fs-caption); }
+.scr-pollres-bars { display: flex; flex-direction: column; gap: 4px; }
+.scr-pollres-bar {
+  display: grid; grid-template-columns: minmax(96px, 9em) 1fr auto; align-items: center; gap: 10px;
+  padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: none; color: var(--text); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.scr-pollres-bar:hover { background: var(--surface-2); }
+.scr-pollres-bar.is-on { border-color: var(--point, #e9ac52); }
+.scr-pollres-bar-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scr-pollres-bar-label > i, .scr-pollres-row-pick > i { font-style: normal; font-weight: 800; opacity: 0.6; margin-right: 5px; }
+.scr-pollres-bar-track { height: 10px; border-radius: 999px; background: rgba(var(--overlay-rgb, 255, 255, 255), 0.07); overflow: hidden; }
+.scr-pollres-bar-fill { display: block; height: 100%; border-radius: 999px; background: var(--point, #e9ac52); }
+.scr-pollres-bar-num { min-width: 64px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.scr-pollres-bar-num > em { font-style: normal; font-weight: 600; color: var(--muted); margin-left: 4px; }
+.scr-pollres-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.scr-pollres-copy { margin-left: auto; }
+.scr-pollres-list { display: flex; flex-direction: column; gap: 2px; min-height: 0; flex: 1; overflow-y: auto; border-top: 1px solid var(--line-soft, rgba(255, 255, 255, 0.08)); padding-top: 6px; }
+.scr-pollres-row { padding: 7px 8px; border-radius: 6px; }
+.scr-pollres-row:hover { background: var(--surface-2); }
+.scr-pollres-row-head { display: flex; align-items: baseline; gap: 8px; font-size: 13px; min-width: 0; }
+.scr-pollres-row-name { font-weight: 700; white-space: nowrap; }
+.scr-pollres-row-pick { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scr-pollres-row-when { margin-left: auto; color: var(--muted); font-size: var(--fs-caption); white-space: nowrap; }
+.scr-pollres-row-text { margin: 4px 0 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 .scr-trash-note { margin: 0; font-size: var(--fs-caption); color: var(--muted); line-height: 1.5; }
 .scr-trash-search { width: 100%; }
 .scr-trash-list {
@@ -4528,37 +4574,37 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 @media (min-width: 961px) and (hover: hover) {
   .scr-toastwrap { left: calc(50% + var(--rail-w) / 2); }
 }
-/* ★ 통계 설문(components/stats/StatsPoll · 2026-11-15) — 아래쪽 가운데 판(폰은 아래 탭 바 위). 질문 · 강조 한 줄 · 고르기 다섯 · 적는 칸 · 제출. */
-.scr-stats-poll {
+/* ★ 설문 답 판(components/polls/PollSheet · 공통 양식 polls/defs — 2026-11-15 통계 설문에서 2026-11-16 일반화) — 아래쪽 가운데 판(폰은 아래 탭 바 위). 질문 · 강조 한 줄 · 고르기 · 적는 칸 · 제출. */
+.scr-poll {
   position: fixed; z-index: 900; left: 50%; bottom: 24px; transform: translateX(-50%);
   width: min(calc(100vw - 24px), 460px); box-sizing: border-box; padding: 14px 16px 14px;
   border-radius: var(--radius); background: var(--card-bg, #0d0d0e); color: var(--text);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--line-soft, rgba(255, 255, 255, 0.08));
   display: flex; flex-direction: column; gap: 8px;
 }
-@media (min-width: 961px) and (hover: hover) { .scr-stats-poll { left: calc(50% + var(--rail-w, 0px) / 2); } }
-@media (max-width: 960px) { .scr-stats-poll { bottom: calc(var(--mobile-footer-h, 69px) + var(--scr-float-bottom, 6px) + 10px); } }
-.scr-stats-poll-x { position: absolute; top: 8px; right: 8px; }
-.scr-stats-poll-q { margin: 0; padding-right: 26px; font-size: 15px; font-weight: 700; line-height: 1.4; }
-.scr-stats-poll-em { margin: 0; font-size: 13px; font-weight: 800; color: var(--point, #e9ac52); }
-.scr-stats-poll-choices { display: flex; flex-wrap: wrap; gap: 6px; }
-.scr-stats-poll-choice {
+@media (min-width: 961px) and (hover: hover) { .scr-poll { left: calc(50% + var(--rail-w, 0px) / 2); } }
+@media (max-width: 960px) { .scr-poll { bottom: calc(var(--mobile-footer-h, 69px) + var(--scr-float-bottom, 6px) + 10px); } }
+.scr-poll-x { position: absolute; top: 8px; right: 8px; }
+.scr-poll-q { margin: 0; padding-right: 26px; font-size: 15px; font-weight: 700; line-height: 1.4; }
+.scr-poll-em { margin: 0; font-size: 13px; font-weight: 800; color: var(--point, #e9ac52); }
+.scr-poll-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.scr-poll-choice {
   display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 999px; cursor: pointer;
   font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: rgba(var(--overlay-rgb, 255, 255, 255), 0.06);
   border: 1px solid var(--line-soft, rgba(255, 255, 255, 0.12));
 }
-.scr-stats-poll-choice > i { font-style: normal; font-weight: 800; opacity: 0.6; }
-.scr-stats-poll-choice.is-on { background: var(--point, #e9ac52); border-color: var(--point, #e9ac52); color: var(--card-bg, #0d0d0e); }
-.scr-stats-poll-choice.is-on > i { opacity: 1; }
-.scr-stats-poll-text {
+.scr-poll-choice > i { font-style: normal; font-weight: 800; opacity: 0.6; }
+.scr-poll-choice.is-on { background: var(--point, #e9ac52); border-color: var(--point, #e9ac52); color: var(--card-bg, #0d0d0e); }
+.scr-poll-choice.is-on > i { opacity: 1; }
+.scr-poll-text {
   width: 100%; box-sizing: border-box; resize: vertical; min-height: 52px; padding: 8px 10px; border-radius: 8px;
   font: inherit; font-size: 13px; color: var(--text); background: rgba(var(--overlay-rgb, 255, 255, 255), 0.05);
   border: 1px solid var(--line-soft, rgba(255, 255, 255, 0.12));
 }
-.scr-stats-poll-send { align-self: flex-end; min-width: 88px; justify-content: center; border: none; cursor: pointer; background: var(--point, #e9ac52); color: var(--card-bg, #0d0d0e); }
-.scr-stats-poll-send:disabled { opacity: 0.45; cursor: default; }
-.scr-stats-poll-err { margin: 0; font-size: 12px; color: #ff7a7a; }
-.scr-stats-poll-thanks { margin: 0; padding: 6px 26px 6px 0; font-size: 14px; font-weight: 700; }
+.scr-poll-send { align-self: flex-end; min-width: 88px; justify-content: center; border: none; cursor: pointer; background: var(--point, #e9ac52); color: var(--card-bg, #0d0d0e); }
+.scr-poll-send:disabled { opacity: 0.45; cursor: default; }
+.scr-poll-err { margin: 0; font-size: 12px; color: #ff7a7a; }
+.scr-poll-thanks { margin: 0; padding: 6px 26px 6px 0; font-size: 14px; font-weight: 700; }
 /* 아래쪽 토스트(Toast bottom · 2026-11-13, 요청: "통계 임시 토스트 아래쪽에 뜨게") — 폰은 아래 탭 바 위 · PC 는 바닥에서 32px. */
 .scr-toastwrap.is-bottom { top: auto; bottom: 32px; transform: translateX(-50%); }
 @media (max-width: 960px) {

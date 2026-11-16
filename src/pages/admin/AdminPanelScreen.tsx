@@ -14,6 +14,7 @@ import SqlConsoleModal from "../../modals/SqlConsoleModal";
 import WpaDetailModal from "../../modals/WpaDetailModal";
 import DeletedGamesModal from "../../modals/DeletedGamesModal";
 import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
+import PollResultsModal from "../../modals/PollResultsModal";
 import { api } from "../../api/client";
 import { useAppStore } from "../../store/appStore";
 import { showAlert } from "../../components/common/AlertDialog";
@@ -43,6 +44,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [versionManageOpen, setVersionManageOpen] = useState(false);
   const [extShareOpen, setExtShareOpen] = useState(false);
   const [sqlOpen, setSqlOpen] = useState(false);
+  const [pollOpen, setPollOpen] = useState(false);   // 설문 결과(PollResultsModal ★)
   const [wpaOpen, setWpaOpen] = useState(false);
   const [deletedGamesOpen, setDeletedGamesOpen] = useState(false);
   const [unhideOpen, setUnhideOpen] = useState(false);
@@ -555,6 +557,26 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
               </div>
             </section>
 
+            {/* ★ 설문 결과(2026-11-16, 요청: "설문 결과 보는 창 제어판에 추가해줘 · 공통 양식으로" — PollResultsModal ★ · 정의는 polls/defs). */}
+            <section className="scr-adm-card">
+              <div className="scr-adm-card-head">
+                <h2 className="scr-adm-card-title">설문</h2>
+              </div>
+              <div className="scr-adm-rows">
+                <div className="scr-adm-row">
+                  <div className="scr-adm-row-text">
+                    <span className="scr-adm-row-title">설문 결과</span>
+                    <span className="scr-adm-row-desc">
+                      설문마다 고르기별 인원·비율과 답(닉네임·의견)을 봅니다. 막대를 누르면 그 답만, md 복사로 표와 의견을 한 번에 옮겨요.
+                    </span>
+                  </div>
+                  <button type="button" className="scr-rect-btn scr-adm-row-btn" onClick={() => setPollOpen(true)}>
+                    열기
+                  </button>
+                </div>
+              </div>
+            </section>
+
             <section className="scr-adm-card">
               <div className="scr-adm-card-head">
                 <h2 className="scr-adm-card-title">콘솔</h2>
@@ -793,6 +815,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
       )}
 
       {sqlOpen && <SqlConsoleModal onClose={() => setSqlOpen(false)} />}
+      {pollOpen && <PollResultsModal onClose={() => setPollOpen(false)} />}
       {wpaOpen && <WpaDetailModal onClose={() => setWpaOpen(false)} />}
       {extShareOpen && (
         <ExtShareManageModal onClose={() => setExtShareOpen(false)} />
