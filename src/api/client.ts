@@ -610,6 +610,14 @@ export const api = {
   async answerPoll(key: string, body: { choice: number; comment: string }): Promise<void> {
     await request<void>(`/api/polls/${encodeURIComponent(key)}`, { method: "POST", body: JSON.stringify(body) });
   },
+  /* ── 티어 칸 위아래 표(2026-11-16 · sg-api /tier-votes · 익명 — 내 표만 받는다) ── */
+  async getTierVotes(month: string): Promise<{ open: boolean; mine: Record<string, number> }> {
+    return request<{ open: boolean; mine: Record<string, number> }>(`/api/tier-votes/${encodeURIComponent(month)}`);
+  },
+  /** +1 올려야 · −1 내려야 · 0 거두기. */
+  async setTierVote(month: string, memberId: string, value: -1 | 0 | 1): Promise<void> {
+    await request<void>(`/api/tier-votes/${encodeURIComponent(month)}/${encodeURIComponent(memberId)}`, { method: "PUT", body: JSON.stringify({ value }) });
+  },
   /** 운영자 — 답이 든 설문 목록(마지막 답이 최근인 차례 · 제어판 '설문 결과'). */
   async listPolls(): Promise<PollSummary[]> {
     return request<PollSummary[]>("/api/polls");

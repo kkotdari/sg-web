@@ -387,6 +387,8 @@ export interface TierEntry {
   wpaParts?: number[] | null;
   /** ★ WPA 몫의 인분 [방어 · 공격 · 합류 · 정찰](1 = 그 조회 판 평균 · sg-api 2026-11-13 · 합류 = 옛 헬프 · 장악은 걷음 — 옛 응답은 [… · 장악 · 정찰] 다섯) — WPA 팝업. */
   wpaInbun?: number[] | null;
+  /** ★ 위아래 표로 더한 인분(2026-11-16 · sg-api tier.VOTE_STEP · 11월 팀전 전체 · 맵 전체만) — inbun · stdInbun · tier 는 이미 더한 값. */
+  vote?: number | null;
 }
 
 export interface TierCalcRow { name: string; score: string; adj: string; mult: number }

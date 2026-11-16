@@ -6,6 +6,7 @@ import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { BaseRace, Member, MemberStats, TierCalcRow, TierEntry } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
@@ -140,6 +141,39 @@ function WpaCell({ t }: { t?: TierEntry | null }) {
   const s = wpaFmt(x);
   return <span className="scr-sg-v"><b>{s.slice(0, -1)}</b><i>점</i></span>;
 }
+/** ★ 티어 칸 위아래 표(2026-11-16, 요청: "티어 칸에 위아래 버튼 추가해줘 다이얼 · 이 사람은 점수가 좀 더 높아야 한다 · 낮아야 한다를 점수를 주는 거 ·
+ *  사람별로 11월 전체 팀전 티어 조회 때만 · +를 많이 받으면 그만큼 많이 + 미세조정") — ClanStatsScreen 이 열린 달 · 팀전 전체 · 맵 전체에서만 넘긴다.
+ *  종합 칸(사람마다 하나)에만 · 내 줄은 빈 자리 · 다시 누르면 거둔다 · 누가 줬는지는 서버도 안 내보낸다(sg-api tier_votes). 덤은 서버가 인분에 더해 온다(TierEntry.vote). */
+export interface StatVoteCtl {
+  mine: Record<string, number>;
+  selfId: string | null;
+  busy: string | null;
+  onVote: (memberId: string, value: -1 | 0 | 1) => void;
+}
+const VoteCtx = createContext<StatVoteCtl | null>(null);
+function VoteDial({ memberId }: { memberId: string }) {
+  const v = useContext(VoteCtx);
+  if (!v) return null;
+  if (memberId === v.selfId) return <i className="scr-sg-vote is-gap" aria-hidden />;
+  const mine = v.mine[memberId] ?? 0;
+  const press = (e: React.MouseEvent, val: 1 | -1): void => {
+    e.stopPropagation(); e.preventDefault();
+    v.onVote(memberId, mine === val ? 0 : val);
+  };
+  return (
+    <span className="scr-sg-vote" role="group" aria-label="점수 의견">
+      <button type="button" className={cx("scr-sg-vote-b is-up", mine === 1 && "is-on")} aria-pressed={mine === 1} disabled={v.busy === memberId}
+        title={mine === 1 ? "올려야 한다 — 다시 누르면 거둬요" : "점수가 더 높아야 해요"} onClick={(e) => press(e, 1)}><ChevronUp size={12} strokeWidth={3} /></button>
+      <button type="button" className={cx("scr-sg-vote-b is-dn", mine === -1 && "is-on")} aria-pressed={mine === -1} disabled={v.busy === memberId}
+        title={mine === -1 ? "내려야 한다 — 다시 누르면 거둬요" : "점수가 더 낮아야 해요"} onClick={(e) => press(e, -1)}><ChevronDown size={12} strokeWidth={3} /></button>
+    </span>
+  );
+}
+/** 표로 더한 인분(작게 · 점수 오른쪽 위) — 0 이면 안 단다. */
+function VoteMark({ v }: { v?: number | null }) {
+  if (!v) return null;
+  return <em className={cx("scr-sg-vote-m", v > 0 ? "is-up" : "is-dn")} title="위아래 표로 더한 점수">{v > 0 ? "+" : "−"}{Math.abs(v).toFixed(2)}</em>;
+}
 /** ★ WPA/티어 한 칸(2026-11-15, 요청: "WPA가 결국 티어기준이네 지금 · wpa랑 티어 하나로 합치고 점수 티어 순으로 표시하는게 나을듯 · 티어 없는애들은 점수만 · 헤더는 WPA/티어") —
  *  티어 조회에서 옛 티어 칸 · WPA 칸 둘을 한 칸으로. 점수 = 티어의 잣대 인분(stdInbun · 서버가 둘째 자리 자름 — 승패 보정 · EAPM · 생산을 끈 뒤로 WPA 배수와 같다) 뒤에 티어 배지.
  *  티어가 없는 사람(판이 문턱 아래)은 점수만(배지 자리는 비워 숫자 줄을 맞춘다). 팝업은 WPA 팝업(방어 · 공격 · 합류 · 정찰)과 셈 표 · 그래프는 보정 뒤 WPA. */
@@ -152,8 +186,9 @@ function WpaTierCell({ t, member, race, className, more }: { t?: TierEntry | nul
   return (
     <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}>
       <span className="scr-sg-wt">
-        <b className="scr-sg-wt-v">{ib.toFixed(2)}</b>
+        <b className="scr-sg-wt-v">{ib.toFixed(2)}<VoteMark v={t.vote} /></b>
         {typeof t.tier === "number" ? <b className={cx("scr-sg-tier", `is-t${Math.min(t.tier, 4)}`)}>{t.tier}</b> : <i className="scr-sg-wt-gap" aria-hidden />}
+        {race === undefined && member && <VoteDial memberId={member.id} />}
       </span>
     </TCell>
   );
@@ -316,7 +351,9 @@ export function WpaHelp() {
 }
 
 
-export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false, onVisW }: SortProps & {
+export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, multi, trend, tier = false, showRaces = false, onVisW, vote = null }: SortProps & {
+  /** 티어 칸 위아래 표(위 StatVoteCtl ★) — 열린 달 · 팀전 전체 · 맵 전체 · 로그인한 사람에게만. */
+  vote?: StatVoteCtl | null;
   /** 클랜원 전체(맨 위 줄) — 없으면 안 선다. */
   clan: { stats: MemberStats; byRace?: Partial<Record<BaseRace, MemberStats>>; main?: MemberStats | null } | null;
   rows: StatGridRow[];
@@ -382,7 +419,8 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const per = 5;   // 2026-11-15 티어 조회는 WPA/티어 한 칸(옛 6 : 5) · 2026-11-12 WPA 한 칸(옛 8 : 7 — 교환 이득 · 교전 참여 · 생산 · 그 전 6 : 5)
   /* 칸 틀 — WPA/티어 칸(묶음 첫 칸)은 숫자 + 배지라 넓게(PC 84px · 폰 76px · 2026-11-15 "wpa 티어 칸 늘리고" · 옛 70 · 62) · 나머지는 옛 최소 폭.
      폰 유저 칸 110 → 92px · 2fr → 1.3fr(같은 날 "폰 유저 폭 줄이고"). */
-  const colsOf = (who: string, first: string, rest: string): string => `${who} ${groups.map(() => [tier ? first : rest, ...Array(per - 1).fill(rest)].join(" ")).join(" ")}`;
+  /* 위아래 표가 서면(위 StatVoteCtl ★) 종합 묶음의 WPA/티어 칸만 다이얼 몫(PC 18 · 폰 16px)만큼 넓힌다 — first0. */
+  const colsOf = (who: string, first: string, rest: string, first0 = first): string => `${who} ${groups.map((_g, gi) => [tier ? (gi === 0 && vote ? first0 : first) : rest, ...Array(per - 1).fill(rest)].join(" ")).join(" ")}`;
   const gridRef = useRef<HTMLDivElement>(null);
   const [clipW, setClipW] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -484,12 +522,13 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   if (mobile) {
     return (
       <TrendCtx.Provider value={ctx}>
+      <VoteCtx.Provider value={vote}>
       {hcolCss && <style>{hcolCss}</style>}
       {/* 넓은 폰 · 태블릿도 가로 스크롤(2026-11-06, 지적: "모바일 레이아웃인데 PC 로 나오는 구간에서 너무 비좁네") — 칸 최소 폭을 키우고 넘치면 감싸개가 민다(PC 와 같은 .scr-sg-scroll). */}
       <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
       <div className="scr-sg-sizer" style={sizerStyle}>
       <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-        style={{ "--ncw": groups.length * per, gridTemplateColumns: colsOf("minmax(92px, 1.3fr)", "minmax(76px, 1.5fr)", "minmax(46px, 1fr)"), ...foldStyle } as React.CSSProperties}>
+        style={{ "--ncw": groups.length * per, gridTemplateColumns: colsOf("minmax(92px, 1.3fr)", "minmax(76px, 1.5fr)", "minmax(46px, 1fr)", "minmax(92px, 1.6fr)"), ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} mobile races={races} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} mobile races={races} />)}
@@ -497,11 +536,13 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       </div>
       </div>
       {popEl}
+      </VoteCtx.Provider>
       </TrendCtx.Provider>
     );
   }
   return (
     <TrendCtx.Provider value={ctx}>
+    <VoteCtx.Provider value={vote}>
     {hcolCss && <style>{hcolCss}</style>}
     {/* ★ 가로 스크롤(2026-11-06, 요청: "폭 최소 폭 늘리고 화면 좁으면 스크롤 생기게") — 칸 최소 폭 유저 150 → 170 · 값 50 → 60px. 그 합이 화면보다 넓으면 표 감싸개가 가로로 민다.
         종족별을 접은 표(is-fold · 종합만 보임)는 감춘 칸까지 밀리지 않게 가로 넘침을 숨긴다. */}
@@ -509,7 +550,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
     <div className="scr-sg-sizer" style={sizerStyle}>
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-      style={{ gridTemplateColumns: colsOf("minmax(150px, 1.6fr)", "minmax(84px, 1.5fr)", "minmax(52px, 1fr)"), ...foldStyle }}>
+      style={{ gridTemplateColumns: colsOf("minmax(150px, 1.6fr)", "minmax(84px, 1.5fr)", "minmax(52px, 1fr)", "minmax(102px, 1.6fr)"), ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} races={races} />)}
@@ -517,6 +558,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     </div>
     </div>
     {popEl}
+    </VoteCtx.Provider>
     </TrendCtx.Provider>
   );
 }

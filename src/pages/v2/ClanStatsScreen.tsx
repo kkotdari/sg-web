@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw, Users, Wrench } from "lucide-react";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
@@ -11,7 +11,7 @@ import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodLabel, shiftMonthValue }
 import {
   CLAN_TYPE, DAY_PERIOD_RE, MAP_DEFAULT, MAP_TABS, mapTabOf, monthOfPeriod, PERIOD_TODAY, SIZE_TABS, sizeTabOf, SOLO_TYPE, statRange, todayDay, useTodayFrom,
 } from "../stats/statQuery";
-import StatGrid, { CompGrid, WpaHelp, type StatSortKey } from "../stats/StatGrid";
+import StatGrid, { CompGrid, WpaHelp, type StatSortKey, type StatVoteCtl } from "../stats/StatGrid";
 import { calcRowOf, combinedTier, statTrendMonths, wpaOf, type StatTrendData, type TrendEntry } from "../stats/StatTrend";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useAppStore } from "../../store/appStore";
@@ -154,6 +154,41 @@ export default function ClanStatsScreen() {
      매기므로 그 조회에서만 칸의 게임수 · 승률과 같은 판을 본다. 옛: 1:1 이 아니면 늘. */
   /* (2026-11-10, 요청: "통계에 맵 필터 있잖아 · 그거별로 조회 시 티어 나오게") — 맵 탭에서도 보인다: 서버가 그 맵 판으로 티어를 낸다(tier_rows map_group). 팀전만은 그대로. */
   const showTier = size === "team";
+  /* ★ 티어 칸 위아래 표(StatGrid StatVoteCtl ★ · 2026-11-16, 요청: "사람별로 11월 전체 팀전 티어 조회 때만") — 한 달 · 팀전 전체 · 맵 전체 · 로그인한 사람에게,
+     서버가 그 달을 열어 둔 때만(sg-api tier_votes VOTE_MONTHS) 다이얼이 선다. 누르면 내 표를 바로 바꾸고(낙관) 서버에 낸 뒤 표를 다시 받는다(덤 · 티어 · 차례가 서버 셈으로). */
+  const me = useAppStore((s) => s.user);
+  const voteMonth = monthSel !== null && size === "team" && mapTab === "all" && me ? monthSel : null;
+  const [voteMine, setVoteMine] = useState<{ month: string; mine: Record<string, number> } | null>(null);
+  const [voteBusy, setVoteBusy] = useState<string | null>(null);
+  const [statsTick, setStatsTick] = useState(0);
+  useEffect(() => {
+    if (!voteMonth) { setVoteMine(null); return undefined; }
+    let alive = true;
+    api.getTierVotes(voteMonth).then((r) => { if (alive) setVoteMine(r.open ? { month: voteMonth, mine: r.mine } : null); })
+      .catch(() => { if (alive) setVoteMine(null); });
+    return () => { alive = false; };
+  }, [voteMonth]);
+  const onVote = useCallback((memberId: string, value: -1 | 0 | 1) => {
+    if (!voteMine) return;
+    const { month: vm } = voteMine;
+    const put = (v: number) => setVoteMine((cur) => {
+      if (!cur || cur.month !== vm) return cur;
+      const mine = { ...cur.mine };
+      if (v) mine[memberId] = v; else delete mine[memberId];
+      return { ...cur, mine };
+    });
+    const prev = voteMine.mine[memberId] ?? 0;
+    put(value);
+    setVoteBusy(memberId);
+    api.setTierVote(vm, memberId, value)
+      .then(() => setStatsTick((t) => t + 1))
+      .catch((e) => { put(prev); showToast(e instanceof Error ? e.message : "표를 내지 못했어요.", { kind: "warn" }); })
+      .finally(() => setVoteBusy(null));
+  }, [voteMine]);
+  const voteCtl = useMemo<StatVoteCtl | null>(
+    () => (voteMine ? { mine: voteMine.mine, selfId: me?.id ?? null, busy: voteBusy, onVote } : null),
+    [voteMine, me, voteBusy, onVote],
+  );
   /** 실제로 쓰는 정렬 — 티어 칸이 없는 조회엔 티어를 빼고, 남는 게 없으면 전체 승률. */
   const shownSort = useMemo<StatSortKey[]>(() => {
     if (showTier) return sortKeys;
@@ -274,7 +309,7 @@ export default function ClanStatsScreen() {
       setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null, trendClan: null });
     });
     return () => { cancelled = true; };
-  }, [debouncedQuery, debouncedSignature]);
+  }, [debouncedQuery, debouncedSignature, statsTick]);   // statsTick — 위아래 표를 낸 뒤 다시 받기(위 voteCtl ★)
 
   /* ★ 다섯 달 변화 자료(2026-10-28 다섯 · 2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" → "7개월로 통일하자" → "통계 요청 자체를 바꿔서 7달치를 한 응답에") —
      표 요청(trendMonths) 한 번에 응답 trend 로 같이 온다(옛 '앞 달들을 뒤따라 받기'는 걷었다). 여러 달(YYYY-MM~YYYY-MM)을 조회했으면 **마지막 달**이 기준(요청: "복수달 선택시
@@ -542,6 +577,7 @@ export default function ClanStatsScreen() {
             showRaces={showRaces}
             onVisW={setSortW}
             trend={trend}
+            vote={showTier ? voteCtl : null}
           />
         )}
       </div>

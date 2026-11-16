@@ -5393,6 +5393,27 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg.is-m .scr-sg-wt-v { font-size: 11px; letter-spacing: -0.03em; }
 .scr-sg.is-m .scr-sg-wt > .scr-sg-tier { width: 16px; height: 16px; border-radius: 3px; font-size: 10px; }
 .scr-sg.is-m .scr-sg-wt-gap { width: 16px; }
+/* ★ 티어 칸 위아래 표(StatGrid VoteDial · 2026-11-16 · 11월 팀전 전체 · 맵 전체) — 배지 오른쪽 세로 두 단추 · 내 표는 칠함 · 내 줄은 빈 자리.
+   표로 더한 점수(VoteMark)는 점수 오른쪽 위 작은 글자 — 자리를 안 먹어 숫자 줄이 그대로다. */
+.scr-sg-wt-v { position: relative; }
+.scr-sg-vote { display: inline-flex; flex-direction: column; gap: 2px; margin-left: -3px; }
+.scr-sg-vote.is-gap { width: 15px; height: 1px; }
+.scr-sg-vote-b {
+  display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 13px; padding: 0;
+  border: 0; border-radius: 3px; background: rgba(var(--overlay-rgb, 255, 255, 255), 0.05); color: var(--muted); cursor: pointer;
+}
+.scr-sg-vote-b:hover:not(:disabled) { color: var(--text); background: rgba(var(--overlay-rgb, 255, 255, 255), 0.12); }
+.scr-sg-vote-b.is-up.is-on { color: #fff; background: #2f9e5b; }
+.scr-sg-vote-b.is-dn.is-on { color: #fff; background: #c9483f; }
+.scr-sg-vote-b:disabled { cursor: progress; opacity: 0.6; }
+.scr-sg-vote-m {
+  position: absolute; right: 0; bottom: 100%; margin-bottom: -2px; font-style: normal; font-size: 9px; font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1; white-space: nowrap; pointer-events: none;
+}
+.scr-sg-vote-m.is-up { color: #3fb56e; }
+.scr-sg-vote-m.is-dn { color: #e0675e; }
+.scr-sg.is-m .scr-sg-vote-b { width: 14px; height: 12px; }
+.scr-sg.is-m .scr-sg-vote-m { font-size: 8px; }
 .scr-sg-inbun-pend { font-size: 11px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
 .scr-sg.is-m .scr-sg-inbun-pend { font-size: 10px; letter-spacing: -0.04em; }
 .scr-sg.is-m .scr-sg-c { padding: 8px 4px; }

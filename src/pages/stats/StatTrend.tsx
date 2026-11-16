@@ -336,7 +336,7 @@ export function StatTrendPop({ anchor, data, mobile, onEnter, onLeave }: {
               <tr key={r.name} className={r.name === "인분" ? "is-total" : undefined}>
                 <th scope="row">{CALC_LABEL[r.name] ?? r.name}</th>
                 <td>{r.name === "인분" ? r.adj : r.score}</td>
-                <td>{r.name === "인분" ? `${r.mult.toFixed(2)}인분` : `×${r.mult.toFixed(2)}`}</td>
+                <td>{r.name === "인분" ? `${r.mult.toFixed(2)}인분` : r.name === "투표" ? `${r.mult >= 0 ? "+" : "−"}${Math.abs(r.mult).toFixed(2)}` : `×${r.mult.toFixed(2)}`}</td>
               </tr>
             ))}
           </tbody>
