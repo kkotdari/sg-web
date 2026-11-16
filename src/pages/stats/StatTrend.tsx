@@ -232,13 +232,27 @@ export function StatTrendChart({ data, member, metric, chartW = 320 }: { data: S
   const bandTop = (ri: number) => (mode === "stacked" ? 30 + ri * (bandH + 36) : 34);
   const picked = metric.series.map((s) => months.map((m) => { const e = trendEntryOf(data, member, m); return e ? s.pick(e) : null; }));
   const allKnown = picked.flat().filter((v): v is number => v !== null);
+  /* ★ 사람마다 같은 세로 자(2026-11-16, 요청: "통계 팝업 그래프에서 변동폭 — 각각 변동폭에 세로 눈금을 맞추니 변동폭 비교가 어려워 · 모든 사람의 세로 눈금의
+     길이당 크기를 똑같이 · 물론 셀별로 다르게") — 옛: 그 사람 값의 최저 ~ 최고를 판 높이에 꽉 채워 작은 흔들림도 크게 보였다. 이제 칸(지표 · 줄)마다 표에 든
+     **모든 사람의** 그 기간 값 폭 가운데 가장 큰 폭을 판 높이로 · 사람마다 제 값의 가운데에 놓는다(평균 줄도 같은 자). 한 자를 쓰는 두 줄(shared)은 두 줄을 함께 잰 폭. */
+  const ids = [...new Set(months.flatMap((m) => Object.keys(data.byMonth[m] ?? {})))];
+  const widest = (ri: number | null): number => {
+    const sers = ri === null ? metric.series : [metric.series[ri]];
+    let best = 0;
+    for (const id of ids) {
+      const vs = months.flatMap((m) => { const e = data.byMonth[m]?.[id]; return e ? sers.map((sr) => sr.pick(e)) : []; }).filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+      if (vs.length > 1) best = Math.max(best, Math.max(...vs) - Math.min(...vs));
+    }
+    return best;
+  };
   const rows = metric.series.map((s, ri) => {
     const vals = picked[ri];
     const known = mode === "shared" ? allKnown : vals.filter((v): v is number => v !== null);
     const lo = known.length ? Math.min(...known) : 0; const hi = known.length ? Math.max(...known) : 1;
-    const span = Math.max(hi - lo, Math.abs(hi) * 0.02, 1e-6);
+    const span = Math.max(widest(mode === "shared" ? null : ri), hi - lo, Math.abs(hi) * 0.02, 1e-6);
+    const yMax = (lo + hi) / 2 + span / 2;   // 제 값의 가운데가 판 가운데
     const top = bandTop(ri);
-    const yFor = (v: number) => top + ((hi - v) / span) * bandH;
+    const yFor = (v: number) => top + ((yMax - v) / span) * bandH;
     const segs: { i: number; v: number }[][] = [];
     vals.forEach((v, i) => {
       if (v === null) return;
