@@ -7,6 +7,7 @@ import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import WpaRulesModal from "../../components/stats/WpaRules";
 import type { BaseRace, Member, MemberStats, TierCalcRow, TierEntry } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
@@ -419,8 +420,10 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const per = 5;   // 2026-11-15 티어 조회는 WPA/티어 한 칸(옛 6 : 5) · 2026-11-12 WPA 한 칸(옛 8 : 7 — 교환 이득 · 교전 참여 · 생산 · 그 전 6 : 5)
   /* 칸 틀 — WPA/티어 칸(묶음 첫 칸)은 숫자 + 배지라 넓게(PC 84px · 폰 76px · 2026-11-15 "wpa 티어 칸 늘리고" · 옛 70 · 62) · 나머지는 옛 최소 폭.
      폰 유저 칸 110 → 92px · 2fr → 1.3fr(같은 날 "폰 유저 폭 줄이고"). */
-  /* 위아래 표가 서면(위 StatVoteCtl ★) 종합 묶음의 WPA/티어 칸만 다이얼 몫(PC 18 · 폰 16px)만큼 넓힌다 — first0. */
-  const colsOf = (who: string, first: string, rest: string, first0 = first): string => `${who} ${groups.map((_g, gi) => [tier ? (gi === 0 && vote ? first0 : first) : rest, ...Array(per - 1).fill(rest)].join(" ")).join(" ")}`;
+  /* 종합 묶음의 WPA/티어 칸만 넓힌다(first0) — 머리 '?' · 위아래 표 다이얼(위 StatVoteCtl ★) 몫(PC 18 · 폰 16px). */
+  /* 종합 묶음의 WPA/티어 칸은 머리 '?'(WPA 계산 조건 · 2026-11-16) 몫까지 늘 first0 로. */
+  const colsOf = (who: string, first: string, rest: string, first0 = first): string => `${who} ${groups.map((_g, gi) => [tier ? (gi === 0 ? first0 : first) : rest, ...Array(per - 1).fill(rest)].join(" ")).join(" ")}`;
+  const [rulesOpen, setRulesOpen] = useState(false);   // WPA 계산 조건 창(머리 '?')
   const gridRef = useRef<HTMLDivElement>(null);
   const [clipW, setClipW] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -509,9 +512,14 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
             /* 폰: 좁을 때는 종족마다 첫 칸(티어 · 티어 없는 조회는 게임수) 만 · 넓을 때 다(RaceCells 와 같은 가름). */
             const wideOnly = m && i >= 1;
             return (
-              <span key={k} className={cx("scr-sg-c scr-sg-hsub", i === 0 && "scr-sg-gstart", m && "scr-sg-race-head", wideOnly && "scr-sg-mwide")}
+              <span key={k} className={cx("scr-sg-c scr-sg-hsub", i === 0 && "scr-sg-gstart", m && "scr-sg-race-head", wideOnly && "scr-sg-mwide", r === null && (k === "wpa" || k === "tier") && "has-q")}
                 title={k === "wpa" || k === "tier" ? WPA_TIP : undefined}>
                 <SortHead {...(m ? mToggle : pcToggle)((r ? `${r}:${k}` : k) as StatSortKey)}>{h}</SortHead>
+                {/* ★ WPA 계산 조건(components/stats/WpaRules ★ · 2026-11-16) — 종합 묶음의 WPA 칸 머리에만 '?' */}
+                {r === null && (k === "wpa" || k === "tier") && (
+                  <button type="button" className="scr-sg-rules-q" aria-label="WPA 계산 조건 보기" title="WPA 계산 조건"
+                    onClick={(e) => { e.stopPropagation(); setRulesOpen(true); }}>?</button>
+                )}
               </span>
             );
           })}
@@ -536,6 +544,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       </div>
       </div>
       {popEl}
+      {rulesOpen && <WpaRulesModal onClose={() => setRulesOpen(false)} />}
       </VoteCtx.Provider>
       </TrendCtx.Provider>
     );
@@ -558,6 +567,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     </div>
     </div>
     {popEl}
+    {rulesOpen && <WpaRulesModal onClose={() => setRulesOpen(false)} />}
     </VoteCtx.Provider>
     </TrendCtx.Provider>
   );

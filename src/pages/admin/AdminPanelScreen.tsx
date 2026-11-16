@@ -15,6 +15,7 @@ import WpaDetailModal from "../../modals/WpaDetailModal";
 import DeletedGamesModal from "../../modals/DeletedGamesModal";
 import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
 import PollResultsModal from "../../modals/PollResultsModal";
+import SuggestionsModal from "../../modals/SuggestionsModal";
 import { api } from "../../api/client";
 import { useAppStore } from "../../store/appStore";
 import { showAlert } from "../../components/common/AlertDialog";
@@ -45,6 +46,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
   const [extShareOpen, setExtShareOpen] = useState(false);
   const [sqlOpen, setSqlOpen] = useState(false);
   const [pollOpen, setPollOpen] = useState(false);   // 설문 결과(PollResultsModal ★)
+  const [suggOpen, setSuggOpen] = useState(false);   // 건의함(SuggestionsModal ★)
   const [wpaOpen, setWpaOpen] = useState(false);
   const [deletedGamesOpen, setDeletedGamesOpen] = useState(false);
   const [unhideOpen, setUnhideOpen] = useState(false);
@@ -574,6 +576,18 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                     열기
                   </button>
                 </div>
+                {/* ★ 건의함(2026-11-16 · SuggestionsModal ★ — 통계 WPA 칸 머리 '?' 의 계산 조건 창에서 보낸 건의). */}
+                <div className="scr-adm-row">
+                  <div className="scr-adm-row-text">
+                    <span className="scr-adm-row-title">건의함</span>
+                    <span className="scr-adm-row-desc">
+                      팀원이 보낸 건의를 봅니다(지금은 WPA 계산 조건). md 복사로 한 번에 옮겨요.
+                    </span>
+                  </div>
+                  <button type="button" className="scr-rect-btn scr-adm-row-btn" onClick={() => setSuggOpen(true)}>
+                    열기
+                  </button>
+                </div>
               </div>
             </section>
 
@@ -816,6 +830,7 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
 
       {sqlOpen && <SqlConsoleModal onClose={() => setSqlOpen(false)} />}
       {pollOpen && <PollResultsModal onClose={() => setPollOpen(false)} />}
+      {suggOpen && <SuggestionsModal onClose={() => setSuggOpen(false)} />}
       {wpaOpen && <WpaDetailModal onClose={() => setWpaOpen(false)} />}
       {extShareOpen && (
         <ExtShareManageModal onClose={() => setExtShareOpen(false)} />

@@ -2392,6 +2392,38 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
   }
 }
 .scr-trash-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; padding-bottom: 14px; }
+/* ★ WPA 계산 조건 창(components/stats/WpaRules · 2026-11-16) — 번호 붙은 조건 목록(묶음마다 제목) · 맨 아래 건의 칸 · 내가 보낸 건의(접힘). 통계 머리의 '?' 단추도 여기. */
+.scr-sg-rules-q {
+  display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-left: 3px; padding: 0; flex: none;
+  border-radius: 999px; border: 1px solid var(--line-soft, rgba(255, 255, 255, 0.2)); background: transparent; color: var(--muted);
+  font: inherit; font-size: 10px; font-weight: 800; line-height: 1; cursor: pointer; vertical-align: middle;
+}
+.scr-sg-rules-q:hover { color: var(--text); border-color: var(--text); }
+.scr-sg-hsub.has-q { display: flex; align-items: center; justify-content: center; gap: 2px; }
+.scr-sg:not(.is-m) .scr-sg-hsub.has-q > .scr-sg-sort { flex: 1 1 auto; min-width: 0; width: auto; padding-right: 14px; }
+.scr-wpar { display: flex; flex-direction: column; max-height: min(84vh, 760px); }
+@media (max-width: 960px) {
+  .scr-wpar { top: auto; bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px); transform: translate(-50%, 0);
+    max-height: calc(100dvh - var(--safe-top-ui, 0px) - var(--mobile-footer-h, 69px) - 28px); }
+}
+.scr-wpar-body { overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 16px; }
+.scr-wpar-lead { margin: 0; font-size: var(--fs-caption); color: var(--muted); line-height: 1.5; }
+.scr-wpar-sec { display: flex; flex-direction: column; gap: 4px; }
+.scr-wpar-title { margin: 0; font-size: 13px; font-weight: 800; color: var(--point, #e9ac52); }
+.scr-wpar-list { margin: 0; padding-left: 26px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.55; }
+.scr-wpar-list > li::marker { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+.scr-wpar-ask { border-top: 1px solid var(--line-soft, rgba(255, 255, 255, 0.08)); padding-top: 10px; }
+.scr-wpar-text { min-height: 70px; }
+.scr-wpar-send-row { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.scr-wpar-msg { font-size: 12px; }
+.scr-wpar-msg.is-ok { color: var(--win, #34c759); }
+.scr-wpar-msg.is-err { color: #ff7a7a; }
+.scr-wpar-mine { font-size: 12px; color: var(--muted); }
+.scr-wpar-mine > summary { cursor: pointer; }
+.scr-wpar-mine ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.scr-wpar-mine li { color: var(--text); }
+.scr-wpar-mine li > span { white-space: pre-wrap; word-break: break-word; }
+.scr-wpar-mine li > em { margin-left: 6px; font-style: normal; color: var(--muted); }
 /* ★ 설문 결과(modals/PollResultsModal · 제어판 '설문 결과' · 2026-11-16 공통 양식) — 설문 고르기 알약 · 문항 · 고르기별 막대(누르면 그 답만) · 답 목록. 높이는 위 .scr-trash 와 같은 틀. */
 .scr-pollres { display: flex; flex-direction: column; height: min(78vh, 720px); }
 @media (max-width: 960px) {

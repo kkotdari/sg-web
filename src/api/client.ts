@@ -610,6 +610,21 @@ export const api = {
   async answerPoll(key: string, body: { choice: number; comment: string }): Promise<void> {
     await request<void>(`/api/polls/${encodeURIComponent(key)}`, { method: "POST", body: JSON.stringify(body) });
   },
+  /* ── 건의(2026-11-16 · sg-api /suggestions · WPA 계산 조건 창 · 제어판 건의함) ── */
+  async addSuggestion(topic: string, text: string): Promise<void> {
+    await request<void>(`/api/suggestions/${encodeURIComponent(topic)}`, { method: "POST", body: JSON.stringify({ text }) });
+  },
+  async getMySuggestions(topic: string): Promise<{ id: number; text: string; createdAt: string }[]> {
+    return request<{ id: number; text: string; createdAt: string }[]>(`/api/suggestions/${encodeURIComponent(topic)}/mine`);
+  },
+  /** 운영자 — 건의가 든 주제마다 수 · 마지막 건의. */
+  async listSuggestionTopics(): Promise<{ topic: string; total: number; lastAt: string }[]> {
+    return request<{ topic: string; total: number; lastAt: string }[]>("/api/suggestions");
+  },
+  /** 운영자 — 그 주제의 건의 전부(닉네임 · 최근 차례). */
+  async getSuggestions(topic: string): Promise<{ id: number; nickname: string | null; text: string; createdAt: string }[]> {
+    return request<{ id: number; nickname: string | null; text: string; createdAt: string }[]>(`/api/suggestions/${encodeURIComponent(topic)}`);
+  },
   /* ── 티어 칸 위아래 표(2026-11-16 · sg-api /tier-votes · 익명 — 내 표만 받는다) ── */
   async getTierVotes(month: string): Promise<{ open: boolean; mine: Record<string, number> }> {
     return request<{ open: boolean; mine: Record<string, number> }>(`/api/tier-votes/${encodeURIComponent(month)}`);
