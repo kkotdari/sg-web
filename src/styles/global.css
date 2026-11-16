@@ -1092,8 +1092,9 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
    옛(2026-11-14 ~ 11-16): 늘 보이는 두 칸(input type=date · .scr-dayrange-inline · 폰은 달력 아이콘을 칸 전체에 깔았다). */
 .scr-drp-trigger { height: 26px; font-variant-numeric: tabular-nums; }
 .scr-month-cal-pop.scr-drp-pop { width: 272px; }
-.scr-drp-presets { display: flex; gap: 4px; }
-.scr-drp-preset { height: 28px; white-space: nowrap; }
+/* 프리셋 넷(오늘 · 어제 · 일주일 · 전체) — 컴팩트하게 · 틈은 넓게(2026-11-16, 요청: "버튼 좀더 컴팩트하게 갭은 늘리고" · 옛: 칸을 꽉 채운 높이 28 · 틈 4) */
+.scr-drp-presets { display: flex; justify-content: center; gap: 10px; }
+.scr-month-cal-all.scr-drp-preset { flex: none; height: 24px; padding: 0 10px; font-size: 12px; white-space: nowrap; }
 .rdp-root.scr-drp-cal {   /* .rdp-root 를 붙여 세게 — 라이브러리 CSS 가 global.css 뒤에 실린다 */
   --rdp-accent-color: var(--lighting-accent);
   --rdp-accent-background-color: rgba(255, 255, 255, 0.12);
