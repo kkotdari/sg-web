@@ -1134,7 +1134,12 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
   .scr-drp-cal .rdp-day:not(.rdp-range_start):not(.rdp-range_end):not(.rdp-disabled) .rdp-day_button:hover { background: rgba(255,255,255,0.14); }
   .scr-light-theme .scr-drp-cal .rdp-day:not(.rdp-range_start):not(.rdp-range_end):not(.rdp-disabled) .rdp-day_button:hover { background: rgba(0,0,0,0.09); }
 }
-/* 폰 거르기 접기([필터 ⌄] · .scr-stats-fold-*)는 걷었다(2026-11-14, 요청: "모바일도 필터 접기 모드 없애기") — 규모 · 맵 · 유저 거르기가 폰에서도 늘 보인다. */
+/* ★ 폰 거르기 접기(ClanStatsScreen folded) — 되살림(2026-11-16, 요청: "기본 숨김상태로 복구" · 처음 2026-11-13 · 2026-11-14 "모바일도 필터 접기 모드 없애기"로 걷었다).
+   달 줄 오른끝 [필터 ⌄] · 펴면 꺾쇠가 위로 · 접힌 채 기본 아닌 거르기가 걸려 있으면 점. */
+.scr-stats-fold-btn { margin-left: auto; height: 24px; padding: 0 6px 0 8px; font-size: 12px; gap: 2px; flex: none; }
+.scr-stats-fold-chev { transition: transform .15s; }
+.scr-stats-fold-btn.is-on .scr-stats-fold-chev { transform: rotate(180deg); }
+.scr-stats-fold-dot { width: 6px; height: 6px; margin-left: 3px; border-radius: 50%; background: var(--accent); }
 /* ★ 통계 머리 두 줄(2026-11-13, 요청: "팀 구성하기는 통계 타이틀 옆 오른쪽 · 필터는 타이틀에서 한 줄 아래로") — 제목 줄(제목 · 팀 구성하기 오른끝) / 기간 · 필터 줄. */
 .scr-stats-screen-v2 > .scr-v2-toolbar { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "filter"; row-gap: 8px; }
 .scr-stats-screen-v2 > .scr-v2-toolbar > .scr-stats-filter-row { grid-area: filter; transform: none; }
@@ -1157,9 +1162,12 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-search { margin: 0 0 14px; }
 .scr-stats-search > .scr-gs-chips { min-height: 38px; padding: 3px 8px; }
 /* 통계 화면 맨 위 규모 탭(팀전 전체 · 4:4 · 3:3 · 2:2 · 1:1 · 2026-10-20). */
-.scr-stats-size-tabs { margin: 0 0 10px; }
-/* 맵 탭은 규모 탭 바로 밑 — 위 줄과 붙인다(2026-10-20) · 글자는 규모 탭과 같은 크기(2026-10-22, 요청: "맵은 구성과 폰트 크기 같게" — 옛: 한 치 작게 fs-11). */
-.scr-stats-size-tabs:has(+ .scr-stats-map-tabs) { margin-bottom: 4px; }
+/* 맵 탭은 규모 탭 바로 밑 — 위 줄과 붙인다(2026-10-20) · 글자는 규모 탭과 같은 크기(2026-10-22, 요청: "맵은 구성과 폰트 크기 같게" — 옛: 한 치 작게 fs-11).
+   ★ 줄 앞 라벨(2026-11-16, 요청: "팀 구성과 맵에 라벨 붙여주고") — 줄(.scr-stats-tab-line)이 틈을 쥐고 · 라벨 폭을 맞춰 두 줄 탭이 같은 x 에서 시작한다. */
+.scr-stats-tab-line { display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0 0 10px; }
+.scr-stats-tab-line:has(+ .scr-stats-tab-line) { margin-bottom: 4px; }
+.scr-stats-tab-line > .scr-stats-size-tabs { margin: 0; }
+.scr-stats-tab-label { flex: none; min-width: 3.4em; font-size: var(--fs-caption); font-weight: 600; color: var(--dim); white-space: nowrap; }
 
 /* 정렬 줄 "정렬: 승률 › APM"(2026-10-22) — 고르기는 표 머리를 눌러서(.scr-sg-sort · 요청: "정렬은 머리 터치로 변경") · 고른 차례가 하나씩 붙고 빠진다 · 오른끝 도움말 단추.
    옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순 — 작은 밑줄 탭 → 글자만 굵게)은 걷었다. */
