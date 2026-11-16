@@ -127,11 +127,12 @@ export default function DayRangePicker({ from, to, max, onChange, all = false, o
       </button>
       {open && createPortal(
         <div className="scr-month-cal-pop scr-drp-pop" ref={popRef} role="dialog" aria-label="날짜 고르기">
+          {/* 프리셋 — 컴팩트 네모 단추(2026-11-16, 요청: "컴팩트 네모 버튼 적용") · 켜진 것은 채움(프라이머리) · 나머지는 테두리(is-secondary) */}
           <div className="scr-drp-presets">
             {PRESETS.map((p) => (
               <button
                 key={p.key} type="button"
-                className={cx("scr-month-cal-all scr-drp-preset", presetOn(p) && "scr-month-cal-cell-on")}
+                className={cx("scr-compact-rect-btn scr-drp-preset", !presetOn(p) && "is-secondary")}
                 onClick={() => { const [a, b] = p.range(max); commit(a, b); }}
               >
                 {p.text}
@@ -139,7 +140,7 @@ export default function DayRangePicker({ from, to, max, onChange, all = false, o
             ))}
             {onAll && (
               <button
-                type="button" className={cx("scr-month-cal-all scr-drp-preset", all && "scr-month-cal-cell-on")}
+                type="button" className={cx("scr-compact-rect-btn scr-drp-preset", !all && "is-secondary")}
                 onClick={() => { onAll(); setOpen(false); }}
               >
                 전체

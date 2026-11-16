@@ -1094,7 +1094,7 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-month-cal-pop.scr-drp-pop { width: 272px; }
 /* 프리셋 넷(오늘 · 어제 · 일주일 · 전체) — 컴팩트하게 · 틈은 넓게(2026-11-16, 요청: "버튼 좀더 컴팩트하게 갭은 늘리고" · 옛: 칸을 꽉 채운 높이 28 · 틈 4) */
 .scr-drp-presets { display: flex; justify-content: center; gap: 10px; }
-.scr-month-cal-all.scr-drp-preset { flex: none; height: 24px; padding: 0 10px; font-size: 12px; white-space: nowrap; }
+/* 단추 꼴은 컴팩트 네모(.scr-compact-rect-btn · 같은 날 "컴팩트 네모 버튼 적용" · 옛: 달 고르기의 [전체 기간] 칸 꼴 .scr-month-cal-all) — 틈만 여기서 */
 .rdp-root.scr-drp-cal {   /* .rdp-root 를 붙여 세게 — 라이브러리 CSS 가 global.css 뒤에 실린다 */
   --rdp-accent-color: var(--lighting-accent);
   --rdp-accent-background-color: rgba(255, 255, 255, 0.12);
