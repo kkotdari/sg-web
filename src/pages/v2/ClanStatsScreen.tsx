@@ -509,10 +509,10 @@ export default function ClanStatsScreen() {
             <div className={cx("scr-stats-period-row", dayOn && "is-on")}>
               <label className="scr-checkbox-field scr-stats-period-pick">
                 <input type="radio" name="scr-stats-period" checked={dayOn} onChange={() => setPeriod(dayPeriod)} />
-                <span>날짜 지정</span>
+                <span>기간 지정</span>
               </label>
+              {/* ★ 라벨 "날짜 지정" → "기간 지정" · 줄 끝 설명("실제 그 기간만의 실력을 보여줘요")은 걷었다(2026-11-16, 요청: "날짜 지정-> 기간 지정으로 라벨바꾸고 도움말 제거"). */}
               <DayRangePicker from={dayA} to={dayB} max={todayDay()} onChange={pickDays} />
-              <span className="scr-stats-period-hint">실제 그 기간만의 실력을 보여줘요</span>
             </div>
           </div>
         </div>
