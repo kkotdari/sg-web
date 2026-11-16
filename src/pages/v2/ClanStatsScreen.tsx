@@ -254,8 +254,8 @@ export default function ClanStatsScreen() {
   const [dayA, dayB] = DAY_PERIOD_RE.test(dayPeriod) ? dayPeriod.split("~") : [todayFrom.slice(0, 10), todayFrom.slice(0, 10)];
   const pickDays = (a: string, b: string): void => setPeriod(a === b && a === todayDay() ? PERIOD_TODAY : `${a}~${b}`);
   /* ★ 폰은 거르기를 접은 채로 연다 — 되살림(2026-11-16, 요청: "팀 구성과 맵에 라벨 붙여주고 기본 숨김상태로 복구" · 처음 2026-11-13 "모바일에선 처음에 접은 상태로 노출
-     (최상단은 현재의 기간 필터 한줄만 보이기)" → 2026-11-14 "모바일도 필터 접기 모드 없애기"로 걷었던 것). 접히면 기간 두 줄만 · 팀 구성 · 맵 탭 · 유저 칩은 달 줄 오른끝
-     [필터 ⌄]를 눌러 편다. 기억하지 않는다(늘 접힌 채 연다). 기본이 아닌 거르기(팀 구성 · 맵 · 유저)가 걸려 있으면 [필터]에 점. PC 는 늘 편 채. */
+     (최상단은 현재의 기간 필터 한줄만 보이기)" → 2026-11-14 "모바일도 필터 접기 모드 없애기"로 걷었던 것). 접히면 기간 두 줄만 · 유형 · 맵 탭 · 유저 칩은 달 줄 오른끝
+     [필터 ⌄]를 눌러 편다. 기억하지 않는다(늘 접힌 채 연다). 기본이 아닌 거르기(유형 · 맵 · 유저)가 걸려 있으면 [필터]에 점. PC 는 늘 편 채. */
   const [filtersOpen, setFiltersOpen] = useState(false);
   const folded = isMobile && !filtersOpen;
   const filterOn = size !== "team" || mapTab !== MAP_DEFAULT || users.length > 0;
@@ -508,7 +508,7 @@ export default function ClanStatsScreen() {
               {/* 폰: 첫 줄(달 줄) 오른끝에 [필터](위 folded ★) — 설명보다 앞에 둬야 설명이 아랫줄로 내려가도 첫 줄에 남는다. */}
               {isMobile && (
                 <button type="button" className={cx("scr-sg-fold scr-stats-fold-btn", filtersOpen && "is-on")} aria-expanded={filtersOpen}
-                  onClick={() => setFiltersOpen((v) => !v)} title={filtersOpen ? "거르기 접기 — 기간만" : "거르기 펴기 — 팀 구성 · 맵 · 유저"}>
+                  onClick={() => setFiltersOpen((v) => !v)} title={filtersOpen ? "거르기 접기 — 기간만" : "거르기 펴기 — 유형 · 맵 · 유저"}>
                   필터{filterOn && !filtersOpen && <i className="scr-stats-fold-dot" aria-label="걸린 거르기 있음" />}
                   <ChevronDown size={13} aria-hidden className="scr-stats-fold-chev" />
                 </button>
@@ -533,10 +533,10 @@ export default function ClanStatsScreen() {
       {teamBuilder && <TeamBuilderModal onClose={() => setTeamBuilder(false)} />}
 
       {!folded && (<>
-      {/* ★ 줄 앞 라벨 "팀 구성" · "맵"(2026-11-16, 요청: "팀 구성과 맵에 라벨 붙여주고") — 두 줄 탭의 첫 칸이 같은 x 에 서게 라벨 폭을 맞춘다(.scr-stats-tab-label). */}
+      {/* ★ 줄 앞 라벨 "유형" · "맵"(2026-11-16, 요청: "팀 구성과 맵에 라벨 붙여주고" → "유형으로 바꾸고" — "팀 구성"은 [팀 구성하기] · 종족구성과 헷갈려서) — 두 줄 탭의 첫 칸이 같은 x 에 서게 라벨 폭을 맞춘다(.scr-stats-tab-label). */}
       <div className="scr-stats-tab-line">
-      <span className="scr-stats-tab-label" aria-hidden>팀 구성</span>
-      <div className="scr-line-tabs scr-stats-size-tabs" role="tablist" aria-label="팀 구성">
+      <span className="scr-stats-tab-label" aria-hidden>유형</span>
+      <div className="scr-line-tabs scr-stats-size-tabs" role="tablist" aria-label="유형">
         {SIZE_TABS.map((t) => (
           <Fragment key={t.value}>
             {/* 팀전과 1:1 사이 구분선(2026-10-26, 요청: "통계 게임 유형에서 팀전과 1:1 사이에 | 구분선 넣기") */}
