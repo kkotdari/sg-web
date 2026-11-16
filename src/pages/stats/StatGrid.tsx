@@ -6,7 +6,7 @@ import Avatar from "../../components/common/Avatar";
 import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
-import { ChevronDown, ChevronUp, Sprout } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import WpaRulesModal, { WPA_RULES } from "../../components/stats/WpaRules";
 import type { BaseRace, Member, MemberStats, TierCalcRow, TierEntry } from "../../types";
 
@@ -170,10 +170,9 @@ function VoteDial({ memberId }: { memberId: string }) {
     </span>
   );
 }
-/** ★ 티어 배지(2026-11-16 저녁, 요청: "티어 조정 1 / 2 / 3 / 4 / 새싹(아이콘) · 1.5 / 1.2 / 0.9 / 0.6") — 1 ~ 4 는 숫자 · 맨 아래(5 · sg-api tier_name)는 새싹 그림. */
+/** 티어 배지 — 1 ~ 4(같은 날 저녁의 새싹 그림은 밤에 걷었다 · 요청 "추천대로 0.67 로 새싹 없이"). */
 export function TierBadge({ tier }: { tier: number }) {
-  if (tier >= 5) return <b className="scr-sg-tier is-t5" title="새싹" aria-label="새싹"><Sprout size={12} strokeWidth={2.4} aria-hidden /></b>;
-  return <b className={cx("scr-sg-tier", `is-t${Math.max(1, tier)}`)}>{tier}</b>;
+  return <b className={cx("scr-sg-tier", `is-t${Math.min(Math.max(1, tier), 4)}`)}>{tier}</b>;
 }
 /** 표로 더한 인분(작게 · 점수 오른쪽 위) — 0 이면 안 단다. */
 function VoteMark({ v }: { v?: number | null }) {
