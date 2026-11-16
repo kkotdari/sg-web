@@ -7,7 +7,7 @@ import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
 import DayRangePicker from "../../components/common/DayRangePicker";
-import { currentMonthValue, MONTH_PERIOD_RE, monthPeriodLabel, shiftMonthValue } from "../../utils/date";
+import { currentMonthValue, fmt, MONTH_PERIOD_RE, monthPeriodLabel, serverMs, shiftMonthValue } from "../../utils/date";
 import {
   CLAN_TYPE, DAY_PERIOD_RE, MAP_DEFAULT, MAP_TABS, mapTabOf, monthOfPeriod, PERIOD_TODAY, SIZE_TABS, sizeTabOf, SOLO_TYPE, statRange, todayDay, useTodayFrom,
 } from "../stats/statQuery";
@@ -327,12 +327,20 @@ export default function ClanStatsScreen() {
       noChart: debouncedQuery.period === PERIOD_TODAY || DAY_PERIOD_RE.test(debouncedQuery.period) };
   }, [view, debouncedSignature, debouncedQuery.period]);
 
+  /* ★ 가입한 뒤의 기간만(2026-11-16, 요청: "통계 목록에 노출되는 사람은 가입일 이후인 사람만") — 조회 기간의 끝(statRange.to)이 가입일(createdAt · 이 기기 날짜)보다
+     앞이면 그 사람 줄을 안 띄운다(예: 10월에 가입한 사람은 7 · 8 · 9월 조회에 없다). 전체 기간(끝이 없음)은 다 띄운다. 클랜 전체 줄 · 편성 집계는 그대로(서버 몫). */
   const viewMembers = useMemo(() => {
     if (!view) return [];
     const byId = new Map(members.map((m) => [m.id, m]));
     const shown = new Set(matchedMembers.map((m) => m.id));
-    return view.memberIds.filter((id) => shown.has(id)).map((id) => byId.get(id)).filter((m): m is Member => m !== undefined);
-  }, [view, members, matchedMembers]);
+    const to = statRange(debouncedQuery.period, debouncedQuery.day).to;
+    const joinedBy = (m: Member): boolean => {
+      if (!to || !m.createdAt) return true;
+      const t = serverMs(m.createdAt);
+      return !Number.isFinite(t) || fmt(new Date(t)) <= to;
+    };
+    return view.memberIds.filter((id) => shown.has(id)).map((id) => byId.get(id)).filter((m): m is Member => m !== undefined && joinedBy(m));
+  }, [view, members, matchedMembers, debouncedQuery.period, debouncedQuery.day]);
 
   /** 실제 경기 수 — 편성별 판수(4:4·3:3·2:2 …)의 합이다. 편성은 가짓수가 적어 서버의 상위 5 에 잘릴 일이 없다. */
   /* 1:1 은 편성 셈에 안 든다(서버가 한 명 대 한 명은 편성에서 뺀다) — 내전이라 판마다 두 사람이 다 회원이니 사람 판수의 절반이 경기 수.
