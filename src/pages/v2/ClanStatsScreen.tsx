@@ -344,7 +344,7 @@ export default function ClanStatsScreen() {
   }, [view, size]);
 
   /* ★ 경기 수준(2026-11-16, 요청: "조회한 기간의 경기수준(판 질) 넣기 · 경기수준: 기준보다 0.2% 높음 이런 식으로 · 높으면 초록 낮으면 빨강톤") —
-     sg-api quality.py · TierEntry.levelPct(그 기간 판들의 초반 운영이 고정 기준(7~11월 평균)보다 몇 % 좋은가 · 그 기간 모두 같다). 티어 조회에서 잰 판이 있을 때만. */
+     sg-api quality.py · TierEntry.levelPct(그 기간 판들의 초반 운영 ½ + EAPM ½ 이 2026년 7월보다 몇 % 좋은가 · 그 기간 모두 같다 · 같은 날 "B 로 · 기준은 7월이 100%"). 티어 조회에서 잰 판이 있을 때만. */
   const levelPct = useMemo((): number | null => {
     if (!showTier || !view) return null;
     for (const e of Object.values(view.stats)) {
@@ -540,7 +540,7 @@ export default function ClanStatsScreen() {
           <span className="scr-clan-dash-sub">{viewMembers.length}명 · {clanGames.toLocaleString()}게임</span>
           {levelPct !== null && (
             <span className={cx("scr-stats-level", levelPct >= 0.05 ? "is-up" : levelPct <= -0.05 ? "is-dn" : null)}
-              title="그 기간 판들의 초반 운영(분당 채취 · 쥔 돈)을 고정 기준(2026년 7~11월 평균)과 견준 값 — 모두의 인분에 같은 비율로 곱해져요(20% 좋으면 ×1.2)">
+              title="그 기간 판들의 초반 운영(분당 채취 · 쥔 돈)과 EAPM을 반씩 섞어 2026년 7월(= 100%)과 견준 값 — 모두의 인분에 같은 비율로 곱해져요(20% 좋으면 ×1.2)">
               경기 수준: {Math.abs(levelPct) < 0.05 ? "기준과 같음" : `기준보다 ${Math.abs(levelPct).toFixed(1)}% ${levelPct > 0 ? "높음" : "낮음"}`}
             </span>
           )}

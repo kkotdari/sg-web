@@ -390,7 +390,7 @@ export interface TierEntry {
   ex?: number | null;
   /** 주종족(2026-11-04) — 이 티어를 낸 종족들(그 기간 판 30% 이상). */
   mains?: string[] | null;
-  /** ★ 경기 수준 배수(sg-api quality.py · 2026-11-16 · 그 기간 모두 같다 · inbun 은 이미 곱한 값) · levelPct = 판들의 초반 운영이 고정 기준보다 몇 % 좋은가. 잰 판이 없으면 null. */
+  /** ★ 경기 수준 배수(sg-api quality.py · 2026-11-16 · 그 기간 모두 같다 · inbun 은 이미 곱한 값) · levelPct = 판들의 초반 운영 ½ + EAPM ½ 이 2026년 7월보다 몇 % 좋은가. 잰 판이 없으면 null. */
   level?: number | null;
   levelPct?: number | null;
   /** 셈 과정 표(2026-11-06 저녁 · sg-api tier calc) — EAPM · 전투 · 생산 · 승패 · 인분 줄 · 인분 = 배수(mult)의 곱. 2026-11-12 부터 WPA · 승패 · 인분 줄. */
