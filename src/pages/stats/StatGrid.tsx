@@ -1,4 +1,4 @@
-import InfoTip from "../../components/common/InfoTip";
+import InfoTip, { closeInfoTips } from "../../components/common/InfoTip";
 import { Fragment, createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StatTrendPop, calcRowOf, combinedTier, gainOf, partOf, pctFmt, prodOf, statMetric, wpaFmt, wpaOf, type CalcKey, type StatMetric, type StatRace, type StatTrendData, type TrendAnchor, type TrendFact } from "./StatTrend";
@@ -7,7 +7,7 @@ import PhotoViewer from "../../components/common/PhotoViewer";
 import { useAppStore } from "../../store/appStore";
 import { cx } from "../../utils/format";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import WpaRulesModal from "../../components/stats/WpaRules";
+import WpaRulesModal, { WPA_RULES } from "../../components/stats/WpaRules";
 import type { BaseRace, Member, MemberStats, TierCalcRow, TierEntry } from "../../types";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
@@ -327,10 +327,15 @@ function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: bo
 /** ★ "WPA란?" 글 단추(2026-11-13, 요청: "예전 통계 툴팁 아이콘 자리에 텍스트 버튼 WPA란? 추가 · 툴팁 뜨고 WPA 뜻과 항목별로 어떻게 하면 점수를 얻고 잃는지") —
  *  정렬 줄 오른끝(옛 StatHelp 자리) · PC 는 얹으면 · 폰은 누르면. 항목은 WPA 팝업과 같은 차례(방어 · 공격 · 합류 · 정찰 · sg-api wpa.py · tier._wpa_inbun · 장악은 2026-11-13 걷음).
  *  ★ 공통 풀이는 모두 구분선 위(같은 날, 요청: "wpa툴팁에서 상세항목들 위의 공통해당 내용은 모두 구분선 위로 넣기") — 아래는 항목만. */
+/** ★ 계산 조건은 말풍선 아래로(2026-11-16, 요청: "헬프 아이콘 제거 · 내용은 WPA란? 툴팁에 아래 붙여넣기") — 옛 통계 머리 WPA/티어 칸의 '?'(WpaRulesModal)를 걷고
+ *  그 번호 붙은 조건(WPA_RULES)을 항목 풀이 아래에 잇는다. 길어서 말풍선이 굴러가고(interactive) · 맨 아래 '건의하기'는 건의 칸만 든 창(WpaRulesModal askOnly). */
 export function WpaHelp() {
+  const [ask, setAsk] = useState(false);
+  let no = 0;
   return (
+    <>
     <InfoTip
-      hover trigger="WPA란?" triggerClassName="scr-infotip scr-infotip-text scr-sg-help-btn scr-sg-wpa-help" bubbleClassName="scr-sg-help"
+      hover interactive trigger="WPA란?" triggerClassName="scr-infotip scr-infotip-text scr-sg-help-btn scr-sg-wpa-help" bubbleClassName="scr-sg-help scr-sg-help-long"
       text={(
         <span className="scr-sg-help-list">
           {/* ★ 머리(2026-11-13, 요청: "WPA(Win P... 이렇게 풀어쓴거부터 시작하고 아랫줄에 간단 설명 하고 구분선 넣고 그 아랫줄부터 상세 설명") */}
@@ -345,9 +350,21 @@ export function WpaHelp() {
           <span><b>방어</b> 싸운 만큼에 비해 덜 잃을수록 올라요. 안 싸워서 덜 잃은 건 안 쳐요.</span>
           <span><b>합류</b> 우리 편이 머릿수에서 밀려 싸울 때, 비어 있던 내가 안 가면 내려가요.</span>
           <span><b>정찰</b> 상대 건물을 보고 있으면 올라요.</span>
+          <span className="scr-sg-help-sep" aria-hidden="true" />
+          <b className="scr-sg-help-title">계산 조건</b>
+          <span className="scr-sg-help-lead">지금 점수에 들어가는 규칙이에요. 빠졌거나 이상한 조건은 건의해 주세요(번호로 가리켜도 돼요).</span>
+          {WPA_RULES.map((sec) => (
+            <Fragment key={sec.title}>
+              <b className="scr-sg-help-sec">{sec.title}</b>
+              {sec.items.map((it) => { no += 1; return <span key={no} className="scr-sg-help-rule"><i>{no}</i><span>{it}</span></span>; })}
+            </Fragment>
+          ))}
+          <button type="button" className="scr-pill-btn scr-sg-help-ask" onClick={() => { closeInfoTips(); setAsk(true); }}>건의하기</button>
         </span>
       )}
     />
+    {ask && <WpaRulesModal askOnly onClose={() => setAsk(false)} />}
+    </>
   );
 }
 
@@ -420,10 +437,10 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const per = 5;   // 2026-11-15 티어 조회는 WPA/티어 한 칸(옛 6 : 5) · 2026-11-12 WPA 한 칸(옛 8 : 7 — 교환 이득 · 교전 참여 · 생산 · 그 전 6 : 5)
   /* 칸 틀 — WPA/티어 칸(묶음 첫 칸)은 숫자 + 배지라 넓게(PC 84px · 폰 76px · 2026-11-15 "wpa 티어 칸 늘리고" · 옛 70 · 62) · 나머지는 옛 최소 폭.
      폰 유저 칸 110 → 92px · 2fr → 1.3fr(같은 날 "폰 유저 폭 줄이고"). */
-  /* 종합 묶음의 WPA/티어 칸만 넓힌다(first0) — 머리 '?' · 위아래 표 다이얼(위 StatVoteCtl ★) 몫(PC 18 · 폰 16px). */
-  /* 종합 묶음의 WPA/티어 칸은 머리 '?'(WPA 계산 조건 · 2026-11-16) 몫까지 늘 first0 로. */
-  const colsOf = (who: string, first: string, rest: string, first0 = first): string => `${who} ${groups.map((_g, gi) => [tier ? (gi === 0 ? first0 : first) : rest, ...Array(per - 1).fill(rest)].join(" ")).join(" ")}`;
-  const [rulesOpen, setRulesOpen] = useState(false);   // WPA 계산 조건 창(머리 '?')
+  /* 종합 묶음의 WPA/티어 칸만 넓힌다(first0) — 위아래 표 다이얼(위 StatVoteCtl ★) 몫(PC 18 · 폰 16px) · 다이얼이 없으면 다른 묶음과 같은 폭.
+     ★ 티어 칸 좁힘(2026-11-16, 요청: "티어칸 폭 줄이고 나머지 칸에 나눠줘도 될 듯" · 머리 '?' 걷음과 함께) — 폰 76px · 1.5fr(종합 92px · 1.6fr) → 70px · 1.2fr ·
+     PC 84px · 1.5fr(종합 102px · 1.6fr) → 76px · 1.2fr. 남는 폭은 fr 로 나머지 칸이 나눠 갖는다(폰 360px 화면에서 표가 가로로 넘치던 8px 도 걷힌다). */
+  const colsOf = (who: string, first: string, rest: string, first0 = first): string => `${who} ${groups.map((_g, gi) => [tier ? (gi === 0 && vote ? first0 : first) : rest, ...Array(per - 1).fill(rest)].join(" ")).join(" ")}`;
   const gridRef = useRef<HTMLDivElement>(null);
   const [clipW, setClipW] = useState<number | null>(null);
   useLayoutEffect(() => {
@@ -512,14 +529,10 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
             /* 폰: 좁을 때는 종족마다 첫 칸(티어 · 티어 없는 조회는 게임수) 만 · 넓을 때 다(RaceCells 와 같은 가름). */
             const wideOnly = m && i >= 1;
             return (
-              <span key={k} className={cx("scr-sg-c scr-sg-hsub", i === 0 && "scr-sg-gstart", m && "scr-sg-race-head", wideOnly && "scr-sg-mwide", r === null && (k === "wpa" || k === "tier") && "has-q")}
+              <span key={k} className={cx("scr-sg-c scr-sg-hsub", i === 0 && "scr-sg-gstart", m && "scr-sg-race-head", wideOnly && "scr-sg-mwide")}
                 title={k === "wpa" || k === "tier" ? WPA_TIP : undefined}>
                 <SortHead {...(m ? mToggle : pcToggle)((r ? `${r}:${k}` : k) as StatSortKey)}>{h}</SortHead>
-                {/* ★ WPA 계산 조건(components/stats/WpaRules ★ · 2026-11-16) — 종합 묶음의 WPA 칸 머리에만 '?' */}
-                {r === null && (k === "wpa" || k === "tier") && (
-                  <button type="button" className="scr-sg-rules-q" aria-label="WPA 계산 조건 보기" title="WPA 계산 조건"
-                    onClick={(e) => { e.stopPropagation(); setRulesOpen(true); }}>?</button>
-                )}
+                {/* (걷음 2026-11-16, 요청: "헬프 아이콘 제거 · 내용은 WPA란? 툴팁에 아래") 종합 WPA 칸 머리 '?'(WPA 계산 조건 창) → WpaHelp 말풍선 아래 */}
               </span>
             );
           })}
@@ -536,7 +549,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
       <div className="scr-sg-sizer" style={sizerStyle}>
       <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-        style={{ "--ncw": groups.length * per, gridTemplateColumns: colsOf("minmax(92px, 1.3fr)", "minmax(76px, 1.5fr)", "minmax(46px, 1fr)", "minmax(92px, 1.6fr)"), ...foldStyle } as React.CSSProperties}>
+        style={{ "--ncw": groups.length * per, gridTemplateColumns: colsOf("minmax(92px, 1.3fr)", "minmax(70px, 1.2fr)", "minmax(46px, 1fr)", "minmax(86px, 1.4fr)"), ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} mobile races={races} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} mobile races={races} />)}
@@ -544,7 +557,6 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       </div>
       </div>
       {popEl}
-      {rulesOpen && <WpaRulesModal onClose={() => setRulesOpen(false)} />}
       </VoteCtx.Provider>
       </TrendCtx.Provider>
     );
@@ -559,7 +571,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
     <div className="scr-sg-sizer" style={sizerStyle}>
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-      style={{ gridTemplateColumns: colsOf("minmax(150px, 1.6fr)", "minmax(84px, 1.5fr)", "minmax(52px, 1fr)", "minmax(102px, 1.6fr)"), ...foldStyle }}>
+      style={{ gridTemplateColumns: colsOf("minmax(150px, 1.6fr)", "minmax(76px, 1.2fr)", "minmax(52px, 1fr)", "minmax(94px, 1.4fr)"), ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} races={races} />)}
@@ -567,7 +579,6 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     </div>
     </div>
     {popEl}
-    {rulesOpen && <WpaRulesModal onClose={() => setRulesOpen(false)} />}
     </VoteCtx.Provider>
     </TrendCtx.Provider>
   );

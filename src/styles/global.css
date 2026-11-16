@@ -2392,15 +2392,8 @@ body.scr-modal-open .scr-mobile-tabbar { display: none; }
   }
 }
 .scr-trash-body { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; padding-bottom: 14px; }
-/* ★ WPA 계산 조건 창(components/stats/WpaRules · 2026-11-16) — 번호 붙은 조건 목록(묶음마다 제목) · 맨 아래 건의 칸 · 내가 보낸 건의(접힘). 통계 머리의 '?' 단추도 여기. */
-.scr-sg-rules-q {
-  display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-left: 3px; padding: 0; flex: none;
-  border-radius: 999px; border: 1px solid var(--line-soft, rgba(255, 255, 255, 0.2)); background: transparent; color: var(--muted);
-  font: inherit; font-size: 10px; font-weight: 800; line-height: 1; cursor: pointer; vertical-align: middle;
-}
-.scr-sg-rules-q:hover { color: var(--text); border-color: var(--text); }
-.scr-sg-hsub.has-q { display: flex; align-items: center; justify-content: center; gap: 2px; }
-.scr-sg:not(.is-m) .scr-sg-hsub.has-q > .scr-sg-sort { flex: 1 1 auto; min-width: 0; width: auto; padding-right: 14px; }
+/* ★ WPA 계산 조건 창(components/stats/WpaRules · 2026-11-16) — 번호 붙은 조건 목록(묶음마다 제목) · 맨 아래 건의 칸 · 내가 보낸 건의(접힘).
+   (걷음 2026-11-16 저녁) 통계 머리의 '?' 단추(.scr-sg-rules-q · .has-q) — 목록은 'WPA란?' 말풍선 아래(.scr-sg-help-long). */
 .scr-wpar { display: flex; flex-direction: column; max-height: min(84vh, 760px); }
 @media (max-width: 960px) {
   .scr-wpar { top: auto; bottom: calc(var(--scr-float-bottom, 6px) + var(--mobile-footer-h, 69px) + 8px); transform: translate(-50%, 0);
@@ -5476,6 +5469,13 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-wpa-help { font-size: var(--fs-caption); color: var(--muted); text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; white-space: nowrap; }
 .scr-infotip-bubble.scr-sg-help:has(.scr-sg-help-list) { max-width: min(360px, 90vw); }
 .scr-sg-help-list { display: flex; flex-direction: column; gap: 6px; line-height: 1.5; text-align: left; }
+/* ★ 'WPA란?' 아래 계산 조건(2026-11-16 저녁 · StatGrid WpaHelp) — 길어 말풍선 안에서 굴린다(InfoTip interactive) · 번호는 건의에서 가리키는 데 쓴다. */
+.scr-infotip-bubble.scr-sg-help-long { max-height: min(72vh, 620px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.scr-sg-help-lead { color: var(--muted); }
+.scr-sg-help-sec { margin-top: 4px; }
+.scr-sg-help-rule { display: flex; gap: 6px; align-items: baseline; }
+.scr-sg-help-list .scr-sg-help-rule > i { flex: none; min-width: 16px; text-align: right; font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.scr-sg-help-ask { align-self: flex-end; margin-top: 4px; }
 .scr-sg-help-list b { color: var(--text); font-weight: 700; }
 .scr-sg-help-mock {
   display: grid; grid-template-columns: auto 40px 36px 36px; margin-bottom: 9px; font-size: 11px; line-height: 1.3;

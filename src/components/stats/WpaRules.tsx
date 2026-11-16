@@ -11,7 +11,9 @@ import { cx } from "../../utils/format";
 /* ★ WPA 계산 조건 목록(2026-11-16, 요청: "현재 들어가고 있는 조건을 목록화해서 wpa 컬럼 안에 ? 로 누르면 볼 수 있게 ·
    예: 이미 빈사 상태인 사람의 유닛 건물을 잡은 건 점수에 거의 들어가지 않습니다 · 이렇게 하나하나 다 확인해서 부족한 조건을 팀원들이 건의할 수 있게") —
    sg-api 의 지금 셈(wpa.py · tier.py · truthmix.py · service._tier_games)을 하나씩 확인해 쉬운 말로 옮겼다. **서버 셈을 바꾸면 여기도 같이 고친다**
-   (번호는 건의에서 "13번" 처럼 가리키는 데 쓴다 — 차례를 바꾸면 번호도 바뀐다). 건의는 sg-api /suggestions(주제 SUGGEST_TOPIC) · 운영자는 제어판 '건의함'. */
+   (번호는 건의에서 "13번" 처럼 가리키는 데 쓴다 — 차례를 바꾸면 번호도 바뀐다). 건의는 sg-api /suggestions(주제 SUGGEST_TOPIC) · 운영자는 제어판 '건의함'.
+   ★ 2026-11-16 저녁(요청: "헬프 아이콘 제거 · 내용은 WPA란? 툴팁에 아래 붙여넣기") — 목록은 통계 'WPA란?' 말풍선(StatGrid WpaHelp) 아래에 실리고,
+   이 창은 그 말풍선의 '건의하기'가 askOnly 로 연다(건의 칸 · 내가 보낸 건의만). askOnly 가 아니면 옛 모양(목록 + 건의) 그대로. */
 export const SUGGEST_TOPIC = "wpa-rules";
 
 interface RuleSection { title: string; items: readonly string[] }
@@ -84,7 +86,7 @@ export const WPA_RULES: readonly RuleSection[] = [
 
 interface Mine { id: number; text: string; createdAt: string }
 
-export default function WpaRulesModal({ onClose }: { onClose: () => void }) {
+export default function WpaRulesModal({ onClose, askOnly = false }: { onClose: () => void; askOnly?: boolean }) {
   useLockBodyScroll();
   const user = useAppStore((s) => s.user);
   const [text, setText] = useState("");
@@ -116,14 +118,18 @@ export default function WpaRulesModal({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="scr-modal-overlay">
       <ModalHash hash="wpa-rules" onClose={onClose} />
-      <div className="scr-modal scr-modal-md scr-wpar" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="WPA 계산 조건">
+      <div className="scr-modal scr-modal-md scr-wpar" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={askOnly ? "WPA 계산 조건 건의" : "WPA 계산 조건"}>
         <div className="scr-modal-head">
-          <span>WPA 계산 조건</span>
+          <span>{askOnly ? "WPA 계산 조건 건의" : "WPA 계산 조건"}</span>
           <button className="scr-icon-btn" onClick={onClose} aria-label="닫기"><X size={14} /></button>
         </div>
         <div className="scr-modal-body scr-wpar-body">
-          <p className="scr-wpar-lead">지금 점수에 들어가는 규칙이에요. 빠졌거나 이상한 조건이 있으면 맨 아래에 건의해 주세요(번호로 가리켜도 돼요).</p>
-          {WPA_RULES.map((sec) => (
+          {askOnly ? (
+            <p className="scr-wpar-lead">빠졌거나 이상한 조건을 알려 주세요. 'WPA란?'의 계산 조건 번호로 가리켜도 돼요.</p>
+          ) : (
+            <p className="scr-wpar-lead">지금 점수에 들어가는 규칙이에요. 빠졌거나 이상한 조건이 있으면 맨 아래에 건의해 주세요(번호로 가리켜도 돼요).</p>
+          )}
+          {!askOnly && WPA_RULES.map((sec) => (
             <section key={sec.title} className="scr-wpar-sec">
               <h3 className="scr-wpar-title">{sec.title}</h3>
               <ol className="scr-wpar-list">
