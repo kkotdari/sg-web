@@ -68,7 +68,7 @@ const n = (v: number | null | undefined): number | null => (typeof v === "number
 /** 그래프가 쓸 그 달의 줄 — 평균 행(CLAN_MEMBER_ID)은 clanByMonth, 나머지는 byMonth. */
 export const trendEntryOf = (data: StatTrendData, member: Member, month: string): TrendEntry | undefined =>
   member.id === CLAN_MEMBER_ID ? data.clanByMonth?.[month] : data.byMonth[month]?.[member.id];
-/** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.6 · 1.2 · 0.8 · 서버 INBUN_CUTS)
+/** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.55 · 1.1 · 0.65 · 서버 INBUN_CUTS)
  *  · 판 합이 열 미만이면 등급 없음(서버 TIER_MIN_GAMES). 종족 기록이 없으면 null. 팝업 근거값(EAPM · 교환비 보정 · 승패 보정)도 같은 가중 평균. */
 export function combinedTier(tb: Record<string, TierEntry> | null | undefined): TierEntry | null {
   const all = Object.values(tb ?? {}).filter((t) => typeof t?.inbun === "number" && t.inbun > 0 && t.plays > 0);
@@ -87,7 +87,7 @@ export function combinedTier(tb: Record<string, TierEntry> | null | undefined): 
   const ib = Math.floor((avg((t) => t.stdInbun ?? t.inbun) ?? 0) * 100 + 1e-9) / 100;
   /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭 · 2026-11-08 밤 1.6 · 1.15 · 1.0 으로 맞춤 — 옛 1.2 · 0.8 이 남아 있었다 · 2026-11-09 2티어 1.2 "1.2인분부터 2티어" · 1티어 1.8 "1티어 컷 1.8인분으로"
      · 2026-11-12 서버 "티어 1.6 1.2 0.8 로 나눌거야" — 여기만 1.8 · 1.2 · 1.0 으로 남아 있던 것을 맞춤).*/
-  const tier = n < 10 ? null : ib >= 1.6 ? 1 : ib >= 1.2 ? 2 : ib >= 0.8 ? 3 : 4;   // 2026-11-16 "문턱 조정 1.6 1.2 0.8"(옛 1.6 · 1.1 · 0.6) · 2026-11-14 "문턱은 1.6 1.1 0.6 으로 변경 (0.5인분 단위)"(서버 INBUN_CUTS 와 같이 · 옛 2026-11-13 1.4 · 1.0 · 0.6)
+  const tier = n < 10 ? null : ib >= 1.55 ? 1 : ib >= 1.1 ? 2 : ib >= 0.65 ? 3 : 4;   // 2026-11-16 "1.55 1.1 0.65"(같은 날 1.6 · 1.2 · 0.8 되물림 · 옛 1.6 · 1.1 · 0.6) · 2026-11-14 "문턱은 1.6 1.1 0.6 으로 변경 (0.5인분 단위)"(서버 INBUN_CUTS 와 같이 · 옛 2026-11-13 1.4 · 1.0 · 0.6)
   /* 셈 표(calc · 2026-11-06 저녁) — 종족이 하나면 그대로 · 여럿이면 줄마다 배수를 판 수로 가중 평균(점수 · 보정 글자는 못 합쳐 비움 · 인분 줄은 위 ib). */
   const calc = ts.length === 1 ? ts[0].calc ?? null : (ts[0].calc ?? null) && ts[0].calc!.map((r, i) => (
     r.name === "인분" ? { ...r, score: "", adj: tier ? `${tier}티어` : "", mult: ib }
@@ -145,10 +145,12 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part
   const tierOf = (e: TrendEntry): TierEntry | null | undefined => (race && race !== "주종족" ? e.tierByRace?.[race] : e.tier ?? combinedTier(e.tierByRace));
   /* ★ 보정 뒤 점수 그래프(2026-11-09, 요청: "통계의 셀 팝업의 그래프도 인분(보정 후)로 나타내기") — 표 칸이 보정 뒤 인분 배수(calcRowOf ★)인 티어 조회면 그래프도 달마다
      그 달 티어 셈 표의 그 줄 배수(1.00 = 보통). 종족 묶음은 그 종족 티어 · 종합은 종합 티어(combinedTier). 원점수는 팝업 글자(원점수 줄)에 남는다. */
+  /* ★ 그래프 = 칸의 점수(인분)(2026-11-16, 요청: "티어 팝업 그래프에 운영까지 반영된 걸로 나와야") — 옛: 셈 표 'WPA' 줄 배수만(판 수준 · 위아래 표가 빠졌다).
+     이제 달마다 그 달의 인분(stdInbun — WPA × 판 수준(sg-api quality.py) · 표 칸 WpaTierCell 과 같은 값) · 인분이 없는 옛 응답은 WPA 줄 배수. */
   if (scored && kind === "wpa") {
     return {
-      key: `${race ?? ""}:wpa:sc`, label: `${who}WPA(보정 후 인분 배수 · 1.00 = 보통)`,
-      series: [{ label: "WPA", cls: "", pick: (e) => n(calcRowOf(tierOf(e), "wpa")?.mult), fmt: x2 }],
+      key: `${race ?? ""}:wpa:sc`, label: `${who}점수(인분 · WPA × 판 수준 · 1.00 = 보통)`,
+      series: [{ label: "인분", cls: "", pick: (e) => { const t = tierOf(e); return n(t?.stdInbun ?? t?.inbun ?? calcRowOf(t, "wpa")?.mult); }, fmt: x2 }],
       mode: "single",
     };
   }
