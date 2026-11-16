@@ -68,7 +68,9 @@ const n = (v: number | null | undefined): number | null => (typeof v === "number
 /** 그래프가 쓸 그 달의 줄 — 평균 행(CLAN_MEMBER_ID)은 clanByMonth, 나머지는 byMonth. */
 export const trendEntryOf = (data: StatTrendData, member: Member, month: string): TrendEntry | undefined =>
   member.id === CLAN_MEMBER_ID ? data.clanByMonth?.[month] : data.byMonth[month]?.[member.id];
-/** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.55 · 1.1 · 0.65 · 서버 INBUN_CUTS)
+/** 등급 글자(2026-11-16 저녁 · sg-api tier.tier_name) — 1 ~ 4 는 "N티어" · 5(0.6인분 아래)는 "새싹". */
+export const tierLabel = (t: number): string => (t >= 5 ? "새싹" : `${t}티어`);
+/** ★ 종합 티어(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)을 추가") — 종족 티어(tierByRace)의 인분을 **판 수 가중 평균** · 등급은 같은 기준선(1.5 · 1.2 · 0.9 · 0.6 · 서버 INBUN_CUTS · 5 = 새싹)
  *  · 판 합이 열 미만이면 등급 없음(서버 TIER_MIN_GAMES). 종족 기록이 없으면 null. 팝업 근거값(EAPM · 교환비 보정 · 승패 보정)도 같은 가중 평균. */
 export function combinedTier(tb: Record<string, TierEntry> | null | undefined): TierEntry | null {
   const all = Object.values(tb ?? {}).filter((t) => typeof t?.inbun === "number" && t.inbun > 0 && t.plays > 0);
@@ -87,10 +89,10 @@ export function combinedTier(tb: Record<string, TierEntry> | null | undefined): 
   const ib = Math.floor((avg((t) => t.stdInbun ?? t.inbun) ?? 0) * 100 + 1e-9) / 100;
   /* 문턱은 서버 tier.py INBUN_CUTS 와 같아야 한다(2026-11-06 · 옛 1.6 이 남아 종합 티어만 1티어로 떴다 — 태섭 · 2026-11-08 밤 1.6 · 1.15 · 1.0 으로 맞춤 — 옛 1.2 · 0.8 이 남아 있었다 · 2026-11-09 2티어 1.2 "1.2인분부터 2티어" · 1티어 1.8 "1티어 컷 1.8인분으로"
      · 2026-11-12 서버 "티어 1.6 1.2 0.8 로 나눌거야" — 여기만 1.8 · 1.2 · 1.0 으로 남아 있던 것을 맞춤).*/
-  const tier = n < 10 ? null : ib >= 1.55 ? 1 : ib >= 1.1 ? 2 : ib >= 0.65 ? 3 : 4;   // 2026-11-16 "1.55 1.1 0.65"(같은 날 1.6 · 1.2 · 0.8 되물림 · 옛 1.6 · 1.1 · 0.6) · 2026-11-14 "문턱은 1.6 1.1 0.6 으로 변경 (0.5인분 단위)"(서버 INBUN_CUTS 와 같이 · 옛 2026-11-13 1.4 · 1.0 · 0.6)
+  const tier = n < 10 ? null : ib >= 1.5 ? 1 : ib >= 1.2 ? 2 : ib >= 0.9 ? 3 : ib >= 0.6 ? 4 : 5;   // 2026-11-16 저녁 "1 / 2 / 3 / 4 / 새싹 · 1.5 / 1.2 / 0.9 / 0.6"(5 = 새싹 · 옛 같은 날 1.55 · 1.1 · 0.65) · 2026-11-16 "1.55 1.1 0.65"(같은 날 1.6 · 1.2 · 0.8 되물림 · 옛 1.6 · 1.1 · 0.6) · 2026-11-14 "문턱은 1.6 1.1 0.6 으로 변경 (0.5인분 단위)"(서버 INBUN_CUTS 와 같이 · 옛 2026-11-13 1.4 · 1.0 · 0.6)
   /* 셈 표(calc · 2026-11-06 저녁) — 종족이 하나면 그대로 · 여럿이면 줄마다 배수를 판 수로 가중 평균(점수 · 보정 글자는 못 합쳐 비움 · 인분 줄은 위 ib). */
   const calc = ts.length === 1 ? ts[0].calc ?? null : (ts[0].calc ?? null) && ts[0].calc!.map((r, i) => (
-    r.name === "인분" ? { ...r, score: "", adj: tier ? `${tier}티어` : "", mult: ib }
+    r.name === "인분" ? { ...r, score: "", adj: tier ? tierLabel(tier) : "", mult: ib }
       : { name: r.name, score: "종족별", adj: "판 수 가중 평균", mult: Math.round((avg((t) => t.calc?.[i]?.mult) ?? r.mult) * 1000) / 1000 }));
   return { ...ts[0], tier, inbun: ib, stdInbun: ib, plays: n, eapm: avg((t) => t.eapm), cbt: avg((t) => t.cbt), prod: avg((t) => t.prod), dmg: avg((t) => t.dmg), adj: avg((t) => t.adj), ex: avg((t) => t.ex), wpa: avg((t) => t.wpa), calc } as TierEntry;
 }
@@ -168,7 +170,7 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part
     return {
       /* 종족 티어(2026-11-04 · race) — 그 달 tierByRace[종족]. 종족이 없으면 옛 전체 티어(팀 빌더 등). */
       key: race ? `${race}:tier` : "tier", label: race ? `${race} 티어` : "종합 티어",
-      series: [{ label: "티어", cls: "", pick: (e) => { const v = race && race !== "주종족" ? e.tierByRace?.[race]?.tier : (e.tier ?? combinedTier(e.tierByRace))?.tier; return typeof v === "number" ? -v : null; }, fmt: (v) => `${-v}티어` }],
+      series: [{ label: "티어", cls: "", pick: (e) => { const v = race && race !== "주종족" ? e.tierByRace?.[race]?.tier : (e.tier ?? combinedTier(e.tierByRace))?.tier; return typeof v === "number" ? -v : null; }, fmt: (v) => tierLabel(-v) }],
       mode: "single",
     };
   }
