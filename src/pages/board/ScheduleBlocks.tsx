@@ -7,6 +7,7 @@ import {
   Play, Plus, Trash2, Type, X,
 } from "lucide-react";
 import PhotoViewer from "../../components/common/PhotoViewer";
+import { downloadHref } from "../../utils/fileDownload";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { showAlert } from "../../components/common/AlertDialog";
 import { cx, formatBytes } from "../../utils/format";
@@ -1082,7 +1083,7 @@ function MediaBlock({
       ) : (
         <div className="scr-sb-file-row">
           <a
-            className="scr-sb-file" href={imgSrc(block.url)} download={block.name}
+            className="scr-sb-file" href={downloadHref(block.url, block.name)} download={block.name}
             target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}
           >
             <Paperclip size={13} aria-hidden />

@@ -12,6 +12,7 @@ import type { GameCurve,
   DeletedGameResult,
   GameUnhideRequest,
   PollSummary, PollResult,
+  CommentAttachmentIn,
 } from "../types";
 import type { ParsedReplay, ReplayMapGrid } from "scplay";
 import { putMapThumbs, type MapThumb } from "../utils/mapThumbs";
@@ -703,20 +704,21 @@ export const api = {
   async listComments(targetType: CommentTargetType, targetId: number): Promise<ItemComment[]> {
     return request<ItemComment[]>(`/api/activities/comments?targetType=${targetType}&targetId=${targetId}`);
   },
+  /** attachments — 첨부(2026-11-16 · 새 파일은 data URL). 고칠 때 안 주면 옛 첨부 그대로. */
   async createComment(
-    targetType: CommentTargetType, targetId: number, text: string, targetMemberIds: string[],
+    targetType: CommentTargetType, targetId: number, text: string, targetMemberIds: string[], attachments?: CommentAttachmentIn[],
   ): Promise<ItemComment> {
     return request<ItemComment>("/api/activities/comments", {
       method: "POST",
-      body: JSON.stringify({ targetType, targetId, text, targetMemberIds }),
+      body: JSON.stringify({ targetType, targetId, text, targetMemberIds, ...(attachments ? { attachments } : {}) }),
     });
   },
   async updateComment(
-    commentId: number, text: string, targetMemberIds: string[],
+    commentId: number, text: string, targetMemberIds: string[], attachments?: CommentAttachmentIn[],
   ): Promise<ItemComment> {
     return request<ItemComment>(`/api/activities/comments/${commentId}`, {
       method: "PATCH",
-      body: JSON.stringify({ text, targetMemberIds }),
+      body: JSON.stringify({ text, targetMemberIds, ...(attachments ? { attachments } : {}) }),
     });
   },
   async deleteComment(commentId: number): Promise<void> {

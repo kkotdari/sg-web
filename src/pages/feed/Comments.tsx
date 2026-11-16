@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CornerDownLeft, X, Trash2 } from "lucide-react";
+import { CornerDownLeft, X, Trash2, Paperclip, Play } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
 import { Spinner } from "../../components/common/Feedback";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
@@ -11,15 +11,28 @@ import { api } from "../../api/client";
 import { cx } from "../../utils/format";
 import { mentionIdsOf, renderTags, tagRefocusing, tagsToEdit, tagsToStore, useInlineTags } from "../../components/common/InlineTags";
 import { formatWhen, serverMs } from "../../utils/date";
+import { readAsDataUrl } from "../../utils/image";
+import { imgSrc } from "../../utils/imgSrc";
+import { downloadHref } from "../../utils/fileDownload";
+import PhotoViewer from "../../components/common/PhotoViewer";
 
 const COMMENT_NEW_WINDOW_MS = 12 * 60 * 60 * 1000;
 function isFreshComment(createdAt: string): boolean {
   const age = Date.now() - serverMs(createdAt);
   return age >= 0 && age <= COMMENT_NEW_WINDOW_MS;
 }
-import type { Member, ItemComment, CommentTargetType } from "../../types";
+import type { Member, ItemComment, CommentTargetType, CommentAttachment, CommentAttachmentIn } from "../../types";
 
 const MESSAGE_MAX_LENGTH = 50;
+/* ★ 댓글 첨부(2026-11-16, 요청: "댓글에도 파일이랑 사진 등 등록 가능해야 해" · sg-api activity attachments) — 하나에 10개 · 한 파일 50MB(서버 data URL 상한 안). */
+const ATT_MAX = 10;
+const ATT_MAX_BYTES = 50 * 1024 * 1024;
+/** 입력 칸의 첨부 — 옛 첨부(id)와 새 파일(file)을 한 줄로. */
+interface AttDraft { key: string; id?: string; name: string; size: number; file?: File; preview?: string; kind: "photo" | "video" | "file" }
+const kindOf = (f: File): AttDraft["kind"] => (f.type.startsWith("video/") ? "video" : f.type.startsWith("image/") ? "photo" : "file");
+/** 파일 고르기 창이 떠 있나 — 그 사이 입력 칸이 초점을 잃어도(창이 가져간다) 접지 않는다(아래 composer onBlur). */
+let attPicking9 = false;
+const fmtSize = (n: number): string => (n >= 1048576 ? `${(n / 1048576).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024))}KB`);
 
 /* 회원 태그 뽑기·칩 그리기는 글 속 태그(InlineTags · 2026-10-26)와 같은 한 벌이다 — 댓글엔 게임 태그(/g → #게임번호)도 함께 선다. */
 function renderInline(text: string, mentions: { nickname: string }[]) {
@@ -29,6 +42,7 @@ function renderInline(text: string, mentions: { nickname: string }[]) {
 function NoteComposer({
   members,
   initialText,
+  initialAtts,
   submitting,
   onSubmit,
   onCancel,
@@ -37,13 +51,39 @@ function NoteComposer({
 }: {
   members: Member[];
   initialText: string;
+  /** 고칠 때의 옛 첨부(남기거나 뺀다). */
+  initialAtts?: CommentAttachment[];
   submitting: boolean;
-  onSubmit: (text: string, memberIds: string[]) => void;
+  onSubmit: (text: string, memberIds: string[], atts: CommentAttachmentIn[]) => void;
   onCancel?: () => void;
   placeholder: string;
   submitLabel: React.ReactNode;
 }) {
   const [text, setText] = useState(initialText);
+  const [atts, setAtts] = useState<AttDraft[]>(() => (initialAtts ?? []).map((a) => ({ key: a.id, id: a.id, name: a.name, size: a.size, kind: a.kind, preview: a.thumbUrl ? imgSrc(a.thumbUrl) : a.kind === "photo" ? imgSrc(a.url) : undefined })));
+  const [reading, setReading] = useState(false);
+  const [attErr, setAttErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  useEffect(() => () => { for (const a of atts) if (a.file && a.preview) URL.revokeObjectURL(a.preview); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  const addFiles = (list: FileList | null): void => {
+    if (!list) return;
+    setAttErr(null);
+    const next: AttDraft[] = [];
+    for (const f of Array.from(list)) {
+      if (f.size > ATT_MAX_BYTES) { setAttErr(`${f.name} — 50MB 까지 올릴 수 있어요.`); continue; }
+      const kind = kindOf(f);
+      next.push({ key: `n${Date.now()}${Math.random()}`, name: f.name, size: f.size, file: f, kind, preview: kind === "photo" ? URL.createObjectURL(f) : undefined });
+    }
+    setAtts((cur) => {
+      const merged = [...cur, ...next];
+      if (merged.length > ATT_MAX) setAttErr(`첨부는 ${ATT_MAX}개까지예요.`);
+      return merged.slice(0, ATT_MAX);
+    });
+  };
+  const dropAtt = (key: string): void => setAtts((cur) => cur.filter((a) => {
+    if (a.key === key && a.file && a.preview) URL.revokeObjectURL(a.preview);
+    return a.key !== key;
+  }));
   const inputRef = useRef<HTMLInputElement>(null);
   const tags = useInlineTags({ inputRef, value: text, setValue: setText, maxLength: MESSAGE_MAX_LENGTH });
 
@@ -57,18 +97,28 @@ function NoteComposer({
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     if (tags.onKeyDown(e)) return;
     if (e.key === "Escape") { onCancel?.(); return; }
-    if (e.key === "Enter") { e.preventDefault(); doSubmit(); }
+    if (e.key === "Enter") { e.preventDefault(); void doSubmit(); }
   };
 
-  const doSubmit = () => {
+  const doSubmit = async () => {
     const trimmed = text.trim();
-    if (!trimmed || submitting) return;
+    if ((!trimmed && atts.length === 0) || submitting || reading) return;
     const stored = tagsToStore(trimmed, members);   // 회원 태그는 아이디로 저장(InlineTags ID_TAG ★ · 칸의 50자는 보이는 글자로 잰다)
-    onSubmit(stored, mentionIdsOf(stored, members));
+    setReading(true);
+    try {
+      const payload: CommentAttachmentIn[] = await Promise.all(atts.map(async (a) => (a.file
+        ? { file: { name: a.name, data: await readAsDataUrl(a.file) } }
+        : { id: a.id ?? "" })));
+      onSubmit(stored, mentionIdsOf(stored, members), payload);
+    } catch {
+      setAttErr("파일을 읽지 못했어요.");
+    } finally {
+      setReading(false);
+    }
   };
 
   const isEmpty = text === "";
-  const canSubmit = text.trim().length > 0 && !submitting;
+  const canSubmit = (text.trim().length > 0 || atts.length > 0) && !submitting && !reading;
 
   const clear = () => {
     setText("");
@@ -77,7 +127,29 @@ function NoteComposer({
   };
 
   return (
+    <div className="scr-cmt-compose">
+    {atts.length > 0 && (
+      <div className="scr-cmt-att-drafts">
+        {atts.map((a) => (
+          <span key={a.key} className={cx("scr-cmt-att-chip", a.preview && "has-img")}>
+            {a.preview ? <img src={a.preview} alt="" /> : a.kind === "video" ? <Play size={12} aria-hidden /> : <Paperclip size={12} aria-hidden />}
+            <em>{a.name}</em><small>{fmtSize(a.size)}</small>
+            <button type="button" onClick={() => dropAtt(a.key)} aria-label={`${a.name} 빼기`}><X size={11} /></button>
+          </span>
+        ))}
+      </div>
+    )}
+    {attErr && <p className="scr-cmt-att-err">{attErr}</p>}
     <div className="scr-comment-compose-row scr-feed-note-compose-row">
+      <input ref={fileRef} type="file" multiple hidden onChange={(e) => { attPicking9 = false; addFiles(e.target.files); e.target.value = ""; }} />
+      <button type="button" className="scr-rect-btn scr-comment-submit-btn scr-cmt-attach-btn" onMouseDown={(e) => e.preventDefault()}
+        onClick={() => {
+          attPicking9 = true;
+          window.addEventListener("focus", () => { window.setTimeout(() => { attPicking9 = false; }, 600); }, { once: true });   // 고르지 않고 닫아도 풀린다
+          fileRef.current?.click();
+        }} aria-label="파일 · 사진 첨부" title="파일 · 사진 첨부" disabled={atts.length >= ATT_MAX}>
+        <Paperclip size={14} />
+      </button>
       <div className="scr-comment-input-wrap">
         <div
           className="scr-input scr-comment-editor"
@@ -124,11 +196,40 @@ function NoteComposer({
         type="button"
         className="scr-rect-btn scr-comment-submit-btn"
         disabled={!canSubmit}
-        onClick={doSubmit}
+        onClick={() => void doSubmit()}
         aria-label="메모 등록"
       >
-        {submitting ? <Spinner size={14} /> : submitLabel}
+        {submitting || reading ? <Spinner size={14} /> : submitLabel}
       </button>
+    </div>
+    </div>
+  );
+}
+
+/** 댓글의 첨부 — 사진 · 동영상은 썸네일(누르면 크게) · 파일은 원래 이름으로 받기(downloadHref). */
+function NoteAttachments({ atts }: { atts: CommentAttachment[] }) {
+  const [open, setOpen] = useState<CommentAttachment | null>(null);
+  const media = atts.filter((a) => a.kind !== "file");
+  const files = atts.filter((a) => a.kind === "file");
+  return (
+    <div className="scr-cmt-atts">
+      {media.length > 0 && (
+        <div className="scr-cmt-att-media">
+          {media.map((a) => (
+            <button key={a.id} type="button" className="scr-cmt-att-thumb" onClick={() => setOpen(a)} aria-label={`${a.name} 크게 보기`}>
+              {a.kind === "video" && !a.thumbUrl ? <Play size={18} aria-hidden /> : <img src={imgSrc(a.thumbUrl || a.url)} alt={a.name} loading="lazy" />}
+              {a.kind === "video" && a.thumbUrl && <span className="scr-cmt-att-play"><Play size={14} aria-hidden /></span>}
+            </button>
+          ))}
+        </div>
+      )}
+      {files.map((a) => (
+        <a key={a.id} className="scr-sb-file scr-cmt-att-file" href={downloadHref(a.url, a.name)} download={a.name} target="_blank" rel="noreferrer noopener">
+          <Paperclip size={12} aria-hidden /><span className="scr-sb-file-name">{a.name}</span>
+          {a.size > 0 && <span className="scr-sb-file-size">{fmtSize(a.size)}</span>}
+        </a>
+      ))}
+      {open && <PhotoViewer src={imgSrc(open.url)} alt={open.name} video={open.kind === "video"} onClose={() => setOpen(null)} />}
     </div>
   );
 }
@@ -379,11 +480,11 @@ export default function Comments({ targetType, targetId, overModal = false, shee
     });
   };
 
-  const create = async (text: string, ids: string[]) => {
+  const create = async (text: string, ids: string[], atts: CommentAttachmentIn[]) => {
     setBusy(true);
     setErr(null);
     try {
-      const created = await api.createComment(targetType, targetId, text, ids);
+      const created = await api.createComment(targetType, targetId, text, ids, atts.length ? atts : undefined);
       apply((prev) => [...prev, created]);
       setComposerKey((k) => k + 1);
     } catch (e) {
@@ -392,11 +493,11 @@ export default function Comments({ targetType, targetId, overModal = false, shee
       setBusy(false);
     }
   };
-  const update = async (id: number, text: string, ids: string[]) => {
+  const update = async (id: number, text: string, ids: string[], atts: CommentAttachmentIn[]) => {
     setBusy(true);
     setErr(null);
     try {
-      const updated = await api.updateComment(id, text, ids);
+      const updated = await api.updateComment(id, text, ids, atts);
       apply((prev) => prev.map((c) => (c.id === id ? updated : c)));
       setEditingId(null);
     } catch (e) {
@@ -438,8 +539,9 @@ export default function Comments({ targetType, targetId, overModal = false, shee
           <NoteComposer
             members={members}
             initialText={tagsToEdit(c.text, members)}
+            initialAtts={c.attachments}
             submitting={busy}
-            onSubmit={(text, ids) => void update(c.id, text, ids)}
+            onSubmit={(text, ids, atts) => void update(c.id, text, ids, atts)}
             onCancel={() => setEditingId(null)}
             placeholder="메모 수정"
             submitLabel={<CornerDownLeft size={14} />}
@@ -460,6 +562,7 @@ export default function Comments({ targetType, targetId, overModal = false, shee
             )}
           </p>
         )}
+        {!(interactive && editingId === c.id) && c.attachments && c.attachments.length > 0 && <NoteAttachments atts={c.attachments} />}
       </div>
     </li>
   );
@@ -470,7 +573,7 @@ export default function Comments({ targetType, targetId, overModal = false, shee
       members={members}
       initialText=""
       submitting={busy}
-      onSubmit={(text, ids) => void create(text, ids)}
+      onSubmit={(text, ids, atts) => void create(text, ids, atts)}
       placeholder="댓글 남기기 (@ 유저 · /g 게임 태그)"
       submitLabel={<CornerDownLeft size={14} />}
     />
@@ -531,6 +634,7 @@ export default function Comments({ targetType, targetId, overModal = false, shee
                 className="scr-feed-comment-composer"
                 onBlur={(e) => {
                   if (tagRefocusing()) return;   // 태그 고르며 한글 조합 끊기(InlineTags insert ★) — 떠난 게 아니다
+                  if (attPicking9 || e.currentTarget.querySelector(".scr-cmt-att-chip")) return;   // 파일 고르는 중 · 첨부를 담아 둔 동안은 안 접는다(2026-11-16 댓글 첨부)
                   if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setComposerOpen(false);
                 }}
               >

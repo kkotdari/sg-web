@@ -4434,6 +4434,8 @@ html.scr-comment-typing, html.scr-comment-typing body { background: var(--card-b
 }
 .scr-comment-sheet-compose > .scr-avatar { flex-shrink: 0; }
 .scr-comment-sheet-compose > .scr-comment-compose-row { flex: 1 1 auto; min-width: 0; margin-top: 0; }
+.scr-comment-sheet-compose > .scr-cmt-compose { flex: 1 1 auto; min-width: 0; }   /* 첨부 칩 덩이(2026-11-16 · scr-cmt-compose) 안에 든 입력 줄도 같은 폭 */
+.scr-cmt-compose > .scr-comment-compose-row { margin-top: 0; }
 .scr-comment-sheet-compose .scr-comment-input { font-size: 16px; }
 .scr-comment-sheet-compose .scr-comment-input:focus-visible { outline-offset: -2px; }
 .scr-comment-sheet-compose .scr-comment-submit-btn {
@@ -6110,3 +6112,28 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-wpad-table td.is-name { font-weight: 600; }
 .scr-wpad-table tbody tr:nth-child(2n) td { background: linear-gradient(rgba(var(--overlay-rgb), 0.035), rgba(var(--overlay-rgb), 0.035)), var(--void); }
 .scr-wpad-table .is-wpa-total { font-weight: 700; }
+
+/* ★ 댓글 첨부(pages/feed/Comments · 2026-11-16, 요청: "댓글에도 파일이랑 사진 등 등록 가능해야 해") — 입력 칸 위 첨부 칩(사진은 작은 썸네일) · 📎 단추 ·
+   댓글 아래 사진 · 동영상 썸네일 줄(누르면 크게) · 파일 줄(원래 이름으로 받기 · 게시판 파일과 같은 꼴 scr-sb-file). */
+.scr-cmt-compose { display: flex; flex-direction: column; gap: 6px; width: 100%; min-width: 0; }
+.scr-cmt-att-drafts { display: flex; flex-wrap: wrap; gap: 6px; }
+.scr-cmt-att-chip {
+  display: inline-flex; align-items: center; gap: 5px; max-width: 220px; padding: 3px 4px 3px 6px; border-radius: 8px;
+  font-size: 12px; background: rgba(var(--overlay-rgb, 255, 255, 255), 0.06); border: 1px solid var(--line-soft, rgba(255, 255, 255, 0.1));
+}
+.scr-cmt-att-chip > img { width: 26px; height: 26px; object-fit: cover; border-radius: 4px; flex: none; }
+.scr-cmt-att-chip > em { font-style: normal; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scr-cmt-att-chip > small { color: var(--muted); flex: none; }
+.scr-cmt-att-chip > button { display: inline-flex; padding: 2px; border: 0; background: none; color: var(--muted); cursor: pointer; flex: none; }
+.scr-cmt-att-chip > button:hover { color: var(--text); }
+.scr-cmt-att-err { margin: 0; font-size: 12px; color: #ff7a7a; }
+.scr-cmt-attach-btn { flex: none; }
+.scr-cmt-atts { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.scr-cmt-att-media { display: flex; flex-wrap: wrap; gap: 4px; }
+.scr-cmt-att-thumb {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; padding: 0; overflow: hidden;
+  border-radius: 6px; border: 1px solid var(--line-soft, rgba(255, 255, 255, 0.1)); background: rgba(var(--overlay-rgb, 255, 255, 255), 0.05); color: var(--muted); cursor: zoom-in;
+}
+.scr-cmt-att-thumb > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scr-cmt-att-play { position: absolute; inset: auto 4px 4px auto; display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); color: #fff; }
+.scr-cmt-att-file { align-self: flex-start; max-width: 100%; }

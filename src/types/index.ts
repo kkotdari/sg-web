@@ -186,7 +186,19 @@ export interface ItemComment {
   updatedAt: string;
   canEdit: boolean;
   mentions: ItemCommentMention[];
+  /** ★ 댓글 첨부(2026-11-16 · sg-api attachments) — 사진 · 동영상(썸네일) · 파일. 옛 응답엔 없다. */
+  attachments?: CommentAttachment[];
 }
+export interface CommentAttachment {
+  id: string;
+  kind: "photo" | "video" | "file";
+  name: string;
+  url: string;
+  size: number;
+  thumbUrl?: string | null;
+}
+/** 댓글 첨부 보내기 — 남길 옛 첨부는 id · 새 파일은 file(data URL). */
+export type CommentAttachmentIn = { id: string } | { file: { name: string; data: string } };
 
 export interface GameResult {
   id: number;
