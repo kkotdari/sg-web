@@ -97,6 +97,14 @@ function StatsPausedNotice() {
  *  (서버 sg-api tier_votes · 덤 셈은 그대로 — 표가 없으니 덤도 0). 출시는 이 값만 true 로. */
 const TIER_VOTE_ON = false;
 
+/** ★ 가입한 뒤의 기간인가(2026-11-16, 요청: "통계 목록에 노출되는 사람은 가입일 이후인 사람만" · "클랜 전체 줄도 조회되는 사람 수로") — 조회 기간 끝(to · YYYY-MM-DD)이
+ *  가입일(createdAt · 이 기기 날짜)보다 앞이면 false(예: 10월에 가입한 사람은 7 · 8 · 9월 조회에 없다). 끝이 없으면(전체 기간) 늘 true. */
+function joinedBy(m: Member, to: string): boolean {
+  if (!to || !m.createdAt) return true;
+  const t = serverMs(m.createdAt);
+  return !Number.isFinite(t) || fmt(new Date(t)) <= to;
+}
+
 export default function ClanStatsScreen() {
   const members = useAppStore((s) => s.members);
   const isMobile = useIsMobile();
@@ -234,7 +242,9 @@ export default function ClanStatsScreen() {
     () => ({
       /* 서버엔 늘 클랜원 전부 — 클랜원 전체 줄·종족구성별 전적이 유저 검색에 안 흔들리게(2026-10-21, 요청: "유저 필터가 들어가도 클랜원 전체 데이터는
          그거에 무관해야"). 검색은 아래 줄만 거른다(viewMembers) · 그래서 칩을 바꿔도 다시 안 불러온다. */
-      memberIds: activeMembers.map((m) => m.id).sort().join(","),
+      /* ★ 가입한 뒤의 기간만(2026-11-16 · 아래 viewMembers 옛 거르기를 여기로 — 같은 날 "클랜 전체 줄도 조회되는 사람 수로 계산") — 조회 기간의 끝이 가입일보다
+         앞인 사람은 서버에 안 보낸다 → 목록 · 명수 · 클랜 전체(평균) 줄 · 편성 집계가 다 그 사람들로만. 전체 기간(끝이 없음)은 다. */
+      memberIds: activeMembers.filter((m) => joinedBy(m, statRange(period, period === PERIOD_TODAY ? todayFrom : "").to)).map((m) => m.id).sort().join(","),
       period,
       /* [오늘]이면 그 '오늘'의 시작도 열쇠에 — 정오를 넘으면 다시 불러온다(위 useTodayFrom ★). */
       day: period === PERIOD_TODAY ? todayFrom : "",
@@ -327,20 +337,13 @@ export default function ClanStatsScreen() {
       noChart: debouncedQuery.period === PERIOD_TODAY || DAY_PERIOD_RE.test(debouncedQuery.period) };
   }, [view, debouncedSignature, debouncedQuery.period]);
 
-  /* ★ 가입한 뒤의 기간만(2026-11-16, 요청: "통계 목록에 노출되는 사람은 가입일 이후인 사람만") — 조회 기간의 끝(statRange.to)이 가입일(createdAt · 이 기기 날짜)보다
-     앞이면 그 사람 줄을 안 띄운다(예: 10월에 가입한 사람은 7 · 8 · 9월 조회에 없다). 전체 기간(끝이 없음)은 다 띄운다. 클랜 전체 줄 · 편성 집계는 그대로(서버 몫). */
+  /* 가입일 거르기(2026-11-16 · "통계 목록에 노출되는 사람은 가입일 이후인 사람만")는 서버에 보내는 사람(queryKey.memberIds)에서 한다 — view.memberIds 가 이미 그 사람들. */
   const viewMembers = useMemo(() => {
     if (!view) return [];
     const byId = new Map(members.map((m) => [m.id, m]));
     const shown = new Set(matchedMembers.map((m) => m.id));
-    const to = statRange(debouncedQuery.period, debouncedQuery.day).to;
-    const joinedBy = (m: Member): boolean => {
-      if (!to || !m.createdAt) return true;
-      const t = serverMs(m.createdAt);
-      return !Number.isFinite(t) || fmt(new Date(t)) <= to;
-    };
-    return view.memberIds.filter((id) => shown.has(id)).map((id) => byId.get(id)).filter((m): m is Member => m !== undefined && joinedBy(m));
-  }, [view, members, matchedMembers, debouncedQuery.period, debouncedQuery.day]);
+    return view.memberIds.filter((id) => shown.has(id)).map((id) => byId.get(id)).filter((m): m is Member => m !== undefined);
+  }, [view, members, matchedMembers]);
 
   /** 실제 경기 수 — 편성별 판수(4:4·3:3·2:2 …)의 합이다. 편성은 가짓수가 적어 서버의 상위 5 에 잘릴 일이 없다. */
   /* 1:1 은 편성 셈에 안 든다(서버가 한 명 대 한 명은 편성에서 뺀다) — 내전이라 판마다 두 사람이 다 회원이니 사람 판수의 절반이 경기 수.
