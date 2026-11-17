@@ -1,27 +1,25 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PracticeRoom, useReplayMap } from "scplay";
-import { api } from "../../api/client";
+import { api, type PracticeBoard, type PracticeBoards, type PracticeRecordIn, type PracticeRecordReply } from "../../api/client";
 import { useIsMobile } from "../../hooks/useIsMobile";
-import { useAppStore } from "../../store/appStore";
-import { isTesterRole } from "../../constants/roles";
 import { navigateTo, parseRoute } from "../../utils/route";
-import { cx } from "../../utils/format";
 
 /* ★ 연습실(2026-11-17) — 들어오면 **연습 과제 카드**를 고른다(요청: "연습실 들어가면 연습과제 선택창 뜨고 카드로 선택하게 깔끔하게 · 일단 빨무 견제 연습이라고
    하나 만들고 지금 만든거 연결 · 대신 TESTER 에게는 오픈 · 그 외에는 오픈예정 배지 띄우고 비활성화"). 주소: /practice(카드) · /practice/<과제>(놀이).
-   놀이 본체는 재생기 패키지(scplay PracticeRoom)다 — 여기서는 빨무 지도(서버가 고른 해시 → 재생기와 같은 지도 받기)만 넘긴다. */
+   놀이 본체는 재생기 패키지(scplay PracticeRoom)다 — 여기서는 빨무 지도(서버가 고른 해시 → 재생기와 같은 지도 받기)만 넘긴다.
+   ★ 정식 오픈(2026-11-17, 요청: "미니게임 요소 · 개인별 단축키 설정 기억하기 · 다되면 정식으로 오픈해서 배포") — TESTER 제한을 걷고 누구나 · 카드 아래에
+   모드별(초반 · 중반) 기록표(사람마다 최고 · 내 최고와 등수) · 명령 키는 계정에 기억(sg-api /practice/prefs) · 턴이 끝나면 기록을 적는다(전체 최고면 서버가 모두에게 푸시). */
 interface PracticeTask { key: string; title: string; desc: string; tags: string[] }
 const TASKS: PracticeTask[] = [
   {
     key: "drop", title: "빨무 견제 연습",
-    /* 셋째 판(2026-11-17, 요청: "우리 홈피의 드랍연습도 맵하고 똑같이") — 연습맵 6판과 같은 판: 생산 · 테크가 다 지어진 내 기지에서 직접 뽑아 적 기지 일곱 곳을 드랍. */
-    desc: "연습맵과 같은 판 — 생산 · 테크 건물이 다 지어진 내 기지에서 유닛 · 수송선을 직접 뽑아 적 기지 일곱 곳(초반 · 중반 타워 · 일꾼)을 드랍해요. 깃발로 자리 · 톱니로 설정 · Shift+F2~F4 화면 기억 · Ctrl+숫자 부대.",
-    tags: ["빨무", "드랍", "생산 · 연구", "초반 · 중반"],
+    /* 넷째 판(2026-11-17) — 턴제 미니게임: 연습기가 모드 · 종족마다 유닛 · 업그레이드를 준비해 두고(생산 · 연구 없음) 준비 15초 → 드랍 30초 · 점수 기록. */
+    desc: "턴제 미니게임 — 연습기가 준비한 유닛(초반 · 중반)으로 준비 15초 · 드랍 30초 안에 한 번 드랍해서 일꾼을 잡아요. 점수 = 잡은 일꾼 × 10 − 잃은 유닛 값 · 수송선을 들키면 일꾼이 12기씩 도망가요.",
+    tags: ["빨무", "드랍", "턴제 · 점수", "초반 · 중반"],
   },
 ];
 
 export default function PracticeScreen() {
-  const isTester = useAppStore((s) => !!s.user && isTesterRole(s.user.roles));
   const [item, setItem] = useState<string | null>(() => parseRoute().item);
   useEffect(() => {
     const onPop = (): void => { if (parseRoute().screen === "practice") setItem(parseRoute().item); };
@@ -31,7 +29,7 @@ export default function PracticeScreen() {
   const task = TASKS.find((t) => t.key === item) ?? null;
   const open = (t: PracticeTask): void => { navigateTo(`/practice/${t.key}`, { notify: false }); setItem(t.key); };
   const back = (): void => { navigateTo("/practice", { notify: false }); setItem(null); };
-  if (task && isTester) return <PracticePlay task={task} onBack={back} />;
+  if (task) return <PracticePlay task={task} onBack={back} />;
   return (
     <div className="scr-screen">
       <div className="scr-v2-toolbar">
@@ -41,17 +39,54 @@ export default function PracticeScreen() {
       </div>
       <div className="scr-practice-cards">
         {TASKS.map((t) => (
-          <button key={t.key} type="button" className={cx("scr-practice-card", !isTester && "is-locked")} disabled={!isTester} onClick={() => open(t)}
-            aria-label={isTester ? `${t.title} 시작` : `${t.title} — 오픈 예정`}>
+          <button key={t.key} type="button" className="scr-practice-card" onClick={() => open(t)} aria-label={`${t.title} 시작`}>
             <span className="scr-practice-card-head">
               <b className="scr-practice-card-title">{t.title}</b>
-              {!isTester && <span className="scr-practice-card-badge">오픈 예정</span>}
             </span>
             <span className="scr-practice-card-desc">{t.desc}</span>
             <span className="scr-practice-card-tags">{t.tags.map((g) => <i key={g}>{g}</i>)}</span>
           </button>
         ))}
       </div>
+      <PracticeBoardsView />
+    </div>
+  );
+}
+
+const RACE_KO: Record<string, string> = { T: "테란", P: "프로토스", Z: "저그" };
+/** 모드별 기록표(요청: "레코드 남겨서 모드별(초반/중반) 점수 기록해서 훈련선택방 아래 표시") — 사람마다 최고 한 줄 · 위에서 열 · 내 최고와 등수. */
+function PracticeBoardsView() {
+  const [boards, setBoards] = useState<PracticeBoards | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    api.getPracticeRecords().then((b) => { if (live) setBoards(b); }).catch(() => { if (live) setBoards(null); });
+    return () => { live = false; };
+  }, []);
+  if (boards === undefined) return null;
+  if (boards === null) return <p className="scr-hint scr-hint-left">기록표를 못 받았어요.</p>;
+  const one = (title: string, b: PracticeBoard) => (
+    <section className="scr-practice-board">
+      <h2 className="scr-practice-board-title">{title}<span>{b.plays}판</span></h2>
+      {b.top.length === 0 ? <p className="scr-practice-board-empty">아직 기록이 없어요 — 첫 기록의 주인공이 되어 보세요.</p> : (
+        <ol className="scr-practice-board-list">
+          {b.top.map((r) => (
+            <li key={r.memberId} className={r.rank === 1 ? "is-first" : undefined}>
+              <b className="scr-practice-rank">{r.rank}</b>
+              <span className="scr-practice-name">{r.nickname}</span>
+              <i className="scr-practice-race">{RACE_KO[r.race] ?? r.race}</i>
+              <span className="scr-practice-detail">일꾼 {r.kills} · −{r.lostPts}</span>
+              <b className="scr-practice-score">{r.score}</b>
+            </li>
+          ))}
+        </ol>
+      )}
+      {b.mine && <p className="scr-practice-mine">내 최고 <b>{b.mine.best}</b>점 · {b.mine.rank}등 · {b.mine.plays}판</p>}
+    </section>
+  );
+  return (
+    <div className="scr-practice-boards">
+      {one("빨무 드랍 · 초반", boards.early)}
+      {one("빨무 드랍 · 중반", boards.mid)}
     </div>
   );
 }
@@ -66,6 +101,21 @@ function PracticePlay({ task, onBack }: { task: PracticeTask; onBack: () => void
     return () => { live = false; };
   }, []);
   const map = useReplayMap(hash ?? null);
+  /* 명령 키 — 계정에 기억(요청: "개인별 단축키 설정 기억하기"). 받기 전엔 이 기기의 기억 · 바꾸면 잠깐 모았다 적는다. */
+  const [keys, setKeys] = useState<Record<string, string> | null>(null);
+  useEffect(() => {
+    let live = true;
+    api.getPracticePrefs().then((p) => { if (live && p.keys && Object.keys(p.keys).length) setKeys(p.keys); }).catch(() => undefined);
+    return () => { live = false; };
+  }, []);
+  const saveT = useRef<number | null>(null);
+  const onKeys = useCallback((k: Record<string, string>): void => {
+    if (saveT.current !== null) window.clearTimeout(saveT.current);
+    saveT.current = window.setTimeout(() => { api.putPracticePrefs(k).catch(() => undefined); }, 600);
+  }, []);
+  /* 한 턴 끝 — 기록을 적고 답(내 최고 · 전체 최고 · 갱신)을 놀이판에 돌려준다. 전체 최고면 서버가 모두에게 푸시한다. */
+  const onResult = useCallback((r: PracticeRecordIn): Promise<PracticeRecordReply | null> =>
+    api.postPracticeRecord(r).catch(() => null), []);
   return (
     <div className="scr-screen">
       <div className="scr-v2-toolbar">
@@ -77,7 +127,7 @@ function PracticePlay({ task, onBack }: { task: PracticeTask; onBack: () => void
       {isMobile && <p className="scr-hint scr-hint-left">마우스 · 키보드로 하는 연습이에요 — PC 에서 열어 주세요.</p>}
       {hash === null && <p className="scr-hint scr-hint-left">{err || "빨무 지도(지형 포함)를 아직 못 찾았어요 — 빨무 판을 한 판 올리면 생겨요."}</p>}
       <div className="scr-practice-host">
-        <PracticeRoom map={map ?? null} />
+        <PracticeRoom map={map ?? null} keys={keys} onKeys={onKeys} onResult={onResult} />
       </div>
     </div>
   );

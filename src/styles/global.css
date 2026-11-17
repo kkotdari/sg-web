@@ -6235,3 +6235,19 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-practice-card-desc { font-size: var(--fs-caption); color: var(--muted); line-height: 1.5; }
 .scr-practice-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .scr-practice-card-tags i { font-style: normal; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--lighting-hover-bg); color: var(--text-dim); }
+/* ★ 빨무 드랍 연습 기록표(2026-11-17, 요청: "모드별(초반/중반) 점수 기록해서 훈련선택방 아래 표시") — 카드 아래 두 칸(초반 · 중반) · 사람마다 최고 한 줄. */
+.scr-practice-boards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 16px; }
+.scr-practice-board { padding: 14px 16px; border-radius: 12px; border: 1px solid var(--btn-outline-border); background: var(--panel-raised); }
+.scr-practice-board-title { display: flex; align-items: baseline; gap: 8px; margin: 0 0 10px; font-size: 15px; font-weight: 800; }
+.scr-practice-board-title span { margin-left: auto; font-size: var(--fs-caption); font-weight: 600; color: var(--muted); }
+.scr-practice-board-empty { margin: 0; font-size: var(--fs-caption); color: var(--muted); }
+.scr-practice-board-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.scr-practice-board-list li { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+.scr-practice-board-list li.is-first { background: var(--lighting-hover-bg); }
+.scr-practice-rank { width: 22px; text-align: center; color: var(--text-dim); }
+.scr-practice-board-list li.is-first .scr-practice-rank { color: #ffc93c; }
+.scr-practice-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.scr-practice-race { font-style: normal; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--lighting-hover-bg); color: var(--text-dim); }
+.scr-practice-detail { font-size: 11px; color: var(--muted); }
+.scr-practice-score { min-width: 40px; text-align: right; font-size: 15px; }
+.scr-practice-mine { margin: 10px 0 0; font-size: var(--fs-caption); color: var(--text-dim); }

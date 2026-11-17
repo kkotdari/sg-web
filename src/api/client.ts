@@ -104,6 +104,12 @@ export interface GameResultStatsParams {
   lite?: boolean;
 }
 
+/* 빨무 드랍 연습(2026-11-17) — 한 턴 결과 · 적은 뒤의 답 · 모드별 기록표(sg-api practice). */
+export interface PracticeRecordIn { mode: "early" | "mid"; race: "T" | "P" | "Z"; spot: string; score: number; kills: number; lostPts: number; lostN: number }
+export interface PracticeRecordReply { myBest: number | null; top: number | null; topName: string | null; newMyBest: boolean; newTop: boolean }
+export interface PracticeRankRow { rank: number; memberId: string; nickname: string; score: number; kills: number; lostPts: number; race: string; at: string }
+export interface PracticeBoard { top: PracticeRankRow[]; mine: { best: number; rank: number; plays: number } | null; plays: number }
+export interface PracticeBoards { early: PracticeBoard; mid: PracticeBoard }
 export interface SqlConsoleResult { columns: string[]; rows: unknown[][]; rowCount: number; truncated: boolean; ms: number; wrote: boolean }
 
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
@@ -631,6 +637,20 @@ export const api = {
   async getSuggestions(topic: string): Promise<{ id: number; nickname: string | null; text: string; createdAt: string }[]> {
     return request<{ id: number; nickname: string | null; text: string; createdAt: string }[]>(`/api/suggestions/${encodeURIComponent(topic)}`);
   },
+  /* ── 빨무 드랍 연습 기록 · 개인 단축키(2026-11-17 · sg-api /practice) ── */
+  async getPracticeRecords(): Promise<PracticeBoards> {
+    return request<PracticeBoards>("/api/practice/records");
+  },
+  async postPracticeRecord(r: PracticeRecordIn): Promise<PracticeRecordReply> {
+    return request<PracticeRecordReply>("/api/practice/records", { method: "POST", body: JSON.stringify(r) });
+  },
+  async getPracticePrefs(): Promise<{ keys: Record<string, string> | null }> {
+    return request<{ keys: Record<string, string> | null }>("/api/practice/prefs");
+  },
+  async putPracticePrefs(keys: Record<string, string>): Promise<void> {
+    await request<unknown>("/api/practice/prefs", { method: "PUT", body: JSON.stringify({ keys }) });
+  },
+
   /* ── 티어 칸 위아래 표(2026-11-16 · sg-api /tier-votes · 익명 — 내 표만 받는다) ── */
   async getTierVotes(month: string): Promise<{ open: boolean; mine: Record<string, number> }> {
     return request<{ open: boolean; mine: Record<string, number> }>(`/api/tier-votes/${encodeURIComponent(month)}`);
