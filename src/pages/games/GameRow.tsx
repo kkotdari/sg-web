@@ -85,6 +85,15 @@ const sideOutcome = (result: GameResult["result"], side: 1 | 2): "승" | "무" |
 const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
   (text ? <span className={text === "패" ? "scr-feed-row-wl is-loss" : text === "승" ? "scr-feed-row-wl is-win" : "scr-feed-row-wl"} aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
 
+/** ★ 예상 표기의 '균형' 폭(2026-11-17, 요청: "균형의 범위는 너가 생각할때 뒤집히기 쉬운 차이까지") — 예상 승률이 50 ± 이 값(%p) 안이면 '균형'.
+ *  60 : 40 이면 열 판에 네 판은 약한 쪽이 이긴다 — 거기까지를 뒤집히기 쉬운 차이로 본다(검증 눈금: 예상 45 ~ 55% 판의 실제 승률 48% · 이 모형 적중 대략 65 ~ 70%). */
+export const WIN_EVEN_PCT = 10;
+/** 1팀 확률 → '← 우세'(1팀 · 왼쪽) · '우세 →'(2팀 · 오른쪽) · '균형'. */
+export const winLeanText = (p: number): string => {
+  const pct = Math.round(p * 100);
+  return Math.abs(pct - 50) <= WIN_EVEN_PCT ? "균형" : pct > 50 ? "← 우세" : "우세 →";
+};
+
 export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP }: {
   game: GameResult;
   /** 1팀 승리 확률(0~1 · 게임 목록만 준다 · 목록 응답의 winProb) — 두 편 줄의 승패 배지 위에 '예상' 줄로 선다. */
@@ -143,11 +152,11 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
                    값은 목록 응답에 실려 와 처음부터 함께 선다(같은 날 지적: "예상만 따로 조회하나? 왜 늦게 떠?" — 옛: 따로 받고 그동안 숨긴 칸으로 자리만 잡았다). */
                 <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
                   title={`예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞까지의 판으로 낸 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
-                  {/* 높음 · 낮음 가리지 않고 같은 흐림(같은 날 요청: "승리확률은 높음 낮음 무관 전부 똑같이 약간 흐리게") — 옛: 높은 쪽만 또렷 · 굵게. */}
-                  <span className="scr-feed-row-wp-n">{Math.round(winP * 100)}</span>
-                  {/* 라벨 '예상'(같은 날 요청: "라벨을 예상으로 변경하고 1단 키움" · 옛: '승리확률' · 폰은 '승리 / 확률' 두 줄). */}
-                  <span className="scr-feed-row-wp-lab">예상</span>
-                  <span className="scr-feed-row-wp-n">{100 - Math.round(winP * 100)}</span>
+                  {/* 표기는 우세 쪽 화살표 · 균형(같은 날 요청: "예상표기를 이렇게 바꿔줘 — 우세 → / 균형 · 균형의 범위는 뒤집히기 쉬운 차이까지") —
+                      옛: [1팀 수 | 예상 | 2팀 수](수는 이제 title 에만). 양옆 칸은 비운 채 두어 격자(배지 · vs 줄과 같은 3칸)를 지킨다. */}
+                  <span className="scr-feed-row-wp-n" aria-hidden />
+                  <span className="scr-feed-row-wp-lab">{winLeanText(winP)}</span>
+                  <span className="scr-feed-row-wp-n" aria-hidden />
                   <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
                   <span className="scr-feed-row-vs-t" aria-hidden>vs</span>
                   <OutcomeBadge text={sideOutcome(game.result, sd.side)} />
