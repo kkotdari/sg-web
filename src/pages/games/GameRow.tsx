@@ -143,10 +143,11 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
                   {/* 두 줄(같은 날 되요청: "%없어도 다 알아볼듯 · 예상(아주 작게) / 51 : 49(작게) · 이렇게 두줄로" → "승리확률 로 변경 작게") — 옛 첫 판: '승리 확률' 라벨 · 배지 위 62% · 38%. */}
                   <span className="scr-feed-row-wp" title={`승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞 달까지의 티어(종족별 인분)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
                     <span className="scr-feed-row-wp-lab">승리확률</span>
+                    {/* 숫자 줄은 배지 줄과 같은 틀(같은 날 되요청: "숫자는 승 vs 패와 n n 이 줄이 맞게") — [배지 폭 숫자 | 안 보이는 vs | 배지 폭 숫자] 라 숫자가 배지 바로 위에 선다. */}
                     <span className="scr-feed-row-wp-nums">
-                      <span className={winP >= 0.5 ? "is-fav" : undefined}>{Math.round(winP * 100)}</span>
-                      <span className="scr-feed-row-wp-colon" aria-hidden>:</span>
-                      <span className={winP < 0.5 ? "is-fav" : undefined}>{100 - Math.round(winP * 100)}</span>
+                      <span className={cx("scr-feed-row-wp-n", winP >= 0.5 && "is-fav")}>{Math.round(winP * 100)}</span>
+                      <span className="scr-feed-row-wp-gap" aria-hidden>vs</span>
+                      <span className={cx("scr-feed-row-wp-n", winP < 0.5 && "is-fav")}>{100 - Math.round(winP * 100)}</span>
                     </span>
                   </span>
                   <span className="scr-feed-row-arrow scr-feed-row-vs">
