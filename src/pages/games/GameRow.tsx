@@ -158,7 +158,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
                 <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
                   title={`인분 합 ${game.teamInbun![0].toFixed(2)} : ${game.teamInbun![1].toFixed(2)} · 예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞까지의 판으로 낸 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
                   {/* 윗줄 = 저울 한 칸(격자 세 칸을 다 탄다 · 같은 날 요청: "기울이니깐 어지러워 · 시소가 아니라 접시는 수평이고 받침만 기우는 저울로 변경") —
-                      들보(.wp-beam)만 sawDeg 로 기운다 · 양끝 접시(.wp-pan = 수 + 수평 접시 선 + 짧은 기둥)는 거꾸로 돌려 늘 수평 — 들보 끝을 따라 오르내리기만 한다.
+                      들보(.wp-beam · 얕은 U — 두 팔이 접시 기둥 · 접시 밖으로 안 나감)만 sawDeg 로 기운다 · 양끝 접시(.wp-pan = 수 + 수평 접시 선 · 폭 16px)는 거꾸로 돌려 늘 수평 — 팔 끝을 따라 오르내리기만 한다.
                       수 크기는 그 합에 비례(sawFontK) · 예상이 동전 던지기에 가까우면(winAngel) 가운데 😇(바로 섬) · 동그란 받침대는 가운데 아래.
                       옛(같은 날): 시소 — 수가 들보와 함께 기울었다 · 그 앞엔 수만 바로 세운 시소. */}
                   {(() => {
