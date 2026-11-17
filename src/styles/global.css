@@ -3966,7 +3966,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-feed-row-wp-pan::before { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 1px; background: currentColor; opacity: 0.6; }
 .scr-feed-row-wp-pan::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 1px; height: 3px; background: currentColor; opacity: 0.6; transform: translateX(-50%); }
 .scr-feed-row-wp-n { display: inline-block; font-size: var(--fs-10); font-variant-numeric: tabular-nums; line-height: 1; padding-bottom: 1px; opacity: 0.6; }
-.scr-feed-row-wp-angel { position: absolute; left: 50%; bottom: 3px; transform: translateX(-50%); font-size: var(--fs-10); line-height: 1; }
+.scr-feed-row-wp-angel { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); font-size: var(--fs-10); line-height: 1; }   /* 들보에서 3px 띄움(같은 날 요청: "천사는 저울에서 좀 띄우기" · 옛 3px = 접시 높이) */
 .scr-feed-row-wp-pivot { position: absolute; left: 50%; top: 100%; width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.6; transform: translateX(-50%); }
 .scr-feed-row-vsbox > .scr-feed-row-vs-t { font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.04em; color: var(--row-dim); }
 /* vs 를 배지 글자 높이에(같은 날 지적: "vs 위치가 승패 배지에비해 좀 아래인 느낌") — 소문자라 잉크가 글자 상자 아래쪽에 앉아 배지 글자보다 약 2px 낮았다(실측 · 폰 12px) ·
