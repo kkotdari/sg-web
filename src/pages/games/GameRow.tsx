@@ -85,17 +85,15 @@ const sideOutcome = (result: GameResult["result"], side: 1 | 2): "승" | "무" |
 const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
   (text ? <span className={text === "패" ? "scr-feed-row-wl is-loss" : text === "승" ? "scr-feed-row-wl is-win" : "scr-feed-row-wl"} aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
 
-/** ★ 예상 시소(2026-11-17, 요청: "화살표 다시 제거하고 숫자로 돌아가기 인분합으로 표현하고 시소로 표현해서 동그란 받침대위 선이 기울어지게 라벨은 제거") —
- *  편 인분 합(서버 win_pred 의 s1 · s2)이 무거운 쪽이 내려간다(같은 날 되요청으로 저울 꼴 — 들보만 기울고 접시 · 수는 수평). 기울기(도) = −(합 차 ÷ 합 총) × SAW_GAIN · ±SAW_MAX 에서 멈춤(음수 = 시계 반대 = 왼쪽이 내려감).
- *  3 : 3 판 합 3.0 대 3.3(차 ÷ 총 ≈ 0.05)이면 7° 남짓 · 0.08 이상이면 12°. 확률(winP)은 기울기에 안 쓴다(종족 몫이 든 값이라 수와 어긋날 수 있다 — title 에만).
- *  옛(같은 날): 우세 · 균형 글자 막대(WIN_EVEN_PCT · winBarAt — 꺾쇠 · 마디 · 화살촉 판들) · 그 앞 [1팀 % | 예상 | 2팀 %]. */
-export const SAW_GAIN = 150;
-export const SAW_MAX = 12;
-export const sawDeg = (s1: number, s2: number): number =>
-  (s1 + s2 > 0 ? Math.max(-SAW_MAX, Math.min(SAW_MAX, -((s1 - s2) / (s1 + s2)) * SAW_GAIN)) : 0);
-/** 수 글자 크기 배수(같은 날 요청: "글자 크기도 숫자 크기에 맞게 조절") — 그 편 합 ÷ 두 편 평균(무거운 쪽이 크다) · 0.8 ~ 1.25 배에서 멈춤. 3.6 : 2.9 면 1.11 : 0.89. */
-export const sawFontK = (s: number, s1: number, s2: number): number =>
-  (s1 + s2 > 0 ? Math.max(0.8, Math.min(1.25, (2 * s) / (s1 + s2))) : 1);
+/** ★ 예상 줄 = 편 인분 합 두 수 + 균형이면 가운데 😇(2026-11-17, 요청: "저울폐기하고 양쪽 숫자 및 천사표기만 · 숫자크기별 폰트크기적용은 남기되 편차줄이기").
+ *  수 크기 배수 = 1 + (그 편 합 ÷ 두 편 평균 − 1) × NUM_FONT_GAIN · NUM_FONT_MIN ~ NUM_FONT_MAX 에서 멈춤(무거운 쪽이 조금 크다).
+ *  3.6 : 2.9 면 1.05 : 0.95(옛 저울 판 1.11 : 0.89 · 0.8 ~ 1.25 의 절반 편차). 확률(winP)은 title 에만(종족 몫이 든 값이라 수와 어긋날 수 있다).
+ *  옛(같은 날): 저울(들보 기울기 SAW_GAIN · 접시 · 받침) → 그 앞 시소 → 우세 · 균형 글자 막대 → [1팀 % | 예상 | 2팀 %]. */
+export const NUM_FONT_GAIN = 0.5;
+export const NUM_FONT_MIN = 0.9;
+export const NUM_FONT_MAX = 1.12;
+export const sumFontK = (s: number, s1: number, s2: number): number =>
+  (s1 + s2 > 0 ? Math.max(NUM_FONT_MIN, Math.min(NUM_FONT_MAX, 1 + ((2 * s) / (s1 + s2) - 1) * NUM_FONT_GAIN)) : 1);
 /** 가운데 천사(😇)를 앉히는 폭(같은 날 요청: "밸런스 좋은 경우 가운데 천사 이모지") — 예상 승률이 50 ± 이 값(%p) 안. 동전 던지기 구간(검증 눈금: 예상 45 ~ 55% 판의 실제 승률 48%). */
 export const WIN_ANGEL_PCT = 5;
 export const winAngel = (p: number): boolean => Math.abs(Math.round(p * 100) - 50) <= WIN_ANGEL_PCT;
@@ -153,32 +151,20 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
             ...(i > 0 ? [pair ? (
               /* ★ 승리 확률(2026-11-17, 요청: "승패 위에다가 예측 승리확률 · 너무 튀지않게 예쁘게 깔끔하게") — 배지 줄 위 [수 | 승리확률 | 수] · 다 같은 흐림. */
               winP != null && game.teamInbun?.length === 2 && !melee ? (
-                /* 한 격자 3칸 × 2줄 — 윗줄 예상 저울(세 칸을 다 탄다 · 아래) · 아랫줄 [승 | vs | 패]. 저울 폭 = 배지 줄 폭.
+                /* 한 격자 3칸 × 2줄 — 윗줄 [1팀 합 | 😇 | 2팀 합] · 아랫줄 [승 | vs | 패]. 칸을 같이 써서 수는 배지 바로 위 · 😇 는 vs 바로 위.
                    값은 목록 응답에 실려 와 처음부터 함께 선다(같은 날 지적: "예상만 따로 조회하나? 왜 늦게 떠?" — 옛: 따로 받고 그동안 숨긴 칸으로 자리만 잡았다). */
                 <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
                   title={`인분 합 ${game.teamInbun![0].toFixed(2)} : ${game.teamInbun![1].toFixed(2)} · 예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞까지의 판으로 낸 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
-                  {/* 윗줄 = 저울 한 칸(격자 세 칸을 다 탄다 · 같은 날 요청: "기울이니깐 어지러워 · 시소가 아니라 접시는 수평이고 받침만 기우는 저울로 변경") —
-                      들보(.wp-beam · 얕은 U — 두 팔이 접시 기둥 · 접시 밖으로 안 나감)만 sawDeg 로 기운다 · 양끝 접시(.wp-pan = 수 + 수평 접시 선 · 폭 16px)는 거꾸로 돌려 늘 수평 — 팔 끝을 따라 오르내리기만 한다.
-                      수 크기는 그 합에 비례(sawFontK) · 예상이 동전 던지기에 가까우면(winAngel) 가운데 😇(바로 섬) · 동그란 받침대는 가운데 아래.
-                      옛(같은 날): 시소 — 수가 들보와 함께 기울었다 · 그 앞엔 수만 바로 세운 시소. */}
+                  {/* 윗줄 = [1팀 합 | 😇 | 2팀 합] — 수는 배지 바로 위 · 😇(균형 · winAngel)는 vs 바로 위 · 수 크기는 그 합에 조금 비례(sumFontK).
+                      같은 날 요청: "저울폐기하고 양쪽 숫자 및 천사표기만" — 옛: 저울(들보 · 접시 · 받침 동그라미 · 얕은 U) · 그 앞 시소. */}
                   {(() => {
                     const [s1, s2] = game.teamInbun as number[];
-                    const deg = sawDeg(s1, s2);
-                    const level = { transform: `rotate(${(-deg).toFixed(2)}deg)` };
-                    return (
-                      <span className="scr-feed-row-wp-bar" aria-label={`인분 합 ${s1.toFixed(1)} 대 ${s2.toFixed(1)}${winAngel(winP) ? " · 균형" : ""}`}>
-                        <span className="scr-feed-row-wp-beam" style={{ transform: `rotate(${deg.toFixed(2)}deg)` }} aria-hidden>
-                          <span className="scr-feed-row-wp-pan" style={level}>
-                            <span className="scr-feed-row-wp-n" style={{ fontSize: `calc(var(--fs-10) * ${sawFontK(s1, s1, s2).toFixed(3)})` }}>{s1.toFixed(1)}</span>
-                          </span>
-                          <span className="scr-feed-row-wp-pan" style={level}>
-                            <span className="scr-feed-row-wp-n" style={{ fontSize: `calc(var(--fs-10) * ${sawFontK(s2, s1, s2).toFixed(3)})` }}>{s2.toFixed(1)}</span>
-                          </span>
-                        </span>
-                        {winAngel(winP) && <span className="scr-feed-row-wp-angel" aria-hidden>😇</span>}
-                        <span className="scr-feed-row-wp-pivot" aria-hidden />
-                      </span>
-                    );
+                    const angel = winAngel(winP);
+                    return [
+                      <span key="n1" className="scr-feed-row-wp-n" style={{ fontSize: `calc(var(--fs-10) * ${sumFontK(s1, s1, s2).toFixed(3)})` }}>{s1.toFixed(1)}</span>,
+                      <span key="mid" className="scr-feed-row-wp-angel" role={angel ? "img" : undefined} aria-label={angel ? "균형" : undefined}>{angel ? "😇" : null}</span>,
+                      <span key="n2" className="scr-feed-row-wp-n" style={{ fontSize: `calc(var(--fs-10) * ${sumFontK(s2, s1, s2).toFixed(3)})` }}>{s2.toFixed(1)}</span>,
+                    ];
                   })()}
                   <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
                   <span className="scr-feed-row-vs-t" aria-hidden>vs</span>

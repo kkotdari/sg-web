@@ -3953,25 +3953,12 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   align-self: center; display: inline-grid; grid-template-columns: repeat(3, auto); column-gap: 6px; row-gap: 5px;   /* 칸 틈 6(배지 줄 그대로 · 한때 8 — '승리확률' 한 줄 라벨이 수에 안 닿게) */   /* 줄 사이 1 → 5(같은 날 요청: "승리확률 줄과 승패 줄 사이 갭 늘리기") */
   align-items: center; justify-items: center; margin: 0 5px; line-height: 1;
 }
-/* 예상 저울(GameRow sawDeg · 같은 날 요청: "숫자로 돌아가기 인분합으로 표현하고 시소로 …" → "기울이니깐 어지러워 · 시소가 아니라 접시는 수평이고 받침만 기우는 저울로 변경") —
-   윗줄 한 칸이 격자 세 칸(배지 · vs · 배지 폭)을 다 탄다. 들보(.wp-beam) = 얕은 U(::after · 같은 날 요청: "아래 빔이 팔을 벗어나지 않게 · 약간 U자 · 모서리 살짝 구부림") —
-   두 팔이 곧 접시 기둥이고 바닥 양 모서리를 3px 둥글린다 · 팔은 접시 가운데(접시 폭 16px 의 반 = 8px 안쪽)에서 끝나 접시 밖으로 안 나간다 · U 바닥 가운데를 축으로 sawDeg 만큼 돈다.
-   접시(.wp-pan) = 폭 16px 고정(두 접시 같은 크기 · U 팔 자리를 맞추려고 · 20px 이면 수가 가운데로 몰려 😇 에 닿았다) · 수 + 그 밑 수평 접시 선(::before) · 인라인으로 거꾸로 돌려(접시 선 가운데 = 팔 끝이 축) 늘 수평.
-   수 크기는 그 합에 비례(인라인 · 옛 수 10px 가 평균). 받침대(.wp-pivot) = 지름 4px 동그라미 · U 바닥 선 가운데에 겹친다.
-   균형(GameRow winAngel)이면 가운데에 😇(바로 섬 · 들보 밖 · 접시 선에서 3px 띄움) — 이모지는 흐리지 않게 흐림(0.6)을 수 · 선 · 받침대에 따로 건다.
-   옛 판들(같은 날): 수 두 개 + '예상' → '← 우세' → '우세' 가운데 + 화살표 → 우세 · 균형 글자 막대(화살촉 · 마디 · 꺾쇠) → 시소(수가 바로 섬 → 들보와 함께 기욺)
-   → 저울(곧은 들보 + 접시마다 기둥 3px · 들보는 양끝 6px 안쪽에서 끝남). */
-.scr-feed-row-wp-bar { grid-column: 1 / -1; justify-self: stretch; position: relative; min-width: 0; color: var(--text); }
-.scr-feed-row-wp-beam { position: relative; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 4px; transform-origin: 50% 100%; }
-.scr-feed-row-wp-beam::after {
-  content: ""; position: absolute; left: 8px; right: 8px; bottom: 0; height: 5px; box-sizing: border-box;
-  border: 1px solid currentColor; border-top: 0; border-radius: 0 0 3px 3px; opacity: 0.6;
-}
-.scr-feed-row-wp-pan { position: relative; display: inline-flex; justify-content: center; width: 16px; flex: none; padding-bottom: 1px; transform-origin: 50% 100%; }
-.scr-feed-row-wp-pan::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; opacity: 0.6; }
-.scr-feed-row-wp-n { display: inline-block; font-size: var(--fs-10); font-variant-numeric: tabular-nums; line-height: 1; padding-bottom: 1px; opacity: 0.6; }
-.scr-feed-row-wp-angel { position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%); font-size: var(--fs-10); line-height: 1; }   /* 접시 선에서 3px 띄움(같은 날 요청: "천사는 저울에서 좀 띄우기") */
-.scr-feed-row-wp-pivot { position: absolute; left: 50%; top: calc(100% - 2.5px); width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.6; transform: translateX(-50%); }   /* 들보 바닥 선에 겹친다(같은 날 요청: "동그라미를 들보에 겹치기" · 옛: 들보 밑에 붙음 top 100%) */
+/* 예상 줄(GameRow sumFontK · winAngel · 같은 날 요청: "저울폐기하고 양쪽 숫자 및 천사표기만 숫자크기별 폰트크기적용은 남기되 편차줄이기") —
+   윗줄 [1팀 합 | 😇 | 2팀 합] 이 격자 세 칸을 그대로 쓴다(수는 배지 바로 위 · 😇 는 vs 바로 위). 수 크기는 인라인(그 합에 조금 비례 · 평균이 10px).
+   수만 흐림 0.6(옛 수와 같음) · 😇 은 선명하게 · 폭 0 으로 넘쳐 가운데 칸(vs 폭)을 안 벌린다.
+   옛 판들(같은 날): 수 두 개 + '예상' → '← 우세' → '우세' 가운데 + 화살표 → 우세 · 균형 글자 막대(화살촉 · 마디 · 꺾쇠) → 시소 → 저울(들보 · 접시 · 받침 · 얕은 U). */
+.scr-feed-row-wp-n { font-size: var(--fs-10); font-variant-numeric: tabular-nums; line-height: 1; color: var(--text); opacity: 0.6; }
+.scr-feed-row-wp-angel { width: 0; display: flex; justify-content: center; align-items: center; font-size: var(--fs-10); line-height: 1; white-space: nowrap; }
 .scr-feed-row-vsbox > .scr-feed-row-vs-t { font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.04em; color: var(--row-dim); }
 /* vs 를 배지 글자 높이에(같은 날 지적: "vs 위치가 승패 배지에비해 좀 아래인 느낌") — 소문자라 잉크가 글자 상자 아래쪽에 앉아 배지 글자보다 약 2px 낮았다(실측 · 폰 12px) ·
    확률 줄이 없는 줄(배지 줄 .scr-feed-row-vs)도 같이 올린다. */
