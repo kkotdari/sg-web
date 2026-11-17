@@ -6045,8 +6045,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* 주종족 글자(StatGrid Mains · 2026-11-04) — 게임수 앞에 작고 옅게(T · P · Z). */
 .scr-sg-mains { font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: 0.02em; color: var(--muted); opacity: 0.7; margin-right: 4px; vertical-align: 1px; }
 @media (min-width: 961px) {
-  .scr-stats-screen-v2 { max-width: 1800px; }   /* 2026-11-17 1920 → 1800(요청: "통계 화면 최소 폭 1920보다 줄이기 1800정도로") · 2026-11-08 밤 1480 → 1920(요청: "통계 화면 폭 1920으로" — 묶음마다 교환 이득 · 교전 참여 · 생산 칸이 늘어) · 리그 상세와 같은 폭 */
-  .scr-main:has(.scr-stats-screen-v2) { max-width: 1800px; }   /* 본문 틀도 함께(2026-11-17 1920 → 1800) */
+  .scr-stats-screen-v2 { max-width: 1600px; }   /* 2026-11-17 1800 → 1600(같은 날 요청: "통계 화면 폭 1600으로 수정 컬럼폭도 조금 타이트해져야") · 같은 날 1920 → 1800(요청: "통계 화면 최소 폭 1920보다 줄이기 1800정도로") · 2026-11-08 밤 1480 → 1920(요청: "통계 화면 폭 1920으로" — 묶음마다 교환 이득 · 교전 참여 · 생산 칸이 늘어) · 리그 상세와 같은 폭 */
+  .scr-main:has(.scr-stats-screen-v2) { max-width: 1600px; }   /* 본문 틀도 함께(2026-11-17 1920 → 1800 → 1600) */
 }
 /* PC 통계 묶음 고르기(2026-11-03, 요청: "전체, 테란, 프로토스, 저그 체크박스로 선택한 것만 보이게") — 표 위 오른쪽 작은 체크 줄. */
 .scr-sg-groups { display: flex; justify-content: flex-end; gap: 12px; margin: 0 0 6px; font-size: var(--fs-caption); color: var(--muted); }

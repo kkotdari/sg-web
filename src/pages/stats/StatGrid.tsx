@@ -579,10 +579,12 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     {/* ★ 가로 스크롤(2026-11-06, 요청: "폭 최소 폭 늘리고 화면 좁으면 스크롤 생기게") — 칸 최소 폭 유저 150 → 170 · 값 50 → 60px. 그 합이 화면보다 넓으면 표 감싸개가 가로로 민다.
         종족별을 접은 표(is-fold · 종합만 보임)는 감춘 칸까지 밀리지 않게 가로 넘침을 숨긴다. */}
     {/* 칸 최소 폭 60 → 52 · 유저 170 → 150(2026-11-08 밤, 지적: "1920 을 꼭 못 채움" — 묶음 여덟 칸 × 넷 = 32 칸이라 60px 이면 2090 으로 1920 화면(본문 1863)을 넘어 늘 가로로 밀렸다 · 150 + 32 × 52 = 1814). */}
+    {/* ★ 칸 조금 타이트하게(2026-11-17, 요청: "통계 화면 폭 1600으로 · 컬럼폭도 조금 타이트해져야") — 화면 폭 1800 → 1600 과 함께 최소 폭 유저 150 → 140(1.6fr → 1.4fr) ·
+        WPA/티어 76 → 72 · 값 칸 52 → 50(승률 "76.5 %" 가 여백 5 · 5 안에 들게) · 종합 첫 칸(다이얼) 94 → 90 — 펼친 표 최소 1286 → 1228px(좁은 노트북에서도 덜 민다). */}
     <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
     <div className="scr-sg-sizer" style={sizerStyle}>
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-      style={{ gridTemplateColumns: colsOf("minmax(150px, 1.6fr)", "minmax(76px, 1.2fr)", "minmax(52px, 1fr)", "minmax(94px, 1.4fr)"), ...foldStyle }}>
+      style={{ gridTemplateColumns: colsOf("minmax(140px, 1.4fr)", "minmax(72px, 1.2fr)", "minmax(50px, 1fr)", "minmax(90px, 1.4fr)"), ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} noWpa={noWpa} races={races} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} noWpa={noWpa} races={races} />)}
