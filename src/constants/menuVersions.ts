@@ -3,6 +3,8 @@ import type { ScreenKey } from "../types";
 export interface NavMenuItem {
   key: ScreenKey;
   label: string;
+  /** PC 에서만 선다 — 폭 960 이하(폰 · 서랍)에서는 뺀다. */
+  pcOnly?: boolean;
 }
 
 /* 탭바 = 게임 · 통계 · 게시판, 래더는 서랍으로(2026-10-26, 요청: "메뉴 순서 게임-통계-게시판 (이하 서랍 래더, 리그, 배치, 운영자 메뉴)"). */
@@ -18,8 +20,9 @@ export const RAIL_MENU_ITEMS: NavMenuItem[] = [
   { key: "ladder", label: "래더" },
   { key: "leagues", label: "리그" },
   /* (숨김 2026-11-17, 요청: "배치메뉴는 숨겨줘 이참에") 배치 — 화면 · 주소(/placement)는 그대로 둔다. */
-  /* 연습실(2026-11-17, 요청: "연습실 메뉴는 서랍에 넣어주고") — 레일 · 서랍에만. */
-  { key: "practice", label: "연습실" },
+  /* 연습실(2026-11-17, 요청: "연습실 메뉴는 서랍에 넣어주고") — 레일 · 서랍에만.
+     모바일에선 숨김(2026-11-17, 요청: "모바일에선 연습실 메뉴 숨김" — 키보드 · 마우스 조작이라). 주소(/practice)는 그대로 둔다. */
+  { key: "practice", label: "연습실", pcOnly: true },
 ];
 
 export const HOME_SCREEN: ScreenKey = NAV_MENU_ITEMS[0].key;

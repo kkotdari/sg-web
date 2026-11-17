@@ -149,7 +149,7 @@ export default function Header({
   }, [profileMenuOpen]);
 
   const visibleItems = NAV_MENU_ITEMS;
-  const railOnlyItems = RAIL_MENU_ITEMS.map((item) => (
+  const railOnlyItems = RAIL_MENU_ITEMS.filter((item) => !(item.pcOnly && isNarrowHeader)).map((item) => (
     <NavTab key={item.key} label={item.label} active={screen === item.key} onClick={() => go(item.key)} />
   ));
   const commonNavItems = (
