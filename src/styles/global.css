@@ -3953,11 +3953,11 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
   align-self: center; display: inline-grid; grid-template-columns: repeat(3, auto); column-gap: 6px; row-gap: 5px;   /* 줄 사이 1 → 5(같은 날 요청: "승리확률 줄과 승패 줄 사이 갭 늘리기") */
   align-items: center; justify-items: center; margin: 0 5px; line-height: 1;
 }
-/* 라벨은 두 수 사이 · 6px · 수 8px(같은 날 되요청: "한단 더 줄이기 · 승패, vs 보다는 전체적으로 작은 느낌으로" · 옛 7px · 9). 높은 쪽 수만 본 글 색 · 낮은 쪽은 흐리게. */
+/* 라벨은 두 수 사이 · 6px · 수 8px(같은 날 되요청: "한단 더 줄이기 · 승패, vs 보다는 전체적으로 작은 느낌으로" · 옛 7px · 9). */
 /* 라벨은 칸 폭을 안 잡는다(폭 0 · 가운데서 양옆 틈으로 넘친다) — 가운데 칸은 아랫줄 vs 폭 그대로라 배지 사이가 안 벌어진다(폰 이름 칸을 지킨다). */
-.scr-feed-row-wp-lab { width: 0; display: flex; justify-content: center; font-size: 6px; letter-spacing: 0; opacity: 0.45; color: var(--text); white-space: nowrap; }
-.scr-feed-row-wp-n { font-size: var(--fs-8); font-variant-numeric: tabular-nums; color: var(--text); opacity: 0.55; }
-.scr-feed-row-wp-n.is-fav { opacity: 0.95; font-weight: 600; }
+/* 수 · 라벨 다 같은 약간의 흐림(같은 날 요청: "높음 낮음 무관 전부 똑같이 약간 흐리게" · 옛: 높은 쪽 수만 0.95 · 굵게 · 라벨 0.45). */
+.scr-feed-row-wp-lab { width: 0; display: flex; justify-content: center; font-size: 6px; letter-spacing: 0; opacity: 0.6; color: var(--text); white-space: nowrap; }
+.scr-feed-row-wp-n { font-size: var(--fs-8); font-variant-numeric: tabular-nums; color: var(--text); opacity: 0.6; }
 .scr-feed-row-vsbox > .scr-feed-row-vs-t { font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.04em; color: var(--row-dim); }
 /* vs 를 배지 글자 높이에(같은 날 지적: "vs 위치가 승패 배지에비해 좀 아래인 느낌") — 소문자라 잉크가 글자 상자 아래쪽에 앉아 배지 글자보다 약 2px 낮았다(실측 · 폰 12px) ·
    확률 줄이 없는 줄(배지 줄 .scr-feed-row-vs)도 같이 올린다. */
