@@ -3961,7 +3961,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 /* 양끝은 아주 짧은 세로 마디(같은 날 요청: "화살표 말고 양끝에 아주짧은 마디로 표현" · 옛: 바깥을 향한 화살촉 4px — 선 최소 5px 이던 것을 마디 자리 3px 로). */
 .scr-feed-row-wp-seg { position: relative; flex-basis: 3px; flex-shrink: 0; height: 1px; background: currentColor; opacity: 0.6; }
 .scr-feed-row-wp-seg.is-l::before, .scr-feed-row-wp-seg.is-r::after {
-  content: ""; position: absolute; top: 50%; width: 1px; height: 5px; background: currentColor; transform: translateY(-50%);
+  content: ""; position: absolute; top: 50%; width: 1px; height: 3px; background: currentColor; transform: translateY(-50%);   /* 5 → 3px(같은 날 요청: "양끝 마디 더 짧게") */
 }
 .scr-feed-row-wp-seg.is-l::before { left: 0; }
 .scr-feed-row-wp-seg.is-r::after { right: 0; }
