@@ -156,7 +156,7 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
                 <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
                   title={`인분 합 ${game.teamInbun![0].toFixed(2)} : ${game.teamInbun![1].toFixed(2)} · 예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞까지의 판으로 낸 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
                   {/* 윗줄 = [1팀 합 | 😇 | 2팀 합] — 수는 배지 바로 위 · 😇(균형 · winAngel)는 vs 바로 위 · 수 크기는 그 합에 조금 비례(sumFontK) —
-                      글자 크기(font-size)가 아니라 같은 크기로 그린 뒤 숫자 바닥(기준선)을 축으로 scale — 두 수가 한 줄에 선다(같은 날 요청: "숫자간 세로중심맞추기" → 지적: "가벼운숫자가 위로 올라가보임" · font-size 를 달리하면 기준선이 화소에 따로 맞춰져 1px 까지 어긋났고, 가운데 축이면 작은 수 바닥이 떠 보였다).
+                      글자 크기(font-size)가 아니라 같은 크기로 그린 뒤 가운데를 축으로 scale(같은 날 요청: "숫자간 세로중심맞추기" — font-size 를 달리하면 기준선이 화소에 따로 맞춰져 두 수의 잉크 세로 중심이 최대 1px 어긋났다).
                       같은 날 요청: "저울폐기하고 양쪽 숫자 및 천사표기만" — 옛: 저울(들보 · 접시 · 받침 동그라미 · 얕은 U) · 그 앞 시소. */}
                   {(() => {
                     const [s1, s2] = game.teamInbun as number[];
