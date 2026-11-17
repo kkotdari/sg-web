@@ -93,6 +93,12 @@ export const SAW_GAIN = 150;
 export const SAW_MAX = 12;
 export const sawDeg = (s1: number, s2: number): number =>
   (s1 + s2 > 0 ? Math.max(-SAW_MAX, Math.min(SAW_MAX, -((s1 - s2) / (s1 + s2)) * SAW_GAIN)) : 0);
+/** 수 글자 크기 배수(같은 날 요청: "글자 크기도 숫자 크기에 맞게 조절") — 그 편 합 ÷ 두 편 평균(무거운 쪽이 크다) · 0.8 ~ 1.25 배에서 멈춤. 3.6 : 2.9 면 1.11 : 0.89. */
+export const sawFontK = (s: number, s1: number, s2: number): number =>
+  (s1 + s2 > 0 ? Math.max(0.8, Math.min(1.25, (2 * s) / (s1 + s2))) : 1);
+/** 가운데 천사(😇)를 앉히는 폭(같은 날 요청: "밸런스 좋은 경우 가운데 천사 이모지") — 예상 승률이 50 ± 이 값(%p) 안. 동전 던지기 구간(검증 눈금: 예상 45 ~ 55% 판의 실제 승률 48%). */
+export const WIN_ANGEL_PCT = 5;
+export const winAngel = (p: number): boolean => Math.abs(Math.round(p * 100) - 50) <= WIN_ANGEL_PCT;
 
 export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP }: {
   game: GameResult;
@@ -152,15 +158,17 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
                 <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
                   title={`인분 합 ${game.teamInbun![0].toFixed(2)} : ${game.teamInbun![1].toFixed(2)} · 예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞까지의 판으로 낸 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
                   {/* 윗줄 = 시소 한 칸(격자 세 칸을 다 탄다 · 같은 날 요청: "숫자로 돌아가기 인분합으로 표현하고 시소로 … 라벨은 제거") —
-                      [1팀 합 ━━●━━ 2팀 합] · 수는 들보 양끝에 얹혀 들보와 함께 오르내리고(글자는 바로 선다) · 동그란 받침대는 가운데 아래. 기울기 = sawDeg. */}
+                      [1팀 합 ━━●━━ 2팀 합] · 수는 들보 양끝에 얹혀 들보와 함께 기운다(같은 날 요청: "글자를 판에 기울기에 맞추기" · 옛: 거꾸로 돌려 바로 세움) ·
+                      수 크기는 그 합에 비례(sawFontK) · 예상이 동전 던지기에 가까우면(winAngel) 들보 가운데에 😇 · 동그란 받침대는 가운데 아래. 기울기 = sawDeg. */}
                   {(() => {
                     const [s1, s2] = game.teamInbun as number[];
                     const deg = sawDeg(s1, s2);
                     return (
-                      <span className="scr-feed-row-wp-bar" aria-label={`인분 합 ${s1.toFixed(1)} 대 ${s2.toFixed(1)}`}>
+                      <span className="scr-feed-row-wp-bar" aria-label={`인분 합 ${s1.toFixed(1)} 대 ${s2.toFixed(1)}${winAngel(winP) ? " · 균형" : ""}`}>
                         <span className="scr-feed-row-wp-beam" style={{ transform: `rotate(${deg.toFixed(2)}deg)` }} aria-hidden>
-                          <span className="scr-feed-row-wp-n" style={{ transform: `rotate(${(-deg).toFixed(2)}deg)` }}>{s1.toFixed(1)}</span>
-                          <span className="scr-feed-row-wp-n" style={{ transform: `rotate(${(-deg).toFixed(2)}deg)` }}>{s2.toFixed(1)}</span>
+                          <span className="scr-feed-row-wp-n" style={{ fontSize: `calc(var(--fs-10) * ${sawFontK(s1, s1, s2).toFixed(3)})` }}>{s1.toFixed(1)}</span>
+                          {winAngel(winP) && <span className="scr-feed-row-wp-angel">😇</span>}
+                          <span className="scr-feed-row-wp-n" style={{ fontSize: `calc(var(--fs-10) * ${sawFontK(s2, s1, s2).toFixed(3)})` }}>{s2.toFixed(1)}</span>
                         </span>
                         <span className="scr-feed-row-wp-pivot" aria-hidden />
                       </span>
