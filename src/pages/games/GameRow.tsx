@@ -88,10 +88,10 @@ const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
 /** ★ 예상 표기의 '균형' 폭(2026-11-17, 요청: "균형의 범위는 너가 생각할때 뒤집히기 쉬운 차이까지") — 예상 승률이 50 ± 이 값(%p) 안이면 '균형'.
  *  60 : 40 이면 열 판에 네 판은 약한 쪽이 이긴다 — 거기까지를 뒤집히기 쉬운 차이로 본다(검증 눈금: 예상 45 ~ 55% 판의 실제 승률 48% · 이 모형 적중 대략 65 ~ 70%). */
 export const WIN_EVEN_PCT = 10;
-/** 1팀 확률 → '← 우세'(1팀 · 왼쪽) · '우세 →'(2팀 · 오른쪽) · '균형'. */
-export const winLeanText = (p: number): string => {
+/** 1팀 확률 → 기울기 — "left"(1팀 · 왼쪽 우세) · "right"(2팀 · 오른쪽 우세) · null(균형). */
+export const winLean = (p: number): "left" | "right" | null => {
   const pct = Math.round(p * 100);
-  return Math.abs(pct - 50) <= WIN_EVEN_PCT ? "균형" : pct > 50 ? "← 우세" : "우세 →";
+  return Math.abs(pct - 50) <= WIN_EVEN_PCT ? null : pct > 50 ? "left" : "right";
 };
 
 export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP }: {
@@ -155,7 +155,15 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
                   {/* 표기는 우세 쪽 화살표 · 균형(같은 날 요청: "예상표기를 이렇게 바꿔줘 — 우세 → / 균형 · 균형의 범위는 뒤집히기 쉬운 차이까지") —
                       옛: [1팀 수 | 예상 | 2팀 수](수는 이제 title 에만). 양옆 칸은 비운 채 두어 격자(배지 · vs 줄과 같은 3칸)를 지킨다. */}
                   <span className="scr-feed-row-wp-n" aria-hidden />
-                  <span className="scr-feed-row-wp-lab">{winLeanText(winP)}</span>
+                  {/* '우세'는 늘 가운데(vs 위) · 화살표만 좌우로 붙는다(같은 날 요청: "우세는 가운데 화살표만 좌우" — 옛: '← 우세' 한 덩이를 가운데 둬 글자가 옆으로 밀렸다). */}
+                  <span className="scr-feed-row-wp-lab">{(() => {
+                    const lean = winLean(winP);
+                    return lean == null ? "균형" : (
+                      <span className="scr-feed-row-wp-word" aria-label={lean === "left" ? "왼쪽 팀 우세" : "오른쪽 팀 우세"}>
+                        우세<span className={`scr-feed-row-wp-arr is-${lean}`} aria-hidden>{lean === "left" ? "←" : "→"}</span>
+                      </span>
+                    );
+                  })()}</span>
                   <span className="scr-feed-row-wp-n" aria-hidden />
                   <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
                   <span className="scr-feed-row-vs-t" aria-hidden>vs</span>
