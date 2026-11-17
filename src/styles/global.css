@@ -6195,3 +6195,22 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-cmt-att-file { align-self: flex-start; max-width: 100%; }
 /* ★ 달 줄 ? (2026-11-17, 요청: "도움말 제거하고 대신 월별 옆에 ? 버튼으로 팝오버" · ClanStatsScreen InfoTip) — 달력 단추 옆 · 손가락 자리를 조금 넓힌다. */
 .scr-infotip.scr-stats-month-help { flex: none; padding: 4px; margin-left: -2px; }
+/* ★ 연습실(2026-11-17 · pages/practice · scplay PracticeRoom) — 놀이 판은 화면 높이를 다 쓴다(머리 줄만 빼고). */
+.scr-practice-host { height: calc(100dvh - 150px); min-height: 560px; border-radius: var(--radius-sm); overflow: hidden; }
+/* 연습 과제 카드(2026-11-17, 요청: "연습과제 선택창 · 카드로 선택하게 깔끔하게 · TESTER 에게는 오픈 · 그 외에는 오픈예정 배지 띄우고 비활성화"). */
+.scr-practice-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.scr-practice-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left;
+  padding: 16px; border-radius: 12px; border: 1px solid var(--btn-outline-border); background: var(--panel-raised);
+  color: var(--text); font-family: inherit; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .12s;
+}
+@media (hover: hover) { .scr-practice-card:not(:disabled):hover { border-color: var(--btn-hover-border); box-shadow: var(--btn-hover-glow); } }
+.scr-practice-card:not(:disabled):active { transform: scale(0.99); }
+.scr-practice-card:focus-visible { outline: 2px solid var(--btn-focus); outline-offset: 2px; }
+.scr-practice-card.is-locked { cursor: not-allowed; opacity: 0.6; }
+.scr-practice-card-head { display: flex; align-items: center; gap: 8px; width: 100%; }
+.scr-practice-card-title { font-size: 16px; font-weight: 800; }
+.scr-practice-card-badge { margin-left: auto; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; color: var(--btn-fill-text); background: var(--btn-fill-bg); box-shadow: var(--btn-fill-glow); }
+.scr-practice-card-desc { font-size: var(--fs-caption); color: var(--muted); line-height: 1.5; }
+.scr-practice-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.scr-practice-card-tags i { font-style: normal; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--lighting-hover-bg); color: var(--text-dim); }

@@ -18,6 +18,7 @@ import InAppBrowserNotice from "./components/common/InAppBrowserNotice";
 import MembersScreen from "./pages/members/MembersScreen";
 import LeagueScreen from "./pages/league/LeagueScreen";
 import PlacementScreen from "./pages/placement/PlacementScreen";
+import PracticeScreen from "./pages/practice/PracticeScreen";
 import ProfileModal from "./modals/ProfileModal";
 import MemberProfileModal from "./modals/MemberProfileModal";
 import AdminPanelScreen from "./pages/admin/AdminPanelScreen";
@@ -235,6 +236,7 @@ export default function App() {
             {isAdmin && !booting && resolvedScreen === "members" && <MembersScreen />}
             {!booting && resolvedScreen === "leagues" && <LeagueScreen />}
             {!booting && resolvedScreen === "placement" && <PlacementScreen />}
+            {!booting && resolvedScreen === "practice" && <PracticeScreen />}
             {isAdmin && !booting && resolvedScreen === "minimaps" && <MapCanonScreen />}
             {!booting && resolvedScreen === "catalog" && <CatalogScreen />}
             {isAdmin && !booting && resolvedScreen === "control" && <AdminPanelScreen isAdmin={isAdmin} />}

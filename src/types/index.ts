@@ -452,7 +452,7 @@ export interface GameResultStatsResponse {
 
 /* 옛 "activity"(활동) 화면은 게임 · 게시판 두 화면이 됐다(2026-10-26, 요청: "활동 화면 제거 · 게임 게시판 두개의 메뉴로"). */
 export type ScreenKey = "games" | "board" | "ladder" | "clan" | "members" | "leagues" | "minimaps" | "control"
-  | "catalog" | "explore" | "placement";
+  | "catalog" | "explore" | "placement" | "practice";
 
 export interface ExtShareList {
   id: number;

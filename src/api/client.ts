@@ -469,6 +469,11 @@ export const api = {
     });
   },
 
+  /** 연습실 지도 해시(2026-11-17 · 수송선 드랍 연습실) — 대표맵(기본 빨무) 중 지형 있고 판이 가장 많은 지도. 없으면 null. */
+  async getPracticeMapHash(canon = "빨무"): Promise<string | null> {
+    const r = await request<{ hash: string | null }>(`/api/game-results/replay-maps/practice?canon=${encodeURIComponent(canon)}`);
+    return r.hash ?? null;
+  },
   async getReplayMaps(hashes: string[]): Promise<ReplayMapGrid[]> {
     const qs = hashes.map((h) => `hash=${encodeURIComponent(h)}`).join("&");
     const res = extShareCtx

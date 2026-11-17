@@ -17,7 +17,9 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 export const RAIL_MENU_ITEMS: NavMenuItem[] = [
   { key: "ladder", label: "래더" },
   { key: "leagues", label: "리그" },
-  { key: "placement", label: "배치" },
+  /* (숨김 2026-11-17, 요청: "배치메뉴는 숨겨줘 이참에") 배치 — 화면 · 주소(/placement)는 그대로 둔다. */
+  /* 연습실(2026-11-17, 요청: "연습실 메뉴는 서랍에 넣어주고") — 레일 · 서랍에만. */
+  { key: "practice", label: "연습실" },
 ];
 
 export const HOME_SCREEN: ScreenKey = NAV_MENU_ITEMS[0].key;
