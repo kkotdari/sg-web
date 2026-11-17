@@ -85,8 +85,10 @@ const sideOutcome = (result: GameResult["result"], side: 1 | 2): "승" | "무" |
 const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
   (text ? <span className={text === "패" ? "scr-feed-row-wl is-loss" : text === "승" ? "scr-feed-row-wl is-win" : "scr-feed-row-wl"} aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
 
-export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
+export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP }: {
   game: GameResult;
+  /** 1팀 승리 확률(0~1 · 게임 목록만 준다 · utils/winProbs) — 두 편 줄의 승패 배지 위에 '승리 확률' 두 줄로 선다. */
+  winP?: number | null;
   memberOf: (id: string) => Member | undefined;
   /** 폰이면 세로 칸 꼴(아래 ★★) · PC 는 한 줄(FlatLine). */
   mobile: boolean;
@@ -134,11 +136,31 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask }: {
           const col = i * 2 + 1;
           return [
             ...(i > 0 ? [pair ? (
+              /* ★ 승리 확률(2026-11-17, 요청: "승패 위에다가 예측 승리확률 · 너무 튀지않게 예쁘게 깔끔하게 · 라벨은 승리 확률") — 배지 줄 위에 작은 두 줄:
+                 '승리 확률' · 그 아래 두 편 %(배지 바로 위 · 가운데 틈은 'vs' 폭 그대로). 더 높은 쪽만 본 글 색 · 낮은 쪽은 흐리게. */
+              winP != null && !melee ? (
+                <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}>
+                  <span className="scr-feed-row-wp" title="승리 확률 — 그 판 앞 달까지의 티어(종족별 인분)와 종족으로 낸 예측(팀 구성하기와 같은 식)">
+                    <span className="scr-feed-row-wp-lab">승리 확률</span>
+                    <span className="scr-feed-row-wp-nums">
+                      <span className={winP >= 0.5 ? "is-fav" : undefined}>{Math.round(winP * 100)}<span className="scr-feed-row-wp-pct">%</span></span>
+                      <span className="scr-feed-row-wp-gap" aria-hidden>vs</span>
+                      <span className={winP < 0.5 ? "is-fav" : undefined}>{100 - Math.round(winP * 100)}<span className="scr-feed-row-wp-pct">%</span></span>
+                    </span>
+                  </span>
+                  <span className="scr-feed-row-arrow scr-feed-row-vs">
+                    <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
+                    <span aria-hidden>vs</span>
+                    <OutcomeBadge text={sideOutcome(game.result, sd.side)} />
+                  </span>
+                </span>
+              ) : (
               <span className="scr-feed-row-arrow scr-feed-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}>
                 <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
                 <span aria-hidden>vs</span>
                 <OutcomeBadge text={sideOutcome(game.result, sd.side)} />
               </span>
+              )
             ) : <span className="scr-feed-row-arrow scr-feed-row-vs" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 2 }} aria-hidden>vs</span>] : []),
             ...(pair ? [] : [<span className="scr-feed-row-col-wl" key={`w${i}`} style={{ gridColumn: col, gridRow: 1 }}><OutcomeBadge text={sideOutcome(game.result, sd.side)} /></span>]),
             <span className="scr-feed-row-col-names" key={`n${i}`} style={{ gridColumn: col, gridRow: nameRow }}>
