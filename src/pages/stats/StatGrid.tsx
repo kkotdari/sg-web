@@ -333,13 +333,14 @@ function PcRow({ row, clan, tier, mobile, races }: { row: StatGridRow; clan?: bo
  *  ★ 공통 풀이는 모두 구분선 위(같은 날, 요청: "wpa툴팁에서 상세항목들 위의 공통해당 내용은 모두 구분선 위로 넣기") — 아래는 항목만. */
 /** ★ 계산 조건은 말풍선 아래로(2026-11-16, 요청: "헬프 아이콘 제거 · 내용은 WPA란? 툴팁에 아래 붙여넣기") — 옛 통계 머리 WPA/티어 칸의 '?'(WpaRulesModal)를 걷고
  *  그 번호 붙은 조건(WPA_RULES)을 항목 풀이 아래에 잇는다. 길어서 말풍선이 굴러가고(interactive) · 맨 아래 '건의하기'는 건의 칸만 든 창(WpaRulesModal askOnly). */
+/* ★ PC 도 눌러서만 연다(2026-11-17, 지적: "피시에서 마우스오버만해도 헬프가 뜸" · 옛 2026-11-16: hover — 얹기만 해도 열렸다). */
 export function WpaHelp() {
   const [ask, setAsk] = useState(false);
   let no = 0;
   return (
     <>
     <InfoTip
-      hover interactive trigger="WPA란?" triggerClassName="scr-infotip scr-infotip-text scr-sg-help-btn scr-sg-wpa-help" bubbleClassName="scr-sg-help scr-sg-help-long"
+      interactive trigger="WPA란?" triggerClassName="scr-infotip scr-infotip-text scr-sg-help-btn scr-sg-wpa-help" bubbleClassName="scr-sg-help scr-sg-help-long"
       text={(
         <span className="scr-sg-help-list">
           {/* ★ 머리(2026-11-13, 요청: "WPA(Win P... 이렇게 풀어쓴거부터 시작하고 아랫줄에 간단 설명 하고 구분선 넣고 그 아랫줄부터 상세 설명") */}

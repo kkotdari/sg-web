@@ -1,8 +1,9 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw, Users, Wrench } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleHelp, Users, Wrench } from "lucide-react";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
 import { LoadingMark } from "../../components/common/Feedback";
+import InfoTip from "../../components/common/InfoTip";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
 import { useUrlState } from "../../hooks/useUrlState";
 import MonthCalendar from "../../components/common/MonthCalendar";
@@ -23,16 +24,7 @@ import { showToast } from "../../components/common/Toast";
 import StatsPoll from "../../components/stats/StatsPoll";
 import type { BaseRace, ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, Member, MemberStats, MemberStatsEntry } from "../../types";
 
-/** 정렬 자 이름 — 정렬 줄("정렬: 전체 승률 › APM")에 쓴다. 고르기는 표 머리를 눌러서(StatGrid · 2026-10-22, 요청: "정렬은 머리 터치로 변경" →
- *  "정렬 조건을 상세히 — 전체와 종족별 플레이 수와 승률 총 8개") — 옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순)은 걷었다. */
-const sortLabel = (k: StatSortKey): string => {
-  if (k === "apm") return "APM";
-  if (k === "eapm") return "EAPM";
-  if (k === "tier") return "종합 WPA/티어";   // 2026-11-15 WPA · 티어 한 칸
-  if (k === "wpa") return "WPA";   // 2026-11-12(옛 교환 이득 · 교전 참여 · 생산)
-  const [who, what] = k.includes(":") ? k.split(":") : ["종합", k];
-  return `${who} ${what === "tier" ? "WPA/티어" : what === "rate" ? "승률" : what === "wpa" ? "WPA" : what === "apm" ? "APM" : what === "eapm" ? "EAPM" : "게임수"}`;
-};
+/* (걷음 2026-11-17, 요청: 정렬 줄 왼쪽 "정렬 · 여러 기준 · 종합 WPA/티어" 제거) 정렬 자 이름(sortLabel · 정렬 줄 "정렬: 전체 승률 › APM") — 고른 자는 표 머리 화살표가 보인다. */
 
 /** 변화 그래프의 기준 — last: 마지막 달(한 달이면 그 달 · 여러 달 a~b 면 b · 날짜 지정이면 그 날들이 걸친 달 · 그 밖은 이번 달 — 서버도 dateTo 가 든 달을 마지막으로 센다) ·
  *  period: 달 셈에 넣을 기간 글자. */
@@ -145,10 +137,8 @@ export default function ClanStatsScreen() {
   const [sortKeys, setSortKeys] = useState<StatSortKey[]>(["tier"]);
   /* 복수 기준 토글(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 기본은 하나(머리를 누르면 그 자로 갈아탐).
      끄는 순간 여럿이 쌓여 있었으면 첫 자(맨 먼저 누른 것)만 남긴다. */
-  const [multiSort, setMultiSort] = useState(false);
-  const toggleMulti = (): void => {
-    setMultiSort((on) => { if (on && sortKeys.length > 1) setSortKeys([sortKeys[0]]); return !on; });
-  };
+  /* (걷음 2026-11-17 · 정렬 줄 왼쪽 제거와 함께) 여러 기준 체크박스 — 머리를 누르면 늘 그 자 하나로 갈아탄다. */
+  const multiSort = false;
   /* 종족별 펼치기/접기(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균) · 테란 프로토스 저그 접혀 있다가 …" → 같은 날 "펼치기 접기 개념이라 종합도 원래부터
      폭을 좁게 · 종족별 펼치기는 종합 위쪽 오른끝에" — 단추는 표 안 종합 머리 오른끝(StatGrid) · 옛 자리: 정렬 줄 복수 기준 옆) —
      기본은 접힘(종합 묶음만) · 기기마다 기억. 숨길 때 종족 칸으로 고른 정렬은 뺀다(안 보이는 칸으로 줄 세우지 않게 · 다 빠지면 처음 값). */
@@ -224,7 +214,6 @@ export default function ClanStatsScreen() {
     const rest = sortKeys.filter((k) => k !== "tier");
     return rest.length > 0 ? rest : ["rate"];
   }, [sortKeys, showTier]);
-  const sortDefault: StatSortKey = showTier ? "tier" : "rate";
   useEffect(() => () => {
     const q = new URLSearchParams(window.location.search);
     if (!q.has("period") && !q.has("size") && !q.has("map")) return;
@@ -505,6 +494,16 @@ export default function ClanStatsScreen() {
                 </button>
                 <MonthCalendar value={month} onChange={setPeriod} maxMonth={currentMonthValue()} iconOnly className="scr-v2-toolbar-month" />
               </div>
+              {/* ★ 달 줄 설명은 ? 팝오버로(2026-11-17, 요청: "도움말 제거하고 대신 월별 옆에 ? 버튼으로 팝오버") — 옛: 줄 끝 작은 글(폰은 아랫줄로 내려 두 줄을 먹었다). */}
+              <InfoTip
+                label="월 선택" trigger={<CircleHelp size={15} aria-hidden />} triggerClassName="scr-infotip scr-stats-month-help" bubbleClassName="scr-sg-help"
+                text={(
+                  <span className="scr-sg-help-list">
+                    <span>그 달 + 지난 몇 달 기록을 합친 실제 실력을 보여줘요.</span>
+                    <span>앞의 넉 달 기록을 한 달 전 ½ · 두 달 전 ¼ … 무게로 같이 세요(판 수 · 승률은 그 달 것 그대로).</span>
+                  </span>
+                )}
+              />
               {/* 폰: 첫 줄(달 줄) 오른끝에 [필터](위 folded ★) — 설명보다 앞에 둬야 설명이 아랫줄로 내려가도 첫 줄에 남는다. */}
               {isMobile && (
                 <button type="button" className={cx("scr-sg-fold scr-stats-fold-btn", filtersOpen && "is-on")} aria-expanded={filtersOpen}
@@ -513,10 +512,7 @@ export default function ClanStatsScreen() {
                   <ChevronDown size={13} aria-hidden className="scr-stats-fold-chev" />
                 </button>
               )}
-              {/* 문구(2026-11-14 같은 날, 지적: "문구 수정하자 그전달만 더하는게 아니자나") — 옛 "그 달 + 전 달 기록을 합친 …" · 서버는 앞의 넉 달을 달마다 절반씩 줄여 섞는다(sg-api tier PAST_RHO). */}
-              <span className="scr-stats-period-hint" title="앞의 넉 달 기록을 한 달 전 ½ · 두 달 전 ¼ … 무게로 같이 세요(판 수 · 승률은 그 달 것 그대로)">
-                그 달 + 지난 몇 달 기록을 합친 실제 실력을 보여줘요
-              </span>
+              {/* (걷음 2026-11-17 · 위 ? 팝오버로) 줄 끝 설명 "그 달 + 지난 몇 달 기록을 합친 실제 실력을 보여줘요"(2026-11-14). */}
             </div>
             <div className={cx("scr-stats-period-row", dayOn && "is-on")}>
               <label className="scr-checkbox-field scr-stats-period-pick">
@@ -602,21 +598,8 @@ export default function ClanStatsScreen() {
 
       {/* 정렬 줄 오른끝(도움말 · 종족별 단추)을 보이는 표 오른변에 맞춘다(2026-11-05, 지적: "위치가 이상 버튼" — 접힌 표는 종합 칸만 보여 줄 끝이 표 밖 멀리 떴다). PC 만. */}
       <div className="scr-stats-sort" style={!isMobile && sortW ? { maxWidth: sortW } : undefined}>
-        <span className="scr-stats-sort-label">정렬</span>
-        {/* 여러 기준(위 multiSort ★ · 2026-11-04, 요청: "복수 기준 단추를 정렬 옆으로 옮기고 여러 기준 체크박스로" — 옛: 기준 줄 뒤 알약 단추 "복수 기준") —
-            켜면 머리를 누른 차례대로 기준이 쌓인다. PC·폰 둘 다. */}
-        <label className={cx("scr-stats-sort-multi", multiSort && "is-on")}
-          title={multiSort ? "여러 기준 끄기 — 머리를 누르면 그 기준 하나로" : "여러 기준 켜기 — 머리를 누른 차례대로 기준이 쌓여요"}>
-          <input type="checkbox" checked={multiSort} onChange={toggleMulti} />
-          여러 기준
-        </label>
-        <span className="scr-stats-sort-chain">{shownSort.length > 0 ? shownSort.map((k: StatSortKey) => sortLabel(k)).join(" › ") : "기본"}</span>
-        {/* 초기화(2026-10-24, 요청: "통계 정렬 아이콘으로 변경하고 초기화 버튼 필요 · 피시") — 고른 자가 처음 값(티어 · 1:1 은 전체 승률 하나)과 다를 때만 선다 · PC 만. */}
-        {!isMobile && !(shownSort.length === 1 && shownSort[0] === sortDefault) && (
-          <button type="button" className="scr-text-btn scr-stats-sort-reset" onClick={() => setSortKeys(["tier"])} title={`정렬을 처음 값(${sortLabel(sortDefault)})으로`}>
-            <RotateCcw size={12} aria-hidden /> 초기화
-          </button>
-        )}
+        {/* (걷음 2026-11-17, 요청: 정렬 줄 왼쪽 제거) "정렬" 글 · [여러 기준] 체크박스(2026-11-04) · 고른 기준 줄("종합 WPA/티어 › APM") · PC [초기화](2026-10-24) —
+            정렬은 그대로 표 머리를 눌러서 · 고른 자는 머리 화살표로 보인다. 줄에는 오른끝 WPA란? · 종족별만 남는다. */}
         {/* (걷음 2026-11-13, 요청: "통계 전체 툴팁은 제거") 표 도움말 단추(StatHelp) → 같은 자리에 "WPA란?" 글 단추(같은 날 · WpaHelp). */}
         <WpaHelp />
         {/* 종족별 펼치기/접기 — 표 밖 정렬 줄 오른끝(2026-11-05, 요청: "저 펴고 접는 버튼은 표 외부로 이동" · 옛: 표 종합 머리 오른끝 · 2026-11-04). */}
