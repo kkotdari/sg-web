@@ -88,14 +88,15 @@ const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
 /** ★ 예상 표기의 '균형' 폭(2026-11-17, 요청: "균형의 범위는 너가 생각할때 뒤집히기 쉬운 차이까지") — 예상 승률이 50 ± 이 값(%p) 안이면 '균형'.
  *  60 : 40 이면 열 판에 네 판은 약한 쪽이 이긴다 — 거기까지를 뒤집히기 쉬운 차이로 본다(검증 눈금: 예상 45 ~ 55% 판의 실제 승률 48% · 이 모형 적중 대략 65 ~ 70%). */
 export const WIN_EVEN_PCT = 10;
+/** 1팀 확률 → 글자 — 균형 폭 안이면 '균형' · 밖이면 '우세'. */
+export const winBarText = (p: number): string => (Math.abs(Math.round(p * 100) - 50) <= WIN_EVEN_PCT ? "균형" : "우세");
 /** ★ 예상 막대(2026-11-17, 요청: "우세를 수평선으로 표기 · 예상줄 폭의 양끝을 잇는 줄 위에 우세한만큼 더 가까이 · 균형안에 들면 위치는 맞추되 글자만 균형 ·
- *  수평선 양끝은 화살표") — 글자가 막대의 몇 할 자리에 서나(0 왼끝 · 0.5 가운데 · 1 오른끝). 1팀(왼쪽)이 우세할수록 왼쪽으로.
+ *  수평선 양끝은 화살표" · "균형은 무조건 가운데로") — 글자가 막대의 몇 할 자리에 서나(0 왼끝 · 0.5 가운데 · 1 오른끝). 1팀(왼쪽)이 우세할수록 왼쪽으로.
  *  예상 승률 차가 WIN_BAR_FULL_PCT(%p · 50 에서) 이상이면 끝 — 75 : 25 면 끝까지 · 60 : 40 이면 가운데에서 끝까지의 0.4(막대가 배지 줄 폭 ≈ 48px 뿐이라
  *  글자가 움직일 틈이 ±8px 남짓 — 흔한 예상 30 ~ 70% 가 그 틈을 거의 다 쓰게 25 로 잡았다 · 처음 30 은 68 : 32 와 80 : 20 이 같은 자리에 섰다). */
 export const WIN_BAR_FULL_PCT = 25;
-export const winBarAt = (p: number): number => Math.min(1, Math.max(0, 0.5 - ((p - 0.5) * 100) / (2 * WIN_BAR_FULL_PCT)));
-/** 1팀 확률 → 글자 — 균형 폭 안이면 '균형' · 밖이면 '우세'. */
-export const winBarText = (p: number): string => (Math.abs(Math.round(p * 100) - 50) <= WIN_EVEN_PCT ? "균형" : "우세");
+export const winBarAt = (p: number): number => (winBarText(p) === "균형" ? 0.5   // 균형은 늘 가운데(같은 날 요청: "균형은 무조건 가운데로" · 옛: 균형도 자리는 비례)
+  : Math.min(1, Math.max(0, 0.5 - ((p - 0.5) * 100) / (2 * WIN_BAR_FULL_PCT))));
 
 export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP }: {
   game: GameResult;
