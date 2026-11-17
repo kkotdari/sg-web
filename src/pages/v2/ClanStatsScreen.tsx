@@ -583,8 +583,10 @@ export default function ClanStatsScreen() {
         </section>
       )}
 
-      {view?.clan && (
-        <header className="scr-clan-dash-head scr-stats-count-row">
+      {/* ★ 명수 줄은 자료가 오기 전에도 자리를 잡아 둔다(2026-11-17, 요청: "미리 자리 확보해놓구 필터랑 저부분 사이 갭 늘리기") — 늦게 끼어들며 아래 표를 밀지 않게
+          줄(높이)은 늘 두고 글자만 자료가 오면 채운다. 옛: 자료가 온 뒤에야 줄을 그렸다. 위 틈은 global.css .scr-stats-count-row(폰 접힘 · 기간 줄 바로 아래). */}
+      <header className="scr-clan-dash-head scr-stats-count-row">
+        {view?.clan && (<>
           {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다. */}
           {/* 명수 옆 경기 수(2026-11-05, 요청: "명수 옆에 몇 게임인지 · 폰 피시 모두" — 표 평균 줄의 게임수는 참여 합이라 경기 수는 여기서). */}
           <span className="scr-clan-dash-sub">{viewMembers.length}명 · {clanGames.toLocaleString()}게임</span>
@@ -595,8 +597,8 @@ export default function ClanStatsScreen() {
             </span>
           )}
           {/* (걷음 2026-10-22, 요청: "통계 그래프 제거") 전부 펼치기·접기 — 펼칠 그래프가 없다. */}
-        </header>
-      )}
+        </>)}
+      </header>
 
       {/* 정렬 줄 오른끝(도움말 · 종족별 단추)을 보이는 표 오른변에 맞춘다(2026-11-05, 지적: "위치가 이상 버튼" — 접힌 표는 종합 칸만 보여 줄 끝이 표 밖 멀리 떴다). PC 만. */}
       <div className="scr-stats-sort" style={!isMobile && sortW ? { maxWidth: sortW } : undefined}>
