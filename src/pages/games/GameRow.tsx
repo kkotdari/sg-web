@@ -155,15 +155,16 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
                    값은 목록 응답에 실려 와 처음부터 함께 선다(같은 날 지적: "예상만 따로 조회하나? 왜 늦게 떠?" — 옛: 따로 받고 그동안 숨긴 칸으로 자리만 잡았다). */
                 <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
                   title={`인분 합 ${game.teamInbun![0].toFixed(2)} : ${game.teamInbun![1].toFixed(2)} · 예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞까지의 판으로 낸 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
-                  {/* 윗줄 = [1팀 합 | 😇 | 2팀 합] — 수는 배지 바로 위 · 😇(균형 · winAngel)는 vs 바로 위 · 수 크기는 그 합에 조금 비례(sumFontK).
+                  {/* 윗줄 = [1팀 합 | 😇 | 2팀 합] — 수는 배지 바로 위 · 😇(균형 · winAngel)는 vs 바로 위 · 수 크기는 그 합에 조금 비례(sumFontK) —
+                      글자 크기(font-size)가 아니라 같은 크기로 그린 뒤 가운데를 축으로 scale(같은 날 요청: "숫자간 세로중심맞추기" — font-size 를 달리하면 기준선이 화소에 따로 맞춰져 두 수의 잉크 세로 중심이 최대 1px 어긋났다).
                       같은 날 요청: "저울폐기하고 양쪽 숫자 및 천사표기만" — 옛: 저울(들보 · 접시 · 받침 동그라미 · 얕은 U) · 그 앞 시소. */}
                   {(() => {
                     const [s1, s2] = game.teamInbun as number[];
                     const angel = winAngel(winP);
                     return [
-                      <span key="n1" className="scr-feed-row-wp-n" style={{ fontSize: `calc(var(--fs-10) * ${sumFontK(s1, s1, s2).toFixed(3)})` }}>{s1.toFixed(1)}</span>,
+                      <span key="n1" className="scr-feed-row-wp-n" style={{ transform: `scale(${sumFontK(s1, s1, s2).toFixed(3)})` }}>{s1.toFixed(1)}</span>,
                       <span key="mid" className="scr-feed-row-wp-angel" role={angel ? "img" : undefined} aria-label={angel ? "균형" : undefined}>{angel ? "😇" : null}</span>,
-                      <span key="n2" className="scr-feed-row-wp-n" style={{ fontSize: `calc(var(--fs-10) * ${sumFontK(s2, s1, s2).toFixed(3)})` }}>{s2.toFixed(1)}</span>,
+                      <span key="n2" className="scr-feed-row-wp-n" style={{ transform: `scale(${sumFontK(s2, s1, s2).toFixed(3)})` }}>{s2.toFixed(1)}</span>,
                     ];
                   })()}
                   <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
