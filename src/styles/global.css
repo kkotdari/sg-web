@@ -3950,7 +3950,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
    한 격자 3칸 × 2줄: 윗줄 [1팀 수 | 승리확률 | 2팀 수] · 아랫줄 [승 | vs | 패](GameRow vsbox). 칸을 같이 써서 수는 배지 바로 위 · 라벨은 vs 바로 위.
    가운데 칸은 아랫줄 vs 폭(라벨은 폭 0 으로 넘친다) · 폰은 칸 틈 3 → 5(옛 판들: 두 줄 · 쌍점 · 배지 위 %). */
 .scr-feed-row-cols > .scr-feed-row-vsbox {
-  align-self: center; display: inline-grid; grid-template-columns: repeat(3, auto); column-gap: 6px; row-gap: 1px;
+  align-self: center; display: inline-grid; grid-template-columns: repeat(3, auto); column-gap: 6px; row-gap: 5px;   /* 줄 사이 1 → 5(같은 날 요청: "승리확률 줄과 승패 줄 사이 갭 늘리기") */
   align-items: center; justify-items: center; margin: 0 5px; line-height: 1;
 }
 /* 라벨은 두 수 사이 · 6px · 수 8px(같은 날 되요청: "한단 더 줄이기 · 승패, vs 보다는 전체적으로 작은 느낌으로" · 옛 7px · 9). 높은 쪽 수만 본 글 색 · 낮은 쪽은 흐리게. */
