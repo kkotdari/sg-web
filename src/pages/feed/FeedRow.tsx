@@ -15,7 +15,6 @@ function whenNode(item: { kind: string; time: number; withClock: boolean }): Rea
 import { gamePlayable } from "../../utils/gamePlayable";
 import { isSecretGame } from "../../utils/gameAccess";
 import { GameRowNames, GameRowStatus, ListRow } from "../games/GameRow";
-import { useGameWinProb } from "../../utils/winProbs";
 import { StartMapCell } from "../games/GameTable";
 import { GameTableRow, UnhideRequestButton } from "../games/GameTable";
 import { commentStatOf, subscribeComments } from "./Comments";
@@ -64,8 +63,8 @@ function rowStatusOf(item: DisplayItem) {
 /** 게임 줄 이름 — 맵 이름이 늦게 오면(맵 받기) 이 줄만 다시 그린다. */
 function GameNames({ game, memberOf, mobile }: { game: GameResult; memberOf: RowView["memberOf"]; mobile: boolean }) {
   useReplayMapTick();
-  const win = useGameWinProb(game);   // 승리 확률(게임 목록 · utils/winProbs · slot = 받기 전부터 자리 잡기)
-  return <GameRowNames game={game} memberOf={memberOf} mobile={mobile} playable={gamePlayable(game)} winP={win.p} winSlot={win.slot} />;
+  /* 예상 승리 확률 — 목록 응답에 실려 온 값(서버가 그 판 앞까지로 셈해 둔 것 · 2026-11-17 · 옛: 화면이 12달 티어를 따로 받아 셈해 늦게 떴다). */
+  return <GameRowNames game={game} memberOf={memberOf} mobile={mobile} playable={gamePlayable(game)} winP={game.winProb ?? null} />;
 }
 
 function rowDesc(item: DisplayItem, view: RowView) {

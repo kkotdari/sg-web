@@ -16,7 +16,6 @@ import { pad } from "../../utils/date";
 import { isSecretGame } from "../../utils/gameAccess";
 import { isMeleeGame } from "./GameResultSides";
 import { GameRowNames } from "./GameRow";
-import { useGameWinProb } from "../../utils/winProbs";
 import { RecommendButton, useRecommend } from "./Recommend";
 import GameCurvesModal from "../../modals/GameCurvesModal";
 import GameCommentsModal from "../../modals/GameCommentsModal";
@@ -202,7 +201,6 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
 }) {
   useReplayMapTick();
   const hold = useLongPress(onLongPress);
-  const win = useGameWinProb(game);   // 승리 확률(utils/winProbs · 로스터 승패 배지 위 · slot = 받기 전부터 자리 잡기)
   const secret = isSecretGame(game);
   const map = secret ? "" : cleanMapName(game.mapCanonName ?? mapThumbOf(game.mapHash)?.canonName ?? cachedReplayMap(game.mapHash)?.canonName ?? game.mapName);
   const kind = secret ? "-" : gameKindText(game);
@@ -260,7 +258,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           </span>
         </span>
         <span className="scr-gtab-cell scr-gtab-roster">
-          <GameRowNames game={game} memberOf={memberOf} mobile playable={false} winP={win.p} winSlot={win.slot} />
+          <GameRowNames game={game} memberOf={memberOf} mobile playable={false} winP={game.winProb ?? null} />
           {game.hidden && <UnhideRequestButton game={game} />}
         </span>
         <span className="scr-gtab-cell scr-gtab-start">{secret ? <span className="scr-gtab-dim">-</span> : <StartMapCell game={game} memberOf={memberOf} />}</span>

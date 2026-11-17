@@ -225,6 +225,9 @@ export interface GameResult {
   fame?: boolean;
   /** 댓글 수(2026-10-29 · 게임 목록 GET /api/game-results 만 싣는다 · 다른 자리는 0). */
   commentCount?: number;
+  /** 예상 승리 확률(1팀 · 0~1 · 2026-11-17) — 서버가 판마다 **그 판 앞까지의 판**으로 셈해 둔 값(sg-api win_pred.py) · 게임 목록 · 활동 피드만 싣는다.
+   *  못 냈거나(1:1 · 티어를 못 찾은 자리가 절반 넘음) 아직 안 셈한 판은 null. */
+  winProb?: number | null;
   hasTruth?: boolean | null;
   hidden?: boolean;
   /** 내전(참가자 전원이 회원)인가 — 서버가 실어 준다(비공개 판은 팀이 비어 슬롯으로 못 가른다 · 2026-10-12). 옛 서버면 없다. */
