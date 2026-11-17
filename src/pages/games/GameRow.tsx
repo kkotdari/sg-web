@@ -85,10 +85,12 @@ const sideOutcome = (result: GameResult["result"], side: 1 | 2): "승" | "무" |
 const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
   (text ? <span className={text === "패" ? "scr-feed-row-wl is-loss" : text === "승" ? "scr-feed-row-wl is-win" : "scr-feed-row-wl"} aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
 
-export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP }: {
+export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP, winSlot }: {
   game: GameResult;
   /** 1팀 승리 확률(0~1 · 게임 목록만 준다 · utils/winProbs) — 두 편 줄의 승패 배지 위에 '승리 확률' 두 줄로 선다. */
   winP?: number | null;
+  /** 확률 줄 자리를 비워 둘까(utils/winProbs useGameWinProb().slot) — 받기 전부터 자리를 잡아 승패 줄이 로딩 뒤 내려가지 않게. */
+  winSlot?: boolean;
   memberOf: (id: string) => Member | undefined;
   /** 폰이면 세로 칸 꼴(아래 ★★) · PC 는 한 줄(FlatLine). */
   mobile: boolean;
@@ -137,16 +139,17 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
           return [
             ...(i > 0 ? [pair ? (
               /* ★ 승리 확률(2026-11-17, 요청: "승패 위에다가 예측 승리확률 · 너무 튀지않게 예쁘게 깔끔하게") — 배지 줄 위 [수 | 승리확률 | 수] · 다 같은 흐림. */
-              winP != null && !melee ? (
+              (winP != null || winSlot) && !melee ? (
                 /* 한 격자 3칸 × 2줄(같은 날 되요청: "승리확률 글자를 더 줄여서 두 수 사이에 넣고 두 수도 글자 크기 줄이기") — 윗줄 [1팀 수 | 승리확률 | 2팀 수] ·
-                   아랫줄 [승 | vs | 패]. 칸을 같이 쓰니 수가 배지 바로 위 · 라벨이 vs 바로 위에 선다. */
-                <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
-                  title={`예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞 달까지의 티어(종족별 인분)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
+                   아랫줄 [승 | vs | 패]. 칸을 같이 쓰니 수가 배지 바로 위 · 라벨이 vs 바로 위에 선다.
+                   확률이 아직 없으면(받는 중 · 못 냄) 윗줄은 같은 꼴의 숨긴 칸(is-wait) — 자리만 잡는다(같은 날 지적: 로딩 뒤 승패 줄이 내려감). */
+                <span className={winP != null ? "scr-feed-row-vsbox" : "scr-feed-row-vsbox is-wait"} key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
+                  title={winP != null ? `예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞 달까지의 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)` : undefined}>
                   {/* 높음 · 낮음 가리지 않고 같은 흐림(같은 날 요청: "승리확률은 높음 낮음 무관 전부 똑같이 약간 흐리게") — 옛: 높은 쪽만 또렷 · 굵게. */}
-                  <span className="scr-feed-row-wp-n">{Math.round(winP * 100)}</span>
+                  <span className="scr-feed-row-wp-n" aria-hidden={winP == null || undefined}>{winP != null ? Math.round(winP * 100) : 50}</span>
                   {/* 라벨 '예상'(같은 날 요청: "라벨을 예상으로 변경하고 1단 키움" · 옛: '승리확률' · 폰은 '승리 / 확률' 두 줄). */}
-                  <span className="scr-feed-row-wp-lab">예상</span>
-                  <span className="scr-feed-row-wp-n">{100 - Math.round(winP * 100)}</span>
+                  <span className="scr-feed-row-wp-lab" aria-hidden={winP == null || undefined}>예상</span>
+                  <span className="scr-feed-row-wp-n" aria-hidden={winP == null || undefined}>{winP != null ? 100 - Math.round(winP * 100) : 50}</span>
                   <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
                   <span className="scr-feed-row-vs-t" aria-hidden>vs</span>
                   <OutcomeBadge text={sideOutcome(game.result, sd.side)} />

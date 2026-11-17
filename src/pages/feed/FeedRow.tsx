@@ -64,8 +64,8 @@ function rowStatusOf(item: DisplayItem) {
 /** 게임 줄 이름 — 맵 이름이 늦게 오면(맵 받기) 이 줄만 다시 그린다. */
 function GameNames({ game, memberOf, mobile }: { game: GameResult; memberOf: RowView["memberOf"]; mobile: boolean }) {
   useReplayMapTick();
-  const winP = useGameWinProb(game);   // 승리 확률(게임 목록 · utils/winProbs)
-  return <GameRowNames game={game} memberOf={memberOf} mobile={mobile} playable={gamePlayable(game)} winP={winP} />;
+  const win = useGameWinProb(game);   // 승리 확률(게임 목록 · utils/winProbs · slot = 받기 전부터 자리 잡기)
+  return <GameRowNames game={game} memberOf={memberOf} mobile={mobile} playable={gamePlayable(game)} winP={win.p} winSlot={win.slot} />;
 }
 
 function rowDesc(item: DisplayItem, view: RowView) {

@@ -3959,6 +3959,8 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 /* 크기 두 단씩 키움(같은 날 요청: "크기 2스텝씩 키우고") — 라벨 6 → 8px · 수 8 → 10px. */
 .scr-feed-row-wp-lab { width: 0; display: flex; justify-content: center; align-items: center; font-size: var(--fs-9); letter-spacing: 0; opacity: 0.6; color: var(--text); white-space: nowrap; }   /* '예상' · 8 → 9px(같은 날 요청: "라벨을 예상으로 변경하고 1단 키움") */
 .scr-feed-row-wp-n { font-size: var(--fs-10); font-variant-numeric: tabular-nums; color: var(--text); opacity: 0.6; }
+/* 받는 중 · 못 낸 판(is-wait · utils/winProbs slot) — 윗줄은 같은 꼴로 숨겨 자리만 잡는다(2026-11-17 지적: "예상 줄 자리가 지정돼있지 않아서 승패줄이 위에있다가 로딩후 내려가는 문제"). */
+.scr-feed-row-vsbox.is-wait > .scr-feed-row-wp-n, .scr-feed-row-vsbox.is-wait > .scr-feed-row-wp-lab { visibility: hidden; }
 .scr-feed-row-vsbox > .scr-feed-row-vs-t { font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.04em; color: var(--row-dim); }
 /* vs 를 배지 글자 높이에(같은 날 지적: "vs 위치가 승패 배지에비해 좀 아래인 느낌") — 소문자라 잉크가 글자 상자 아래쪽에 앉아 배지 글자보다 약 2px 낮았다(실측 · 폰 12px) ·
    확률 줄이 없는 줄(배지 줄 .scr-feed-row-vs)도 같이 올린다. */
