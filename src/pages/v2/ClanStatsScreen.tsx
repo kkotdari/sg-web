@@ -211,9 +211,10 @@ export default function ClanStatsScreen() {
   /** 실제로 쓰는 정렬 — 티어 칸이 없는 조회엔 티어를 빼고, 남는 게 없으면 전체 승률. */
   const shownSort = useMemo<StatSortKey[]>(() => {
     if (showTier) return sortKeys;
-    const rest = sortKeys.filter((k) => k !== "tier");
+    /* 1:1 은 WPA 칸도 없다(2026-11-17 · StatGrid noWpa) — 그 자로는 줄 세우지 않는다. */
+    const rest = sortKeys.filter((k) => k !== "tier" && !(size === "1" && (k === "wpa" || k.endsWith(":wpa"))));
     return rest.length > 0 ? rest : ["rate"];
-  }, [sortKeys, showTier]);
+  }, [sortKeys, showTier, size]);
   useEffect(() => () => {
     const q = new URLSearchParams(window.location.search);
     if (!q.has("period") && !q.has("size") && !q.has("map")) return;
@@ -478,10 +479,14 @@ export default function ClanStatsScreen() {
               좌우 화살표로 한달씩 점프 · 옆에 설명 · 2번째 줄은 날짜지정 라벨 옆에 인풋창 두개를 이미 보여주기 · 전체기간은 삭제 · 월 선택 → 기간이 아닌 월 한 개만")
               — 달 줄은 그 달 + 앞 달 기록을 합친 실력(서버가 꼭 한 달 조회에만 섞는다 · statQuery monthOfPeriod ★) · 날짜 줄은 그 기간 판만.
               옛(2026-10-26 ~ 11-13): 한 줄에 배타 단추 셋 — [월 선택 ▾(달 · 연속 달)] [전체기간] [날짜 지정 ▾(눌러 여는 창)] · 켜진 것만 채움 단추. */}
-          <div className="scr-stats-period" role="radiogroup" aria-label="기간">
+          {/* ★ 조회 기간 라벨 · 두 줄 라벨 "월별" / "지정" · 두 줄 살짝 들임(2026-11-17, 요청: "기간 두개 위에 조회 기간 라벨 추가 · 첫째줄에 '월별' 라벨 · 두번째줄 기간 지정 → 지정 ·
+              기간 두줄 들여쓰기 살짝 해주기 위에 라벨과 구분되게") — 라벨은 줄 위 한 줄(.scr-stats-period-title) · 두 줄은 .scr-stats-period-row 왼 여백. */}
+          <div className="scr-stats-period" role="radiogroup" aria-label="조회 기간">
+            <span className="scr-stats-period-title" aria-hidden>조회 기간</span>
             <div className={cx("scr-stats-period-row", !dayOn && "is-on")}>
               <label className="scr-checkbox-field scr-stats-period-pick">
-                <input type="radio" name="scr-stats-period" checked={!dayOn} onChange={() => setPeriod(month)} aria-label="월 선택" />
+                <input type="radio" name="scr-stats-period" checked={!dayOn} onChange={() => setPeriod(month)} />
+                <span>월별</span>
               </label>
               <div className="scr-stats-month">
                 <button type="button" className="scr-month-cal-nav" aria-label="이전 달" onClick={() => setPeriod(shiftMonthValue(month, -1))}>
@@ -496,7 +501,7 @@ export default function ClanStatsScreen() {
               </div>
               {/* ★ 달 줄 설명은 ? 팝오버로(2026-11-17, 요청: "도움말 제거하고 대신 월별 옆에 ? 버튼으로 팝오버") — 옛: 줄 끝 작은 글(폰은 아랫줄로 내려 두 줄을 먹었다). */}
               <InfoTip
-                label="월 선택" trigger={<CircleHelp size={15} aria-hidden />} triggerClassName="scr-infotip scr-stats-month-help" bubbleClassName="scr-sg-help"
+                label="월별" trigger={<CircleHelp size={15} aria-hidden />} triggerClassName="scr-infotip scr-stats-month-help" bubbleClassName="scr-sg-help"
                 text={(
                   <span className="scr-sg-help-list">
                     <span>그 달 + 지난 몇 달 기록을 합친 실제 실력을 보여줘요.</span>
@@ -517,7 +522,7 @@ export default function ClanStatsScreen() {
             <div className={cx("scr-stats-period-row", dayOn && "is-on")}>
               <label className="scr-checkbox-field scr-stats-period-pick">
                 <input type="radio" name="scr-stats-period" checked={dayOn} onChange={() => setPeriod(dayPeriod)} />
-                <span>기간 지정</span>
+                <span>지정</span>
               </label>
               {/* ★ 라벨 "날짜 지정" → "기간 지정" · 줄 끝 설명("실제 그 기간만의 실력을 보여줘요")은 걷었다(2026-11-16, 요청: "날짜 지정-> 기간 지정으로 라벨바꾸고 도움말 제거"). */}
               <DayRangePicker from={dayA} to={dayB} max={todayDay()} onChange={pickDays}
@@ -624,6 +629,7 @@ export default function ClanStatsScreen() {
           <StatGrid
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace, main: view.clan.main } : null}
             rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tierByRace: c.entry?.tierByRace, tier: c.entry?.tier }))}
+            noWpa={size === "1"}
             tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */
             mobile={isMobile}
             sortKeys={shownSort}
