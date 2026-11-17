@@ -3945,21 +3945,16 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 /* 로스터 글자: 닉네임 한 단 작게(body → caption) · vs 한 단 크게(11 → micro)(2026-10-20 요청) — PC 표 · 폰 줄 둘 다. */
 .scr-feed-row-cols .scr-feed-row-col-names .scr-feed-row-em { font-size: var(--fs-caption); }
 .scr-feed-row-cols > .scr-feed-row-vs { font-size: var(--fs-micro); }
-/* ★ 승리 확률(GameRow winP · 2026-11-17, 요청: "승패 위에다가 예측 승리확률 · 너무 튀지않게 예쁘게 깔끔하게 · 라벨은 승리 확률") — 승패 배지 줄 위 작은 두 줄.
-   라벨은 흐린 작은 글 · 숫자는 배지 바로 위(가운데 틈은 보이지 않는 'vs' 로 배지 줄과 같은 폭) · 높은 쪽만 본 글 색 · 낮은 쪽은 흐리게. 배지 줄 모양은 그대로. */
+/* ★ 승리 확률(GameRow winP · 2026-11-17, 요청: "승패 위에다가 예측 승리확률 · 너무 튀지않게 예쁘게 깔끔하게" → 되요청: "%없어도 다 알아볼듯 · 예상(아주 작게) /
+   51 : 49(작게) · 이렇게 두줄로" → "승리확률 로 변경 작게") — 승패 배지 줄 위 두 줄: '승리확률'(작게 · 흐리게) · '51 : 49'(작게). 높은 쪽만 본 글 색 · 낮은 쪽과 쌍점은 흐리게.
+   칸 폭은 배지 줄이 정한다 — 확률 줄은 폭 0 · 최소 100% 로 그 폭을 따른다(폰에서 이름 칸을 안 깎게). 배지 줄 모양은 그대로. */
 .scr-feed-row-cols > .scr-feed-row-vsbox { align-self: center; display: inline-flex; flex-direction: column; align-items: center; gap: 2px; font-size: var(--fs-micro); }
-/* 칸 폭은 배지 줄이 정한다 — 확률 줄은 폭 0 · 최소 100% 로 그 폭을 따르고 넘치는 글은 양옆으로 고르게 넘친다(폰에서 이름 칸을 덜 깎게). */
 .scr-feed-row-wp { width: 0; min-width: 100%; display: flex; flex-direction: column; align-items: center; line-height: 1.15; color: var(--text); font-weight: 400; white-space: nowrap; }
-.scr-feed-row-wp-lab { font-size: var(--fs-9); letter-spacing: 0.02em; opacity: 0.55; }
-.scr-feed-row-wp-nums { display: inline-flex; align-items: center; gap: 6px; margin: 0 5px; font-size: var(--fs-10); font-variant-numeric: tabular-nums; }
-.scr-feed-row-wp-nums > span { min-width: 16px; text-align: center; opacity: 0.55; }
+.scr-feed-row-wp-lab { font-size: var(--fs-9); letter-spacing: 0.04em; opacity: 0.45; }
+.scr-feed-row-wp-nums { display: inline-flex; align-items: baseline; gap: 3px; font-size: var(--fs-10); font-variant-numeric: tabular-nums; }
+.scr-feed-row-wp-nums > span { opacity: 0.55; }
 .scr-feed-row-wp-nums > .is-fav { opacity: 0.95; font-weight: 600; }
-.scr-feed-row-wp-nums > .scr-feed-row-wp-gap { min-width: 0; visibility: hidden; font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.04em; }
-@media (max-width: 960px) {
-  .scr-feed-row-wp-nums { gap: 3px; margin: 0 3px; font-size: var(--fs-9); }
-  .scr-feed-row-wp-nums > span { min-width: 13px; }
-  .scr-feed-row-wp-pct { display: none; }   /* 폰은 '%' 없이 숫자만 — 배지(13px) 폭 안에 들어 이름 칸에 안 닿게(라벨이 '승리 확률'이라 읽힌다) */
-}
+.scr-feed-row-wp-nums > .scr-feed-row-wp-colon { opacity: 0.4; }
 /* ★★ PC 게임 표(GameTable.tsx ★★ · 2026-10-19, 요청: "피시는 배지들 제거하고 완전 그리드 형태(헤더로우도) · 로스터는 모바일과 같은 형태") —
    머리 줄·줄이 한 열 틀(--gtab-cols)을 쓴다. 칸 사이 세로 줄 · 로스터 칸만 늘고 나머지는 제 글 폭. 폰은 옛 줄(이 규칙은 PC 에서만 선다). */
 .scr-gtab-list {

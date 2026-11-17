@@ -136,16 +136,17 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
           const col = i * 2 + 1;
           return [
             ...(i > 0 ? [pair ? (
-              /* ★ 승리 확률(2026-11-17, 요청: "승패 위에다가 예측 승리확률 · 너무 튀지않게 예쁘게 깔끔하게 · 라벨은 승리 확률") — 배지 줄 위에 작은 두 줄:
-                 '승리 확률' · 그 아래 두 편 %(배지 바로 위 · 가운데 틈은 'vs' 폭 그대로). 더 높은 쪽만 본 글 색 · 낮은 쪽은 흐리게. */
+              /* ★ 승리 확률(2026-11-17, 요청: "승패 위에다가 예측 승리확률 · 너무 튀지않게 예쁘게 깔끔하게") — 배지 줄 위에 작은 두 줄: '승리확률' · 그 아래 '51 : 49'.
+                 더 높은 쪽만 본 글 색 · 낮은 쪽은 흐리게. */
               winP != null && !melee ? (
                 <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}>
-                  <span className="scr-feed-row-wp" title="승리 확률 — 그 판 앞 달까지의 티어(종족별 인분)와 종족으로 낸 예측(팀 구성하기와 같은 식)">
-                    <span className="scr-feed-row-wp-lab">승리 확률</span>
+                  {/* 두 줄(같은 날 되요청: "%없어도 다 알아볼듯 · 예상(아주 작게) / 51 : 49(작게) · 이렇게 두줄로" → "승리확률 로 변경 작게") — 옛 첫 판: '승리 확률' 라벨 · 배지 위 62% · 38%. */}
+                  <span className="scr-feed-row-wp" title={`승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞 달까지의 티어(종족별 인분)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
+                    <span className="scr-feed-row-wp-lab">승리확률</span>
                     <span className="scr-feed-row-wp-nums">
-                      <span className={winP >= 0.5 ? "is-fav" : undefined}>{Math.round(winP * 100)}<span className="scr-feed-row-wp-pct">%</span></span>
-                      <span className="scr-feed-row-wp-gap" aria-hidden>vs</span>
-                      <span className={winP < 0.5 ? "is-fav" : undefined}>{100 - Math.round(winP * 100)}<span className="scr-feed-row-wp-pct">%</span></span>
+                      <span className={winP >= 0.5 ? "is-fav" : undefined}>{Math.round(winP * 100)}</span>
+                      <span className="scr-feed-row-wp-colon" aria-hidden>:</span>
+                      <span className={winP < 0.5 ? "is-fav" : undefined}>{100 - Math.round(winP * 100)}</span>
                     </span>
                   </span>
                   <span className="scr-feed-row-arrow scr-feed-row-vs">
