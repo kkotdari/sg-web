@@ -85,18 +85,14 @@ const sideOutcome = (result: GameResult["result"], side: 1 | 2): "승" | "무" |
 const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
   (text ? <span className={text === "패" ? "scr-feed-row-wl is-loss" : text === "승" ? "scr-feed-row-wl is-win" : "scr-feed-row-wl"} aria-label={text === "승" ? "승리" : text === "패" ? "패배" : "무승부"}>{text}</span> : null);
 
-/** ★ 예상 표기의 '균형' 폭(2026-11-17, 요청: "균형의 범위는 너가 생각할때 뒤집히기 쉬운 차이까지") — 예상 승률이 50 ± 이 값(%p) 안이면 '균형'.
- *  60 : 40 이면 열 판에 네 판은 약한 쪽이 이긴다 — 거기까지를 뒤집히기 쉬운 차이로 본다(검증 눈금: 예상 45 ~ 55% 판의 실제 승률 48% · 이 모형 적중 대략 65 ~ 70%). */
-export const WIN_EVEN_PCT = 10;
-/** 1팀 확률 → 글자 — 균형 폭 안이면 '균형' · 밖이면 '우세'. */
-export const winBarText = (p: number): string => (Math.abs(Math.round(p * 100) - 50) <= WIN_EVEN_PCT ? "균형" : "우세");
-/** ★ 예상 막대(2026-11-17, 요청: "우세를 수평선으로 표기 · 예상줄 폭의 양끝을 잇는 줄 위에 우세한만큼 더 가까이 · 균형안에 들면 위치는 맞추되 글자만 균형 ·
- *  수평선 양끝은 화살표" · "균형은 무조건 가운데로") — 글자가 막대의 몇 할 자리에 서나(0 왼끝 · 0.5 가운데 · 1 오른끝). 1팀(왼쪽)이 우세할수록 왼쪽으로.
- *  예상 승률 차가 WIN_BAR_FULL_PCT(%p · 50 에서) 이상이면 끝 — 75 : 25 면 끝까지 · 60 : 40 이면 가운데에서 끝까지의 0.4(막대가 배지 줄 폭 ≈ 48px 뿐이라
- *  글자가 움직일 틈이 ±8px 남짓 — 흔한 예상 30 ~ 70% 가 그 틈을 거의 다 쓰게 25 로 잡았다 · 처음 30 은 68 : 32 와 80 : 20 이 같은 자리에 섰다). */
-export const WIN_BAR_FULL_PCT = 25;
-export const winBarAt = (p: number): number => (winBarText(p) === "균형" ? 0.5   // 균형은 늘 가운데(같은 날 요청: "균형은 무조건 가운데로" · 옛: 균형도 자리는 비례)
-  : Math.min(1, Math.max(0, 0.5 - ((p - 0.5) * 100) / (2 * WIN_BAR_FULL_PCT))));
+/** ★ 예상 시소(2026-11-17, 요청: "화살표 다시 제거하고 숫자로 돌아가기 인분합으로 표현하고 시소로 표현해서 동그란 받침대위 선이 기울어지게 라벨은 제거") —
+ *  편 인분 합(서버 win_pred 의 s1 · s2)이 무거운 쪽이 내려간다. 기울기(도) = −(합 차 ÷ 합 총) × SAW_GAIN · ±SAW_MAX 에서 멈춤(음수 = 시계 반대 = 왼쪽이 내려감).
+ *  3 : 3 판 합 3.0 대 3.3(차 ÷ 총 ≈ 0.05)이면 7° 남짓 · 0.08 이상이면 12°. 확률(winP)은 기울기에 안 쓴다(종족 몫이 든 값이라 수와 어긋날 수 있다 — title 에만).
+ *  옛(같은 날): 우세 · 균형 글자 막대(WIN_EVEN_PCT · winBarAt — 꺾쇠 · 마디 · 화살촉 판들) · 그 앞 [1팀 % | 예상 | 2팀 %]. */
+export const SAW_GAIN = 150;
+export const SAW_MAX = 12;
+export const sawDeg = (s1: number, s2: number): number =>
+  (s1 + s2 > 0 ? Math.max(-SAW_MAX, Math.min(SAW_MAX, -((s1 - s2) / (s1 + s2)) * SAW_GAIN)) : 0);
 
 export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP }: {
   game: GameResult;
@@ -150,23 +146,23 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
           return [
             ...(i > 0 ? [pair ? (
               /* ★ 승리 확률(2026-11-17, 요청: "승패 위에다가 예측 승리확률 · 너무 튀지않게 예쁘게 깔끔하게") — 배지 줄 위 [수 | 승리확률 | 수] · 다 같은 흐림. */
-              winP != null && !melee ? (
-                /* 한 격자 3칸 × 2줄 — 윗줄 예상 막대(세 칸을 다 탄다 · 아래) · 아랫줄 [승 | vs | 패]. 막대 폭 = 배지 줄 폭.
+              winP != null && game.teamInbun?.length === 2 && !melee ? (
+                /* 한 격자 3칸 × 2줄 — 윗줄 예상 시소(세 칸을 다 탄다 · 아래) · 아랫줄 [승 | vs | 패]. 시소 폭 = 배지 줄 폭.
                    값은 목록 응답에 실려 와 처음부터 함께 선다(같은 날 지적: "예상만 따로 조회하나? 왜 늦게 떠?" — 옛: 따로 받고 그동안 숨긴 칸으로 자리만 잡았다). */
                 <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
-                  title={`예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞까지의 판으로 낸 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
-                  {/* 윗줄 = 예상 막대 한 칸(격자 세 칸을 다 탄다 · 같은 날 요청: "우세를 수평선으로 표기 …") — [‹━━ 글자 ━━━━›] · 두 선의 길이 비가 winBarAt 이라
-                      글자가 우세한 쪽 끝으로 다가간다 · 균형 폭 안이면 자리는 같고 글자만 '균형'. 선 양끝은 선만 있는 꺾쇠 화살촉(CSS · 같은 날 요청: "꺽쇠 선만" · 옛: 짧은 세로 마디 · 그 앞 채운 화살촉).
-                      옛: '← 우세' · '우세 →' · '균형'(같은 날 · 가운데 고정 · 화살표만 좌우) · 그 앞 [1팀 수 | 예상 | 2팀 수]. 수는 title 에만. */}
+                  title={`인분 합 ${game.teamInbun![0].toFixed(2)} : ${game.teamInbun![1].toFixed(2)} · 예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞까지의 판으로 낸 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
+                  {/* 윗줄 = 시소 한 칸(격자 세 칸을 다 탄다 · 같은 날 요청: "숫자로 돌아가기 인분합으로 표현하고 시소로 … 라벨은 제거") —
+                      [1팀 합 ━━●━━ 2팀 합] · 수는 들보 양끝에 얹혀 들보와 함께 오르내리고(글자는 바로 선다) · 동그란 받침대는 가운데 아래. 기울기 = sawDeg. */}
                   {(() => {
-                    const at = winBarAt(winP);
-                    const text = winBarText(winP);
-                    const side = text === "균형" ? "균형" : winP > 0.5 ? "왼쪽 팀 우세" : "오른쪽 팀 우세";
+                    const [s1, s2] = game.teamInbun as number[];
+                    const deg = sawDeg(s1, s2);
                     return (
-                      <span className="scr-feed-row-wp-bar" aria-label={`예상: ${side}`}>
-                        <span className="scr-feed-row-wp-seg is-l" style={{ flexGrow: at }} aria-hidden />
-                        <span className="scr-feed-row-wp-tag" aria-hidden>{text}</span>
-                        <span className="scr-feed-row-wp-seg is-r" style={{ flexGrow: 1 - at }} aria-hidden />
+                      <span className="scr-feed-row-wp-bar" aria-label={`인분 합 ${s1.toFixed(1)} 대 ${s2.toFixed(1)}`}>
+                        <span className="scr-feed-row-wp-beam" style={{ transform: `rotate(${deg.toFixed(2)}deg)` }} aria-hidden>
+                          <span className="scr-feed-row-wp-n" style={{ transform: `rotate(${(-deg).toFixed(2)}deg)` }}>{s1.toFixed(1)}</span>
+                          <span className="scr-feed-row-wp-n" style={{ transform: `rotate(${(-deg).toFixed(2)}deg)` }}>{s2.toFixed(1)}</span>
+                        </span>
+                        <span className="scr-feed-row-wp-pivot" aria-hidden />
                       </span>
                     );
                   })()}
