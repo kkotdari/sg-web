@@ -144,7 +144,8 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
                   title={`승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞 달까지의 티어(종족별 인분)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
                   {/* 높음 · 낮음 가리지 않고 같은 흐림(같은 날 요청: "승리확률은 높음 낮음 무관 전부 똑같이 약간 흐리게") — 옛: 높은 쪽만 또렷 · 굵게. */}
                   <span className="scr-feed-row-wp-n">{Math.round(winP * 100)}</span>
-                  <span className="scr-feed-row-wp-lab">승리확률</span>
+                  {/* 폰은 '승리 / 확률' 두 줄(같은 날 요청: "모바일에선 승리/줄바꿈확률") · PC 는 한 줄 — 두 토막을 CSS 가 가로 · 세로로 놓는다. */}
+                  <span className="scr-feed-row-wp-lab"><span>승리</span><span>확률</span></span>
                   <span className="scr-feed-row-wp-n">{100 - Math.round(winP * 100)}</span>
                   <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
                   <span className="scr-feed-row-vs-t" aria-hidden>vs</span>
