@@ -88,11 +88,14 @@ const OutcomeBadge = ({ text }: { text: "승" | "무" | "패" | null }) =>
 /** ★ 예상 표기의 '균형' 폭(2026-11-17, 요청: "균형의 범위는 너가 생각할때 뒤집히기 쉬운 차이까지") — 예상 승률이 50 ± 이 값(%p) 안이면 '균형'.
  *  60 : 40 이면 열 판에 네 판은 약한 쪽이 이긴다 — 거기까지를 뒤집히기 쉬운 차이로 본다(검증 눈금: 예상 45 ~ 55% 판의 실제 승률 48% · 이 모형 적중 대략 65 ~ 70%). */
 export const WIN_EVEN_PCT = 10;
-/** 1팀 확률 → 기울기 — "left"(1팀 · 왼쪽 우세) · "right"(2팀 · 오른쪽 우세) · null(균형). */
-export const winLean = (p: number): "left" | "right" | null => {
-  const pct = Math.round(p * 100);
-  return Math.abs(pct - 50) <= WIN_EVEN_PCT ? null : pct > 50 ? "left" : "right";
-};
+/** ★ 예상 막대(2026-11-17, 요청: "우세를 수평선으로 표기 · 예상줄 폭의 양끝을 잇는 줄 위에 우세한만큼 더 가까이 · 균형안에 들면 위치는 맞추되 글자만 균형 ·
+ *  수평선 양끝은 화살표") — 글자가 막대의 몇 할 자리에 서나(0 왼끝 · 0.5 가운데 · 1 오른끝). 1팀(왼쪽)이 우세할수록 왼쪽으로.
+ *  예상 승률 차가 WIN_BAR_FULL_PCT(%p · 50 에서) 이상이면 끝 — 75 : 25 면 끝까지 · 60 : 40 이면 가운데에서 끝까지의 0.4(막대가 배지 줄 폭 ≈ 48px 뿐이라
+ *  글자가 움직일 틈이 ±8px 남짓 — 흔한 예상 30 ~ 70% 가 그 틈을 거의 다 쓰게 25 로 잡았다 · 처음 30 은 68 : 32 와 80 : 20 이 같은 자리에 섰다). */
+export const WIN_BAR_FULL_PCT = 25;
+export const winBarAt = (p: number): number => Math.min(1, Math.max(0, 0.5 - ((p - 0.5) * 100) / (2 * WIN_BAR_FULL_PCT)));
+/** 1팀 확률 → 글자 — 균형 폭 안이면 '균형' · 밖이면 '우세'. */
+export const winBarText = (p: number): string => (Math.abs(Math.round(p * 100) - 50) <= WIN_EVEN_PCT ? "균형" : "우세");
 
 export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP }: {
   game: GameResult;
@@ -147,24 +150,25 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
             ...(i > 0 ? [pair ? (
               /* ★ 승리 확률(2026-11-17, 요청: "승패 위에다가 예측 승리확률 · 너무 튀지않게 예쁘게 깔끔하게") — 배지 줄 위 [수 | 승리확률 | 수] · 다 같은 흐림. */
               winP != null && !melee ? (
-                /* 한 격자 3칸 × 2줄(같은 날 되요청: "승리확률 글자를 더 줄여서 두 수 사이에 넣고 두 수도 글자 크기 줄이기") — 윗줄 [1팀 수 | 승리확률 | 2팀 수] ·
-                   아랫줄 [승 | vs | 패]. 칸을 같이 쓰니 수가 배지 바로 위 · 라벨이 vs 바로 위에 선다.
+                /* 한 격자 3칸 × 2줄 — 윗줄 예상 막대(세 칸을 다 탄다 · 아래) · 아랫줄 [승 | vs | 패]. 막대 폭 = 배지 줄 폭.
                    값은 목록 응답에 실려 와 처음부터 함께 선다(같은 날 지적: "예상만 따로 조회하나? 왜 늦게 떠?" — 옛: 따로 받고 그동안 숨긴 칸으로 자리만 잡았다). */
                 <span className="scr-feed-row-vsbox" key={`v${i}`} style={{ gridColumn: col - 1, gridRow: 1 }}
                   title={`예상 승리확률 ${Math.round(winP * 100)} : ${100 - Math.round(winP * 100)} — 그 판 앞까지의 판으로 낸 티어(종족별 인분 · 판이 적으면 그 사람 종합 쪽으로)와 종족으로 낸 예측(팀 구성하기와 같은 식)`}>
-                  {/* 표기는 우세 쪽 화살표 · 균형(같은 날 요청: "예상표기를 이렇게 바꿔줘 — 우세 → / 균형 · 균형의 범위는 뒤집히기 쉬운 차이까지") —
-                      옛: [1팀 수 | 예상 | 2팀 수](수는 이제 title 에만). 양옆 칸은 비운 채 두어 격자(배지 · vs 줄과 같은 3칸)를 지킨다. */}
-                  <span className="scr-feed-row-wp-n" aria-hidden />
-                  {/* '우세'는 늘 가운데(vs 위) · 화살표만 좌우로 붙는다(같은 날 요청: "우세는 가운데 화살표만 좌우" — 옛: '← 우세' 한 덩이를 가운데 둬 글자가 옆으로 밀렸다). */}
-                  <span className="scr-feed-row-wp-lab">{(() => {
-                    const lean = winLean(winP);
-                    return lean == null ? "균형" : (
-                      <span className="scr-feed-row-wp-word" aria-label={lean === "left" ? "왼쪽 팀 우세" : "오른쪽 팀 우세"}>
-                        우세<span className={`scr-feed-row-wp-arr is-${lean}`} aria-hidden>{lean === "left" ? "←" : "→"}</span>
+                  {/* 윗줄 = 예상 막대 한 칸(격자 세 칸을 다 탄다 · 같은 날 요청: "우세를 수평선으로 표기 …") — [◀━━ 글자 ━━━━▶] · 두 선의 길이 비가 winBarAt 이라
+                      글자가 우세한 쪽 끝으로 다가간다 · 균형 폭 안이면 자리는 같고 글자만 '균형'. 선 끝은 바깥을 향한 화살촉(CSS).
+                      옛: '← 우세' · '우세 →' · '균형'(같은 날 · 가운데 고정 · 화살표만 좌우) · 그 앞 [1팀 수 | 예상 | 2팀 수]. 수는 title 에만. */}
+                  {(() => {
+                    const at = winBarAt(winP);
+                    const text = winBarText(winP);
+                    const side = text === "균형" ? "균형" : winP > 0.5 ? "왼쪽 팀 우세" : "오른쪽 팀 우세";
+                    return (
+                      <span className="scr-feed-row-wp-bar" aria-label={`예상: ${side}`}>
+                        <span className="scr-feed-row-wp-seg is-l" style={{ flexGrow: at }} aria-hidden />
+                        <span className="scr-feed-row-wp-tag" aria-hidden>{text}</span>
+                        <span className="scr-feed-row-wp-seg is-r" style={{ flexGrow: 1 - at }} aria-hidden />
                       </span>
                     );
-                  })()}</span>
-                  <span className="scr-feed-row-wp-n" aria-hidden />
+                  })()}
                   <OutcomeBadge text={sideOutcome(game.result, sides[0].side)} />
                   <span className="scr-feed-row-vs-t" aria-hidden>vs</span>
                   <OutcomeBadge text={sideOutcome(game.result, sd.side)} />
