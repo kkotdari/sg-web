@@ -54,12 +54,14 @@ const EMPTY_STATS: MemberStats = {
    (같은 날 덧, 요청: "동일구성 포함 · 동일구성 제외로 두 컬럼 나누고 각 컬럼에 두 컬럼씩 — 판수 · 승률") — 제외 쪽 판 수 = 판 −2 × 맞대결 판. */
 function CompRecords({ rows, vs, format }: { rows: ClanCompEntry[]; vs: ClanCompVsEntry[]; format: string }) {
   const mirror = new Map(vs.filter((v) => v.format === format && v.a === v.b).map((v) => [v.a, v]));
+  /* (같은 날 다시, 요청: "동일구성 포함은 보여줄 의미가 없어 보임 · 동일구성 제외로만") — 표에는 제외한 경기 · 승률만 · 그 승률 높은 차례(같으면 판 많은 쪽) ·
+     같은 구성끼리만 붙어 남는 판이 없는 구성은 뺀다. */
   return <CompGrid rows={rows.filter((c) => c.format === format).map((c) => {
     const m = mirror.get(c.label);
     const won = m ? m.aWins + m.bWins : 0;
     const decided = c.wins + c.losses + c.draws - 2 * (won + (m?.draws ?? 0));
-    return { ...c, exPlays: c.plays - 2 * (m?.plays ?? 0), exRate: decided > 0 ? Math.round(((c.wins - won) / decided) * 1000) / 10 : null };
-  })} />;
+    return { label: c.label, plays: c.plays - 2 * (m?.plays ?? 0), winRate: decided > 0 ? Math.round(((c.wins - won) / decided) * 1000) / 10 : null };
+  }).filter((c) => c.plays > 0).sort((a, b) => (b.winRate ?? -1) - (a.winRate ?? -1) || b.plays - a.plays || a.label.localeCompare(b.label))} />;
 }
 
 /** 주소 u= → 칩. 칩 배열(JSON)이 아니면 옛 한 줄 검색어 — 띄어쓰기·쉼표로 끊는다. */

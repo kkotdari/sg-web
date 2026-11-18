@@ -613,31 +613,23 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
 /** 종족구성별 전적 — 위 표와 같은 꼴(머리 줄 · 칸 선 · 2026-10-20, 요청: "종족구성별 전적 부분도 예쁘게 테마에 맞춰"). */
 /** 판이 이만큼 이하인 구성은 줄째 연하게(2026-11-18 · 아래 CompGrid ★). */
 const COMP_FEW = 5;
-export function CompGrid({ rows }: { rows: { label: string; plays: number; winRate: number; exPlays?: number; exRate?: number | null }[] }) {
+/* ★ 종족구성별 전적 = 동일구성 제외만(2026-11-18, 요청: "동일구성 포함은 보여줄 의미가 없어 보임 · 그냥 동일구성 제외로 보여주고 머리 헤더 제거") — [구성 | 경기 | 승률] 한 줄 머리.
+   경기 · 승률 = 같은 구성끼리 맞붙은 판(3프 vs 3프 …)을 뺀 것(ClanStatsScreen CompRecords ★ — 차례도 그 승률로). 판이 다섯 이하인 구성은 줄째 연하게.
+   옛(같은 날): 묶음 머리 두 줄 [동일구성 제외 · 포함] × [경기 · 승률] → 그 전 [경기 | 승률 | 동일구성 제외 승률]. */
+export function CompGrid({ rows }: { rows: { label: string; plays: number; winRate: number | null }[] }) {
   return (
     <section className="scr-sg-comp-wrap" aria-label="종족구성별 전적">
-      <h3 className="scr-sg-title">종족구성별 전적</h3>
+      <h3 className="scr-sg-title">종족구성별 전적<span className="scr-sg-title-note">같은 구성끼리 붙은 판은 빼고 셌어요</span></h3>
       {rows.length === 0 ? <p className="scr-clan-panel-empty">기록이 없어요</p> : (
         <div className="scr-sg scr-sg-comp" role="table">
-          {/* 머리 두 줄(2026-11-18, 요청: "동일구성 포함 · 동일구성 제외로 두 컬럼 나누고 각 컬럼에 두 컬럼씩 — 판수 · 승률") — 윗줄 묶음 둘(각 두 칸을 덮음) · 아랫줄 경기 · 승률 ×2.
-              제외 = 같은 구성끼리 맞붙은 판(3프 vs 3프 …)을 뺀 것(ClanStatsScreen CompRecords ★). 옛(같은 날): [경기 | 승률 | 동일구성 제외 승률] 한 줄 머리.
-              ★ 제외가 앞(같은 날, 요청: "동일구성 포함 제외 순서 바꾸기") · 판이 다섯 이하인 구성은 줄째 연하게(같은 날 "5판 이하인 구성은 연하게" — 판 = 포함 쪽 전체 판). */}
           <div className="scr-sg-row scr-sg-head" role="row">
-            <span className="scr-sg-c scr-sg-who scr-sg-h2">종족 구성</span>
-            <span className="scr-sg-c scr-sg-hgroup" title="같은 구성끼리 맞붙은 판(예: 3프 vs 3프)을 뺀 전적이에요">동일구성 제외</span>
-            <span className="scr-sg-c scr-sg-hgroup">동일구성 포함</span>
-            <span className="scr-sg-c scr-sg-hsub">경기</span>
-            <span className="scr-sg-c scr-sg-hsub">승률</span>
-            <span className="scr-sg-c scr-sg-hsub">경기</span>
-            <span className="scr-sg-c scr-sg-hsub">승률</span>
+            <span className="scr-sg-c scr-sg-who">종족 구성</span>
+            <span className="scr-sg-c">경기</span>
+            <span className="scr-sg-c">승률</span>
           </div>
           {rows.map((c) => (
             <div key={c.label} className={cx("scr-sg-row", c.plays <= COMP_FEW && "is-few")}>
               <span className="scr-sg-c scr-sg-who"><span className="scr-sg-comp-label">{c.label}</span></span>
-              <span className="scr-sg-c"><Num v={c.exPlays === undefined ? null : c.exPlays.toLocaleString()} unit="판" /></span>
-              <span className="scr-sg-c scr-sg-comp-rate">
-                <Num v={c.exRate ?? null} unit="%" />
-              </span>
               <span className="scr-sg-c"><Num v={c.plays.toLocaleString()} unit="판" /></span>
               <span className="scr-sg-c scr-sg-comp-rate">
                 <Num v={c.winRate} unit="%" />
