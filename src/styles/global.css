@@ -6152,6 +6152,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text);
   background: rgba(var(--overlay-rgb), 0.06); border: 1px solid var(--line-faint); border-radius: 8px; padding: 8px 10px;
 }
+/* 포커스 = 테두리 색(앱 입력칸 .scr-input:focus 와 같은 꼴) — 2026-11-18, 지적: "인풋 포커스 시 위에 테두리가 잘려".
+   옛: 전역 *:focus-visible 바깥 테두리(2px + 간격 2px)가 모달 본문의 스크롤 상자(overflow-y: auto · 위 여백 0)에 위가 잘렸다. */
+.scr-sqlc-input:focus, .scr-sqlc-input:focus-visible { border-color: var(--pipe-bright); outline: none; }
 .scr-sqlc-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .scr-sqlc-write { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); cursor: pointer; }
 .scr-sqlc-meta { flex: 1 1 auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
