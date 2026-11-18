@@ -50,14 +50,15 @@ const EMPTY_STATS: MemberStats = {
  *  4:4만 나오는 문제 · 전체 구성은 이제 쓸 일 없어"). */
 /* ★ 동일 구성 판 뺀 승률(2026-11-18, 요청: "승률 옆에 동일구성간 게임 제외 승률도 넣어줘") — 같은 구성끼리 맞붙은 판(3프 vs 3프 …)은 한 판이 그 줄에 두 번(양편) 잡혀
    이기고 지는 것이 늘 반반이라 승률을 50% 쪽으로 끈다. 응답의 맞대결 전적(clanCompVs · a = b 인 줄 · 한 판 한 번)을 빼고 다시 센다:
-   이긴 판 −(a 승 + b 승) · 승패가 난 판(이김 + 짐 + 무) −2 ×(a 승 + b 승 + 무). 결과를 모르는 판은 원래 승률처럼 처음부터 안 센다. 남는 판이 없으면 "-". */
+   이긴 판 −(a 승 + b 승) · 승패가 난 판(이김 + 짐 + 무) −2 ×(a 승 + b 승 + 무). 결과를 모르는 판은 원래 승률처럼 처음부터 안 센다. 남는 판이 없으면 "-".
+   (같은 날 덧, 요청: "동일구성 포함 · 동일구성 제외로 두 컬럼 나누고 각 컬럼에 두 컬럼씩 — 판수 · 승률") — 제외 쪽 판 수 = 판 −2 × 맞대결 판. */
 function CompRecords({ rows, vs, format }: { rows: ClanCompEntry[]; vs: ClanCompVsEntry[]; format: string }) {
   const mirror = new Map(vs.filter((v) => v.format === format && v.a === v.b).map((v) => [v.a, v]));
   return <CompGrid rows={rows.filter((c) => c.format === format).map((c) => {
     const m = mirror.get(c.label);
     const won = m ? m.aWins + m.bWins : 0;
     const decided = c.wins + c.losses + c.draws - 2 * (won + (m?.draws ?? 0));
-    return { ...c, exRate: decided > 0 ? Math.round(((c.wins - won) / decided) * 1000) / 10 : null };
+    return { ...c, exPlays: c.plays - 2 * (m?.plays ?? 0), exRate: decided > 0 ? Math.round(((c.wins - won) / decided) * 1000) / 10 : null };
   })} />;
 }
 

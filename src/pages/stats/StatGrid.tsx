@@ -611,18 +611,22 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
 }
 
 /** 종족구성별 전적 — 위 표와 같은 꼴(머리 줄 · 칸 선 · 2026-10-20, 요청: "종족구성별 전적 부분도 예쁘게 테마에 맞춰"). */
-export function CompGrid({ rows }: { rows: { label: string; plays: number; winRate: number; exRate?: number | null }[] }) {
+export function CompGrid({ rows }: { rows: { label: string; plays: number; winRate: number; exPlays?: number; exRate?: number | null }[] }) {
   return (
     <section className="scr-sg-comp-wrap" aria-label="종족구성별 전적">
       <h3 className="scr-sg-title">종족구성별 전적</h3>
       {rows.length === 0 ? <p className="scr-clan-panel-empty">기록이 없어요</p> : (
         <div className="scr-sg scr-sg-comp" role="table">
+          {/* 머리 두 줄(2026-11-18, 요청: "동일구성 포함 · 동일구성 제외로 두 컬럼 나누고 각 컬럼에 두 컬럼씩 — 판수 · 승률") — 윗줄 묶음 둘(각 두 칸을 덮음) · 아랫줄 경기 · 승률 ×2.
+              제외 = 같은 구성끼리 맞붙은 판(3프 vs 3프 …)을 뺀 것(ClanStatsScreen CompRecords ★). 옛(같은 날): [경기 | 승률 | 동일구성 제외 승률] 한 줄 머리. */}
           <div className="scr-sg-row scr-sg-head" role="row">
-            <span className="scr-sg-c scr-sg-who">종족 구성</span>
-            <span className="scr-sg-c">경기</span>
-            <span className="scr-sg-c">승률</span>
-            {/* 동일 구성 판 뺀 승률(2026-11-18 · ClanStatsScreen CompRecords ★) */}
-            <span className="scr-sg-c" title="같은 구성끼리 맞붙은 판(예: 3프 vs 3프)을 빼고 센 승률이에요">동일구성 제외</span>
+            <span className="scr-sg-c scr-sg-who scr-sg-h2">종족 구성</span>
+            <span className="scr-sg-c scr-sg-hgroup">동일구성 포함</span>
+            <span className="scr-sg-c scr-sg-hgroup" title="같은 구성끼리 맞붙은 판(예: 3프 vs 3프)을 뺀 전적이에요">동일구성 제외</span>
+            <span className="scr-sg-c scr-sg-hsub">경기</span>
+            <span className="scr-sg-c scr-sg-hsub">승률</span>
+            <span className="scr-sg-c scr-sg-hsub">경기</span>
+            <span className="scr-sg-c scr-sg-hsub">승률</span>
           </div>
           {rows.map((c) => (
             <div key={c.label} className="scr-sg-row">
@@ -631,6 +635,7 @@ export function CompGrid({ rows }: { rows: { label: string; plays: number; winRa
               <span className="scr-sg-c scr-sg-comp-rate">
                 <Num v={c.winRate} unit="%" />
               </span>
+              <span className="scr-sg-c"><Num v={c.exPlays === undefined ? null : c.exPlays.toLocaleString()} unit="판" /></span>
               <span className="scr-sg-c scr-sg-comp-rate">
                 <Num v={c.exRate ?? null} unit="%" />
               </span>
