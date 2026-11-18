@@ -881,6 +881,8 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-v2-toolbar-title-row { grid-area: title; display: flex; align-items: center; gap: 10px; min-width: 0; }
 .scr-v2-toolbar-title-row { transform: translateY(-6px); }
 .scr-v2-toolbar-title-row .scr-v2-toolbar-title { grid-area: auto; transform: none; }
+/* 연습실 첫 화면 단축키 단추(2026-11-18) — 제목 줄 오른끝. */
+.scr-practice-keys-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; }
 .scr-v2-primary-row { display: flex; justify-content: center; margin-bottom: 12px; }
 .scr-members-screen-v2 .scr-v2-primary-row { margin-bottom: 30px; }
 .scr-rail-hotzone { display: none; }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PracticeRoom, useReplayMap } from "scplay";
+import { PracticeKeys, PracticeRoom, useReplayMap } from "scplay";
+import { Keyboard } from "lucide-react";
 import { api, type PracticeBoard, type PracticeBoards, type PracticeRecordIn, type PracticeRecordReply } from "../../api/client";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { navigateTo, parseRoute } from "../../utils/route";
@@ -29,14 +30,38 @@ export default function PracticeScreen() {
   const task = TASKS.find((t) => t.key === item) ?? null;
   const open = (t: PracticeTask): void => { navigateTo(`/practice/${t.key}`, { notify: false }); setItem(t.key); };
   const back = (): void => { navigateTo("/practice", { notify: false }); setItem(null); };
-  if (task) return <PracticePlay task={task} onBack={back} />;
+  /* 명령 키 — 계정에 기억(요청: "개인별 단축키 설정 기억하기"). 연습실 첫 화면 · 과제가 **한 상태**를 나눠 쓴다(첫 화면에서 바꾸고 바로 과제를 열어도 그 키) ·
+     바꾸면 잠깐 모았다 적는다. 옛: 과제(PracticePlay)가 저 혼자 받고 적었다. */
+  const [keys, setKeys] = useState<Record<string, string> | null>(null);
+  useEffect(() => {
+    let live = true;
+    api.getPracticePrefs().then((p) => { if (live && p.keys && Object.keys(p.keys).length) setKeys(p.keys); }).catch(() => undefined);
+    return () => { live = false; };
+  }, []);
+  const saveT = useRef<number | null>(null);
+  const onKeys = useCallback((k: Record<string, string>): void => {
+    setKeys(k);
+    if (saveT.current !== null) window.clearTimeout(saveT.current);
+    saveT.current = window.setTimeout(() => { api.putPracticePrefs(k).catch(() => undefined); }, 600);
+  }, []);
+  /* 이용 기록(2026-11-18, 요청: "연습실 이용 로그 · access history · 연습실 들어온 거랑 단축키 설정, 어느 연습을 했다 정도까지만") — 접속 기록에 화면 코드 그대로.
+     들어옴은 App 의 화면 기록(practice) · prac_play(턴 시작 · "P 중반 BL") · prac_keys(단축키 바꿈). 기록이 안 돼도 놀이는 그대로. */
+  const onLog = useCallback((code: string, detail: string): void => { api.pingAccess(code, detail).catch(() => undefined); }, []);
+  /* ★ 단축키 창은 연습실 첫 화면에(2026-11-18, 지적: "연습실에 단축키 설정은 연습실 화면에서 안 보이는 것 같아 · 견제연습 설정이 아니라") — 모든 과제 공통 ·
+     옛: 견제 연습 설정 판의 '단축키' 줄(걷음 · 놀이 중 위 줄 [단축키]는 남김). */
+  const [keysOpen, setKeysOpen] = useState(false);
+  if (task) return <PracticePlay task={task} onBack={back} keys={keys} onKeys={onKeys} onLog={onLog} />;
   return (
     <div className="scr-screen">
       <div className="scr-v2-toolbar">
         <div className="scr-v2-toolbar-title-row">
           <h1 className="scr-title scr-v2-toolbar-title">연습실</h1>
+          <button type="button" className="scr-compact-rect-btn scr-practice-keys-btn" onClick={() => setKeysOpen(true)} title="모든 연습 공통 — 공통 명령 · 수송선 · 유닛별 명령 카드">
+            <Keyboard size={15} aria-hidden /> 단축키 설정
+          </button>
         </div>
       </div>
+      {keysOpen && <PracticeKeys keys={keys} onKeys={onKeys} onLog={onLog} onClose={() => setKeysOpen(false)} />}
       <div className="scr-practice-cards">
         {TASKS.map((t) => (
           <button key={t.key} type="button" className="scr-practice-card" onClick={() => open(t)} aria-label={`${t.title} 시작`}>
@@ -85,13 +110,16 @@ function PracticeBoardsView() {
   );
   return (
     <div className="scr-practice-boards">
-      {one("빨무 드랍 · 초반", boards.early)}
-      {one("빨무 드랍 · 중반", boards.mid)}
+      {one("빨무 견제 · 초반", boards.early)}
+      {one("빨무 견제 · 중반", boards.mid)}
     </div>
   );
 }
 
-function PracticePlay({ task, onBack }: { task: PracticeTask; onBack: () => void }) {
+function PracticePlay({ task, onBack, keys, onKeys, onLog }: {
+  task: PracticeTask; onBack: () => void;
+  keys: Record<string, string> | null; onKeys: (k: Record<string, string>) => void; onLog: (code: string, detail: string) => void;
+}) {
   const [hash, setHash] = useState<string | null | undefined>(undefined);
   const [err, setErr] = useState("");
   const isMobile = useIsMobile();
@@ -101,24 +129,9 @@ function PracticePlay({ task, onBack }: { task: PracticeTask; onBack: () => void
     return () => { live = false; };
   }, []);
   const map = useReplayMap(hash ?? null);
-  /* 명령 키 — 계정에 기억(요청: "개인별 단축키 설정 기억하기"). 받기 전엔 이 기기의 기억 · 바꾸면 잠깐 모았다 적는다. */
-  const [keys, setKeys] = useState<Record<string, string> | null>(null);
-  useEffect(() => {
-    let live = true;
-    api.getPracticePrefs().then((p) => { if (live && p.keys && Object.keys(p.keys).length) setKeys(p.keys); }).catch(() => undefined);
-    return () => { live = false; };
-  }, []);
-  const saveT = useRef<number | null>(null);
-  const onKeys = useCallback((k: Record<string, string>): void => {
-    if (saveT.current !== null) window.clearTimeout(saveT.current);
-    saveT.current = window.setTimeout(() => { api.putPracticePrefs(k).catch(() => undefined); }, 600);
-  }, []);
   /* 한 턴 끝 — 기록을 적고 답(내 최고 · 전체 최고 · 갱신)을 놀이판에 돌려준다. 전체 최고면 서버가 모두에게 푸시한다. */
   const onResult = useCallback((r: PracticeRecordIn): Promise<PracticeRecordReply | null> =>
     api.postPracticeRecord(r).catch(() => null), []);
-  /* 이용 기록(2026-11-18, 요청: "연습실 이용 로그 · access history · 연습실 들어온 거랑 단축키 설정, 어느 연습을 했다 정도까지만") — 접속 기록에 화면 코드 그대로.
-     들어옴은 App 의 화면 기록(practice) · 여기는 prac_play(턴 시작 · "P 중반 BL") · prac_keys(단축키 바꿈). 기록이 안 돼도 놀이는 그대로. */
-  const onLog = useCallback((code: string, detail: string): void => { api.pingAccess(code, detail).catch(() => undefined); }, []);
   return (
     <div className="scr-screen">
       <div className="scr-v2-toolbar">
