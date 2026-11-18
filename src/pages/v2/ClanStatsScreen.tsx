@@ -586,7 +586,10 @@ export default function ClanStatsScreen() {
 
       {/* ★ 명수 줄은 자료가 오기 전에도 자리를 잡아 둔다(2026-11-17, 요청: "미리 자리 확보해놓구 필터랑 저부분 사이 갭 늘리기") — 늦게 끼어들며 아래 표를 밀지 않게
           줄(높이)은 늘 두고 글자만 자료가 오면 채운다. 옛: 자료가 온 뒤에야 줄을 그렸다. 위 틈은 global.css .scr-stats-count-row(폰 접힘 · 기간 줄 바로 아래). */}
-      <header className="scr-clan-dash-head scr-stats-count-row">
+      {/* ★ 명수 줄과 정렬 줄을 한 줄로(2026-11-18, 요청: "통계의 인원결과줄과 wpa란? 종족펼치기 버튼 이거를 한줄로 합치기") — 왼쪽 명수 · 게임 · 경기 수준,
+          오른끝 WPA란? · 종족별(WPA란? 의 margin-left auto 가 민다). 오른끝은 그대로 보이는 표 오른변에 맞춘다(PC sortW). 좁으면 단추 둘이 다음 줄 오른끝으로 접힌다.
+          옛: 명수 줄(header) 아래 따로 정렬 줄(div.scr-stats-sort · 2026-11-17 왼쪽 걷은 뒤 단추 둘만 남았다). */}
+      <header className="scr-clan-dash-head scr-stats-count-row" style={!isMobile && sortW ? { maxWidth: sortW } : undefined}>
         {view?.clan && (<>
           {/* 머리는 **명수뿐**이다(2026-10, 요청: "클랜전체 N 명 → 그냥 N명으로") — 아래 카드 제목이 이미 클랜 전체라고 말한다. */}
           {/* 명수 옆 경기 수(2026-11-05, 요청: "명수 옆에 몇 게임인지 · 폰 피시 모두" — 표 평균 줄의 게임수는 참여 합이라 경기 수는 여기서). */}
@@ -599,10 +602,7 @@ export default function ClanStatsScreen() {
           )}
           {/* (걷음 2026-10-22, 요청: "통계 그래프 제거") 전부 펼치기·접기 — 펼칠 그래프가 없다. */}
         </>)}
-      </header>
-
-      {/* 정렬 줄 오른끝(도움말 · 종족별 단추)을 보이는 표 오른변에 맞춘다(2026-11-05, 지적: "위치가 이상 버튼" — 접힌 표는 종합 칸만 보여 줄 끝이 표 밖 멀리 떴다). PC 만. */}
-      <div className="scr-stats-sort" style={!isMobile && sortW ? { maxWidth: sortW } : undefined}>
+        {/* 오른끝(도움말 · 종족별 단추)을 보이는 표 오른변에 맞춘다(2026-11-05, 지적: "위치가 이상 버튼" — 접힌 표는 종합 칸만 보여 줄 끝이 표 밖 멀리 떴다). PC 만 — 위 header style. */}
         {/* (걷음 2026-11-17, 요청: 정렬 줄 왼쪽 제거) "정렬" 글 · [여러 기준] 체크박스(2026-11-04) · 고른 기준 줄("종합 WPA/티어 › APM") · PC [초기화](2026-10-24) —
             정렬은 그대로 표 머리를 눌러서 · 고른 자는 머리 화살표로 보인다. 줄에는 오른끝 WPA란? · 종족별만 남는다. */}
         {/* (걷음 2026-11-13, 요청: "통계 전체 툴팁은 제거") 표 도움말 단추(StatHelp) → 같은 자리에 "WPA란?" 글 단추(같은 날 · WpaHelp). */}
@@ -612,7 +612,7 @@ export default function ClanStatsScreen() {
           title={showRaces ? "종족별 접기 — 종합만" : "종족별 펼치기 — 테란 · 프로토스 · 저그"}>
           종족별{showRaces ? <ChevronsLeft size={12} aria-hidden /> : <ChevronsRight size={12} aria-hidden />}
         </button>
-      </div>
+      </header>
 
       {error && <div className="scr-err">{error}</div>}
 
