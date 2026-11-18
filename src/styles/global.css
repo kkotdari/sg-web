@@ -5607,7 +5607,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-sg-title { margin: 0 0 6px; font-size: var(--fs-body); font-weight: 800; color: var(--text); }
 .scr-sg.scr-sg-comp { grid-template-columns: minmax(120px, 1fr) 84px 120px; max-width: 560px; }   /* [구성 | 경기 | 승률] — 동일구성 제외만(2026-11-18 · 같은 날 네 칸 · 다섯 칸 시안을 거쳐 옛 세 칸 틀로) */
 .scr-sg-title-note { margin-left: 8px; font-size: var(--fs-micro, 12px); font-weight: 500; color: var(--dim); }
-.scr-sg-comp .scr-sg-row.is-few > .scr-sg-c { opacity: 0.42; }   /* 판 다섯 이하 구성(2026-11-18 · StatGrid COMP_FEW) */
+.scr-sg-comp .scr-sg-row.is-few > .scr-sg-c > * { opacity: 0.42; }   /* 판 다섯 이하 구성(2026-11-18 · StatGrid COMP_FEW) — 글자만(같은 날 지적: "글자만인데 그리드 선까지 흐려져서" — 옛: 칸째 흐려 칸 선도 옅어졌다) */
 .scr-sg-comp-label { font-weight: 700; color: var(--muted); }
 .scr-sg-comp-rate { gap: 8px; }
 .scr-sg.scr-sg-comp .scr-sg-c { padding-top: 7px; padding-bottom: 7px; }
