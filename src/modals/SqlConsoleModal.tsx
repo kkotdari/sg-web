@@ -14,16 +14,18 @@ import { cx } from "../utils/format";
 
 /* ★ 줄임말(2026-11-13, 요청: "sql 콘솔창에 acclog 엔터시 아래 쿼리 수행") — 입력이 줄임말 하나뿐일 때 Enter 를 누르면 그 쿼리로 펼쳐 바로 실행한다
    (펼친 쿼리가 입력 칸에 남아 고쳐 다시 돌릴 수 있다 · 읽기 쿼리라 '쓰기 허용'과 상관없이 읽기로). 그 밖의 글에서 Enter 는 줄 바꿈 그대로(실행은 Ctrl/⌘ + Enter). */
+/* (2026-11-18, 요청: "acclog 쿼리 변경도 해줘") — 날짜(일)까지 · 업로드 기록(upload)은 뺀다. 옛: 'HH24:MI:SS' · 거르기 없음. */
 const SQL_ALIASES: Record<string, string> = {
   acclog: [
     "SELECT",
-    "\tTO_CHAR(a.logged_in_at, 'HH24:MI:SS') AS WHEN",
+    "\tTO_CHAR(a.logged_in_at, 'DD일 HH24:MI:SS') AS WHEN",
     "\t, b.nickname",
     "\t, a.screen_code",
     "\t, a.detail",
     "\t, a.client_kind",
     "FROM access_history a",
     "LEFT JOIN members b ON a.member_pk = b.pk",
+    "WHERE a.screen_code != 'upload'",
     "ORDER BY a.id DESC",
     "LIMIT 50;",
   ].join("\n"),

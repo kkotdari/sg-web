@@ -116,6 +116,9 @@ function PracticePlay({ task, onBack }: { task: PracticeTask; onBack: () => void
   /* 한 턴 끝 — 기록을 적고 답(내 최고 · 전체 최고 · 갱신)을 놀이판에 돌려준다. 전체 최고면 서버가 모두에게 푸시한다. */
   const onResult = useCallback((r: PracticeRecordIn): Promise<PracticeRecordReply | null> =>
     api.postPracticeRecord(r).catch(() => null), []);
+  /* 이용 기록(2026-11-18, 요청: "연습실 이용 로그 · access history · 연습실 들어온 거랑 단축키 설정, 어느 연습을 했다 정도까지만") — 접속 기록에 화면 코드 그대로.
+     들어옴은 App 의 화면 기록(practice) · 여기는 prac_play(턴 시작 · "P 중반 BL") · prac_keys(단축키 바꿈). 기록이 안 돼도 놀이는 그대로. */
+  const onLog = useCallback((code: string, detail: string): void => { api.pingAccess(code, detail).catch(() => undefined); }, []);
   return (
     <div className="scr-screen">
       <div className="scr-v2-toolbar">
@@ -127,7 +130,7 @@ function PracticePlay({ task, onBack }: { task: PracticeTask; onBack: () => void
       {isMobile && <p className="scr-hint scr-hint-left">마우스 · 키보드로 하는 연습이에요 — PC 에서 열어 주세요.</p>}
       {hash === null && <p className="scr-hint scr-hint-left">{err || "빨무 지도(지형 포함)를 아직 못 찾았어요 — 빨무 판을 한 판 올리면 생겨요."}</p>}
       <div className="scr-practice-host">
-        <PracticeRoom map={map ?? null} keys={keys} onKeys={onKeys} onResult={onResult} />
+        <PracticeRoom map={map ?? null} keys={keys} onKeys={onKeys} onResult={onResult} onLog={onLog} />
       </div>
     </div>
   );
