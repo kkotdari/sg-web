@@ -43,10 +43,10 @@ function SortHead({ on, order, onClick, children, ic = 13 }: { on: boolean; orde
       {children}
       {order !== undefined && (
         <span className="scr-sg-sort-ic" aria-hidden>
-          {/* 위아래 삼각형(2026-11-05, 요청: "정렬 아이콘을 단순하게 위아래 삼각형으로 · 미선택 시 위아래 둘 다 연하게") — 정렬은 늘 큰 값부터라 고르면 아래 삼각형만 진하다. */}
-          <svg className="scr-sg-sort-tri" width={Math.round(ic * 0.62)} height={ic} viewBox="0 0 8 13">
-            <path d="M4 0.5 L7.5 5 L0.5 5 Z" className="is-up" />
-            <path d="M4 12.5 L7.5 8 L0.5 8 Z" className={cx("is-dn", on && "is-act")} />
+          {/* 아래 삼각형 하나(2026-11-18, 요청: "위아래가 아니라 아래만 되니까 아이콘을 바꿔야 할 거 같기도") — 정렬은 늘 큰 값부터라 내림만 있다 ·
+              안 고르면 옅게 · 고르면 진하게. 옛(2026-11-05): 위아래 삼각형(고르면 아래만 진함). */}
+          <svg className="scr-sg-sort-tri" width={Math.round(ic * 0.62)} height={Math.round(ic * 0.5)} viewBox="0 0 8 6.5">
+            <path d="M4 6 L7.5 1 L0.5 1 Z" className={cx("is-dn", on && "is-act")} />
           </svg>
           {on && order > 0 && <i>{order}</i>}
         </span>

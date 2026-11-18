@@ -5556,6 +5556,8 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-infotip-bubble.scr-sg-help { max-width: min(300px, 88vw); padding: 10px 12px; white-space: normal; }
 /* "WPA란?" 글 단추(WpaHelp · 2026-11-13) — 옛 도움말 아이콘 자리 · 작은 밑줄 글 · 말풍선 폭 넓힘(항목 여섯 줄). */
 .scr-sg-wpa-help { font-size: var(--fs-caption); color: var(--muted); text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; white-space: nowrap; }
+/* 통계 머리 줄의 WPA란? — 옆 글("23명 · 62게임" · 경기 수준)과 같은 크기(2026-11-18, 요청: "WPA란? 글자는 너무 큰 듯" · 옛: --fs-caption · 600). */
+.scr-stats-count-row .scr-infotip.scr-sg-wpa-help { font-size: var(--fs-micro, 12px); font-weight: 500; text-underline-offset: 3px; }
 .scr-infotip-bubble.scr-sg-help:has(.scr-sg-help-list) { max-width: min(360px, 90vw); }
 .scr-sg-help-list { display: flex; flex-direction: column; gap: 6px; line-height: 1.5; text-align: left; }
 /* ★ 'WPA란?' 아래 계산 조건(2026-11-16 저녁 · StatGrid WpaHelp) — 길어 말풍선 안에서 굴린다(InfoTip interactive) · 번호는 건의에서 가리키는 데 쓴다. */
@@ -5589,9 +5591,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 좁은 칸 머리(APM · 데미지 · 종족)는 11px(데미지가 38px 칸에 들게) · 종족은 10px · 자간 좁게(프로토스가 36px 칸에 들게). */
 .scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-race-head, .scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-hnarrow { font-size: 11px; padding-left: 1px; padding-right: 1px; }
 .scr-sg.is-m .scr-sg-head > .scr-sg-c.scr-sg-race-head { font-size: 10px; letter-spacing: -0.05em; }
-/* 폰 머리 정렬 아이콘(2026-10-28, 요청: "모바일 통계에서 정렬 적용된건지 잘 안보여서 아이콘 추가") — 좁은 칸(36~38px)이라 글자 **아래**에 10px 아이콘을 둔다
-   (옆에 두면 "데미지"·"프로토스"가 칸을 넘는다). 안 고른 머리는 옅은 ↕ · 고른 머리는 본문색 ↓ + 여럿이면 차례 숫자(PC 와 같은 SortHead). */
-.scr-sg.is-m .scr-sg-sort { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.1; }
+/* 폰 머리 정렬 아이콘(2026-10-28, 요청: "모바일 통계에서 정렬 적용된건지 잘 안보여서 아이콘 추가") — 안 고른 머리는 옅은 ▼ · 고른 머리는 본문색 ▼ + 여럿이면 차례 숫자(PC 와 같은 SortHead).
+   ★ 글자 **옆**(2026-11-18, 요청: "필터 아이콘이 안 내려오게") — 아래 삼각형 하나(5×6px)라 옆에 둬도 좁은 칸에 든다. 옛: 글자 아래(위아래 삼각형이 넓어 옆이면 "데미지"·"프로토스"가 칸을 넘었다). */
+.scr-sg.is-m .scr-sg-sort { display: inline-flex; flex-direction: row; align-items: center; gap: 2px; line-height: 1.1; }
 .scr-sg.is-m .scr-sg-sort-ic { gap: 0; }
 .scr-sg.is-m .scr-sg-sort-ic i { font-size: 9px; }
 @media (max-width: 400px) {
