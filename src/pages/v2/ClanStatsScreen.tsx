@@ -1,7 +1,9 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleHelp, Users, Wrench } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleHelp, Crown, ListOrdered, Users, Wrench } from "lucide-react";
 import TeamBuilderModal from "../../modals/TeamBuilderModal";
+import RatingBoardModal from "./RatingBoardModal";
+import QueenHistoryModal from "./QueenHistoryModal";
 import { LoadingMark } from "../../components/common/Feedback";
 import InfoTip from "../../components/common/InfoTip";
 import ChipInput, { type ChipOpt } from "../../components/common/ChipInput";
@@ -129,6 +131,18 @@ export default function ClanStatsScreen() {
   /* 팀 구성하기(2026-10-31, 요청: "팀구성하기를 다시 통계화면으로 옮기고 · 로직을 티어 계산 로직을 재사용" — 2026-10-24 배치 화면으로 갔던 것을 되돌림) —
      인분은 최신 달(이번 달)부터 거슬러 판이 넉넉한 달 것(TeamBuilderModal · 보는 기간과 무관). */
   const [teamBuilder, setTeamBuilder] = useState(false);
+  /* ★ 래더를 통계 1:1 로 합침(2026-11-18, 요청: "래더를 통계의 1:1 필터 적용으로 통합 · WPA 있던 자리에 랭크포인트 획득 · 실제실력순위랑 역대퀸은 1:1 옆에 아이콘으로 —
+     리스트표 아이콘과 퀸 아이콘 · 1:1 선택 시에만 아이콘 두 개가 활성화 · 래더 화면은 숨김") — 두 창은 래더 화면의 그것 그대로(RatingBoardModal · QueenHistoryModal ·
+     회원 풀 = 정지 · 탈퇴 뺀 회원). 역대 퀸이 셀 첫 달은 창을 처음 열 때 한 번 묻는다(가장 오래된 판의 달). */
+  const [soloModal, setSoloModal] = useState<"rating" | "queens" | null>(null);
+  const soloPool = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended").map((m) => m.id).sort(), [members]);
+  const [firstMonth, setFirstMonth] = useState<string | null>(null);
+  useEffect(() => {
+    if (soloModal !== "queens" || firstMonth) return undefined;
+    let live = true;
+    api.getGameResultsPage({ sort: "oldest", limit: 1 }).then((p) => { if (live) setFirstMonth(p.items[0]?.date.slice(0, 7) ?? null); }).catch(() => undefined);
+    return () => { live = false; };
+  }, [soloModal, firstMonth]);
   /* 정렬은 여러 자를 **누른 차례대로**(2026-10-22, 요청: "통계 그리드 정렬 순서 여러 개(순서 O) 적용") — 안 고른 머리를 누르면 끝에 붙고, 고른 머리를 누르면 빠진다(하나는 남는다).
      머리를 눌러 고르고(요청: "정렬은 머리 터치로 변경 · 헤더에 정렬 단추") 고른 차례는 정렬 줄 "정렬: 전체 승률 › APM" 에 하나씩 붙고 빠진다(요청: "누르면 '정렬:' 옆에 하나씩 나오고 없어짐").
      다 빼면 기본 차례만(줄에 "기본"). 머리를 누르는 셈(켜고 끄기 · 폰 전적 머리의 승률 → 게임수 → 끔)은 StatGrid 가 한다.
@@ -210,10 +224,12 @@ export default function ClanStatsScreen() {
   );
   /** 실제로 쓰는 정렬 — 티어 칸이 없는 조회엔 티어를 빼고, 남는 게 없으면 전체 승률. */
   const shownSort = useMemo<StatSortKey[]>(() => {
-    if (showTier) return sortKeys;
+    /* 랭크포인트(rp)는 1:1 에만 있는 칸(아래 ★ 래더 합침) — 다른 조회에선 그 자를 뺀다. */
+    if (showTier) { const t = sortKeys.filter((k) => k !== "rp"); return t.length > 0 ? t : ["tier"]; }
     /* 1:1 은 WPA 칸도 없다(2026-11-17 · StatGrid noWpa) — 그 자로는 줄 세우지 않는다. */
-    const rest = sortKeys.filter((k) => k !== "tier" && !(size === "1" && (k === "wpa" || k.endsWith(":wpa"))));
-    return rest.length > 0 ? rest : ["rate"];
+    const rest = sortKeys.filter((k) => k !== "tier" && !(size === "1" && (k === "wpa" || k.endsWith(":wpa"))) && !(size !== "1" && k === "rp"));
+    /* 1:1 의 기본 = 랭크포인트 획득 내림차순(래더 표의 순서 · 2026-11-18) · 그 밖은 전체 승률. */
+    return rest.length > 0 ? rest : [size === "1" ? "rp" : "rate"];
   }, [sortKeys, showTier, size]);
   useEffect(() => () => {
     const q = new URLSearchParams(window.location.search);
@@ -313,6 +329,8 @@ export default function ClanStatsScreen() {
       trendMonths: statTrendMonths(trendBase(debouncedQuery.period).period).length,
       /* 종족별 티어(2026-11-04, 요청: "종족별 티어로 변경 · 전체 티어는 이제 없음") — 표의 티어 칸은 종족마다(StatGrid RaceCells ★) · 달별 변화도. */
       tierByRace: debouncedQuery.size === "team",   // 맵 탭에서도(2026-11-10 · 서버가 그 맵 판으로)
+      /* 1:1 은 그 기간에 번 랭크포인트(래더 표의 "이 달에 번 점수" · rankScore)를 싣는다(2026-11-18 ★ 래더 합침). */
+      ratingScope: debouncedQuery.size === "1" ? "period" : undefined,
     }).then((res) => {
       if (cancelled) return;
       const trendBy: Record<string, Record<string, MemberStatsEntry>> = {};
@@ -416,6 +434,11 @@ export default function ClanStatsScreen() {
       if (key === "wpa") {
         const ax = wpaKey(a, null); const bx = wpaKey(b, null);
         return missingLast(ax === null, bx === null) || dirSign * ((ax ?? 0) - (bx ?? 0));
+      }
+      /* ★ 랭크포인트 획득(1:1 · 2026-11-18) — 그 기간에 번 점수 내림차순 · 판이 없는 사람(null)은 뒤로. */
+      if (key === "rp") {
+        const av = a.entry?.rankScore ?? null; const bv = b.entry?.rankScore ?? null;
+        return missingLast(av === null, bv === null) || dirSign * ((av ?? 0) - (bv ?? 0));
       }
       if (key === "apm" || key === "eapm" || key === "cmd") {
         const f = key === "apm" ? "avgApm" : key === "eapm" ? "avgEapm" : "avgCmd";
@@ -532,6 +555,8 @@ export default function ClanStatsScreen() {
         </div>
       </div>
       {teamBuilder && <TeamBuilderModal onClose={() => setTeamBuilder(false)} />}
+      {soloModal === "rating" && <RatingBoardModal poolIds={soloPool} members={members} onClose={() => setSoloModal(null)} />}
+      {soloModal === "queens" && <QueenHistoryModal poolIds={soloPool} members={members} firstMonth={firstMonth} onClose={() => setSoloModal(null)} />}
 
       {!folded && (<>
       {/* ★ 줄 앞 라벨 "유형" · "맵"(2026-11-16, 요청: "팀 구성과 맵에 라벨 붙여주고" → "유형으로 바꾸고" — "팀 구성"은 [팀 구성하기] · 종족구성과 헷갈려서) — 두 줄 탭의 첫 칸이 같은 x 에 서게 라벨 폭을 맞춘다(.scr-stats-tab-label). */}
@@ -553,6 +578,17 @@ export default function ClanStatsScreen() {
           </Fragment>
         ))}
       </div>
+      {/* 1:1 옆 아이콘 둘(★ 래더 합침) — 실제 실력 순위(리스트표) · 역대 퀸(왕관). 1:1 을 고른 때만 켜진다. */}
+      <span className="scr-stats-solo-icons">
+        <button type="button" className="scr-stats-solo-ico" disabled={size !== "1"} onClick={() => setSoloModal("rating")}
+          title={size === "1" ? "실제 실력 순위 — 처음부터 쌓인 1:1 레이팅" : "1:1 을 고르면 켜져요"} aria-label="실제 실력 순위">
+          <ListOrdered size={17} aria-hidden />
+        </button>
+        <button type="button" className="scr-stats-solo-ico" disabled={size !== "1"} onClick={() => setSoloModal("queens")}
+          title={size === "1" ? "역대 퀸 — 달마다 1:1 랭크포인트 1위" : "1:1 을 고르면 켜져요"} aria-label="역대 퀸">
+          <Crown size={17} aria-hidden />
+        </button>
+      </span>
       </div>
       <div className="scr-stats-tab-line">
       <span className="scr-stats-tab-label" aria-hidden>맵</span>
@@ -628,8 +664,9 @@ export default function ClanStatsScreen() {
           /* ★★ 표(StatGrid · 2026-10-20) — 맨 윗줄 클랜원 전체 · 그 아래 사람마다 한 줄. */
           <StatGrid
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace, main: view.clan.main } : null}
-            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tierByRace: c.entry?.tierByRace, tier: c.entry?.tier }))}
+            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tierByRace: c.entry?.tierByRace, tier: c.entry?.tier, rankScore: c.entry?.rankScore ?? null }))}
             noWpa={size === "1"}
+            rankPts={size === "1"}   /* WPA 자리에 랭크포인트 획득(★ 래더 합침 · 종합 묶음만) */
             tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */
             mobile={isMobile}
             sortKeys={shownSort}

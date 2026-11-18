@@ -1174,6 +1174,13 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-stats-tab-line:has(+ .scr-stats-tab-line) { margin-bottom: 4px; }
 .scr-stats-tab-line > .scr-stats-size-tabs { margin: 0; }
 .scr-stats-tab-label { flex: none; min-width: 2.2em; font-size: var(--fs-caption); font-weight: 600; color: var(--dim); white-space: nowrap; }
+/* ★ 1:1 옆 아이콘 둘(2026-11-18, 요청: "실제실력순위랑 역대퀸은 1:1 옆에 아이콘으로 리스트표 아이콘과 퀸 아이콘 · 1:1 선택 시에만 활성화") — 탭 줄 끝 · 꺼지면 흐리게. */
+.scr-stats-solo-icons { flex: none; display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; }
+.scr-stats-solo-ico { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text); cursor: pointer; }
+.scr-stats-solo-ico:disabled { color: var(--dim); opacity: 0.35; cursor: default; }
+@media (hover: hover) { .scr-stats-solo-ico:not(:disabled):hover { background: var(--lighting-hover-bg); } }
+/* 1:1 랭크포인트 칸(StatGrid rankPts · 같은 날) — 옛 래더 표의 점수처럼 굵게. */
+.scr-sg-rp b { font-weight: 800; }
 
 /* 정렬 줄 "정렬: 승률 › APM"(2026-10-22) — 고르기는 표 머리를 눌러서(.scr-sg-sort · 요청: "정렬은 머리 터치로 변경") · 고른 차례가 하나씩 붙고 빠진다 · 오른끝 도움말 단추.
    옛 정렬 탭(승률순 · 딜순 · APM순 · 참여순 — 작은 밑줄 탭 → 글자만 굵게)은 걷었다. */
