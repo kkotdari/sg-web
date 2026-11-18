@@ -5603,7 +5603,7 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 /* 종족구성별 전적(CompGrid) — 위 표와 같은 칸 꼴 · [구성 | 경기 | 승률(+막대)] · 폭은 내용만큼(최대 560). */
 .scr-sg-comp-wrap { margin: 4px 0 14px; }
 .scr-sg-title { margin: 0 0 6px; font-size: var(--fs-body); font-weight: 800; color: var(--text); }
-.scr-sg.scr-sg-comp { grid-template-columns: minmax(120px, 1fr) 84px 120px; max-width: 560px; }
+.scr-sg.scr-sg-comp { grid-template-columns: minmax(96px, 1.4fr) minmax(56px, 0.8fr) minmax(72px, 1fr) minmax(88px, 1fr); max-width: 680px; }   /* 넷째 칸 동일구성 제외 승률(2026-11-18 · 옛 세 칸 120 · 84 · 120 · 560) — 폰 360 에도 들게 최소 폭을 줄였다 */
 .scr-sg-comp-label { font-weight: 700; color: var(--muted); }
 .scr-sg-comp-rate { gap: 8px; }
 .scr-sg.scr-sg-comp .scr-sg-c { padding-top: 7px; padding-bottom: 7px; }

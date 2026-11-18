@@ -24,7 +24,7 @@ import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { cx } from "../../utils/format";
 import { showToast } from "../../components/common/Toast";
 import StatsPoll from "../../components/stats/StatsPoll";
-import type { BaseRace, ClanBreakdownEntry, ClanCompEntry, GameResultStatsResponse, Member, MemberStats, MemberStatsEntry } from "../../types";
+import type { BaseRace, ClanBreakdownEntry, ClanCompEntry, ClanCompVsEntry, GameResultStatsResponse, Member, MemberStats, MemberStatsEntry } from "../../types";
 
 /* (걷음 2026-11-17, 요청: 정렬 줄 왼쪽 "정렬 · 여러 기준 · 종합 WPA/티어" 제거) 정렬 자 이름(sortLabel · 정렬 줄 "정렬: 전체 승률 › APM") — 고른 자는 표 머리 화살표가 보인다. */
 
@@ -48,8 +48,17 @@ const EMPTY_STATS: MemberStats = {
 /** 종족구성별 전적 — 화면 탭이 고른 규모(4:4 · 3:3 · 2:2) 한 가지만(2026-10-20). 받아 둔 줄을 그 규모로 **걸러서** 그린다 —
  *  탭을 바꾼 순간 새 자료가 오기 전까지 옛 자료(다른 규모 · 팀전 전체의 모든 구성)가 비치던 것을 막는다(요청: "4:4 탭 등 선택시 전체 구성이 떴다가
  *  4:4만 나오는 문제 · 전체 구성은 이제 쓸 일 없어"). */
-function CompRecords({ rows, format }: { rows: ClanCompEntry[]; format: string }) {
-  return <CompGrid rows={rows.filter((c) => c.format === format)} />;
+/* ★ 동일 구성 판 뺀 승률(2026-11-18, 요청: "승률 옆에 동일구성간 게임 제외 승률도 넣어줘") — 같은 구성끼리 맞붙은 판(3프 vs 3프 …)은 한 판이 그 줄에 두 번(양편) 잡혀
+   이기고 지는 것이 늘 반반이라 승률을 50% 쪽으로 끈다. 응답의 맞대결 전적(clanCompVs · a = b 인 줄 · 한 판 한 번)을 빼고 다시 센다:
+   이긴 판 −(a 승 + b 승) · 승패가 난 판(이김 + 짐 + 무) −2 ×(a 승 + b 승 + 무). 결과를 모르는 판은 원래 승률처럼 처음부터 안 센다. 남는 판이 없으면 "-". */
+function CompRecords({ rows, vs, format }: { rows: ClanCompEntry[]; vs: ClanCompVsEntry[]; format: string }) {
+  const mirror = new Map(vs.filter((v) => v.format === format && v.a === v.b).map((v) => [v.a, v]));
+  return <CompGrid rows={rows.filter((c) => c.format === format).map((c) => {
+    const m = mirror.get(c.label);
+    const won = m ? m.aWins + m.bWins : 0;
+    const decided = c.wins + c.losses + c.draws - 2 * (won + (m?.draws ?? 0));
+    return { ...c, exRate: decided > 0 ? Math.round(((c.wins - won) / decided) * 1000) / 10 : null };
+  })} />;
 }
 
 /** 주소 u= → 칩. 칩 배열(JSON)이 아니면 옛 한 줄 검색어 — 띄어쓰기·쉼표로 끊는다. */
@@ -294,6 +303,7 @@ export default function ClanStatsScreen() {
     trendClan: Record<string, TrendEntry> | null;
     clan: MemberStatsEntry | null;
     clanComps: ClanCompEntry[];
+    clanCompVs: ClanCompVsEntry[];
     /** 편성(4:4·3:3·2:2 …)별 경기 수 — 이 합이 **실제 경기 수**다(clan.overall.plays 는 사람이 뛴 횟수라 몇 배 크다). */
     clanFormats: ClanBreakdownEntry[];
   }
@@ -309,7 +319,7 @@ export default function ClanStatsScreen() {
       memberIds,
     };
     const qRange = statRange(debouncedQuery.period, debouncedQuery.day);
-    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null, trendClan: null }); return; }
+    if (memberIds.length === 0) { setView({ ...blank, stats: {}, clan: null, clanComps: [], clanCompVs: [], clanFormats: [], trend: null, trendClan: null }); return; }
     let cancelled = false;
     setError("");
     const byId = (res: GameResultStatsResponse) => {
@@ -343,13 +353,13 @@ export default function ClanStatsScreen() {
       for (const [month, entry] of Object.entries(res.trendClan ?? {})) trendClan[month] = { ...entry, games: res.trendGames?.[month] ?? 0 };
       setView({
         ...blank, stats: byId(res), clan: res.clan ?? null,
-        clanComps: res.clanComps ?? [], clanFormats: res.clanFormats ?? [],
+        clanComps: res.clanComps ?? [], clanCompVs: res.clanCompVs ?? [], clanFormats: res.clanFormats ?? [],
         trend: res.trend ? trendBy : null, trendClan: res.trendClan ? trendClan : null,
       });
     }).catch((e) => {
       if (cancelled) return;
       setError(e instanceof Error ? e.message : "통계를 불러오지 못했어요.");
-      setView({ ...blank, stats: {}, clan: null, clanComps: [], clanFormats: [], trend: null, trendClan: null });
+      setView({ ...blank, stats: {}, clan: null, clanComps: [], clanCompVs: [], clanFormats: [], trend: null, trendClan: null });
     });
     return () => { cancelled = true; };
   }, [debouncedQuery, debouncedSignature, statsTick]);   // statsTick — 위아래 표를 낸 뒤 다시 받기(위 voteCtl ★)
@@ -616,7 +626,7 @@ export default function ClanStatsScreen() {
           클랜원 전체는 아래 표(StatGrid)의 맨 윗줄로 옮겼다(2026-10-20). */}
       {view?.clan && size !== "1" && size !== "team" && (
         <section className="scr-clan-dash" aria-label="클랜 전체">
-          <CompRecords rows={view.clanComps} format={`${size}:${size}`} />
+          <CompRecords rows={view.clanComps} vs={view.clanCompVs} format={`${size}:${size}`} />
         </section>
       )}
 

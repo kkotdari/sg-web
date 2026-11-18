@@ -611,7 +611,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
 }
 
 /** 종족구성별 전적 — 위 표와 같은 꼴(머리 줄 · 칸 선 · 2026-10-20, 요청: "종족구성별 전적 부분도 예쁘게 테마에 맞춰"). */
-export function CompGrid({ rows }: { rows: { label: string; plays: number; winRate: number }[] }) {
+export function CompGrid({ rows }: { rows: { label: string; plays: number; winRate: number; exRate?: number | null }[] }) {
   return (
     <section className="scr-sg-comp-wrap" aria-label="종족구성별 전적">
       <h3 className="scr-sg-title">종족구성별 전적</h3>
@@ -621,6 +621,8 @@ export function CompGrid({ rows }: { rows: { label: string; plays: number; winRa
             <span className="scr-sg-c scr-sg-who">종족 구성</span>
             <span className="scr-sg-c">경기</span>
             <span className="scr-sg-c">승률</span>
+            {/* 동일 구성 판 뺀 승률(2026-11-18 · ClanStatsScreen CompRecords ★) */}
+            <span className="scr-sg-c" title="같은 구성끼리 맞붙은 판(예: 3프 vs 3프)을 빼고 센 승률이에요">동일구성 제외</span>
           </div>
           {rows.map((c) => (
             <div key={c.label} className="scr-sg-row">
@@ -628,6 +630,9 @@ export function CompGrid({ rows }: { rows: { label: string; plays: number; winRa
               <span className="scr-sg-c"><Num v={c.plays.toLocaleString()} unit="판" /></span>
               <span className="scr-sg-c scr-sg-comp-rate">
                 <Num v={c.winRate} unit="%" />
+              </span>
+              <span className="scr-sg-c scr-sg-comp-rate">
+                <Num v={c.exRate ?? null} unit="%" />
               </span>
             </div>
           ))}
