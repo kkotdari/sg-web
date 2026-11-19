@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Clapperboard, Play, ThumbsUp } from "lucide-react";
+import { Clapperboard, ThumbsUp } from "lucide-react";
 import { api, type GameShort } from "../../../api/client";
 import Avatar from "../../../components/common/Avatar";
 import { useAppStore } from "../../../store/appStore";
@@ -9,7 +9,7 @@ import { prefetchShort } from "./shortsPrefetch";
 
 /* ★ 쇼츠 줄(2026-11-19, 요청: "쇼츠는 게임목록 최상단에 정사각형 형태로 노출(게임장면 + 미니맵만 뜸)되고 가운데 큰 재생버튼으로 보기누르면 확대되어 보이기(인스타 스토리처럼) ·
    최근 쇼츠 최신순 · 지울 때까지 남는다") — 모든 판의 쇼츠를 새것부터 가로 한 줄 · 카드는 정사각 표지(재생기가 찍은 장면 + 미니맵 · scplay shortCoverOf9) ·
-   가운데 큰 재생 단추 · 아래 자막 첫 줄과 만든 사람. 누르면 그 카드에서 스토리 보기(ShortsViewer)가 펼쳐진다. 끝에 닿으면 다음 쪽(before)을 받는다. 쇼츠가 없으면 줄째 안 선다. */
+   (가운데 재생 단추는 걷었다 — 같은 날 "썸네일에 버튼은 불필요") · 아래 자막 첫 줄과 만든 사람. 누르면 그 카드에서 스토리 보기(ShortsViewer)가 펼쳐진다. 끝에 닿으면 다음 쪽(before)을 받는다. 쇼츠가 없으면 줄째 안 선다. */
 export default function ShortsStrip({ fame = false }: {
   /** 명예의 전당 탭 — 추천 3개 이상인 쇼츠만 · 카드에 '쇼츠' 배지(2026-11-19, 요청: "3개 이상시 명예의 전당에 들어감 · 쇼츠라는 배지 · 누르면 상세로 안 가고 그 자리 팝업"). */
   fame?: boolean;
@@ -70,7 +70,6 @@ export default function ShortsStrip({ fame = false }: {
           >
             {it.coverUrl ? <img src={it.coverUrl} alt="" loading="lazy" decoding="async" draggable={false} /> : <span className="scr-short-card-blank" aria-hidden />}
             <span className="scr-short-card-shade" aria-hidden />
-            <span className="scr-circle-btn scr-short-card-play" aria-hidden><Play size={22} fill="currentColor" /></span>
             <span className="scr-short-card-dur">{Math.round(it.dur)}초</span>
             {fame && <span className="scr-short-card-badge">쇼츠</span>}
             {it.recommendCount > 0 && (

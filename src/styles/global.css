@@ -6301,7 +6301,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-practice-mine { margin: 10px 0 0; font-size: var(--fs-caption); color: var(--text-dim); }
 
 /* ══ ★ 쇼츠(2026-11-19 · pages/games/shorts) ═════════════════════════════════════════════════════════════════════
-   게임 목록 맨 위 가로 줄(ShortsStrip) — 정사각 카드(표지 = 장면 + 미니맵) · 가운데 큰 재생 단추 · 아래 자막 첫 줄 · 만든 사람.
+   게임 목록 맨 위 가로 줄(ShortsStrip) — 정사각 카드(표지 = 장면 + 미니맵) · 아래 자막 첫 줄 · 만든 사람.
    스토리 보기(ShortsViewer) — 까만 판 · 진행 막대(쇼츠마다 한 칸) · 머리 · 정사각 무대(재생기 쇼츠 재생 모드) · 누른 카드 자리에서 펼쳐진다. */
 .scr-shorts { margin: 4px 0 14px; min-width: 0; }
 .scr-shorts-head { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; color: var(--text); font-size: var(--fs-body); font-weight: 800; }
@@ -6322,19 +6322,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-short-card > img, .scr-short-card-blank { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .scr-short-card-blank { background: radial-gradient(circle at 50% 40%, #1c2433, #07090d); }
 .scr-short-card-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 32%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.72) 100%); }
-/* 가운데 재생 단추 = 라이팅 동그란 아이콘 단추(.scr-circle-btn 꼴 · 2026-11-19, 요청: "쇼츠 재생 버튼 빨간색 말고 라이팅 동그란 아이콘 버튼 css" → "흰색이 채워져야지") —
-   꼴은 동그라미 단추, 색은 **채운 단추 역할**(--btn-fill-bg 흰 판 · --btn-fill-text 어두운 세모 · --btn-fill-glow 흰 빛). 누름(:active scale)도 가운데 자리를 지킨다.
-   되물린 값: 같은 날 첫 판 = 동그라미 단추의 유리 바탕 그대로(속이 비어 보였다) · 옛: 어두운 판 + 흰 테 · 호버 붉은 판. */
-.scr-short-card-play {
-  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); pointer-events: none;
-  color: var(--btn-fill-text, #10151a); background: var(--btn-fill-bg, #fff); box-shadow: var(--btn-fill-glow, none);
-  -webkit-backdrop-filter: none; backdrop-filter: none;
-}
-.scr-short-card-play svg { margin-left: 3px; }
-@media (hover: hover) {
-  .scr-short-card:hover .scr-short-card-play { transform: translate(-50%, -50%) scale(1.08); box-shadow: var(--btn-hover-glow, none), var(--btn-fill-glow, none); }
-}
-.scr-short-card:active .scr-short-card-play { transform: translate(-50%, -50%) scale(0.94); }
+/* 가운데 재생 단추는 걷었다(2026-11-19, 요청: "썸네일에 버튼은 불필요한 듯 없애줘") — 카드 전체가 누름 자리다. 되물린 값: 같은 날 흰 채운 동그라미(.scr-circle-btn 꼴 · --btn-fill-*) ·
+   그 앞 유리 동그라미 · 옛 어두운 판 + 흰 테 · 호버 붉은 판(rgba(255, 77, 87, 0.85)). */
 .scr-short-card-dur { position: absolute; right: 6px; top: 6px; padding: 2px 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.55); font-size: 10px; font-weight: 700; line-height: 1.4; }
 .scr-short-card-foot { position: absolute; left: 8px; right: 8px; bottom: 7px; display: flex; flex-direction: column; gap: 3px; text-align: left; }
 .scr-short-card-cap {
