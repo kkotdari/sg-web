@@ -141,6 +141,13 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     return () => { document.body.style.overflow = prev; };
   }, []);
   useEffect(() => { setProg(0); setStop(false); if (idx >= items.length - 3) onNeedMore?.(); }, [idx, items.length, onNeedMore]);
+  /* 쇼츠 접속 기록(2026-11-19, 요청: "쇼츠도 억세스 로그") — 보기(넘어갈 때마다) · 추천 · 지우기 · 만들기(GameResultStory). 기록이 안 돼도 보기는 그대로. */
+  const viewId = it?.id ?? 0;
+  useEffect(() => {
+    if (!it) return;
+    api.pingAccess("short_view", `short#${it.id} game#${it.matchNo || it.gameResultId}`).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewId]);
   /* 다음 쇼츠를 미리 받는다(shortsPrefetch ★) — 토막 · 경기 · 참값 · 지도. 지도는 해시를 안 뒤에 useReplayMap 캐시로 당긴다. */
   const nextItem = items[idx + 1] ?? null;
   const [nextHash, setNextHash] = useState<string | null>(null);
@@ -206,6 +213,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     if (!it || !window.confirm("이 쇼츠를 지울까요?")) return;
     try {
       await api.deleteShort(it.id);
+      api.pingAccess("short_del", `short#${it.id}`).catch(() => undefined);
     } catch {
       showToast("지우지 못했어요", { kind: "warn" });
       return;
@@ -224,6 +232,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     onPatch?.(it.id, { recommendCount: n, recommended: !it.recommended, fame: n >= 3 });
     setRecBusy(true);
     const id = it.id;
+    api.pingAccess("short_rec", `${before.recommended ? "-" : ""}short#${id}`).catch(() => undefined);
     api.recommendShort(id, !before.recommended)
       .then((r) => {
         onPatch?.(id, { recommendCount: r.recommendCount, recommended: r.recommended, fame: r.recommendCount >= 3 });

@@ -206,7 +206,8 @@ export default function GameResultStory({
   /* ★ 쇼츠 만들기(2026-11-19 · scplay 쇼츠 ★) — 재생기가 녹화 · 자막 · 표지까지 만들어 넘기고 여기는 올리기만 · 다 되면 목록 맨 위 줄(ShortsStrip)이 다시 받는다(SHORTS_CHANGED).
      핀과 같은 자격(홀로 선 화면 · 상세 · 게임 페이지). */
   const onShortCreate = useCallback(async (clip: ShortClip9, cover: string | null): Promise<void> => {
-    await api.createShort(gameResult.id, clip, cover);
+    const made = await api.createShort(gameResult.id, clip, cover);
+    api.pingAccess("short_make", `short#${made.id} game#${gameResult.matchNo || gameResult.id}`).catch(() => undefined);   // 쇼츠 접속 기록(2026-11-19)
     window.dispatchEvent(new CustomEvent(SHORTS_CHANGED));
     showToast("쇼츠를 올렸어요 — 게임 목록 맨 위에서 볼 수 있어요");
   }, [gameResult.id]);
