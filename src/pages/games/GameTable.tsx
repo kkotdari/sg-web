@@ -43,7 +43,9 @@ import type { GameResult, Member } from "../../types";
 /* 차례(2026-10-26, 요청: "피시에서 게임길이 컬럼을 맵 다음으로 옮기고 로스터 다음에 배치라는 컬럼 — 미니맵 안개 없는 버전에 각 유저 스타팅 위치 · 종족") —
    맵 · 게임길이 · 로스터 · 배치(아래 StartMapCell). */
 /* 추천 다음 **댓글** 칸(2026-10-29, 요청: "게임목록 댓글수 표시 — 피시는 추천 다음에 컬럼을 추가해서 숫자 표시"). */
-const COLS = (league: boolean) => ["시작일시", league ? "경기 정보" : "유형", "맵", "게임길이", "로스터", "배치", "데이터", "도구", "추천", "댓글"];
+/* ★ 게임번호 칸 **되살림**(2026-11-19, 요청: "게임 번호가 어딘가 나와야할거 같은데 · 피시는 페이지 폭 넓혀서 게임번호 컬럼 추가" · 같은 요청 "맵 컬럼 폭 줄이고 대신 로스터 컬럼 늘리기") —
+   맨 앞 칸(옛 2026-10-19 첫 판 자리 · 10-20 에 뺐다). 값은 game.matchNo(시작 시각 12자리 · 같은 초 둘째 판부터 -2…). 목록 폭은 global.css 가 게임 표 화면만 넓힌다. */
+const COLS = (league: boolean) => ["게임번호", "시작일시", league ? "경기 정보" : "유형", "맵", "게임길이", "로스터", "배치", "데이터", "도구", "추천", "댓글"];
 
 /** 배치 칩 글 — 폭 6칸(한글·한자 등 넓은 글자 2칸 · 영문·숫자 1.2칸) 안에서 앞부터(2026-10-26, 요청: "2글자 정도" → "영어는 4글자" →
  *  2026-10-29 "한글 세 글자 영어 다섯 글자까지" — 한글 셋 = 영문 다섯 = 6칸 · 섞이면 그 사이). */
@@ -243,6 +245,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           e.preventDefault(); open();
         }}
       >
+        <span className="scr-gtab-cell scr-gtab-num scr-gtab-no">{game.matchNo || "-"}</span>
         <span className="scr-gtab-cell scr-gtab-num">{when}</span>
         {leagueCol && league ? (
           <span className="scr-gtab-cell scr-gtab-league" title={`${league.name} · ${league.round} (${kind})`}>

@@ -230,8 +230,10 @@ export function GameRowNames({ game, memberOf, mobile, playable, nameMask, winP 
   </>);
 }
 
-export function ListRow({ desc, status, top, side, onClick, check, picked, className, disabled, onLongPress, above, lead }: {
+export function ListRow({ desc, status, top, side, onClick, check, picked, className, disabled, onLongPress, above, lead, corner }: {
   desc: ReactNode;
+  /** 윗줄 **오른끝** 작은 글(폰 게임 줄의 게임번호 · 2026-11-19, 요청: "모바일은 오른쪽 위에 보여주면 될듯 작게") — 없으면 안 선다. */
+  corner?: ReactNode;
   /** 이름 줄 **왼쪽** 앞자리(폰 게임 줄의 배치 미니맵 · 2026-10-26, 요청: "모바일에도 미니맵 배치 · 왼쪽에 자리 · 카드 안에") — 없으면 안 선다. */
   lead?: ReactNode;
   /** 줄 **위**에 따로 서는 배지 줄(리그 판의 "2026 팀리그 · 결승 · 1세트" · 2026-10-19). */
@@ -273,6 +275,7 @@ export function ListRow({ desc, status, top, side, onClick, check, picked, class
             <span className="scr-feed-row-badges-top">{top}</span>
             <span className="scr-feed-row-time">{side}</span>
           </span>
+          {corner && <span className="scr-feed-row-corner">{corner}</span>}
         </span>
       </button>
     </div>

@@ -185,6 +185,7 @@ export const FeedRow = memo(function FeedRow({ item, flag, notes, pickable, pick
         </span>
       )}
       side={whenNode(item)}
+      corner={item.kind === "gameResult" && item.gameResult.matchNo ? item.gameResult.matchNo : undefined}
     />
   );
 });
