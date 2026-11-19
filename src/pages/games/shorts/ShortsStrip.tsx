@@ -5,6 +5,7 @@ import Avatar from "../../../components/common/Avatar";
 import { useAppStore } from "../../../store/appStore";
 import ShortsViewer from "./ShortsViewer";
 import { SHORTS_CHANGED } from "./shortsBus";
+import { prefetchShort } from "./shortsPrefetch";
 
 /* ★ 쇼츠 줄(2026-11-19, 요청: "쇼츠는 게임목록 최상단에 정사각형 형태로 노출(게임장면 + 미니맵만 뜸)되고 가운데 큰 재생버튼으로 보기누르면 확대되어 보이기(인스타 스토리처럼) ·
    최근 쇼츠 최신순 · 지울 때까지 남는다") — 모든 판의 쇼츠를 새것부터 가로 한 줄 · 카드는 정사각 표지(재생기가 찍은 장면 + 미니맵 · scplay shortCoverOf9) ·
@@ -63,7 +64,8 @@ export default function ShortsStrip({ fame = false }: {
         {items.map((it, i) => (
           <button
             key={it.id} type="button" className="scr-short-card"
-            onClick={(e) => setOpen({ i, from: e.currentTarget.getBoundingClientRect() })}
+            onPointerDown={() => prefetchShort(it)}   /* 누르는 순간 받기 출발(떼기 · 열기 애니메이션 동안 번다) */
+            onClick={(e) => { prefetchShort(it); setOpen({ i, from: e.currentTarget.getBoundingClientRect() }); }}
             aria-label={`쇼츠 보기 — ${it.author.nickname}${it.caption ? ` · ${it.caption}` : ""}`}
           >
             {it.coverUrl ? <img src={it.coverUrl} alt="" loading="lazy" decoding="async" draggable={false} /> : <span className="scr-short-card-blank" aria-hidden />}

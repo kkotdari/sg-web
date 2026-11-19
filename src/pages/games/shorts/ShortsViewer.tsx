@@ -12,6 +12,7 @@ import { gamePath, navigateTo } from "../../../utils/route";
 import { cx } from "../../../utils/format";
 import { isMeleeGame, resolveSlotName } from "../GameResultSides";
 import { SHORTS_CHANGED } from "./shortsBus";
+import { gameOf, prefetchShort, shortOf, tracksOf } from "./shortsPrefetch";
 import type { GameResult } from "../../../types";
 
 /* ★ 쇼츠 보기(2026-11-19, 요청: "가운데 큰 재생버튼으로 보기누르면 확대되어 보이기(인스타 스토리처럼) · 끝나면 다음 쇼츠로 · 좌우 탭 이전/다음 · 아래로 쓸면 닫기 ·
@@ -39,8 +40,8 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
     let dead = false;
     (async () => {
       try {
-        const one = item.clip ? item : await api.getShort(item.id);
-        const game = await api.getGameResult(item.gameResultId);
+        void tracksOf(item.gameResultId).catch(() => undefined);   // 참값(가장 크다)은 먼저 출발 — 재생기가 받을 때 같은 약속을 쓴다
+        const [one, game] = await Promise.all([shortOf(item), gameOf(item.gameResultId)]);
         if (!one.clip) throw new Error("토막 없음");
         if (!dead) setGot({ clip: one.clip, game });
       } catch {
@@ -82,7 +83,7 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
   }, [game, memberOf]);
   const teamOfRaw = useCallback((raw: string): 1 | 2 | undefined => bases.find((b) => b.key === raw)?.team as 1 | 2 | undefined, [bases]);
   const loadUnitTracks = useCallback(
-    () => (game ? api.getGameUnitTracks(game.id).catch(() => ({ motion: null })) : Promise.resolve({ motion: null })),
+    () => (game ? tracksOf(game.id).catch(() => ({ motion: null })) : Promise.resolve({ motion: null })),
     [game],
   );
   return (
@@ -140,6 +141,19 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     return () => { document.body.style.overflow = prev; };
   }, []);
   useEffect(() => { setProg(0); setStop(false); if (idx >= items.length - 3) onNeedMore?.(); }, [idx, items.length, onNeedMore]);
+  /* 다음 쇼츠를 미리 받는다(shortsPrefetch ★) — 토막 · 경기 · 참값 · 지도. 지도는 해시를 안 뒤에 useReplayMap 캐시로 당긴다. */
+  const nextItem = items[idx + 1] ?? null;
+  const [nextHash, setNextHash] = useState<string | null>(null);
+  useEffect(() => {
+    if (!nextItem) return undefined;
+    let dead = false;
+    const t9 = window.setTimeout(() => {   // 지금 쇼츠의 첫 받기와 안 다투게 조금 뒤에
+      prefetchShort(nextItem);
+      gameOf(nextItem.gameResultId).then((g) => { if (!dead) setNextHash(g.mapHash ?? null); }).catch(() => undefined);
+    }, 1200);
+    return () => { dead = true; window.clearTimeout(t9); };
+  }, [nextItem]);
+  useReplayMap(nextHash);
   const next = useCallback((): void => {
     setIdx((i) => {
       if (i + 1 < items.length) return i + 1;
