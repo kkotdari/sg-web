@@ -1,4 +1,4 @@
-import type { ScenePin9 } from "scplay";
+import type { ScenePin9, ShortClip9 } from "scplay";
 import type { GameCurve,
   Member, GameResult, ItemComment, CommentTargetType, RankingShift, FeedEntry, FeedPage, NewGameResult, SignupPayload, MemberCreatePayload, MemberStatus, MemberRole,
   ScreenKey, AppVersion, AppVersionStatus, AppVersionInfo,
@@ -110,6 +110,13 @@ export interface PracticeRecordReply { myBest: number | null; top: number | null
 export interface PracticeRankRow { rank: number; memberId: string; nickname: string; score: number; kills: number; lostPts: number; race: string; at: string }
 export interface PracticeBoard { top: PracticeRankRow[]; mine: { best: number; rank: number; plays: number } | null; plays: number }
 export interface PracticeBoards { early: PracticeBoard; mid: PracticeBoard }
+/** 쇼츠 한 개(2026-11-19 · sg-api ShortOut) — 목록은 clip 없이(표지 · 글) · 한 개 받기(getShort)는 토막까지. */
+export interface GameShort {
+  id: number; gameResultId: number; matchNo: string; t0: number; t1: number; dur: number; caption: string; coverUrl: string | null;
+  author: { memberId: string; nickname: string; avatar?: string | null }; mine: boolean; createdAt: string; clip?: ShortClip9 | null;
+  /** 추천 수 · 내가 했나 · 명예의 전당(추천 3개 이상 · 곧장 선다)인가. */
+  recommendCount: number; recommended: boolean; fame: boolean;
+}
 export interface SqlConsoleResult { columns: string[]; rows: unknown[][]; rowCount: number; truncated: boolean; ms: number; wrote: boolean }
 
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
@@ -614,6 +621,26 @@ export const api = {
   },
   async deleteScenePin(gameId: number, pinId: number): Promise<void> {
     await request<void>(`/api/game-results/${gameId}/pins/${pinId}`, { method: "DELETE" });
+  },
+  /* ── 쇼츠(2026-11-19 · sg-api shorts.py · scplay ShortClip9) — 모든 판의 쇼츠 새것부터 · 한 개(토막 포함) · 올리기 · 지우기. 토막은 재생기가 만들고 푼다(앱은 나르기만). ── */
+  async listShorts(before?: number, fame = false): Promise<{ items: GameShort[] }> {
+    const q = new URLSearchParams();
+    if (before) q.set("before", String(before));
+    if (fame) q.set("fame", "true");
+    const qs = q.toString();
+    return request<{ items: GameShort[] }>(`/api/shorts${qs ? `?${qs}` : ""}`);
+  },
+  async recommendShort(id: number, on: boolean): Promise<{ recommendCount: number; recommended: boolean }> {
+    return request<{ recommendCount: number; recommended: boolean }>(`/api/shorts/${id}/recommend`, { method: on ? "POST" : "DELETE" });
+  },
+  async getShort(id: number): Promise<GameShort> {
+    return request<GameShort>(`/api/shorts/${id}`);
+  },
+  async createShort(gameId: number, clip: ShortClip9, cover: string | null): Promise<GameShort> {
+    return request<GameShort>(`/api/game-results/${gameId}/shorts`, { method: "POST", body: JSON.stringify({ clip, cover }) });
+  },
+  async deleteShort(id: number): Promise<void> {
+    await request<void>(`/api/shorts/${id}`, { method: "DELETE" });
   },
   /* ── 설문(2026-11-15 · sg-api /polls · 통계 설문 StatsPoll) — 한 사람에 한 번 ── */
   async getPollState(key: string): Promise<{ answered: boolean }> {

@@ -1,6 +1,8 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { formatWhen } from "../../utils/date";
-import { ReplayModule, sceneLinkOf9, type MotionBase, type ScenePin9 } from "scplay";
+import { ReplayModule, sceneLinkOf9, type MotionBase, type ScenePin9, type ShortClip9 } from "scplay";
+import { showToast } from "../../components/common/Toast";
+import { SHORTS_CHANGED } from "./shorts/shortsBus";
 import { createPortal } from "react-dom";
 import { api } from "../../api/client";
 import Comments from "../feed/Comments";
@@ -201,6 +203,14 @@ export default function GameResultStory({
     setPins((cur) => cur.filter((p) => p.id !== pin.id));
   }, [gameResult.id]);
 
+  /* ★ 쇼츠 만들기(2026-11-19 · scplay 쇼츠 ★) — 재생기가 녹화 · 자막 · 표지까지 만들어 넘기고 여기는 올리기만 · 다 되면 목록 맨 위 줄(ShortsStrip)이 다시 받는다(SHORTS_CHANGED).
+     핀과 같은 자격(홀로 선 화면 · 상세 · 게임 페이지). */
+  const onShortCreate = useCallback(async (clip: ShortClip9, cover: string | null): Promise<void> => {
+    await api.createShort(gameResult.id, clip, cover);
+    window.dispatchEvent(new CustomEvent(SHORTS_CHANGED));
+    showToast("쇼츠를 올렸어요 — 게임 목록 맨 위에서 볼 수 있어요");
+  }, [gameResult.id]);
+
   /* 머리 줄 — 시각 · 맵 이름 길이 · 승패 배지 · 등록자(2026-10-09). 재생기(scplay)의 머리 줄(.scr-story-map-head)을 걷고(요청: "빨간
      상자 타이틀 부분을 제거해서 화면을 더 확보") 게임 페이지에서는 페이지 제목 줄의 칸(headSlot · .scr-crumb-meta)에 포털로 그린다.
      칸이 없는 자리(피드 카드·공유 페이지)는 판 위에 맵 이름 한 줄만 둔다 — 시각·등록자는 카드 머리와 아래 등록 줄이 이미 말한다.
@@ -253,6 +263,7 @@ export default function GameResultStory({
         clockKey={String(gameResult.matchNo || gameResult.id)}
         onShare={shareScene}
         pins={pinsOn ? pins : undefined} onPinAdd={pinsOn ? onPinAdd : undefined} onPinDelete={pinsOn ? onPinDelete : undefined}   /* 장면 핀(위 ★ · 2026-11-08) */
+        onShortCreate={pinsOn ? onShortCreate : undefined}   /* 쇼츠 만들기(위 ★ · 2026-11-19) */
         onDetailClose={detailClose ?? undefined}
         onBack={onBack ?? detailClose ?? undefined}
         frameH={frameH} frameW={frameW}   /* 전체화면 ‹ — 게임 목록(상세 페이지) · 상세 모달이면 그 닫기 */

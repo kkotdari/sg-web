@@ -7,6 +7,7 @@ import { SelectionBar } from "../../components/common/Selection";
 import { activeMemberSearchTerms } from "../../utils/memberSearch";
 import { decodeGameSearch, encodeGameSearch, formToServer, gameSuggestions } from "../../utils/gameSearch";
 import GameSearchForm from "./GameSearchForm";
+import ShortsStrip from "./shorts/ShortsStrip";
 import { api } from "../../api/client";
 import { useUrlState } from "../../hooks/useUrlState";
 import type { Selection } from "../../hooks/useSelection";
@@ -287,6 +288,8 @@ export default memo(function GameListPage({
         </div>
       </div>
       {titleAction && <div className="scr-title-actions">{titleAction}</div>}
+      {/* ★ 쇼츠 줄(2026-11-19, 요청: "쇼츠는 게임목록 최상단에 정사각형 형태로") — 모든 판의 쇼츠 새것부터 · 없으면 안 선다 · 고르기 중엔 걷는다. */}
+      {!selection?.mode && <ShortsStrip key={gameTab === "fame" ? "fame" : "all"} fame={gameTab === "fame"} />}
       <GameSearchForm
         value={gameForm}
         onApply={(next) => setFormRaw(encodeGameSearch(next))}
