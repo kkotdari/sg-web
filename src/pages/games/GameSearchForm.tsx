@@ -46,6 +46,9 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
   useEffect(() => { draftRef.current = value; setDraftState(value); }, [value]);
   const set = <K extends keyof Form>(k: K, v: Form[K]): void => setDraft((d) => ({ ...d, [k]: v }));
   const apply = (next?: Form): void => { onApply(next ?? draftRef.current); };
+  /* ★ 접힌 채 빠른 칸(2026-11-19, 요청: "게임목록 검색필터에 게임번호 사람이름 검색은 접힌 상태에서도 보이게") — 선수 · 게임번호 두 칸만 늘 보인다. 칩을 담거나 빼는 순간 바로 찾는다
+     (펼친 판과 같은 초안이라 값이 맞물린다). */
+  const quick = (k: "players" | "nos", v: string[]): void => { const next = { ...draftRef.current, [k]: v }; setDraft(next); apply(next); };
 
   const memberOpts = useMemo<Opt[]>(() => members.map((m) => ({ value: m.nickname, member: m })), [members]);
   const itemOpts = useMemo<Opt[]>(() => {
@@ -65,12 +68,12 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
   /* 접힌 머리 줄의 요약 칩 — 적용된 조건(value)만. 칩의 ×는 그 조건만 바로 빼고 다시 찾는다. */
   const summary: { key: string; label: string; drop: () => void }[] = [];
   const dropFrom = (k: "players" | "races" | "items" | "maps" | "nos", v: string) => () => apply({ ...value, [k]: value[k].filter((x) => x !== v) });
-  value.players.forEach((v) => summary.push({ key: `p${v}`, label: v, drop: dropFrom("players", v) }));
+  if (open) value.players.forEach((v) => summary.push({ key: `p${v}`, label: v, drop: dropFrom("players", v) }));   // 접힌 채엔 빠른 칸이 보인다(위 quick ★)
   value.races.forEach((v) => summary.push({ key: `r${v}`, label: v, drop: dropFrom("races", v) }));
   value.items.forEach((v) => summary.push({ key: `i${v}`, label: v, drop: dropFrom("items", v) }));
   if (value.maps.length) summary.push({ key: "m", label: `맵 ${value.maps.join(" / ")}`, drop: () => apply({ ...value, maps: [] }) });
   if (value.size) summary.push({ key: "s", label: value.size, drop: () => apply({ ...value, size: "" }) });
-  if (value.nos.length) summary.push({ key: "n", label: `#${value.nos.join(" / ")}`, drop: () => apply({ ...value, nos: [] }) });
+  if (open && value.nos.length) summary.push({ key: "n", label: `#${value.nos.join(" / ")}`, drop: () => apply({ ...value, nos: [] }) });
   value.links.forEach((l, i) => {
     if (!l.name.trim()) return;
     summary.push({ key: `l${i}`, label: `${l.name}: ${l.items.filter(Boolean).join(" · ") || "직접"}`, drop: () => apply({ ...value, links: value.links.filter((_, k) => k !== i) }) });
@@ -86,7 +89,7 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
           {open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
         </button>
         <div className="scr-gs-summary">
-          {empty ? <span className="scr-gs-none">조건 없음 — 모든 게임</span> : summary.map((c) => (
+          {empty ? <span className="scr-gs-none">조건 없음 — 모든 게임</span> : summary.length === 0 ? null : summary.map((c) => (
             <span key={c.key} className="scr-gs-chip is-applied">
               {c.label}
               <button type="button" aria-label={`${c.label} 조건 빼기`} onClick={c.drop}><X size={11} /></button>
@@ -95,6 +98,12 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
         </div>
         {!empty && <button type="button" className="scr-text-btn scr-gs-clear" onClick={() => apply(EMPTY_GAME_SEARCH)}>초기화</button>}
       </div>
+      {!open && (
+        <div className="scr-gs-quick">
+          <ChipInput values={draft.players} onChange={(v) => quick("players", v)} options={memberOpts} placeholder="선수 닉네임" onSubmit={() => apply()} />
+          <ChipInput values={draft.nos} onChange={(v) => quick("nos", v)} options={[]} placeholder="게임번호" onSubmit={() => apply()} />
+        </div>
+      )}
 
       {open && (
         <div className="scr-gs-panel">

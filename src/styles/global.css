@@ -5650,6 +5650,9 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 }
 .scr-gs-summary { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; }
 .scr-gs-none { font-size: var(--fs-11); color: var(--dim); }
+/* 접힌 채 빠른 칸(GameSearchForm quick ★ · 2026-11-19) — [선수 닉네임 | 게임번호] 두 칸 · 좁은 폰은 한 줄씩. */
+.scr-gs-quick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; padding: 0 10px 8px; }
+@media (max-width: 360px) { .scr-gs-quick { grid-template-columns: minmax(0, 1fr); } }
 .scr-gs-clear { flex: none; font-size: var(--fs-11); }
 .scr-gs-chip {
   display: inline-flex; align-items: center; gap: 3px; max-width: 100%; padding: 2px 4px 2px 8px; border-radius: 999px;
