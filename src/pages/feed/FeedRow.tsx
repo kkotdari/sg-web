@@ -23,6 +23,7 @@ import {
   commentTargetOf, rowFlagsOf, rowKeyOf, type DisplayItem,
 } from "./feedItems";
 import type { GameResult, Member } from "../../types";
+import MatchNoCopy from "../games/MatchNoCopy";
 
 /* ★ 목록 한 줄 — memo(2026-10-19, 요청: "…목록과 상세등 모두 컴포넌트 분리"). 게임 목록 · 게시판 목록이 같이 쓴다.
    손잡이는 늘 같은 그릇(act)으로 받고 누를 때 그릇 안의 최신 것을 부른다 — 그래서 고르기·새 글 표시·댓글 수처럼 제 것이 바뀔 때만 다시 그린다. */
@@ -185,7 +186,7 @@ export const FeedRow = memo(function FeedRow({ item, flag, notes, pickable, pick
         </span>
       )}
       side={whenNode(item)}
-      corner={item.kind === "gameResult" && item.gameResult.matchNo ? item.gameResult.matchNo : undefined}
+      corner={item.kind === "gameResult" && item.gameResult.matchNo ? <MatchNoCopy no={item.gameResult.matchNo} /> : undefined}   /* 오버레이 · 누르면 복사(2026-11-19) */
     />
   );
 });

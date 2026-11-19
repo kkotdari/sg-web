@@ -21,6 +21,7 @@ import GameCurvesModal from "../../modals/GameCurvesModal";
 import GameCommentsModal from "../../modals/GameCommentsModal";
 import InfoTip from "../../components/common/InfoTip";
 import type { GameResult, Member } from "../../types";
+import MatchNoCopy from "./MatchNoCopy";
 
 /* ★★ PC 게임 목록 = **표**(2026-10-19, 요청: "피시는 오히려 배지들 제거하고 완전 그리드 형태로 변경(헤더로우도 만듦) · 로스터는 모바일과 같은 형태 ·
    컬럼: 게임번호 시작일시 게임길이 맵 로스터 유형(팀전, 유즈맵, 프리포올 등) 재생가능여부 조회수(→ 추천 2026-10-22) 숨김 · 숨긴 게임은 해제요청 버튼").
@@ -245,7 +246,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           e.preventDefault(); open();
         }}
       >
-        <span className="scr-gtab-cell scr-gtab-num scr-gtab-no">{game.matchNo || "-"}</span>
+        <span className="scr-gtab-cell scr-gtab-num scr-gtab-no">{game.matchNo ? <MatchNoCopy no={game.matchNo} /> : "-"}</span>   {/* 누르면 복사(2026-11-19) */}
         <span className="scr-gtab-cell scr-gtab-num">{when}</span>
         {leagueCol && league ? (
           <span className="scr-gtab-cell scr-gtab-league" title={`${league.name} · ${league.round} (${kind})`}>

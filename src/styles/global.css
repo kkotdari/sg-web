@@ -4023,7 +4023,17 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 /* (걷음) PC 목록 화면만 1600 이던 :root:has(…) 규칙 — 같은 날 모든 화면 1600(위 ★★ '1600 하나')으로 넓혀 걷었다. */
 /* 폰 게임 줄 윗줄 오른끝 게임번호(ListRow corner · 같은 날 요청: "모바일은 오른쪽 위에 보여주면 될듯 작게") — 윗줄 격자 셋째 칸. */
 .scr-feed-row-corner { font-size: var(--fs-10); color: var(--row-dim, var(--muted)); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.25; }
-.scr-feed-row-game.scr-gm > .scr-feed-row-main > .scr-feed-row-corner { grid-column: 3; order: 3; justify-self: end; margin-right: 2px; }
+/* ★ 오버레이(2026-11-19, 요청: "게임번호를 그냥 오버레이로 놓을걸 · 터치시 복사도") — 격자에서 빼 카드 오른위에 띄운다(옛: 윗줄 격자 셋째 칸 → 같은 날 두 번 손질 — 맵 칸을 밀어
+   그 자리를 옮기고 · 맵 빈 줄 배지 쏠림까지 막느라 줄 전체에 걸쳤다 · 다 걷음). 누름 칸을 넓히려 안쪽 여백을 두고 그만큼 바깥으로 당긴다. */
+.scr-feed-row-game.scr-gm > .scr-feed-row-main { position: relative; }
+.scr-feed-row-game.scr-gm > .scr-feed-row-main > .scr-feed-row-corner { position: absolute; top: 5px; right: 4px; z-index: 2; }
+.scr-feed-row-corner > .scr-matchno { display: inline-block; padding: 4px 4px; }
+/* 게임번호 복사 단추(MatchNoCopy) — 폰 오버레이 · PC 표 칸 같은 꼴: 누를 수 있다는 점선 밑줄은 손을 얹을 때만 · 복사되면 강조색. */
+.scr-matchno { cursor: pointer; border-radius: 4px; -webkit-tap-highlight-color: transparent; transition: color 0.15s ease, background 0.15s ease; }
+.scr-matchno:hover { color: var(--text); text-decoration: underline dotted; text-underline-offset: 2px; }
+.scr-matchno:active { background: rgba(var(--overlay-rgb, 0, 0, 0), 0.08); }
+.scr-matchno.is-copied { color: var(--point); text-decoration: none; }
+.scr-matchno:focus-visible { outline: 2px solid var(--point); outline-offset: 1px; }
 .scr-gtab-map { justify-content: center; }
 .scr-gtab-map { white-space: normal; text-align: center; }
 /* 좁힌 칸(112)에 긴 이름은 두 줄까지 접는다 — 한 줄 말줄임이면 "Fighting Spir…" 처럼 흔한 맵이 잘렸다. */
@@ -5952,10 +5962,6 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead):has(> .scr-feed-row-above) > .scr-feed-row-status,
 .scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead):has(> .scr-feed-row-above) > .scr-feed-row-badges { grid-row: 2; }
 .scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead) > .scr-feed-row-data-wrap { order: 6; }
-/* ★ 게임번호는 배치 맵 칸(둘째) 윗줄 오른끝(2026-11-19, 지적: "경기번호만큼 배치맵이 밀림") — 맵이 있는 줄은 격자가 [로스터 | 맵] 두 칸인데 번호를 셋째 칸(grid-column 3)에 두어
-   보이지 않는 셋째 칸이 번호 폭만큼 생겨 맵이 그만큼 왼쪽으로 밀렸다. 윗줄(시각 · 맵 배지)과 같은 줄 · 위 줄(above)이 있으면 둘째 줄. */
-.scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead) > .scr-feed-row-corner { grid-column: 1 / -1; grid-row: 1; justify-self: end; }   /* 줄 전체에 걸쳐 오른끝 — 칸 폭 셈에 안 낀다(맵 칸이 빈 줄에서 둘째 칸을 벌려 맵 배지가 쏠리던 것도 · 같은 날 물음 "맵이 없으면 로스터는 밀리는거 아니야?") */
-.scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead):has(> .scr-feed-row-above) > .scr-feed-row-corner { grid-row: 2; }
 
 /* ★ 자유게시판(2026-10-26, 요청: "자유게시판 만들어줘 … 꼭지(분류) 고를수있음 잡담 질문 공략 · 공지는 따로 속성으로 부여").
    꼭지 고르기는 줄 탭(.scr-line-tab-btn)과 같은 음영 직사각형 · 배지는 리그 배지(.scr-league-tag)와 같은 크기 · 공지는 진 붉은 겹. */
