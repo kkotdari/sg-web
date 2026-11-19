@@ -23,9 +23,10 @@ import type { GameResult } from "../../../types";
 const TAP_MS = 260;
 
 /* 무대는 memo — 진행 막대(부모 prog)가 0.1초마다 바뀌어도 재생기까지 다시 그리지 않는다(props 가 다 굳은 값이다). */
-const ShortStage = memo(function ShortStage({ item, side, paused, onProgress, onEnd }: {
+const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, onEnd }: {
   item: GameShort;
-  side: number;
+  w: number;
+  h: number;
   paused: boolean;
   onProgress: (p: number) => void;
   onEnd: () => void;
@@ -85,7 +86,7 @@ const ShortStage = memo(function ShortStage({ item, side, paused, onProgress, on
     [game],
   );
   return (
-    <div className="scr-shortv-stage" style={{ width: side, height: side }}>
+    <div className="scr-shortv-stage" style={{ width: w, height: h }}>
       {!ready && item.coverUrl && <img className="scr-shortv-cover" src={item.coverUrl} alt="" draggable={false} />}
       {!ready && !err && <div className="scr-shortv-wait"><LoadingMark /></div>}
       {err && <div className="scr-shortv-err">{err}</div>}
@@ -99,7 +100,7 @@ const ShortStage = memo(function ShortStage({ item, side, paused, onProgress, on
             loadUnitTracks={loadUnitTracks}
             short={got.clip} shortPaused={paused} onShortProgress={onProgress} onShortEnd={onEnd}
             veil onReady={() => setReady(true)}
-            frameW={side} frameH={side}
+            frameW={w} frameH={h}
             guide={false}
           />
         </div>
@@ -223,55 +224,72 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     onClose();
     navigateTo(gamePath(it.matchNo || String(it.gameResultId)), { search: `t=${Math.floor(it.t0)}` });
   };
-  /* 무대 한 변 — 화면 폭과 (화면 높이 − 머리 · 아래 몫) 가운데 작은 쪽 · PC 는 720 에서 멈춘다. */
-  const side = Math.max(200, Math.floor(Math.min(vw.w, vw.h - 150, 720)));
+  /* ★ 판 비율(2026-11-19, 요청: "쇼츠 비율 모바일은 세로로 길게 2:3이나 9:16? 피시는 가로 4:3") — 폰(좁은 화면 · 손가락) 9:16 세로로 화면을 꽉(머리줄 · 단추는 판 위에 얹는다 ·
+     릴스처럼) · PC 4:3 가로로 창 가운데. 재생기는 받은 가로 × 세로를 그대로 채운다(scplay shortBox9). */
+  const phone = vw.w < 700 || (typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches);
+  const box = ((): { w: number; h: number } => {
+    if (phone) {
+      const w0 = Math.min(vw.w, Math.floor((vw.h * 9) / 16));
+      return { w: w0, h: Math.floor((w0 * 16) / 9) };
+    }
+    let h0 = Math.min(vw.h - 48, 760);
+    let w0 = Math.floor((h0 * 4) / 3);
+    if (w0 > vw.w - 48) { w0 = vw.w - 48; h0 = Math.floor((w0 * 3) / 4); }
+    return { w: Math.max(240, w0), h: Math.max(180, h0) };
+  })();
   const origin = from ? `${from.left + from.width / 2}px ${from.top + from.height / 2}px` : "50% 50%";
   if (!it) return null;
   const many = items.length > 24;
   const node = (
-    <div className="scr-shortv" role="dialog" aria-modal="true" aria-label="쇼츠" style={{ transformOrigin: origin }}>
-      <div className="scr-shortv-col" style={dragY ? { transform: `translateY(${dragY}px) scale(${Math.max(0.85, 1 - dragY / 1400)})`, opacity: Math.max(0.4, 1 - dragY / 500) } : undefined}>
-        <div className="scr-shortv-bars" style={{ width: side }}>
-          {many ? (
-            <i><b style={{ width: `${prog * 100}%` }} /></i>
-          ) : items.map((x, i) => (
-            <i key={x.id}><b style={{ width: i < idx ? "100%" : i === idx ? `${prog * 100}%` : "0%" }} /></i>
-          ))}
-        </div>
-        <div className="scr-shortv-head" style={{ width: side }}>
-          <Avatar member={{ id: it.author.memberId, nickname: it.author.nickname, avatar: memberOf(it.author.memberId)?.avatar ?? it.author.avatar ?? null }} size={28} />
-          <span className="scr-shortv-who">
-            <b>{it.author.nickname}</b>
-            <small>{formatAgo(it.createdAt)}{many ? ` · ${idx + 1}/${items.length}` : ""}</small>
-          </span>
-          <button type="button" className="scr-shortv-btn" onClick={() => setStop((v) => !v)} aria-label={stop ? "재생" : "멈춤"} title={stop ? "재생 (스페이스)" : "멈춤 (스페이스)"}>
-            {stop ? <Play size={18} aria-hidden /> : <Pause size={18} aria-hidden />}
-          </button>
-          <button type="button" className="scr-shortv-btn" onClick={goGame} aria-label="게임 보기" title="이 장면부터 게임 보기">
-            <ExternalLink size={18} aria-hidden />
-          </button>
-          {it.mine && (
-            <button type="button" className="scr-shortv-btn" onClick={() => { void del(); }} aria-label="쇼츠 지우기" title="지우기">
-              <Trash2 size={18} aria-hidden />
+    <div className={cx("scr-shortv", phone && "is-phone", box.h >= vw.h - 2 && "is-tall")} role="dialog" aria-modal="true" aria-label="쇼츠" style={{ transformOrigin: origin }}>
+      <div className="scr-shortv-box" style={{
+        width: box.w, height: box.h,
+        ...(dragY ? { transform: `translateY(${dragY}px) scale(${Math.max(0.85, 1 - dragY / 1400)})`, opacity: Math.max(0.4, 1 - dragY / 500) } : {}),
+      }}>
+        <ShortStage key={it.id} item={it} w={box.w} h={box.h} paused={hold || stop} onProgress={setProg} onEnd={next} />
+        <div className="scr-shortv-tap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onContextMenu={(e) => e.preventDefault()} />
+        {(hold || stop) && <span className="scr-shortv-paused" aria-hidden><Pause size={30} fill="currentColor" /></span>}
+        {/* 판 위 머리 — 진행 막대 · 만든 사람 · 멈춤 · 닫기(릴스 · 스토리처럼 장면 위에 얹는다 · 위 그늘). */}
+        <div className="scr-shortv-top">
+          <div className="scr-shortv-bars">
+            {many ? (
+              <i><b style={{ width: `${prog * 100}%` }} /></i>
+            ) : items.map((x, i) => (
+              <i key={x.id}><b style={{ width: i < idx ? "100%" : i === idx ? `${prog * 100}%` : "0%" }} /></i>
+            ))}
+          </div>
+          <div className="scr-shortv-head">
+            <Avatar member={{ id: it.author.memberId, nickname: it.author.nickname, avatar: memberOf(it.author.memberId)?.avatar ?? it.author.avatar ?? null }} size={28} />
+            <span className="scr-shortv-who">
+              <b>{it.author.nickname}</b>
+              <small>{formatAgo(it.createdAt)}{many ? ` · ${idx + 1}/${items.length}` : ""}</small>
+            </span>
+            {it.fame && <span className="scr-shortv-fame">명예의 전당</span>}
+            <button type="button" className="scr-shortv-btn" onClick={() => setStop((v) => !v)} aria-label={stop ? "재생" : "멈춤"} title={stop ? "재생 (스페이스)" : "멈춤 (스페이스)"}>
+              {stop ? <Play size={18} aria-hidden /> : <Pause size={18} aria-hidden />}
             </button>
-          )}
-          <button type="button" className="scr-shortv-btn" onClick={onClose} aria-label="닫기" title="닫기 (Esc)">
-            <X size={20} aria-hidden />
-          </button>
+            <button type="button" className="scr-shortv-btn" onClick={onClose} aria-label="닫기" title="닫기 (Esc)">
+              <X size={20} aria-hidden />
+            </button>
+          </div>
         </div>
-        <div className="scr-shortv-box" style={{ width: side, height: side }}>
-          <ShortStage key={it.id} item={it} side={side} paused={hold || stop} onProgress={setProg} onEnd={next} />
-          <div className="scr-shortv-tap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onContextMenu={(e) => e.preventDefault()} />
-          {(hold || stop) && <span className="scr-shortv-paused" aria-hidden><Pause size={30} fill="currentColor" /></span>}
-        </div>
-        <div className="scr-shortv-foot" style={{ width: side }}>
-          <button type="button" className={cx("scr-shortv-rec", it.recommended && "is-on")} onClick={recToggle} disabled={recBusy}
+        {/* 오른쪽 아래 단추 줄(릴스처럼 세로) — 추천(수) · 이 장면부터 게임 보기 · 내 쇼츠 지우기. 미니맵은 왼아래 · 자막은 가운데 아래라 안 겹친다. */}
+        <div className="scr-shortv-side">
+          <button type="button" className={cx("scr-shortv-act", it.recommended && "is-on")} onClick={recToggle} disabled={recBusy}
             aria-pressed={it.recommended} aria-label={it.recommended ? "추천 취소" : "추천"} title={it.recommended ? "추천 취소" : "추천 — 3개가 모이면 명예의 전당"}>
-            <ThumbsUp size={18} fill={it.recommended ? "currentColor" : "none"} aria-hidden />
+            <ThumbsUp size={22} fill={it.recommended ? "currentColor" : "none"} aria-hidden />
             <span>{it.recommendCount}</span>
           </button>
-          {it.fame && <span className="scr-shortv-fame">명예의 전당</span>}
-          <button type="button" className="scr-shortv-gogame" onClick={goGame}>이 장면부터 게임 보기</button>
+          <button type="button" className="scr-shortv-act" onClick={goGame} aria-label="이 장면부터 게임 보기" title="이 장면부터 게임 보기">
+            <ExternalLink size={22} aria-hidden />
+            <span>게임</span>
+          </button>
+          {it.mine && (
+            <button type="button" className="scr-shortv-act" onClick={() => { void del(); }} aria-label="쇼츠 지우기" title="지우기">
+              <Trash2 size={22} aria-hidden />
+              <span>지우기</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

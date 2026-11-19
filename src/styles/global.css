@@ -6329,25 +6329,45 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   background: rgba(3, 4, 7, 0.97); animation: scr-shortv-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; overscroll-behavior: contain; touch-action: none;
 }
 @keyframes scr-shortv-in { from { opacity: 0; transform: scale(0.35); } to { opacity: 1; transform: none; } }
-.scr-shortv-col { display: flex; flex-direction: column; align-items: center; gap: 10px; transition: transform 0.2s ease, opacity 0.2s ease; }
-.scr-shortv-bars { display: flex; gap: 3px; height: 3px; padding-top: env(safe-area-inset-top, 0px); }
-.scr-shortv-bars > i { flex: 1 1 0; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.28); overflow: hidden; }
+/* 판 — 폰 9:16(화면 꽉) · PC 4:3(창 가운데) · 머리 · 단추는 판 위에 얹는다(2026-11-19 비율 요청). */
+.scr-shortv-box { position: relative; overflow: hidden; background: #000; border-radius: 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); transition: transform 0.2s ease, opacity 0.2s ease; }
+.scr-shortv.is-phone .scr-shortv-box { border-radius: 0; box-shadow: none; }
+.scr-shortv-top {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 7; display: flex; flex-direction: column; gap: 10px;
+  padding: 8px 10px 22px; background: linear-gradient(180deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0)); pointer-events: none;
+}
+/* 판이 화면 위아래에 닿으면(.is-tall) 안전영역만큼 띄운다 — 띠가 남는 폰(9:16 보다 긴 화면)은 판이 가운데라 필요 없다. */
+.scr-shortv.is-tall .scr-shortv-top { padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+.scr-shortv.is-tall .scr-shortv-side { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+.scr-shortv-top > * { pointer-events: auto; }
+.scr-shortv-bars { display: flex; gap: 3px; height: 3px; pointer-events: none; }
+.scr-shortv-bars > i { flex: 1 1 0; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.3); overflow: hidden; }
 .scr-shortv-bars > i > b { display: block; height: 100%; background: #fff; transition: width 0.12s linear; }
-.scr-shortv-head { display: flex; align-items: center; gap: 8px; color: #fff; padding: 0 2px; box-sizing: border-box; }
+.scr-shortv-head { display: flex; align-items: center; gap: 8px; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
 .scr-shortv-who { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
 .scr-shortv-who b { font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scr-shortv-who small { font-size: 11px; opacity: 0.65; }
+.scr-shortv-who small { font-size: 11px; opacity: 0.75; }
 .scr-shortv-btn {
-  display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.1); color: #fff; cursor: pointer;
+  display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.35); color: #fff; cursor: pointer;
 }
 .scr-shortv-btn:hover { background: rgba(255, 255, 255, 0.2); }
-.scr-shortv-box { position: relative; border-radius: 14px; overflow: hidden; background: #000; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
-@media (max-width: 600px) { .scr-shortv-box { border-radius: 0; } }
+.scr-shortv-side {
+  position: absolute; right: 8px; bottom: 18px; z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.scr-shortv-act {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 48px; padding: 0; border: 0; background: none; color: #fff; cursor: pointer;
+  font-size: 11px; font-weight: 800; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); -webkit-tap-highlight-color: transparent;
+}
+.scr-shortv-act > svg { width: 44px; height: 44px; padding: 10px; box-sizing: border-box; border-radius: 50%; background: rgba(0, 0, 0, 0.42); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); transition: transform 0.15s ease, background 0.15s ease; }
+.scr-shortv-act:hover > svg { background: rgba(255, 255, 255, 0.22); }
+.scr-shortv-act:active > svg { transform: scale(0.9); }
+.scr-shortv-act.is-on { color: #ffd34d; }
+.scr-shortv-act:disabled { cursor: default; }
 .scr-shortv-stage { position: relative; overflow: hidden; }
 .scr-shortv-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.75) saturate(0.9); }
 .scr-shortv-wait, .scr-shortv-err { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 14px; z-index: 2; }
 .scr-shortv-err { background: rgba(0, 0, 0, 0.55); }
-/* 재생기는 가린 채(veil) 자리를 잡고 다 되면 서서히 — 무대 한가운데(지도 비가 정사각이 아니면 위아래 · 좌우가 빈다). */
+/* 재생기는 가린 채(veil) 자리를 잡고 다 되면 서서히. */
 .scr-shortv-player { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.35s ease; }
 .scr-shortv-player.is-ready { opacity: 1; }
 .scr-shortv-player > .scr-story-map { width: 100%; }
@@ -6364,13 +6384,4 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-short-card-rec { position: absolute; right: 6px; top: 26px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.55); font-size: 10px; font-weight: 700; line-height: 1.4; }
 .scr-short-card-rec.is-on { color: #ffd34d; }
 .scr-shorts.is-fame .scr-shorts-head svg { color: #ffb020; }
-.scr-shortv-foot { display: flex; align-items: center; gap: 8px; color: #fff; padding: 0 2px; box-sizing: border-box; padding-bottom: env(safe-area-inset-bottom, 0px); }
-.scr-shortv-rec {
-  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.12);
-  color: #fff; font-size: 14px; font-weight: 800; cursor: pointer;
-}
-.scr-shortv-rec.is-on { background: rgba(255, 211, 77, 0.2); color: #ffd34d; }
-.scr-shortv-rec:disabled { opacity: 0.7; cursor: default; }
-.scr-shortv-fame { padding: 3px 9px; border-radius: 999px; background: linear-gradient(135deg, #ffb020, #ff6a3d); font-size: 11px; font-weight: 800; }
-.scr-shortv-gogame { margin-left: auto; height: 34px; padding: 0 12px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
-.scr-shortv-gogame:hover, .scr-shortv-rec:hover { background: rgba(255, 255, 255, 0.2); }
+.scr-shortv-fame { flex: none; padding: 3px 9px; border-radius: 999px; background: linear-gradient(135deg, #ffb020, #ff6a3d); font-size: 11px; font-weight: 800; }
