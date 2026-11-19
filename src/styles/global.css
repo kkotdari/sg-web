@@ -5952,6 +5952,10 @@ html.scr-light-theme .scr-league-tag { color: color-mix(in srgb, var(--lighting-
 .scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead):has(> .scr-feed-row-above) > .scr-feed-row-status,
 .scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead):has(> .scr-feed-row-above) > .scr-feed-row-badges { grid-row: 2; }
 .scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead) > .scr-feed-row-data-wrap { order: 6; }
+/* ★ 게임번호는 배치 맵 칸(둘째) 윗줄 오른끝(2026-11-19, 지적: "경기번호만큼 배치맵이 밀림") — 맵이 있는 줄은 격자가 [로스터 | 맵] 두 칸인데 번호를 셋째 칸(grid-column 3)에 두어
+   보이지 않는 셋째 칸이 번호 폭만큼 생겨 맵이 그만큼 왼쪽으로 밀렸다. 윗줄(시각 · 맵 배지)과 같은 줄 · 위 줄(above)이 있으면 둘째 줄. */
+.scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead) > .scr-feed-row-corner { grid-column: 2; grid-row: 1; }
+.scr-feed-row-game.scr-gm > .scr-feed-row-main:has(> .scr-feed-row-desc.has-lead):has(> .scr-feed-row-above) > .scr-feed-row-corner { grid-row: 2; }
 
 /* ★ 자유게시판(2026-10-26, 요청: "자유게시판 만들어줘 … 꼭지(분류) 고를수있음 잡담 질문 공략 · 공지는 따로 속성으로 부여").
    꼭지 고르기는 줄 탭(.scr-line-tab-btn)과 같은 음영 직사각형 · 배지는 리그 배지(.scr-league-tag)와 같은 크기 · 공지는 진 붉은 겹. */
