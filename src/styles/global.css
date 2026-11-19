@@ -6322,12 +6322,19 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-short-card > img, .scr-short-card-blank { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .scr-short-card-blank { background: radial-gradient(circle at 50% 40%, #1c2433, #07090d); }
 .scr-short-card-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 32%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.72) 100%); }
+/* 가운데 재생 단추 = 라이팅 동그란 아이콘 단추(.scr-circle-btn 꼴 · 2026-11-19, 요청: "쇼츠 재생 버튼 빨간색 말고 라이팅 동그란 아이콘 버튼 css" → "흰색이 채워져야지") —
+   꼴은 동그라미 단추, 색은 **채운 단추 역할**(--btn-fill-bg 흰 판 · --btn-fill-text 어두운 세모 · --btn-fill-glow 흰 빛). 누름(:active scale)도 가운데 자리를 지킨다.
+   되물린 값: 같은 날 첫 판 = 동그라미 단추의 유리 바탕 그대로(속이 비어 보였다) · 옛: 어두운 판 + 흰 테 · 호버 붉은 판. */
 .scr-short-card-play {
-  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
-  background: rgba(10, 12, 18, 0.55); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85), 0 4px 14px rgba(0, 0, 0, 0.4); color: #fff; transition: transform 0.18s ease, background 0.18s ease;
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); pointer-events: none;
+  color: var(--btn-fill-text, #10151a); background: var(--btn-fill-bg, #fff); box-shadow: var(--btn-fill-glow, none);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 .scr-short-card-play svg { margin-left: 3px; }
-.scr-short-card:hover .scr-short-card-play { transform: translate(-50%, -50%) scale(1.08); background: rgba(255, 77, 87, 0.85); }
+@media (hover: hover) {
+  .scr-short-card:hover .scr-short-card-play { transform: translate(-50%, -50%) scale(1.08); box-shadow: var(--btn-hover-glow, none), var(--btn-fill-glow, none); }
+}
+.scr-short-card:active .scr-short-card-play { transform: translate(-50%, -50%) scale(0.94); }
 .scr-short-card-dur { position: absolute; right: 6px; top: 6px; padding: 2px 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.55); font-size: 10px; font-weight: 700; line-height: 1.4; }
 .scr-short-card-foot { position: absolute; left: 8px; right: 8px; bottom: 7px; display: flex; flex-direction: column; gap: 3px; text-align: left; }
 .scr-short-card-cap {

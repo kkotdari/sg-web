@@ -70,7 +70,7 @@ export default function ShortsStrip({ fame = false }: {
           >
             {it.coverUrl ? <img src={it.coverUrl} alt="" loading="lazy" decoding="async" draggable={false} /> : <span className="scr-short-card-blank" aria-hidden />}
             <span className="scr-short-card-shade" aria-hidden />
-            <span className="scr-short-card-play" aria-hidden><Play size={22} fill="currentColor" /></span>
+            <span className="scr-circle-btn scr-short-card-play" aria-hidden><Play size={22} fill="currentColor" /></span>
             <span className="scr-short-card-dur">{Math.round(it.dur)}초</span>
             {fame && <span className="scr-short-card-badge">쇼츠</span>}
             {it.recommendCount > 0 && (
