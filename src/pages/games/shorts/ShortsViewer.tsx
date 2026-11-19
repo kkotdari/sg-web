@@ -300,16 +300,16 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
         <div className="scr-shortv-side">
           <button type="button" className={cx("scr-shortv-act", it.recommended && "is-on")} onClick={recToggle} disabled={recBusy}
             aria-pressed={it.recommended} aria-label={it.recommended ? "추천 취소" : "추천"} title={it.recommended ? "추천 취소" : "추천 — 3개가 모이면 명예의 전당"}>
-            <ThumbsUp size={22} fill={it.recommended ? "currentColor" : "none"} aria-hidden />
+            <i className="scr-shortv-ico" aria-hidden><ThumbsUp size={22} fill={it.recommended ? "currentColor" : "none"} /></i>
             <span>{it.recommendCount}</span>
           </button>
           <button type="button" className="scr-shortv-act" onClick={goGame} aria-label="이 장면부터 게임 보기" title="이 장면부터 게임 보기">
-            <ExternalLink size={22} aria-hidden />
+            <i className="scr-shortv-ico" aria-hidden><ExternalLink size={22} /></i>
             <span>게임</span>
           </button>
           {it.mine && (
             <button type="button" className="scr-shortv-act" onClick={() => { void del(); }} aria-label="쇼츠 지우기" title="지우기">
-              <Trash2 size={22} aria-hidden />
+              <i className="scr-shortv-ico" aria-hidden><Trash2 size={22} /></i>
               <span>지우기</span>
             </button>
           )}
