@@ -146,6 +146,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   useEffect(() => {
     if (!it) return;
     api.pingAccess("short_view", `short#${it.id} game#${it.matchNo || it.gameResultId}`).catch(() => undefined);
+    api.viewShort(it.id).catch(() => undefined);   // 본 횟수 +1(DB 에만 · 2026-11-19 "쇼츠 뷰카운트 · 디비에만")
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewId]);
   /* 다음 쇼츠를 미리 받는다(shortsPrefetch ★) — 토막 · 경기 · 참값 · 지도. 지도는 해시를 안 뒤에 useReplayMap 캐시로 당긴다. */

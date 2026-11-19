@@ -642,6 +642,10 @@ export const api = {
   async deleteShort(id: number): Promise<void> {
     await request<void>(`/api/shorts/${id}`, { method: "DELETE" });
   },
+  /** 본 횟수 +1(2026-11-19, 요청: "쇼츠 뷰카운트" → "디비에만") — 응답 없음(204) · 화면엔 안 띄운다. */
+  async viewShort(id: number): Promise<void> {
+    await request<void>(`/api/shorts/${id}/view`, { method: "POST" });
+  },
   /* ── 설문(2026-11-15 · sg-api /polls · 통계 설문 StatsPoll) — 한 사람에 한 번 ── */
   async getPollState(key: string): Promise<{ answered: boolean }> {
     return request<{ answered: boolean }>(`/api/polls/${encodeURIComponent(key)}/mine`);
