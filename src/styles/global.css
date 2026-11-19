@@ -986,14 +986,16 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 /* ★ PC 화면 폭은 **1080 하나**(2026-10-11, 요청: "게임목록·일정목록·너나와목록 1080으로 · 활동목록도" → "목록, 래더, 통계, 운영메뉴 화면들도 1080으로 통일하고
    게임상세, 리그만 1920 사용하기") — 뿌리 자(--content-max · --list-content-max)를 PC 에서 1080 으로 올려 머리 줄·옆 레일·떠 있는 단추 자리도 함께 따른다.
    옛 통계 720(2026-10 "720 까지만")은 걷었다. 리그 1440 → 1920 · 게임 상세 1920 · 모델(도록)도 1080(같은 날 요청). 1160 아래(폰·태블릿)는 860 그대로. */
+/* ★★ **1600 하나**(2026-11-19, 요청: "PC 목록류를 통계와 같이 1600으로 맞추자" → "목록뿐 아니라 게시판상세, 리그 상세도 1600으로 · 게임상세만 어쩔수없이 다른거야") —
+   위 '1080 하나'(2026-10-11)를 1600 으로 · 리그 상세 1920 → 1600 · 게임 상세만 폭 상한 없음(아래 그대로). 옛 값(되물림): 1080 · 리그 상세 1920. */
 @media (min-width: 961px) {
-  :root { --content-max: 1080px; --list-content-max: 1080px; }
+  :root { --content-max: 1600px; --list-content-max: 1600px; }
 }
 @media (min-width: 961px) {
   /* 1920 은 **리그를 연 화면**(대진표)만이다(2026-10-19, 지적: "리그 화면 생성 버튼 위치 안맞음") — 목록까지 1920 이라 떠 있는 '생성' 단추(뿌리 자 1080 에
      맞춰 선다)가 목록 안쪽에 떴다. 목록은 다른 목록 화면과 같은 1080 이다. */
-  .scr-league-screen.is-detail { max-width: 1920px; margin-left: auto; margin-right: auto; width: 100%; }
-  .scr-main:has(.scr-league-screen.is-detail) { max-width: 1920px; }
+  .scr-league-screen.is-detail { max-width: 1600px; margin-left: auto; margin-right: auto; width: 100%; }   /* 1920 → 1600(2026-11-19 위 ★★) */
+  .scr-main:has(.scr-league-screen.is-detail) { max-width: 1600px; }
 }
 /* (걷어냄 · 2026-10-11, 요청: "도록 화면도 맞추고") 모델 도록의 1440 — 이제 다른 화면과 같은 1080(뿌리 자). */
 @media (min-width: 961px) {
@@ -3081,7 +3083,7 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
 .scr-member-gameid-add-select .scr-cselect-trigger { font-family: unset; }
 @media (min-width: 961px) {
   .scr-scrolltop {
-    right: calc(50% - var(--content-max) / 2 - 68px - var(--rail-w) / 2);
+    right: max(16px, calc(50% - var(--content-max) / 2 - 68px - var(--rail-w) / 2));   /* 화면 안쪽에서 멈춤(2026-11-19 · 뿌리 1600 이면 1800 안 화면에서 밖으로 나갔다) */
     bottom: var(--scr-float-bottom-pc);
   }
 }
@@ -3982,7 +3984,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
    머리 줄·줄이 한 열 틀(--gtab-cols)을 쓴다. 칸 사이 세로 줄 · 로스터 칸만 늘고 나머지는 제 글 폭. 폰은 옛 줄(이 규칙은 PC 에서만 선다). */
 .scr-gtab-list {
   /* ★ 2026-11-19(요청: "맵 컬럼 폭 줄이고 대신 로스터 컬럼 늘리기 · 피시는 페이지 폭 넓혀서 게임번호 컬럼 추가"): 맨 앞 게임번호 104 · 맵 112 → 84 · 목록 폭 1080 → 1600(아래 :root:has · 같은 날
-     "PC 목록류를 통계와 같이 1600으로") — 로스터 몫이 약 260 → 690. */
+     "PC 목록류를 통계와 같이 1600으로" · 뿌리 자 '1600 하나') — 로스터 몫이 약 260 → 690. */
   --gtab-cols: 104px 96px 72px 84px 72px minmax(220px, 1fr) 116px 64px 132px 60px 56px;
   /* 옛 열 틀(되물린 값 · 2026-11-19 전): 96px 72px 112px 72px minmax(220px, 1fr) 116px 64px 132px 60px 56px */   /* 2026-10-29: 끝에 댓글 56(요청: "추천 다음에 컬럼을 추가해서 숫자 표시") */   /* 2026-10-26: 맵 · 게임길이 · 로스터 · 배치 차례(요청) · 배치 84 → 116(같은 날 "배치 컬럼 더 키우고 맵 40%") → 106(미니맵 −10%) → 118(좌우 여백 14 · 같은 날 "배치 컬럼 좌우 여백좀") → 116(맵 80 + 사방 여백 18 · "맵 더 줄이고 셀 사방 여백 더") · 맵 140 → 112(같은 날 "맵 이름 컬럼 폭 줄여도됨") */   /* 2026-10-21: 시작일시 · 유형 · 맵 · 로스터 · 게임길이 차례(요청) */   /* 2026-10-21: 맵 칸은 140 고정(두 줄 접힘 · 요청: "맵 컬럼이 쓸데없이 넓어 다른 컬럼에 나눠줘") · 남는 폭은 로스터 · 나머지 칸도 숨 · 데이터 칸 64 · 링크 132 */   /* 2026-10-20: 게임번호 뺌 · 맵 1fr → 112 */
 }
@@ -4014,12 +4016,7 @@ html.scr-light-theme .scr-rivalry-overlay { background: rgba(244, 246, 250, 0.62
 .scr-gtab-num { font-variant-numeric: tabular-nums; }
 /* 게임번호 칸(GameTable COLS ★ 2026-11-19) — 12자리(+ -2) 한 줄 · 한 치 작고 옅게. */
 .scr-gtab-no { font-size: var(--fs-12); color: var(--row-dim, var(--muted)); white-space: nowrap; letter-spacing: -0.01em; }
-/* ★ **PC 목록 화면 폭 1600**(2026-11-19, 요청: "피시는 페이지 폭 넓혀서 게임번호 컬럼 추가" → 같은 날 "이참에 PC 목록류를 통계와 같이 1600으로 맞추자") —
-   게임 목록(.scr-feed-screen) · 게시판 글 목록(.scr-board-screen.is-list) · 회원(.scr-members-screen-v2) · 래더(.scr-ladder-screen). 통계(.scr-stats-screen-v2)는 원래 1600.
-   뿌리 자를 바꿔 머리 줄 · 옆 레일 · 떠 있는 단추도 함께 따른다. 옛 1080(2026-10-11 '1080 하나')은 그 밖의 화면(글 보기 · 운영 · 도록 · 배치 …)에 남는다. */
-@media (min-width: 961px) {
-  :root:has(.scr-feed-screen, .scr-board-screen.is-list, .scr-members-screen-v2, .scr-ladder-screen) { --content-max: 1600px; --list-content-max: 1600px; }
-}
+/* (걷음) PC 목록 화면만 1600 이던 :root:has(…) 규칙 — 같은 날 모든 화면 1600(위 ★★ '1600 하나')으로 넓혀 걷었다. */
 /* 폰 게임 줄 윗줄 오른끝 게임번호(ListRow corner · 같은 날 요청: "모바일은 오른쪽 위에 보여주면 될듯 작게") — 윗줄 격자 셋째 칸. */
 .scr-feed-row-corner { font-size: var(--fs-10); color: var(--row-dim, var(--muted)); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.25; }
 .scr-feed-row-game.scr-gm > .scr-feed-row-main > .scr-feed-row-corner { grid-column: 3; order: 3; justify-self: end; margin-right: 2px; }
@@ -4370,7 +4367,7 @@ html.scr-light-theme .scr-feed-card-comment .scr-comment-mention { color: #1d4ed
 }
 @media (min-width: 961px) {
   .scr-feed-add-fab-wrap {
-    left: calc(50% - var(--content-max) / 2 - 68px + var(--rail-w) / 2);
+    left: max(16px, calc(50% - var(--content-max) / 2 - 68px + var(--rail-w) / 2));   /* 화면 안쪽에서 멈춤(2026-11-19 · 위 scrolltop 과 같은 까닭) */
     bottom: var(--scr-float-bottom-pc);
   }
 }

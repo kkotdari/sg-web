@@ -95,8 +95,7 @@ function BoardRouter() {
     );
   }
   return (
-    /* is-list — PC 목록 폭 1600(global.css :root:has · 2026-11-19 "PC 목록류를 통계와 같이 1600으로") 은 글 목록에만(글 보기는 그대로). */
-    <div className="scr-screen scr-board-screen is-list">
+    <div className="scr-screen scr-board-screen">
       {/* PC 는 FAB 대신 타이틀 아래 줄의 네모 단추(2026-10-27, 요청: "피시에서 게임, 게시판, 리그의 등록/생성 플로팅 버튼을 제거하고 타이틀 아래줄 고정 버튼으로 변경") — BoardList onNew. */}
       <BoardList onOpen={onOpen} onNew={isMobile ? undefined : openNew} />
       {isMobile && (
