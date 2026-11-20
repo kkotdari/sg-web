@@ -110,6 +110,14 @@ export interface PracticeRecordReply { myBest: number | null; top: number | null
 export interface PracticeRankRow { rank: number; memberId: string; nickname: string; score: number; kills: number; lostPts: number; race: string; at: string }
 export interface PracticeBoard { top: PracticeRankRow[]; mine: { best: number; rank: number; plays: number } | null; plays: number }
 export interface PracticeBoards { early: PracticeBoard; mid: PracticeBoard }
+/** 참여현황 한 줄(2026-11-20 · sg-api participation.py) — 일수(내전 · 공방 · 합 = 둘 중 하나라도 뛴 날) · 판 수(내전 · 공방 · 합). */
+export interface ParticipationRow {
+  memberId: string; nickname: string; status: string;
+  clanDays: number; pubDays: number; days: number; clanGames: number; pubGames: number; games: number;
+}
+export interface ParticipationOut {
+  month: string; boundary: "midnight" | "noon"; closedUntil: string | null; closed: boolean; months: string[]; rows: ParticipationRow[];
+}
 /** 쇼츠 한 개(2026-11-19 · sg-api ShortOut) — 목록은 clip 없이(표지 · 글) · 한 개 받기(getShort)는 토막까지. */
 export interface GameShort {
   id: number; gameResultId: number; matchNo: string; t0: number; t1: number; dur: number; caption: string; coverUrl: string | null;
@@ -682,6 +690,12 @@ export const api = {
     await request<unknown>("/api/practice/prefs", { method: "PUT", body: JSON.stringify({ keys }) });
   },
 
+  /** 회원관리 참여현황(2026-11-20 · sg-api /participation · 운영자) — 그 달 회원별 내전(리그 포함) · 공방 · 합 참여 일수와 판 수. 하루 = 자정~자정 · 정오~다음날 정오. */
+  async getParticipation(month: string | null, boundary: "midnight" | "noon"): Promise<ParticipationOut> {
+    const q = new URLSearchParams({ boundary });
+    if (month) q.set("month", month);
+    return request<ParticipationOut>(`/api/participation?${q.toString()}`);
+  },
   /* ── 티어 칸 위아래 표(2026-11-16 · sg-api /tier-votes · 익명 — 내 표만 받는다) ── */
   async getTierVotes(month: string): Promise<{ open: boolean; mine: Record<string, number> }> {
     return request<{ open: boolean; mine: Record<string, number> }>(`/api/tier-votes/${encodeURIComponent(month)}`);

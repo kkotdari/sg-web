@@ -6400,3 +6400,28 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-short-card-rec.is-on { color: #ffd34d; }
 .scr-shorts.is-fame .scr-shorts-head svg { color: #ffb020; }
 .scr-shortv-fame { flex: none; padding: 3px 9px; border-radius: 999px; background: linear-gradient(135deg, #ffb020, #ff6a3d); font-size: 11px; font-weight: 800; }
+
+/* ★ 회원관리 참여현황(2026-11-20 · pages/members/ParticipationModal) — 달 고르기(◀ 달 ▶) · 하루 나누기 라디오 · 표(머리 두 줄: 참여일 / 참여 게임수 아래 내전 · 공방 · 합계 ·
+   머리를 누르면 정렬 ▲▼) · 아래 전체 줄. 합계 칸은 살짝 굵게 · 판이 하나도 없는 사람은 흐리게. 표가 좁은 폰에선 가로로 민다. */
+.scr-modal.scr-part-modal { max-width: 640px; }
+.scr-part-ctl { display: flex; flex-direction: column; gap: 8px; }
+.scr-part-month { display: flex; align-items: center; gap: 6px; }
+.scr-part-month select { flex: 0 1 auto; min-width: 120px; height: 30px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--btn-outline-border); background: var(--panel-raised); color: var(--text); font: inherit; font-size: var(--fs-body); font-weight: 700; }
+.scr-part-bound { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--fs-caption); font-weight: 600; color: var(--text); }
+.scr-part-bound label { gap: 6px; min-height: 26px; }
+.scr-part-note { margin: 0; font-size: var(--fs-micro, 11px); color: var(--muted); line-height: 1.4; }
+.scr-part-table-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px 12px; transition: opacity 0.15s ease; }
+.scr-part-table-wrap.is-busy { opacity: 0.55; }
+.scr-part-table { width: 100%; border-collapse: collapse; font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
+.scr-part-table th, .scr-part-table td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--line, rgba(127, 127, 127, 0.18)); white-space: nowrap; }
+.scr-part-table th { font-weight: 700; color: var(--dim); position: sticky; top: 0; background: var(--panel-solid); }
+.scr-part-table thead tr:first-child th { border-bottom: none; }
+.scr-part-table th.scr-part-group { text-align: center; color: var(--text); border-bottom: 1px solid var(--line, rgba(127, 127, 127, 0.25)); }
+.scr-part-table th button { padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; white-space: nowrap; }
+.scr-part-table th.is-on, .scr-part-table th.is-on button { color: var(--text); }
+.scr-part-table .scr-part-name { text-align: left; min-width: 90px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-weight: 600; }
+.scr-part-table .scr-part-name small { margin-left: 4px; font-size: 10px; font-weight: 600; color: var(--muted); }
+.scr-part-table td.is-sum, .scr-part-table th.is-sum { font-weight: 800; color: var(--text); }
+.scr-part-table tbody tr.is-zero td { color: var(--muted); }
+.scr-part-table tfoot td { font-weight: 800; color: var(--text); border-bottom: none; border-top: 2px solid var(--line, rgba(127, 127, 127, 0.3)); }
+.scr-part-table td.scr-part-empty { text-align: center; color: var(--muted); padding: 18px 0; }

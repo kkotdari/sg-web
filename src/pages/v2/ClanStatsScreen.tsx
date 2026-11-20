@@ -115,7 +115,7 @@ function dayOf(iso: string | null | undefined): string | null {
  *  서버에 보내는 명단이라 목록 · 명수 · 클랜 전체(평균) 줄 · 편성 집계가 다 이 사람들로만이다. */
 function statMembers(members: readonly Member[], range: { from: string; to: string }): Member[] {
   return members.filter((m) => {
-    if (m.status === "suspended") return false;
+    if (m.status === "suspended" || m.status === "pending") return false;   // 승인 대기도 뺀다(2026-11-20, 요청: "통계에 승인대기중인 회원은 빼기")
     const joined = dayOf(m.createdAt);
     if (range.to && joined && joined > range.to) return false;
     if (m.status === "withdrawn") {
@@ -138,7 +138,7 @@ export default function ClanStatsScreen() {
   const [userRaw, setUserRaw] = useUrlState("u");
   const users = useMemo(() => chipsOfUrl(userRaw), [userRaw]);
   const setUsers = (next: string[]): void => setUserRaw(next.length ? JSON.stringify(next) : "");
-  const activeMembers = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended"), [members]);
+  const activeMembers = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended" && m.status !== "pending"), [members]);
   const userOpts = useMemo<ChipOpt[]>(() => activeMembers.map((m) => ({ value: m.nickname, member: m })), [activeMembers]);
   /* 팀 구성하기(2026-10-31, 요청: "팀구성하기를 다시 통계화면으로 옮기고 · 로직을 티어 계산 로직을 재사용" — 2026-10-24 배치 화면으로 갔던 것을 되돌림) —
      인분은 최신 달(이번 달)부터 거슬러 판이 넉넉한 달 것(TeamBuilderModal · 보는 기간과 무관). */
@@ -147,7 +147,7 @@ export default function ClanStatsScreen() {
      리스트표 아이콘과 퀸 아이콘 · 1:1 선택 시에만 아이콘 두 개가 활성화 · 래더 화면은 숨김") — 두 창은 래더 화면의 그것 그대로(RatingBoardModal · QueenHistoryModal ·
      회원 풀 = 정지 · 탈퇴 뺀 회원). 역대 퀸이 셀 첫 달은 창을 처음 열 때 한 번 묻는다(가장 오래된 판의 달). */
   const [soloModal, setSoloModal] = useState<"rating" | "queens" | null>(null);
-  const soloPool = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended").map((m) => m.id).sort(), [members]);
+  const soloPool = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended" && m.status !== "pending").map((m) => m.id).sort(), [members]);
   const [firstMonth, setFirstMonth] = useState<string | null>(null);
   useEffect(() => {
     if (soloModal !== "queens" || firstMonth) return undefined;
@@ -182,7 +182,7 @@ export default function ClanStatsScreen() {
   /* 목록 거르기의 바탕 — 정지만 뺀 사람(탈퇴자도 그 기간에 회원이었으면 서버 명단 · 아래 statMembers ★ 에 들어 줄이 선다 · 유저 검색으로도 찾는다). */
   const matchedMembers = useMemo(() => {
     const terms = users.map((u) => normalizeSearchText(u).trim()).filter(Boolean);
-    return members.filter((m) => m.status !== "suspended" && (terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t))));
+    return members.filter((m) => m.status !== "suspended" && m.status !== "pending" && (terms.length === 0 || terms.some((t) => memberMatchesTerm(m, t))));
   }, [members, users]);
 
   /* 기간 기본값 = 이번 달(2026-10-28, 요청: "조회 최근달로 변경" · 같은 날 "최근 3개월로" → "최근 2개월로"를 거쳐 돌아옴). */

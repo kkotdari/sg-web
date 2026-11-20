@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { UserPlus, X, Monitor, CircleHelp, RotateCcw, ChevronDown, Flame } from "lucide-react";
+import { UserPlus, X, Monitor, CircleHelp, RotateCcw, ChevronDown, Flame, CalendarCheck } from "lucide-react";
 import Avatar from "../../components/common/Avatar";
 import Pagination from "../../components/common/Pagination";
 import SearchFilterBar from "../../components/common/SearchFilterBar";
@@ -12,6 +12,7 @@ import { LoadingMark } from "../../components/common/Feedback";
 import CreateMemberModal from "../../modals/CreateMemberModal";
 import MemberRosterImageField from "./MemberRosterImageField";
 import MemberManageFields from "./MemberManageFields";
+import ParticipationModal from "./ParticipationModal";
 import { cx } from "../../utils/format";
 import { useAppStore } from "../../store/appStore";
 import { api } from "../../api/client";
@@ -70,6 +71,7 @@ export default function MembersScreen() {
   const setFilter = setFilterRaw as (v: StatusFilter) => void;
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
+  const [partOpen, setPartOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const toggleExpanded = (id: string) => setExpandedIds((prev) => {
     const next = new Set(prev);
@@ -198,8 +200,13 @@ export default function MembersScreen() {
           <button type="button" className="scr-rect-btn" onClick={() => setCreating(true)}>
             <UserPlus size={14} /> 생성
           </button>
+          {/* 참여현황(2026-11-20, 요청: "회원관리 맨 위에 버튼으로 참여현황 보기 메뉴 추가") — ParticipationModal. */}
+          <button type="button" className="scr-rect-btn is-secondary" onClick={() => setPartOpen(true)}>
+            <CalendarCheck size={14} /> 참여현황
+          </button>
         </div>
       )}
+      {isAdmin && partOpen && <ParticipationModal onClose={() => setPartOpen(false)} />}
 
       <SearchFilterBar
         count={rows.length}

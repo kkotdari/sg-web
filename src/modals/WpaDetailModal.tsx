@@ -69,7 +69,7 @@ export default function WpaDetailModal({ onClose }: { onClose: () => void }) {
   useLockBodyScroll();
   const mobile = useIsMobile();
   const members = useAppStore((s) => s.members);
-  const activeMembers = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended"), [members]);
+  const activeMembers = useMemo(() => members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended" && m.status !== "pending"), [members]);
   const userOpts = useMemo<ChipOpt[]>(() => activeMembers.map((m) => ({ value: m.nickname, member: m })), [activeMembers]);
 
   /* 조건 — 통계 화면과 같은 기본값(이번 달 · 팀전 전체 · 맵 전체) · 주소에는 안 남긴다(관리자 팝업). */

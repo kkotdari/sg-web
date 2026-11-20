@@ -91,7 +91,7 @@ export default function TeamBuilderModal({ onClose }: { onClose: () => void }) {
   const refMonth = useMemo(() => currentMonthValue(), []);
 
   useEffect(() => {
-    const active = members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended");
+    const active = members.filter((m) => m.status !== "withdrawn" && m.status !== "suspended" && m.status !== "pending");
     if (active.length === 0) { setRows([]); return; }
     let dead = false;
     const memberIds = active.map((m) => m.id);
