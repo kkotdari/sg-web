@@ -6439,6 +6439,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-gman-flabel { flex: none; width: 64px; font-size: var(--fs-caption); font-weight: 600; color: var(--text-dim, var(--muted)); white-space: nowrap; }
 .scr-gman-opts { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px; min-width: 0; }
 .scr-gman-opt { font-size: var(--fs-caption); color: var(--text); white-space: nowrap; }
+.scr-gman-opts.scr-gman-period { gap: 8px; color: var(--text-dim, var(--muted)); font-size: var(--fs-caption); }
 .scr-gman-radios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .scr-gman-radios > .scr-gman-frow:nth-child(n+4) { border-top: 1px solid var(--line-faint, var(--line)); }
 .scr-gman-reset { position: absolute; top: 6px; right: 4px; font-size: var(--fs-caption); }

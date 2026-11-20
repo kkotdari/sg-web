@@ -288,6 +288,8 @@ export interface GameDataFlags {
 /** 게임관리 거름의 '있다/없다' 칸 이름(서버 GAMES_MANAGE_HAS). */
 export type GameManageHasKey = "replay" | "truth" | "stats" | "index" | "noTruth" | "hidden" | "fame" | "league" | "shorts" | "shared";
 export interface GameManageQuery {
+  /** 기간(경기일 "YYYY-MM-DD" · 비우면 거르지 않음). */
+  dateFrom?: string; dateTo?: string;
   /** 체크박스 — 고른 것 중 하나라도(비우면 거르지 않음 · 2026-11-20 둘째). */
   kinds?: ("clan" | "pub" | "league")[];
   types?: ("1v1" | "team" | "ffa" | "ums")[];

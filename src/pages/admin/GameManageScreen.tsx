@@ -18,7 +18,7 @@ import { showAlert } from "../../components/common/AlertDialog";
 import { showToast } from "../../components/common/Toast";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { cx } from "../../utils/format";
-import { formatAgo } from "../../utils/date";
+import { formatAgo, todayStr } from "../../utils/date";
 import type { GameDataFlags, GameManageHasKey, GameManagePage, GameManageQuery, GameResult } from "../../types";
 
 /* ★★ 게임관리 화면(2026-11-20, 요청: "게임 데이터 관리 → 제어판이 아닌 게임관리 별도 화면으로 분리 · 컬럼에 숨김 삭제 등도 추가" ·
@@ -30,16 +30,17 @@ import type { GameDataFlags, GameManageHasKey, GameManagePage, GameManageQuery, 
    목록 · 거름 · 쪽 · 전체 id 는 서버가 한다(POST /api/game-results/admin/manage) — 전체 선택은 거름에 드는 판 id 전부를 받아 고른다.
    ★ 거름 둘째 판(같은 날, 요청: "배치등록도 게임관리로 · 종류(내전 · 공방 · 리그) · 유형 · 특이사항(명예의 전당 · 쇼츠 · 외부 공개) → 체크박스 ·
    리플레이 · 참값 · 통계 · 색인 · 숨김 · 삭제 → 라디오(전체도 있는 라디오) · 그 외의 필터는 제거 · 디자인은 화려함보단 깔끔하게") — 고르면 바로 다시 받는다(조회 단추 없음).
-   옛 첫 판의 기간 · 검색 · 종류 하나 고르기 · 참값 끔 · 리그 거름과 전체/O/X 덩이 단추는 걷었다. 삭제 라디오만 처음 값이 X(지운 판 빼고 — 여느 목록과 같게). */
+   옛 첫 판의 검색 · 종류 하나 고르기 · 참값 끔 · 리그 거름과 전체/O/X 덩이 단추는 걷었다. 삭제 라디오만 처음 값이 X(지운 판 빼고 — 여느 목록과 같게).
+   기간(경기일)은 같은 날 셋째에 되살렸다(요청: "미안 기간은 넣어야함") — 맨 윗줄. */
 
 type Radio = "all" | "o" | "x";
 type RadioKey = "replay" | "truth" | "stats" | "index" | "hidden" | "deleted";
 type Kind = NonNullable<GameManageQuery["kinds"]>[number];
 type GType = NonNullable<GameManageQuery["types"]>[number];
 type Mark = NonNullable<GameManageQuery["marks"]>[number];
-interface Filter { kinds: Kind[]; types: GType[]; marks: Mark[]; radios: Record<RadioKey, Radio> }
+interface Filter { from: string; to: string; kinds: Kind[]; types: GType[]; marks: Mark[]; radios: Record<RadioKey, Radio> }
 const EMPTY: Filter = {
-  kinds: [], types: [], marks: [],
+  from: "", to: "", kinds: [], types: [], marks: [],
   radios: { replay: "all", truth: "all", stats: "all", index: "all", hidden: "all", deleted: "x" },
 };
 
@@ -62,7 +63,10 @@ const toQuery = (f: Filter): GameManageQuery => {
     has[k] = f.radios[k] === "o";
   }
   const d = f.radios.deleted;
-  return { kinds: f.kinds, types: f.types, marks: f.marks, has, deleted: d === "all" ? "include" : d === "o" ? "only" : "exclude" };
+  return {
+    dateFrom: f.from || undefined, dateTo: f.to || undefined,
+    kinds: f.kinds, types: f.types, marks: f.marks, has, deleted: d === "all" ? "include" : d === "o" ? "only" : "exclude",
+  };
 };
 
 function CheckRow<T extends string>({ label, items, value, onChange }: {
@@ -367,6 +371,20 @@ export default function GameManageScreen() {
       </div>
 
       <div className="scr-gman-filters">
+        <div className="scr-gman-frow">
+          <span className="scr-gman-flabel">기간</span>
+          <div className="scr-gman-opts scr-gman-period">
+            <input
+              type="date" className="scr-input scr-date-compact" aria-label="시작 날짜"
+              value={applied.from} max={applied.to || todayStr()} onChange={(e) => patch({ from: e.target.value })}
+            />
+            <span aria-hidden>~</span>
+            <input
+              type="date" className="scr-input scr-date-compact" aria-label="끝 날짜"
+              value={applied.to} min={applied.from || undefined} max={todayStr()} onChange={(e) => patch({ to: e.target.value })}
+            />
+          </div>
+        </div>
         <CheckRow label="종류" items={KINDS} value={applied.kinds} onChange={(v) => patch({ kinds: v })} />
         <CheckRow label="유형" items={TYPES} value={applied.types} onChange={(v) => patch({ types: v })} />
         <CheckRow label="특이사항" items={MARKS} value={applied.marks} onChange={(v) => patch({ marks: v })} />
