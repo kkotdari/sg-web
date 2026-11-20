@@ -6420,12 +6420,16 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   0%, 100% { transform: scale(0.85); opacity: 0.7; }
   50% { transform: scale(1.15); opacity: 1; }
 }
+/* 움직임 줄이기(윈도 '애니메이션 효과' 끔 등)에서도 **그대로 뛴다**(2026-11-20, 지적: "피시에서 쇼츠 로딩별이 안 움직임") — 전역 규칙(body * { animation: none !important })이
+   여기 있던 '천천히 돌기'까지 눌러 별이 멎어 보였다. 로딩 중임을 알리는 표식이라 뺀다(!important + 더 센 선택자). 되물린 값: 줄이기면 2.4초 한 바퀴 돌기만 · 그림자 · 빛 멈춤. */
 @media (prefers-reduced-motion: reduce) {
-  .scr-shortv-star > img { animation: scr-star-spin 2.4s linear infinite; }
-  .scr-shortv-star::after, .scr-shortv-star::before { animation: none; }
+  .scr-shortv-star > img { animation: scr-star-dance 1.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite !important; }
+  .scr-shortv-star::after { animation: scr-star-shadow 1.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite !important; }
+  .scr-shortv-star::before { animation: scr-star-glow 1.8s ease-in-out infinite !important; }
 }
-@keyframes scr-star-spin { to { transform: rotate(360deg); } }
 .scr-shortv-err { background: rgba(0, 0, 0, 0.55); }
+/* 로딩 줄(ShortsViewer shortLoadLine ★ · 주소에 sdiag=1 일 때만 · 8초). */
+.scr-shortv-diag { position: absolute; left: 6px; right: 6px; bottom: 6px; z-index: 5; padding: 4px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.72); color: #9fe3a8; font: 11px/1.35 ui-monospace, monospace; pointer-events: none; word-break: break-all; }
 /* 재생기는 가린 채(veil) 자리를 잡고 다 되면 서서히. */
 .scr-shortv-player { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.35s ease; }
 .scr-shortv-player.is-ready { opacity: 1; }

@@ -23,6 +23,20 @@ import type { GameResult } from "../../../types";
 
 const TAP_MS = 260;
 
+/* ★ 쇼츠 로딩 줄(2026-11-20, 지적: "로딩이 너무 걸림 · 단축 방안 찾아보자") — 쇼츠마다 단계별로 걸린 때를 재어 다 뜨면 콘솔에 한 줄(`[쇼츠 로딩]`) · window.__shortLoad9(최근 10개).
+   재생기 몫은 로딩 진행도(scplay onLoadProgress · 단계마다 몫이 정해져 있다)가 처음 그 몫에 든 때로 가른다 · 아틀라스 · 다지기 값은 재생기 진단(window.__scrDiag).
+   주소에 `sdiag=1` 이 있으면 판 아래에도 8초 띄운다(폰 · 콘솔 없는 데서). */
+const stageOfProg = (p: number): string => (p >= 1 ? "끝" : p >= 0.97 ? "화면" : p >= 0.92 ? "굽기" : p >= 0.5 ? "모델" : p >= 0.15 ? "그래픽" : "데이터");
+type ShortLoad9 = { id: number; t0: number; got?: number; grid?: number; tracks?: number; mount?: number; st: [string, number][] };
+const sec = (ms: number): string => (ms / 1000).toFixed(1);
+function shortLoadLine(L: ShortLoad9, end: number): string {
+  const d = (window as unknown as { __scrDiag?: Record<string, unknown> }).__scrDiag ?? {};
+  const st = L.st.map(([k, t], i) => `${k} ${sec((L.st[i + 1]?.[1] ?? end) - t)}`).join(" → ");
+  const mount = L.mount ?? end;
+  return `#${L.id} ${sec(end - L.t0)}초 — 받기 ${sec(mount - L.t0)}(토막·경기 ${L.got ? sec(L.got - L.t0) : "-"} · 지도 ${L.grid ? sec(L.grid - L.t0) : "-"} · 참값 ${L.tracks ? sec(L.tracks - L.t0) : "-"})`
+    + ` · 재생기 ${sec(end - mount)} = ${st || "-"} | 아틀라스 앞 ${String(d.atlasCore ?? "-")} · 다지기 ${String(d.shortSettle ?? "-")}`;
+}
+
 /** ★ 쇼츠 공유 주소(2026-11-20, 요청: "쇼츠 공유 기능 추가 · 공유한 주소 클릭 시 게임 화면에 해당 쇼츠가 목록에서 가운데로 슬라이드 앤 포커싱 및 자동 재생") —
  *  /games?short=<id> · 게임 화면 쇼츠 줄(ShortsStrip SHORT_PARAM ★)이 읽는다. */
 export const SHORT_PARAM = "short";
@@ -49,13 +63,16 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
   const [got, setGot] = useState<{ clip: ShortClip9; game: GameResult } | null>(null);
   const [err, setErr] = useState("");
   const [ready, setReady] = useState(false);
+  const loadRef = useRef<ShortLoad9>({ id: item.id, t0: performance.now(), st: [] });   // 로딩 줄(위 ★)
+  const [diagLine, setDiagLine] = useState("");
   useEffect(() => {
     let dead = false;
     (async () => {
       try {
-        void tracksOf(item.gameResultId).catch(() => undefined);   // 참값(가장 크다)은 먼저 출발 — 재생기가 받을 때 같은 약속을 쓴다
+        void tracksOf(item.gameResultId).then(() => { loadRef.current.tracks ??= performance.now(); }, () => undefined);   // 참값(가장 크다)은 먼저 출발 — 재생기가 받을 때 같은 약속을 쓴다
         const [one, game] = await Promise.all([shortOf(item), gameOf(item.gameResultId)]);
         if (!one.clip) throw new Error("토막 없음");
+        loadRef.current.got = performance.now();
         if (!dead) setGot({ clip: one.clip, game });
       } catch {
         if (!dead) setErr("이 쇼츠를 불러오지 못했어요");
@@ -64,6 +81,25 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
     return () => { dead = true; };
   }, [item]);
   const grid = useReplayMap(got?.game.mapHash ?? null);
+  if (grid && !loadRef.current.grid) loadRef.current.grid = performance.now();
+  if (got && grid && !loadRef.current.mount) loadRef.current.mount = performance.now();
+  const onLoadProg = useCallback((p: number) => {
+    const L = loadRef.current; const k = stageOfProg(p);
+    if (k !== "끝" && L.st[L.st.length - 1]?.[0] !== k) L.st.push([k, performance.now()]);
+  }, []);
+  const onPlayerReady = useCallback(() => {
+    setReady(true);
+    const line = shortLoadLine(loadRef.current, performance.now());
+    console.info(`[쇼츠 로딩] ${line}`);
+    const w = window as unknown as { __shortLoad9?: string[] };
+    (w.__shortLoad9 ??= []).push(line); if (w.__shortLoad9.length > 10) w.__shortLoad9.shift();
+    if (/[?&#]sdiag=1/.test(window.location.href)) setDiagLine(line);
+  }, []);
+  useEffect(() => {
+    if (!diagLine) return undefined;
+    const t9 = window.setTimeout(() => setDiagLine(""), 8000);
+    return () => window.clearTimeout(t9);
+  }, [diagLine]);
   useEffect(() => {
     if (!err && grid !== null) return undefined;
     if (!got && !err) return undefined;
@@ -109,6 +145,7 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
         </div>
       )}
       {err && <div className="scr-shortv-err">{err}</div>}
+      {diagLine && <div className="scr-shortv-diag">{diagLine}</div>}
       {got && grid && (
         <div className={cx("scr-shortv-player", ready && "is-ready")}>
           <ReplayModule
@@ -118,7 +155,7 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
             melee={isMeleeGame({ matchType: got.game.matchType, team1: got.game.team1, team2: got.game.team2 })}
             loadUnitTracks={loadUnitTracks}
             short={got.clip} shortPaused={paused} onShortProgress={onProgress} onShortEnd={onEnd}
-            veil onReady={() => setReady(true)}
+            veil onReady={onPlayerReady} onLoadProgress={onLoadProg}
             frameW={w} frameH={h}
             guide={false}
           />

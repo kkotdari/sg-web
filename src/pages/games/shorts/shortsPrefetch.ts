@@ -1,3 +1,4 @@
+import { primeReplayMap } from "scplay";
 import { api, type GameShort } from "../../../api/client";
 import type { GameResult } from "../../../types";
 
@@ -24,7 +25,8 @@ export function shortOf(item: GameShort): Promise<GameShort> {
 }
 
 export function gameOf(id: number): Promise<GameResult> {
-  return keep(games, id, () => api.getGameResult(id));
+  /* 경기가 오면 곧장 그 지도도 부른다(2026-11-20 · scplay primeReplayMap) — 옛: 보기 화면이 경기를 받은 뒤에야 useReplayMap 이 지도를 물어 왕복 한 번이 더 줄을 섰다. */
+  return keep(games, id, () => api.getGameResult(id).then((g) => { primeReplayMap(g.mapHash); return g; }));
 }
 
 export function tracksOf(gameId: number): Promise<{ motion: string | null }> {
