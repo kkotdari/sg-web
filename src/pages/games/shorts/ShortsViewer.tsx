@@ -268,18 +268,13 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     onClose();
     navigateTo(gamePath(it.matchNo || String(it.gameResultId)), { search: `t=${Math.floor(it.t0)}` });
   };
-  /* ★ 판 비율(2026-11-19, 요청: "쇼츠 비율 모바일은 세로로 길게 2:3이나 9:16? 피시는 가로 4:3") — 폰(좁은 화면 · 손가락) 9:16 세로로 화면을 꽉(머리줄 · 단추는 판 위에 얹는다 ·
-     릴스처럼) · PC 4:3 가로로 창 가운데. 재생기는 받은 가로 × 세로를 그대로 채운다(scplay shortBox9). */
+  /* ★ 판은 **정사각**(2026-11-20, 요청: "쇼츠 무조건 정사각형으로 나오기로 했는데 피시랑 폰 모두 수정") — 녹화도 정사각 틀이다(scplay recSq9). PC 는 창 가운데 큰 정사각에 머리 · 단추를 얹고,
+     폰은 폭을 다 쓰는 정사각에 머리를 위 · 단추 줄을 아래 바깥에(장면을 안 가리게 · global.css .is-phone). 옛(2026-11-19): 폰 9:16 화면 꽉 · PC 4:3. */
   const phone = vw.w < 700 || (typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches);
   const box = ((): { w: number; h: number } => {
-    if (phone) {
-      const w0 = Math.min(vw.w, Math.floor((vw.h * 9) / 16));
-      return { w: w0, h: Math.floor((w0 * 16) / 9) };
-    }
-    let h0 = Math.min(vw.h - 48, 760);
-    let w0 = Math.floor((h0 * 4) / 3);
-    if (w0 > vw.w - 48) { w0 = vw.w - 48; h0 = Math.floor((w0 * 3) / 4); }
-    return { w: Math.max(240, w0), h: Math.max(180, h0) };
+    const s0 = phone ? Math.min(vw.w, vw.h - 170) : Math.min(vw.h - 48, 760, vw.w - 48);
+    const s1 = Math.max(200, Math.floor(s0));
+    return { w: s1, h: s1 };
   })();
   const origin = from ? `${from.left + from.width / 2}px ${from.top + from.height / 2}px` : "50% 50%";
   if (!it) return null;
