@@ -27,6 +27,7 @@ export default function AdminMenu({
 }: AdminMenuProps) {
   const items: AdminItem[] = menuItems ?? [
     { key: "members", label: "회원", isActive: screen === "members", onSelect: () => onNavigate("members") },
+    { key: "gameManage", label: "게임관리", isActive: screen === "gameManage", onSelect: () => onNavigate("gameManage") },
     { key: "minimaps", label: "대표맵", isActive: screen === "minimaps", onSelect: () => onNavigate("minimaps") },
     { key: "control", label: "제어판", isActive: screen === "control", onSelect: () => onNavigate("control") },
   ];

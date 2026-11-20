@@ -313,7 +313,7 @@ function GamesRouter() {
       const r = await api.unfameGames(ids);
       setUnfameAsk(null);
       setGroupRefreshKey((k) => k + 1); feed.reload(); selClear();
-      showToast(`명예의 전당에서 ${r.removed}판을 뺐어요${r.dropped > 0 ? ` · 마감한 달의 공방 ${r.dropped}판은 지워졌어요` : ""}.`, { kind: "ok" });
+      showToast(`명예의 전당에서 ${r.removed}판을 뺐어요.`, { kind: "ok" });
     } catch (e) {
       setBulkErr(e instanceof Error ? e.message : "빼지 못했어요.");
     } finally {
@@ -466,7 +466,7 @@ function GamesRouter() {
       {unfameAsk && (
         <ConfirmDialog
           title={`고른 ${unfameAsk.length}판을 명예의 전당에서 뺄까요?`}
-          message="뺀 판은 여느 경기 규칙을 다시 따라요 — 마감한 달의 공방 경기는 리플레이째 지워지고, 내전 경기는 참값 · 색인만 지워져요."
+          message="명예의 전당 표식만 떼요 — 판과 자료는 그대로예요."
           confirmLabel={unfameBusy ? "빼는 중..." : "빼기"}
           error={bulkErr}
           onConfirm={() => { if (!unfameBusy) void runUnfame(unfameAsk); }}

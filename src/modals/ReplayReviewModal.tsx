@@ -139,10 +139,12 @@ interface ReplayReviewModalProps {
   onClose: () => void;
   onSaved: () => void | Promise<void>;
   onRegistered?: (fileName: string) => void;
+  /** 참값 없이 등록(2026-11-20, 요청: "배치등록에 참값 없이 등록 기능 · 참값을 제외한 모든 데이터를 생성 · 재생만 안 되고 다 되는 것") — 서버가 참값 끔 표식을 단다. */
+  noTruth?: boolean;
 }
 
 export default function ReplayReviewModal({
-  drafts: initialDrafts, truncated = false, droppedCount = 0, onClose, onSaved, onRegistered,
+  drafts: initialDrafts, truncated = false, droppedCount = 0, onClose, onSaved, onRegistered, noTruth = false,
 }: ReplayReviewModalProps) {
   useLockBodyScroll();
   const members = useAppStore((s) => s.members);
@@ -357,6 +359,7 @@ export default function ReplayReviewModal({
             mapData: d.mapGrid,
             chats: d.chats,
             chatSaver: d.chatSaver,
+            ...(noTruth ? { noTruth: true } : {}),
           };
           try {
             const { merged, deleted } = await addGameResult(payload);

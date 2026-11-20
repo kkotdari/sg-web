@@ -47,6 +47,9 @@ import MatchNoCopy from "./MatchNoCopy";
 /* ★ 게임번호 칸 **되살림**(2026-11-19, 요청: "게임 번호가 어딘가 나와야할거 같은데 · 피시는 페이지 폭 넓혀서 게임번호 컬럼 추가" · 같은 요청 "맵 컬럼 폭 줄이고 대신 로스터 컬럼 늘리기") —
    맨 앞 칸(옛 2026-10-19 첫 판 자리 · 10-20 에 뺐다). 값은 game.matchNo(시작 시각 12자리 · 같은 초 둘째 판부터 -2…). 목록 폭은 global.css 가 게임 표 화면만 넓힌다. */
 const COLS = (league: boolean) => ["게임번호", "시작일시", league ? "경기 정보" : "유형", "맵", "게임길이", "로스터", "배치", "데이터", "도구", "추천", "댓글"];
+/* ★ 게임관리 화면(2026-11-20, 요청: "게임자료 섹션을 화면으로 옮기되 목록은 메인 그리드를 공유해서") — 앞 여섯 칸(게임번호 ~ 로스터)은 이 표 그대로 ·
+   뒤 칸(배치 ~ 댓글) 대신 부르는 쪽이 준 칸(manageCols · manage — 리플레이 · 참값 · 통계 · 색인 · 숨김 · 삭제 …)이 선다. 열 틀은 .scr-gtab-list.is-manage(global.css). */
+const BASE_COLS = 6;
 
 /** 배치 칩 글 — 폭 6칸(한글·한자 등 넓은 글자 2칸 · 영문·숫자 1.2칸) 안에서 앞부터(2026-10-26, 요청: "2글자 정도" → "영어는 4글자" →
  *  2026-10-29 "한글 세 글자 영어 다섯 글자까지" — 한글 셋 = 영문 다섯 = 6칸 · 섞이면 그 사이). */
@@ -106,13 +109,20 @@ export function StartMapCell({ game, memberOf }: { game: GameResult; memberOf: (
   );
 }
 
-export function GameTableHead({ selecting, leagueCol }: { selecting: boolean; leagueCol: boolean }) {
+export function GameTableHead({ selecting, leagueCol, manageCols, check }: {
+  selecting: boolean; leagueCol: boolean;
+  /** 게임관리 칸 이름(위 BASE_COLS ★) — 주면 배치 ~ 댓글 대신 선다. */
+  manageCols?: string[];
+  /** 체크 칸 자리에 둘 것(게임관리의 전체 선택) — 없으면 빈 칸. */
+  check?: ReactNode;
+}) {
+  const cols = manageCols ? [...COLS(leagueCol).slice(0, BASE_COLS), ...manageCols] : COLS(leagueCol);
   return (
     <div className={cx("scr-feed-row-wrap scr-gtab-headwrap", selecting && "scr-feed-row-wrap-sel")}>
       {/* 체크 칸만큼 비운다(줄의 RowCheck 와 같은 폭). */}
-      {selecting && <span className="scr-checkbox-field scr-selcell scr-gtab-headcheck" aria-hidden><input type="checkbox" tabIndex={-1} /></span>}
+      {selecting && (check ?? <span className="scr-checkbox-field scr-selcell scr-gtab-headcheck" aria-hidden><input type="checkbox" tabIndex={-1} /></span>)}
       <div className="scr-gtab scr-gtab-head">
-        {COLS(leagueCol).map((c) => (
+        {cols.map((c) => (
           <span key={c} className="scr-gtab-cell">
             {c}
             {/* 데이터 칸 설명(2026-10-21 요청) — 머리 글 옆 ⓘ. */}
@@ -185,7 +195,7 @@ export function UnhideRequestButton({ game, inRow }: { game: GameResult; inRow?:
   );
 }
 
-export function GameTableRow({ game, memberOf, check, picked, disabled, onClick, onLongPress, when, leagueCol, league, onHide }: {
+export function GameTableRow({ game, memberOf, check, picked, disabled, onClick, onLongPress, when, leagueCol, league, onHide, manage }: {
   game: GameResult;
   memberOf: (id: string) => Member | undefined;
   check?: ReactNode;
@@ -201,6 +211,8 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   leagueCol: boolean;
   /** 숨기기(확인 창은 부르는 쪽) — 없으면 숨기기 단추가 없다. */
   onHide?: () => void;
+  /** 게임관리 칸(GameTableHead manageCols 와 같은 차례 · BASE_COLS ★) — 주면 배치 ~ 댓글 대신 선다. */
+  manage?: ReactNode[];
 }) {
   useReplayMapTick();
   const hold = useLongPress(onLongPress);
@@ -265,6 +277,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
           <GameRowNames game={game} memberOf={memberOf} mobile playable={false} winP={game.winProb ?? null} />
           {game.hidden && <UnhideRequestButton game={game} />}
         </span>
+        {manage ? manage.map((c, i) => <span key={`m${i}`} className="scr-gtab-cell scr-gtab-flag">{c}</span>) : <>
         <span className="scr-gtab-cell scr-gtab-start">{secret ? <span className="scr-gtab-dim">-</span> : <StartMapCell game={game} memberOf={memberOf} />}</span>
         {/* 그래프 보기 — 참가자 전원의 분당 인구 · 일꾼 수 · 자원 · 건설(GameCurvesModal). 유즈맵은 참값을 굽지 않아 없다.
             칸 전체가 누름 자리(2026-10-26, 요청: "피시에서 데이터 셀 전체가 데이터창 열기로 동작") — 아이콘 단추만 누르던 옛 꼴은 칸 가장자리를 누르면 게임 상세가 열렸다. */}
@@ -293,6 +306,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
             {cmtN}
           </span>
         )}
+        </>}
       </div>
       {graphOpen && <GameCurvesModal game={game} onClose={() => setGraphOpen(false)} />}
       {cmtOpen && <GameCommentsModal game={game} onClose={() => setCmtOpen(false)} onCount={setCmtN} />}

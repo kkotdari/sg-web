@@ -13,6 +13,7 @@ import type { GameCurve,
   GameUnhideRequest,
   PollSummary, PollResult,
   CommentAttachmentIn,
+  GameManageQuery, GameManagePage, GameDataFlags,
 } from "../types";
 import type { ParsedReplay, ReplayMapGrid } from "scplay";
 import { putMapThumbs, type MapThumb } from "../utils/mapThumbs";
@@ -612,9 +613,25 @@ export const api = {
     await request<void>(`/api/game-results/${id}/permanent`, { method: "DELETE" });
   },
 
-  /** 제어판 데이터 관리 — 고른 판들의 참값만 지운다(리그·외부 공개 판은 서버가 남긴다 · 2026-10-20). 지운 판은 재분석해도 참값을 안 남긴다(되살리기는 makeTruthOf · 2026-11-05). */
-  async purgeTruthOf(ids: number[]): Promise<{ deleted: number }> {
-    return request<{ deleted: number }>("/api/game-results/admin/purge-truth", { method: "POST", body: JSON.stringify({ ids }) });
+  /** [참값 삭제] 고른 판들의 참값을 지운다 — 지킨 판(리그 · 명예의 전당 · 쇼츠가 있는 판)은 건너뛰고(skipped) · 지운 판은 외부 공개 목록에서도 빠진다(2026-11-20).
+   *  지운 판은 재분석해도 참값을 안 남긴다(되살리기는 makeTruthOf). */
+  async purgeTruthOf(ids: number[]): Promise<{ deleted: number; skipped: number }> {
+    return request<{ deleted: number; skipped: number }>("/api/game-results/admin/purge-truth", { method: "POST", body: JSON.stringify({ ids }) });
+  },
+  /** ★ 게임관리 화면 목록(2026-11-20 · sg-api POST /admin/manage) — 거름에 드는 판의 한 쪽 + 칸 O/X. idsOnly 면 거름에 드는 판 id 전부(전체 선택). */
+  async manageGames(q: GameManageQuery): Promise<GameManagePage> {
+    const res = await request<{ total: number; page: number; size: number; items: WireGameResult[]; flags: Record<string, GameDataFlags>; ids: number[] | null }>(
+      "/api/game-results/admin/manage", { method: "POST", body: JSON.stringify(q) },
+    );
+    return { ...res, items: res.items.map(gameResultFromWire), ids: res.ids ?? null };
+  },
+  /** 게임관리 [리플레이 받기] — 고른 판들의 리플레이를 날짜/경기번호 폴더에 담은 zip. */
+  async exportGamesOf(ids: number[]): Promise<Blob> {
+    const headers = new Headers({ "Content-Type": "application/json" });
+    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+    const res = await fetch(`${API_BASE}/api/game-results/admin/export`, { method: "POST", headers, body: JSON.stringify({ ids }) });
+    if (!res.ok) throw new Error("리플레이를 내려받지 못했어요.");
+    return res.blob();
   },
   /** 게임 추천 켜기·거두기(2026-10-22) — 한 사람이 한 판에 하나. */
   async recommendGame(id: number, on: boolean): Promise<{ recommendCount: number; recommended: boolean }> {
@@ -712,20 +729,8 @@ export const api = {
   async getPollResult(key: string): Promise<PollResult> {
     return request<PollResult>(`/api/polls/${encodeURIComponent(key)}`);
   },
-  /** 마감 상태 — 마감한 마지막 날("YYYY-MM-DD" · 없으면 null). */
-  async getGamesClose(): Promise<{ closedUntil: string | null }> {
-    return request<{ closedUntil: string | null }>("/api/game-results/admin/close");
-  },
-  /** 마감 다 풀기(2026-11-05 · 복구 기간) — 마감한 날 표식만 비운다(지운 자료는 안 돌아온다). */
-  async reopenGames(): Promise<{ closedUntil: null; was: string | null }> {
-    return request<{ closedUntil: null; was: string | null }>("/api/game-results/admin/close", { method: "DELETE" });
-  },
-  /** 그 달("YYYY-MM")까지 마감(되돌릴 수 없다 · 2026-11-05 바꿈) — 그날까지의 게임은 등록·삭제가 막히고 · 공방 판은 리플레이째 지우고(dropped) ·
-   *  내전 판은 참값 · 색인만 지운다(cleared · 기본 정보 · 리플레이 · 통계는 남는다). */
-  async closeGames(month: string): Promise<{ closedUntil: string; famed: number; dropped: number; cleared: number }> {
-    return request<{ closedUntil: string; famed: number; dropped: number; cleared: number }>("/api/game-results/admin/close", { method: "POST", body: JSON.stringify({ month }) });
-  },
-  /** 제어판 데이터 관리 — 고른 판들을 리플레이째 지운다(되돌릴 수 없다 · 리그 판은 서버가 남긴다). */
+  /* (걷음 2026-11-20, 요청: "마감 기능 제거하자 그냥") getGamesClose · reopenGames · closeGames. */
+  /** [완전삭제] 고른 판들을 리플레이째 지운다(되돌릴 수 없다 · 지킨 판 — 리그 · 명예의 전당 · 쇼츠가 있는 판 — 은 서버가 남긴다 · 2026-11-20). */
   async deleteGamesOf(ids: number[]): Promise<{ deleted: number }> {
     return request<{ deleted: number }>("/api/game-results/admin/delete", { method: "POST", body: JSON.stringify({ ids }) });
   },
@@ -811,7 +816,7 @@ export const api = {
     });
   },
 
-  /** 운영자 재분석(2026-10-26) — 서버가 판마다 리플레이를 다시 읽고 요약 · 지형 · 참값 · 곡선 · 색인 · 썸네일을 굽는다. ids 를 비우면 리플레이가 있는 모든 판. */
+  /** 운영자 재분석(2026-10-26) — 서버가 판마다 리플레이를 다시 읽고 요약 · 지형 · 참값 · 곡선 · 색인 · 썸네일을 굽는다. **참값이 있는 판만**(2026-11-20) · ids 를 비우면 참값이 있는 모든 판. */
   async reanalyzeGames(ids?: number[]): Promise<{ batch: string; total: number }> {
     return request<{ batch: string; total: number }>("/api/game-results/admin/reanalyze", {
       method: "POST", body: JSON.stringify({ ids: ids ?? [] }),
@@ -824,7 +829,7 @@ export const api = {
     return request(`/api/game-results/admin/reanalyze/${encodeURIComponent(batch)}`);
   },
 
-  /** [참값 생성](2026-11-05) — 고른 판의 참값 끔 표식을 떼고 서버가 다시 굽는다(마감한 달은 여전히 안 남는다). 재분석과 같은 묶음 열쇠(reanalyzeStatus 로 진행). */
+  /** [참값 굽기](2026-11-05 · 2026-11-20 늘) — 고른 판의 참값 끔 표식을 떼고 서버가 다시 굽는다. 재분석과 같은 묶음 열쇠(reanalyzeStatus 로 진행). */
   async makeTruthOf(ids: number[]): Promise<{ batch: string; total: number }> {
     return request<{ batch: string; total: number }>("/api/game-results/admin/make-truth", { method: "POST", body: JSON.stringify({ ids }) });
   },
@@ -835,7 +840,7 @@ export const api = {
     if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
     const q = new URLSearchParams({ dateFrom, dateTo });
     const res = await fetch(`${API_BASE}/api/game-results/admin/export?${q}`, { headers });
-    if (!res.ok) throw new Error("마감 자료를 내려받지 못했어요.");
+    if (!res.ok) throw new Error("리플레이를 내려받지 못했어요.");
     return res.blob();
   },
 

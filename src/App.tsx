@@ -22,6 +22,7 @@ import PracticeScreen from "./pages/practice/PracticeScreen";
 import ProfileModal from "./modals/ProfileModal";
 import MemberProfileModal from "./modals/MemberProfileModal";
 import AdminPanelScreen from "./pages/admin/AdminPanelScreen";
+import GameManageScreen from "./pages/admin/GameManageScreen";
 import MapCanonScreen from "./pages/minimaps/MapCanonScreen";
 import AppUpdateNoticeModal from "./modals/AppUpdateNoticeModal";
 import AppReloadModal from "./modals/AppReloadModal";
@@ -211,6 +212,7 @@ export default function App() {
     screen === "members" && !isAdmin ? HOME_SCREEN :
     screen === "minimaps" && !isAdmin ? HOME_SCREEN :
     screen === "control" && !isAdmin ? HOME_SCREEN :
+    screen === "gameManage" && !isAdmin ? HOME_SCREEN :
     screen === "explore" ? HOME_SCREEN :
     screen;
 
@@ -240,6 +242,7 @@ export default function App() {
             {isAdmin && !booting && resolvedScreen === "minimaps" && <MapCanonScreen />}
             {!booting && resolvedScreen === "catalog" && <CatalogScreen />}
             {isAdmin && !booting && resolvedScreen === "control" && <AdminPanelScreen isAdmin={isAdmin} />}
+            {isAdmin && !booting && resolvedScreen === "gameManage" && <GameManageScreen />}
           </main>
         </div>
 

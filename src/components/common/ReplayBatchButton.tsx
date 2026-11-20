@@ -25,6 +25,8 @@ export default function ReplayBatchButton() {
   const members = useAppStore((s) => s.members);
 
   const [tally, setTally] = useState<BatchTally>(EMPTY_TALLY);
+  /* 참값 없이 등록(2026-11-20) — 검토창이 등록할 때 noTruth 를 실어 보낸다(통계 · 색인 · 곡선은 만들고 재생 자료만 안 굽는다). */
+  const [noTruth, setNoTruth] = useState(false);
   const [running, setRunning] = useState(false);
   const [pickedNote, setPickedNote] = useState("");
   const [manualDrafts, setManualDrafts] = useState<ReplayDraft[]>([]);
@@ -188,6 +190,10 @@ export default function ReplayBatchButton() {
               <FolderUp size={15} /> 폴더 고르기
             </button>
           </div>
+          <label className="scr-checkbox-field scr-batch-notruth" title="통계 · 색인 · 곡선은 만들고 재생 자료(참값)만 안 굽습니다 — 재생은 안 돼요. 나중에 게임관리 [참값 굽기]로 구울 수 있어요.">
+            <input type="checkbox" checked={noTruth} onChange={(e) => setNoTruth(e.target.checked)} />
+            참값 없이 등록(재생 자료만 빼고 다 만듦)
+          </label>
 
           {staged.length > 0 ? (
             <>
@@ -254,6 +260,7 @@ export default function ReplayBatchButton() {
           onRegistered={(fileName) => {
             setManualDrafts((prev) => prev.filter((d) => d.fileName !== fileName));
           }}
+          noTruth={noTruth}
         />
       )}
     </section>

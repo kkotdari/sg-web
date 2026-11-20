@@ -272,11 +272,36 @@ export type NewGameResult = Omit<GameResult, "id" | "matchNo" | "createdBy" | "r
   chats?: { frame: number; text: string; name?: string }[];
   /** 리플레이 저장자(2026-10-26 · 팀챗/전체 가름). */
   chatSaver?: string | null;
-  /** 업로더 한 번 되올리기(2026-11-05) — 마감한 달의 내전 판에도 리플레이 · 기본 정보를 머지한다(서버 GameResultWrite.restore). */
+  /** 업로더 한 번 되올리기(2026-11-05) — 보존한 내전 판에도 리플레이 · 기본 정보를 머지한다(서버 GameResultWrite.restore). */
   restore?: boolean;
-  /** 명예의 전당에 손으로 넣기(2026-11-06 · 운영자) — 마감한 달 · 회원 없는 판도 등록 · 머지하고 표식을 단다(서버 GameResultWrite.fame). */
+  /** 명예의 전당에 손으로 넣기(2026-11-06 · 운영자) — 회원 없는 판도 등록 · 머지하고 표식을 단다(서버 GameResultWrite.fame). */
   fame?: boolean;
+  /** 참값 없이 등록(2026-11-20 · 배치등록) — 참값만 빼고 다 만든다(통계 · 색인 · 곡선 — 재생만 안 된다 · 서버 GameResultWrite.noTruth → 참값 끔 표식). */
+  noTruth?: boolean;
 };
+
+/** ★ 게임관리 화면(2026-11-20) — 판별 칸 O/X(sg-api repository.data_flags). protected = 리그 · 명예의 전당 · 쇼츠가 있는 판(참값 삭제 · 완전삭제가 건너뛴다). */
+export interface GameDataFlags {
+  replay: boolean; truth: boolean; stats: boolean; index: boolean; noTruth: boolean;
+  hidden: boolean; deleted: boolean; fame: boolean; league: boolean; shorts: boolean; shared: boolean; protected: boolean;
+}
+/** 게임관리 거름의 '있다/없다' 칸 이름(서버 GAMES_MANAGE_HAS). */
+export type GameManageHasKey = "replay" | "truth" | "stats" | "index" | "noTruth" | "hidden" | "fame" | "league" | "shorts" | "shared";
+export interface GameManageQuery {
+  dateFrom?: string; dateTo?: string;
+  kind?: "all" | "clan" | "pub" | "league" | "fame";
+  matchType?: GameType;
+  q?: string;
+  deleted?: "exclude" | "include" | "only";
+  has?: Partial<Record<GameManageHasKey, boolean>>;
+  page?: number; size?: number; idsOnly?: boolean;
+}
+export interface GameManagePage {
+  total: number; page: number; size: number;
+  items: GameResult[];
+  flags: Record<string, GameDataFlags>;
+  ids: number[] | null;
+}
 
 export interface GameResultPage {
   items: GameResult[];
@@ -457,7 +482,7 @@ export interface GameResultStatsResponse {
 
 /* 옛 "activity"(활동) 화면은 게임 · 게시판 두 화면이 됐다(2026-10-26, 요청: "활동 화면 제거 · 게임 게시판 두개의 메뉴로"). */
 export type ScreenKey = "games" | "board" | "ladder" | "clan" | "members" | "leagues" | "minimaps" | "control"
-  | "catalog" | "explore" | "placement" | "practice";
+  | "catalog" | "explore" | "placement" | "practice" | "gameManage";
 
 export interface ExtShareList {
   id: number;
