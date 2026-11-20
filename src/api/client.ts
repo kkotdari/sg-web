@@ -123,6 +123,8 @@ export interface ParticipationOut {
 export interface GameShort {
   id: number; gameResultId: number; matchNo: string; t0: number; t1: number; dur: number; caption: string; coverUrl: string | null;
   author: { memberId: string; nickname: string; avatar?: string | null }; mine: boolean; createdAt: string; clip?: ShortClip9 | null;
+  /** 제목(2026-11-20 · 재생기 다듬기 끝 칸에서 넣는다 · 없으면 "") — 카드 · 보기 머리 · 공유 글은 제목이 먼저, 없으면 첫 자막(caption). */
+  title?: string;
   /** 추천 수 · 내가 했나 · 명예의 전당(추천 3개 이상 · 곧장 선다)인가. */
   recommendCount: number; recommended: boolean; fame: boolean;
 }

@@ -28,7 +28,8 @@ const TAP_MS = 260;
 export const SHORT_PARAM = "short";
 export const shortLink = (id: number): string => `${window.location.origin}/games?${SHORT_PARAM}=${id}`;
 export function shortShareContent(it: GameShort): KakaoShareContent {
-  const title = it.caption ? `쇼츠 · ${it.caption}` : `${it.author.nickname}의 쇼츠`;
+  const head = it.title || it.caption;   // 제목이 먼저 · 없으면 첫 자막
+  const title = head ? `쇼츠 · ${head}` : `${it.author.nickname}의 쇼츠`;
   const desc = `${it.author.nickname} · ${Math.round(it.dur)}초`;
   /* 표지(정사각 · 서버 파일)가 바깥에서 읽히는 주소면 그걸 · 아니면 게임 공유 그림. */
   const cover = it.coverUrl && /^https?:/.test(it.coverUrl) ? { imageUrl: it.coverUrl } : shareThumb("gameResult");
@@ -303,9 +304,10 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
           </div>
           <div className="scr-shortv-head">
             <Avatar member={{ id: it.author.memberId, nickname: it.author.nickname, avatar: memberOf(it.author.memberId)?.avatar ?? it.author.avatar ?? null }} size={28} />
+            {/* 제목(2026-11-20)이 있으면 굵은 줄이 제목 · 아랫줄에 지은이 — 없으면 옛 꼴(지은이 · 때) */}
             <span className="scr-shortv-who">
-              <b>{it.author.nickname}</b>
-              <small>{formatAgo(it.createdAt)}{many ? ` · ${idx + 1}/${items.length}` : ""}</small>
+              <b>{it.title || it.author.nickname}</b>
+              <small>{it.title ? `${it.author.nickname} · ` : ""}{formatAgo(it.createdAt)}{many ? ` · ${idx + 1}/${items.length}` : ""}</small>
             </span>
             {it.fame && <span className="scr-shortv-fame">명예의 전당</span>}
             <button type="button" className="scr-shortv-btn" onClick={() => setStop((v) => !v)} aria-label={stop ? "재생" : "멈춤"} title={stop ? "재생 (스페이스)" : "멈춤 (스페이스)"}>
