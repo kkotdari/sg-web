@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Clapperboard, ThumbsUp } from "lucide-react";
+import { replayPrewarm9 } from "scplay";
 import { api, type GameShort } from "../../../api/client";
 import Avatar from "../../../components/common/Avatar";
 import { useAppStore } from "../../../store/appStore";
@@ -17,6 +18,15 @@ export default function ShortsStrip({ fame = false }: {
 } = {}) {
   const [items, setItems] = useState<GameShort[] | null>(null);
   const [more, setMore] = useState(true);
+  /* 쇼츠가 있으면 한가할 때 재생기 채비(그래픽 해독기 · 풀기 워커 · 캐시)를 미리 연다(2026-11-20, 지적: "쇼츠 3초 이내" · scplay replayPrewarm9 — 받기 · GPU 는 안 한다). */
+  const hasItems = !!items && items.length > 0;
+  useEffect(() => {
+    if (!hasItems) return undefined;
+    const w = window as unknown as { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    if (w.requestIdleCallback) { const id = w.requestIdleCallback(() => replayPrewarm9(), { timeout: 3000 }); return () => w.cancelIdleCallback?.(id); }
+    const t = window.setTimeout(() => replayPrewarm9(), 1500);
+    return () => window.clearTimeout(t);
+  }, [hasItems]);
   const [open, setOpen] = useState<{ i: number; from: DOMRect | null } | null>(null);
   const memberOf = useAppStore((s) => s.memberOf);
   const busy = useRef(false);

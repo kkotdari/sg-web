@@ -1,4 +1,4 @@
-import { primeReplayMap } from "scplay";
+import { primeReplayMap, replayPrewarm9 } from "scplay";
 import { api, type GameShort } from "../../../api/client";
 import type { GameResult } from "../../../types";
 
@@ -40,6 +40,7 @@ export function tracksOf(gameId: number): Promise<{ motion: string | null }> {
 /** 한 쇼츠를 여는 데 드는 것을 다 출발시킨다(기다리지 않는다). */
 export function prefetchShort(item: GameShort | undefined | null): void {
   if (!item) return;
+  replayPrewarm9();   // 재생기 채비(이미 열었으면 아무것도 안 한다)
   void shortOf(item).catch(() => undefined);
   void gameOf(item.gameResultId).catch(() => undefined);
   void tracksOf(item.gameResultId).catch(() => undefined);
