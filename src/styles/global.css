@@ -6319,6 +6319,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 @media (min-width: 900px) { .scr-short-card { width: 172px; } }
 .scr-short-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
 .scr-short-card:focus-visible { outline: 2px solid var(--point); outline-offset: 2px; }
+/* 공유 주소로 온 쇼츠(ShortsStrip deep ★ · 2026-11-20 "공유한 주소 클릭 시 목록에서 가운데로 슬라이드 앤 포커싱") — 강조 테두리 · 살짝 떠오름 · 가운데 맞춤. */
+.scr-short-card.is-focus { scroll-snap-align: center; outline: 2px solid var(--point); outline-offset: 2px; transform: translateY(-2px); }
 .scr-short-card > img, .scr-short-card-blank { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .scr-short-card-blank { background: radial-gradient(circle at 50% 40%, #1c2433, #07090d); }
 .scr-short-card-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0) 32%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.72) 100%); }

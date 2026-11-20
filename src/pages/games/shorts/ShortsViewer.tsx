@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { ExternalLink, Pause, Play, ThumbsUp, Trash2, X } from "lucide-react";
+import { ExternalLink, Pause, Play, Share2, ThumbsUp, Trash2, X } from "lucide-react";
 import { ReplayModule, useReplayMap, type MotionBase, type ShortClip9 } from "scplay";
 import { api, type GameShort } from "../../../api/client";
 import Avatar from "../../../components/common/Avatar";
@@ -8,6 +8,7 @@ import { LoadingMark } from "../../../components/common/Feedback";
 import { showToast } from "../../../components/common/Toast";
 import { useAppStore } from "../../../store/appStore";
 import { formatAgo } from "../../../utils/date";
+import { shareThumb, shareToKakao, type KakaoShareContent } from "../../../utils/kakaoShare";
 import { gamePath, navigateTo } from "../../../utils/route";
 import { cx } from "../../../utils/format";
 import { isMeleeGame, resolveSlotName } from "../GameResultSides";
@@ -22,6 +23,18 @@ import type { GameResult } from "../../../types";
    재생기는 쇼츠마다 새로 선다(key) — 받는 동안은 표지를 깔고 그 위에 로딩. 못 받으면 3초 뒤 다음으로. */
 
 const TAP_MS = 260;
+
+/** ★ 쇼츠 공유 주소(2026-11-20, 요청: "쇼츠 공유 기능 추가 · 공유한 주소 클릭 시 게임 화면에 해당 쇼츠가 목록에서 가운데로 슬라이드 앤 포커싱 및 자동 재생") —
+ *  /games?short=<id> · 게임 화면 쇼츠 줄(ShortsStrip SHORT_PARAM ★)이 읽는다. */
+export const SHORT_PARAM = "short";
+export const shortLink = (id: number): string => `${window.location.origin}/games?${SHORT_PARAM}=${id}`;
+export function shortShareContent(it: GameShort): KakaoShareContent {
+  const title = it.caption ? `쇼츠 · ${it.caption}` : `${it.author.nickname}의 쇼츠`;
+  const desc = `${it.author.nickname} · ${Math.round(it.dur)}초`;
+  /* 표지(정사각 · 서버 파일)가 바깥에서 읽히는 주소면 그걸 · 아니면 게임 공유 그림. */
+  const cover = it.coverUrl && /^https?:/.test(it.coverUrl) ? { imageUrl: it.coverUrl } : shareThumb("gameResult");
+  return { title, description: desc, ...cover, link: shortLink(it.id), fallbackText: `[스타게이트 쇼츠]\n${title}\n${desc}` };
+}
 
 /* 무대는 memo — 진행 막대(부모 prog)가 0.1초마다 바뀌어도 재생기까지 다시 그리지 않는다(props 가 다 굳은 값이다). */
 const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, onEnd }: {
@@ -243,6 +256,13 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
       .catch((e) => { onPatch?.(id, before); showToast(e instanceof Error ? e.message : "추천하지 못했어요", { kind: "warn" }); })
       .finally(() => setRecBusy(false));
   };
+  const share = async (): Promise<void> => {
+    if (!it) return;
+    const out = await shareToKakao(shortShareContent(it));
+    if (out === "copied") showToast("링크를 복사했어요.", { kind: "ok" });
+    else if (out === "failed") showToast("공유하지 못했어요.", { kind: "warn" });
+    if (out !== "failed") api.pingAccess("short_share", `short#${it.id}`).catch(() => undefined);
+  };
   const goGame = (): void => {
     if (!it) return;
     onClose();
@@ -307,6 +327,10 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
           <button type="button" className="scr-shortv-act" onClick={goGame} aria-label="이 장면부터 게임 보기" title="이 장면부터 게임 보기">
             <i className="scr-shortv-ico" aria-hidden><ExternalLink size={22} /></i>
             <span>게임</span>
+          </button>
+          <button type="button" className="scr-shortv-act" onClick={() => { void share(); }} aria-label="쇼츠 공유" title="공유 — 링크를 누르면 게임 화면에서 이 쇼츠가 바로 재생돼요">
+            <i className="scr-shortv-ico" aria-hidden><Share2 size={22} /></i>
+            <span>공유</span>
           </button>
           {it.mine && (
             <button type="button" className="scr-shortv-act" onClick={() => { void del(); }} aria-label="쇼츠 지우기" title="지우기">
