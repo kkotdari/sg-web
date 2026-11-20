@@ -4,7 +4,6 @@ import { ExternalLink, Pause, Play, Share2, ThumbsUp, Trash2, X } from "lucide-r
 import { ReplayModule, useReplayMap, type MotionBase, type ShortClip9 } from "scplay";
 import { api, type GameShort } from "../../../api/client";
 import Avatar from "../../../components/common/Avatar";
-import { LoadingMark } from "../../../components/common/Feedback";
 import { showToast } from "../../../components/common/Toast";
 import { useAppStore } from "../../../store/appStore";
 import { formatAgo } from "../../../utils/date";
@@ -102,7 +101,12 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
   return (
     <div className="scr-shortv-stage" style={{ width: w, height: h }}>
       {!ready && item.coverUrl && <img className="scr-shortv-cover" src={item.coverUrl} alt="" draggable={false} />}
-      {!ready && !err && <div className="scr-shortv-wait"><LoadingMark /></div>}
+      {/* 로딩 = 로고 별이 뛰논다(2026-11-20, 요청: "쇼츠 로딩 마크를 우리 로고의 별마크 회전으로 · 재밌게 회전 및 이동") — 옛: 글자 마크(LoadingMark). */}
+      {!ready && !err && (
+        <div className="scr-shortv-wait" role="status" aria-label="불러오는 중">
+          <span className="scr-shortv-star" aria-hidden><img src="/images/logo/symbol.png" alt="" draggable={false} /></span>
+        </div>
+      )}
       {err && <div className="scr-shortv-err">{err}</div>}
       {got && grid && (
         <div className={cx("scr-shortv-player", ready && "is-ready")}>
