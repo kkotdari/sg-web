@@ -9,6 +9,7 @@ import { GameRowNames, GameRowStatus, ListRow } from "../games/GameRow";
 import { GameTableHead, GameTableRow } from "../games/GameTable";
 import WpaDetailModal from "../../modals/WpaDetailModal";
 import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
+import ReplayBatchButton from "../../components/common/ReplayBatchButton";
 import { gamePlayable } from "../../utils/gamePlayable";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { api } from "../../api/client";
@@ -17,8 +18,8 @@ import { showAlert } from "../../components/common/AlertDialog";
 import { showToast } from "../../components/common/Toast";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { cx } from "../../utils/format";
-import { formatAgo, todayStr } from "../../utils/date";
-import type { GameDataFlags, GameManageHasKey, GameManagePage, GameManageQuery, GameResult, GameType } from "../../types";
+import { formatAgo } from "../../utils/date";
+import type { GameDataFlags, GameManageHasKey, GameManagePage, GameManageQuery, GameResult } from "../../types";
 
 /* ★★ 게임관리 화면(2026-11-20, 요청: "게임 데이터 관리 → 제어판이 아닌 게임관리 별도 화면으로 분리 · 컬럼에 숨김 삭제 등도 추가" ·
    "게임자료 섹션 자체를 다 옮겨오기 · 단 메인화면은 게임 목록이 뜨고 버튼들로" · "목록은 메인 그리드를 공유해서 쓰고 각 상황에 맞게 조회가 가능하게 필터를 자세히 ·
@@ -26,61 +27,78 @@ import type { GameDataFlags, GameManageHasKey, GameManagePage, GameManageQuery, 
    옛 제어판 '게임 자료' 칸(데이터 관리 창 · WPA 상세보기 · 월 마감 · 리플레이 내려받기 · 숨김 해제 요청 · 삭제된 게임)을 한 화면으로 옮겼다 — 월 마감은 같은 날 기능째 걷었고
    (요청: "마감 기능 제거하자 그냥"), 삭제된 게임 창은 이 표의 [삭제] 거름 + [복원] · [완전삭제]가 대신한다.
    표 = PC 게임 목록 표(GameTable ★★)의 앞 여섯 칸 + 데이터 칸(GameTableHead manageCols · GameTableRow manage) · 폰은 게임 목록 줄(ListRow) 위에 칸 O/X.
-   목록 · 거름 · 쪽 · 전체 id 는 서버가 한다(POST /api/game-results/admin/manage) — 전체 선택은 거름에 드는 판 id 전부를 받아 고른다. */
+   목록 · 거름 · 쪽 · 전체 id 는 서버가 한다(POST /api/game-results/admin/manage) — 전체 선택은 거름에 드는 판 id 전부를 받아 고른다.
+   ★ 거름 둘째 판(같은 날, 요청: "배치등록도 게임관리로 · 종류(내전 · 공방 · 리그) · 유형 · 특이사항(명예의 전당 · 쇼츠 · 외부 공개) → 체크박스 ·
+   리플레이 · 참값 · 통계 · 색인 · 숨김 · 삭제 → 라디오(전체도 있는 라디오) · 그 외의 필터는 제거 · 디자인은 화려함보단 깔끔하게") — 고르면 바로 다시 받는다(조회 단추 없음).
+   옛 첫 판의 기간 · 검색 · 종류 하나 고르기 · 참값 끔 · 리그 거름과 전체/O/X 덩이 단추는 걷었다. 삭제 라디오만 처음 값이 X(지운 판 빼고 — 여느 목록과 같게). */
 
-type Tri = boolean | undefined;
-interface Filter {
-  from: string; to: string;
-  kind: NonNullable<GameManageQuery["kind"]>;
-  matchType: GameType | "";
-  q: string;
-  deleted: NonNullable<GameManageQuery["deleted"]>;
-  has: Partial<Record<GameManageHasKey, boolean>>;
-}
-const EMPTY: Filter = { from: "", to: "", kind: "all", matchType: "", q: "", deleted: "exclude", has: {} };
+type Radio = "all" | "o" | "x";
+type RadioKey = "replay" | "truth" | "stats" | "index" | "hidden" | "deleted";
+type Kind = NonNullable<GameManageQuery["kinds"]>[number];
+type GType = NonNullable<GameManageQuery["types"]>[number];
+type Mark = NonNullable<GameManageQuery["marks"]>[number];
+interface Filter { kinds: Kind[]; types: GType[]; marks: Mark[]; radios: Record<RadioKey, Radio> }
+const EMPTY: Filter = {
+  kinds: [], types: [], marks: [],
+  radios: { replay: "all", truth: "all", stats: "all", index: "all", hidden: "all", deleted: "x" },
+};
 
-/** 데이터 칸(표 머리 · 거름 · 폰 줄 같은 차례) — key 는 flags 의 이름 · deleted 는 거름이 따로(빼고/포함/만). */
-const FLAG_COLS: { key: keyof GameDataFlags; label: string; short: string; tip: string }[] = [
-  { key: "replay", label: "리플레이", short: "리플", tip: "리플레이 파일" },
-  { key: "truth", label: "참값", short: "참값", tip: "참값(재생 자료) — '끔'은 참값 없이 등록했거나 참값을 지운 판(재분석해도 안 굽는다 · [참값 굽기]로 다시)" },
-  { key: "stats", label: "통계", short: "통계", tip: "통계(집계 · 곡선)" },
-  { key: "index", label: "색인", short: "색인", tip: "게임 색인(전술 낱말 검색)" },
-  { key: "hidden", label: "숨김", short: "숨김", tip: "숨긴 판" },
-  { key: "deleted", label: "삭제", short: "삭제", tip: "지운 판(휴지통 · [복원]으로 되살린다)" },
-  { key: "fame", label: "명전", short: "명전", tip: "명예의 전당(추천 3에 곧장 · 참값 삭제 · 완전삭제가 건너뛴다)" },
-  { key: "league", label: "리그", short: "리그", tip: "리그 경기 세트에 이은 판(참값 삭제 · 완전삭제가 건너뛴다)" },
-  { key: "shorts", label: "쇼츠", short: "쇼츠", tip: "쇼츠가 있는 판(참값 삭제 · 완전삭제가 건너뛴다)" },
-  { key: "shared", label: "공개", short: "공개", tip: "외부 공개 목록에 든 판" },
+/** 데이터 칸(표 머리 · 폰 줄 같은 차례). 참값은 끔 표식이면 "끔". */
+const FLAG_COLS: { key: keyof GameDataFlags; label: string }[] = [
+  { key: "replay", label: "리플레이" }, { key: "truth", label: "참값" }, { key: "stats", label: "통계" }, { key: "index", label: "색인" },
+  { key: "hidden", label: "숨김" }, { key: "deleted", label: "삭제" }, { key: "fame", label: "명전" }, { key: "league", label: "리그" },
+  { key: "shorts", label: "쇼츠" }, { key: "shared", label: "공개" },
 ];
-/** 거름의 있음/없음 칸 — 삭제는 따로(빼고/포함/만) · 참값 끔은 참값 곁에. */
-const TRI_KEYS: { key: GameManageHasKey; label: string }[] = [
-  { key: "replay", label: "리플레이" }, { key: "truth", label: "참값" }, { key: "noTruth", label: "참값 끔" },
-  { key: "stats", label: "통계" }, { key: "index", label: "색인" }, { key: "hidden", label: "숨김" },
-  { key: "fame", label: "명예의 전당" }, { key: "league", label: "리그" }, { key: "shorts", label: "쇼츠" }, { key: "shared", label: "외부 공개" },
-];
-const KIND_OPTIONS = [
-  { value: "all", label: "종류 전체" }, { value: "clan", label: "내전(리그 빼고)" }, { value: "pub", label: "공방" },
-  { value: "league", label: "리그" }, { value: "fame", label: "명예의 전당" },
-];
-const TYPE_OPTIONS = [{ value: "", label: "유형 전체" }, { value: "0101", label: "1:1" }, { value: "0102", label: "팀전" }, { value: "0103", label: "난투" }];
-const DELETED_OPTIONS = [{ value: "exclude", label: "삭제한 판 빼고" }, { value: "include", label: "삭제한 판 포함" }, { value: "only", label: "삭제한 판만" }];
+const KINDS: [Kind, string][] = [["clan", "내전"], ["pub", "공방"], ["league", "리그"]];
+const TYPES: [GType, string][] = [["1v1", "1:1"], ["team", "팀전"], ["ffa", "프리포올"], ["ums", "유즈맵"]];
+const MARKS: [Mark, string][] = [["fame", "명예의 전당"], ["shorts", "쇼츠"], ["shared", "외부 공개"]];
+const RADIOS: [RadioKey, string][] = [["replay", "리플레이"], ["truth", "참값"], ["stats", "통계"], ["index", "색인"], ["hidden", "숨김"], ["deleted", "삭제"]];
 const SIZE_OPTIONS = [{ value: "50", label: "50개씩" }, { value: "100", label: "100개씩" }, { value: "200", label: "200개씩" }];
 
-const toQuery = (f: Filter): GameManageQuery => ({
-  dateFrom: f.from || undefined, dateTo: f.to || undefined, kind: f.kind, matchType: f.matchType || undefined,
-  q: f.q.trim() || undefined, deleted: f.deleted, has: f.has,
-});
+const toQuery = (f: Filter): GameManageQuery => {
+  const has: Partial<Record<GameManageHasKey, boolean>> = {};
+  for (const [k] of RADIOS) {
+    if (k === "deleted" || f.radios[k] === "all") continue;
+    has[k] = f.radios[k] === "o";
+  }
+  const d = f.radios.deleted;
+  return { kinds: f.kinds, types: f.types, marks: f.marks, has, deleted: d === "all" ? "include" : d === "o" ? "only" : "exclude" };
+};
 
-function TriPick({ label, value, onChange }: { label: string; value: Tri; onChange: (v: Tri) => void }) {
-  const opts: [Tri, string][] = [[undefined, "전체"], [true, "O"], [false, "X"]];
+function CheckRow<T extends string>({ label, items, value, onChange }: {
+  label: string; items: [T, string][]; value: T[]; onChange: (v: T[]) => void;
+}) {
   return (
-    <div className="scr-gman-tri" role="group" aria-label={label}>
-      <span className="scr-gman-tri-label">{label}</span>
-      {opts.map(([v, t]) => (
-        <button key={t} type="button" className={cx("scr-gman-tri-btn", value === v && "is-on")} aria-pressed={value === v} onClick={() => onChange(v)}>
-          {t}
-        </button>
-      ))}
+    <div className="scr-gman-frow">
+      <span className="scr-gman-flabel">{label}</span>
+      <div className="scr-gman-opts">
+        {items.map(([k, t]) => (
+          <label key={k} className="scr-checkbox-field scr-gman-opt">
+            <input
+              type="checkbox" checked={value.includes(k)}
+              onChange={(e) => onChange(e.target.checked ? [...value, k] : value.filter((x) => x !== k))}
+            />
+            {t}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RadioRow({ name, label, value, onChange }: { name: string; label: string; value: Radio; onChange: (v: Radio) => void }) {
+  const opts: [Radio, string][] = [["all", "전체"], ["o", "O"], ["x", "X"]];
+  return (
+    <div className="scr-gman-frow" role="radiogroup" aria-label={label}>
+      <span className="scr-gman-flabel">{label}</span>
+      <div className="scr-gman-opts">
+        {opts.map(([v, t]) => (
+          <label key={v} className="scr-checkbox-field scr-gman-opt">
+            <input type="radio" name={`scr-gman-${name}`} checked={value === v} onChange={() => onChange(v)} />
+            {t}
+          </label>
+        ))}
+      </div>
     </div>
   );
 }
@@ -88,7 +106,7 @@ function TriPick({ label, value, onChange }: { label: string; value: Tri; onChan
 /** 칸 O/X — 참값은 끔 표식이면 "끔". */
 function FlagMark({ f, k }: { f: GameDataFlags | undefined; k: keyof GameDataFlags }) {
   if (!f) return <span className="scr-gman-ox is-x">-</span>;
-  if (k === "truth" && !f.truth && f.noTruth) return <span className="scr-gman-ox is-off" title="참값 끔">끔</span>;
+  if (k === "truth" && !f.truth && f.noTruth) return <span className="scr-gman-ox is-off" title="참값 끔(참값 없이 등록 · 참값 삭제)">끔</span>;
   return <span className={cx("scr-gman-ox", f[k] ? "is-o" : "is-x")}>{f[k] ? "O" : "X"}</span>;
 }
 
@@ -110,7 +128,6 @@ export default function GameManageScreen() {
   const memberOf = useAppStore((s) => s.memberOf);
   const mobile = useIsMobile();
 
-  const [draft, setDraft] = useState<Filter>(EMPTY);
   const [applied, setApplied] = useState<Filter>(EMPTY);
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(50);
@@ -139,22 +156,18 @@ export default function GameManageScreen() {
   /* 첫 화면은 바로 목록(요청: "메인화면은 게임 목록이 뜨고") — 거름 없이 새 판부터. */
   useEffect(() => { void load(EMPTY, 1, size); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  const search = () => {
-    setApplied(draft);
+  /** 거름을 바꾸면 바로 다시 받는다 — 첫 쪽부터 · 고른 판은 비운다(안 보이는 판에 일을 걸지 않게). */
+  const apply = (next: Filter) => {
+    setApplied(next);
     setPage(1);
     setPicked(new Set());
-    void load(draft, 1, size);
+    void load(next, 1, size);
   };
-  const reset = () => setDraft(EMPTY);
+  const patch = (x: Partial<Filter>) => apply({ ...applied, ...x });
+  const setRadio = (k: RadioKey, v: Radio) => apply({ ...applied, radios: { ...applied.radios, [k]: v } });
+  const isEmpty = JSON.stringify(applied) === JSON.stringify(EMPTY);
   const goPage = (p: number) => { setPage(p); void load(applied, p, size); };
   const changeSize = (v: string) => { const sz = Number(v); setSize(sz); setPage(1); void load(applied, 1, sz); };
-  const patch = (x: Partial<Filter>) => setDraft((f) => ({ ...f, ...x }));
-  const setHas = (k: GameManageHasKey, v: Tri) => setDraft((f) => {
-    const has = { ...f.has };
-    if (v === undefined) delete has[k];
-    else has[k] = v;
-    return { ...f, has };
-  });
 
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / size));
@@ -190,6 +203,10 @@ export default function GameManageScreen() {
 
   /* ── 위 단추(옛 제어판 게임 자료 칸) ── */
   const [wpaOpen, setWpaOpen] = useState(false);
+  /* 배치등록 창(2026-11-20 둘째 · 옛 제어판 배치등록 칸) — 한 번 연 뒤로는 닫아도 붙여 둔다(읽는 중 · 담은 파일 · 검토할 판을 잃지 않게 · 숨기기만). */
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchMounted, setBatchMounted] = useState(false);
+  useLockBodyScroll(batchOpen, () => setBatchOpen(false));
   const [unhideOpen, setUnhideOpen] = useState(false);
   const [unhideCount, setUnhideCount] = useState<number | null>(null);
   useEffect(() => {
@@ -325,6 +342,8 @@ export default function GameManageScreen() {
     return out;
   })();
 
+  /** 종류 칸 — 리그(리그 경기 세트) · 내전(참가자 전원이 회원) · 공방. */
+  const kindOf = (g: GameResult): string => (flags[String(g.id)]?.league ? "리그" : g.clan === false ? "공방" : g.clan ? "내전" : "-");
   const flagCells = (g: GameResult): ReactNode[] => FLAG_COLS.map((c) => <FlagMark key={c.key} f={flags[String(g.id)]} k={c.key} />);
 
   return (
@@ -334,7 +353,8 @@ export default function GameManageScreen() {
       </div>
       {/* 맨 위 단추 줄 — 회원관리와 같은 꼴(.scr-v2-primary-row · 옛 제어판 게임 자료 칸의 목록 밖 일). */}
       <div className="scr-v2-primary-row scr-gman-tools">
-          <button type="button" className="scr-rect-btn is-secondary" onClick={() => setWpaOpen(true)}>WPA 상세보기</button>
+          <button type="button" className="scr-rect-btn is-secondary" onClick={() => { setBatchMounted(true); setBatchOpen(true); }}>배치등록</button>
+        <button type="button" className="scr-rect-btn is-secondary" onClick={() => setWpaOpen(true)}>WPA 상세보기</button>
           <button type="button" className="scr-rect-btn is-secondary" onClick={() => setUnhideOpen(true)}>
             숨김 해제 요청{unhideCount ? ` (${unhideCount})` : ""}
           </button>
@@ -347,35 +367,13 @@ export default function GameManageScreen() {
       </div>
 
       <div className="scr-gman-filters">
-        <div className="scr-gman-frow">
-          <label className="scr-gman-period">
-            <span className="scr-gman-flabel">기간</span>
-            <input
-              type="date" className="scr-input scr-date-compact" aria-label="시작 날짜"
-              value={draft.from} max={draft.to || todayStr()} onChange={(e) => patch({ from: e.target.value })}
-            />
-            <span className="scr-gman-flabel" aria-hidden>~</span>
-            <input
-              type="date" className="scr-input scr-date-compact" aria-label="끝 날짜"
-              value={draft.to} min={draft.from || undefined} max={todayStr()} onChange={(e) => patch({ to: e.target.value })}
-            />
-          </label>
-          <Select value={draft.kind} options={KIND_OPTIONS} onChange={(v) => patch({ kind: v as Filter["kind"] })} className="scr-gman-sel" size="sm" />
-          <Select value={draft.matchType} options={TYPE_OPTIONS} onChange={(v) => patch({ matchType: v as Filter["matchType"] })} className="scr-gman-sel" size="sm" />
-          <Select value={draft.deleted} options={DELETED_OPTIONS} onChange={(v) => patch({ deleted: v as Filter["deleted"] })} className="scr-gman-sel" size="sm" />
-          <input
-            type="search" className="scr-input scr-gman-search" placeholder="게임번호 · 맵 · 선수 · 유형(2:2)으로 찾기"
-            value={draft.q} onChange={(e) => patch({ q: e.target.value })}
-            onKeyDown={(e) => { if (e.key === "Enter" && !loading) search(); }}
-          />
+        <CheckRow label="종류" items={KINDS} value={applied.kinds} onChange={(v) => patch({ kinds: v })} />
+        <CheckRow label="유형" items={TYPES} value={applied.types} onChange={(v) => patch({ types: v })} />
+        <CheckRow label="특이사항" items={MARKS} value={applied.marks} onChange={(v) => patch({ marks: v })} />
+        <div className="scr-gman-radios">
+          {RADIOS.map(([k, t]) => <RadioRow key={k} name={k} label={t} value={applied.radios[k]} onChange={(v) => setRadio(k, v)} />)}
         </div>
-        <div className="scr-gman-frow scr-gman-tris">
-          {TRI_KEYS.map((t) => <TriPick key={t.key} label={t.label} value={draft.has[t.key]} onChange={(v) => setHas(t.key, v)} />)}
-        </div>
-        <div className="scr-gman-frow scr-gman-fgo">
-          <button type="button" className="scr-rect-btn is-secondary" onClick={reset} disabled={loading}>초기화</button>
-          <button type="button" className="scr-rect-btn" onClick={search} disabled={loading}>{loading ? <Spinner /> : "조회"}</button>
-        </div>
+        <button type="button" className="scr-text-btn scr-gman-reset" onClick={() => apply(EMPTY)} disabled={isEmpty || loading}>초기화</button>
       </div>
 
       <div className="scr-gman-bar">
@@ -434,12 +432,12 @@ export default function GameManageScreen() {
               onClick={() => togglePick(g.id)}
               above={(
                 <span className="scr-gman-mflags">
+                  <span className="scr-gman-mno">{g.matchNo || "-"} · {kindOf(g)}</span>
                   {FLAG_COLS.map((c) => (
-                    <span key={c.key} className="scr-gman-mflag">{c.short} <FlagMark f={flags[String(g.id)]} k={c.key} /></span>
+                    <span key={c.key} className="scr-gman-mflag">{c.label} <FlagMark f={flags[String(g.id)]} k={c.key} /></span>
                   ))}
                 </span>
               )}
-              corner={g.matchNo || undefined}
               status={<GameRowStatus game={g} />}
               desc={<GameRowNames game={g} memberOf={memberOf} mobile playable={gamePlayable(g)} />}
               side={formatAgo(g.gameStartedAt ?? g.date)}
@@ -459,6 +457,7 @@ export default function GameManageScreen() {
                 onClick={() => togglePick(g.id)}
                 when={formatAgo(g.gameStartedAt ?? g.date)}
                 manage={flagCells(g)}
+                kind={kindOf(g)}
               />
             ))}
           </div>
@@ -538,6 +537,20 @@ export default function GameManageScreen() {
         document.body,
       )}
 
+      {batchMounted && createPortal(
+        <div className="scr-modal-overlay" style={batchOpen ? undefined : { display: "none" }}>
+          <div className="scr-modal scr-modal-md scr-gman-batch" onClick={(e) => e.stopPropagation()}>
+            <div className="scr-modal-head">
+              <span>배치등록</span>
+              <button className="scr-icon-btn" onClick={() => setBatchOpen(false)} aria-label="닫기"><X size={14} /></button>
+            </div>
+            <div className="scr-modal-body">
+              <ReplayBatchButton inModal onSaved={() => { void load(); }} />
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
       {wpaOpen && <WpaDetailModal onClose={() => setWpaOpen(false)} />}
       {unhideOpen && <UnhideRequestsModal onClose={() => setUnhideOpen(false)} />}
     </div>

@@ -21,7 +21,9 @@ interface BatchTally {
 
 const EMPTY_TALLY: BatchTally = { total: 0, done: 0, registered: 0, merged: 0, failed: 0 };
 
-export default function ReplayBatchButton() {
+/** inModal — 게임관리 화면의 배치등록 창 안(2026-11-20, 요청: "배치등록도 게임관리로 옮겨주고") · 카드 테두리 · 제목 없이.
+ *  onSaved — 검토창에서 등록을 마치거나 닫을 때(게임관리 목록을 다시 받는다). */
+export default function ReplayBatchButton({ inModal = false, onSaved }: { inModal?: boolean; onSaved?: () => void } = {}) {
   const members = useAppStore((s) => s.members);
 
   const [tally, setTally] = useState<BatchTally>(EMPTY_TALLY);
@@ -143,7 +145,7 @@ export default function ReplayBatchButton() {
   const pct = tally.total > 0 ? Math.round((tally.done / tally.total) * 100) : 0;
 
   return (
-    <section className="scr-adm-card scr-batch">
+    <section className={inModal ? "scr-batch scr-batch-bare" : "scr-adm-card scr-batch"}>
       <input
         ref={setDirInput}
         type="file"
@@ -151,12 +153,14 @@ export default function ReplayBatchButton() {
         hidden
         onChange={(e) => runBatch(e.target.files)}
       />
-      <div className="scr-adm-card-head">
-        <h2 className="scr-adm-card-title">배치등록</h2>
-        {!running && staged.length > 0 && (
-          <span className="scr-adm-card-meta">{staged.length}개 담김</span>
-        )}
-      </div>
+      {!inModal && (
+        <div className="scr-adm-card-head">
+          <h2 className="scr-adm-card-title">배치등록</h2>
+          {!running && staged.length > 0 && (
+            <span className="scr-adm-card-meta">{staged.length}개 담김</span>
+          )}
+        </div>
+      )}
       <p className="scr-adm-card-desc">
         리플레이를 골라 한 번에 읽어 옵니다. 폴더를 고르면 하위 폴더까지 훑어요.
         무엇을 등록할지는 다 읽은 뒤 뜨는 검토창에서 정합니다.
@@ -255,8 +259,8 @@ export default function ReplayBatchButton() {
           drafts={manualDrafts}
           truncated={dropped > 0}
           droppedCount={dropped}
-          onClose={() => setReviewOpen(false)}
-          onSaved={() => setReviewOpen(false)}
+          onClose={() => { setReviewOpen(false); onSaved?.(); }}
+          onSaved={() => { setReviewOpen(false); onSaved?.(); }}
           onRegistered={(fileName) => {
             setManualDrafts((prev) => prev.filter((d) => d.fileName !== fileName));
           }}

@@ -6428,32 +6428,23 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* ★★ 게임관리 화면(GameManageScreen ★★ · 2026-11-20, 요청: "게임자료 섹션을 화면으로 · 목록은 메인 그리드를 공유 · 필터 자세히 · 페이징 · 전체선택은 페이징 무관") —
    위 단추 줄(.scr-v2-primary-row) · 거름 칸 · 고른 수와 일 단추 줄(위에 붙어 따라온다) · 표(PC 게임 표 + 데이터 칸) · 쪽 단추. */
 .scr-gman-tools { flex-wrap: wrap; }
+/* 거름(같은 날 둘째, 요청: "종류 · 유형 · 특이사항 → 체크박스 · 리플레이 ~ 삭제 → 라디오 · 디자인은 화려함보단 깔끔하게") — 바탕 · 테두리 상자 없이
+   위아래 가는 줄과 줄마다 왼쪽 이름 · 오른쪽 고르기. 라디오 여섯 줄은 PC 세 칸 · 폰 두 칸. 바로 앞(되물림): 상자 안 전체/O/X 덩이 단추 · 기간 · 검색 · 조회 단추. */
 .scr-gman-filters {
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 12px 14px; margin-bottom: 12px;
-  border: 1px solid var(--line-faint, var(--line)); border-radius: 10px;
-  background: rgba(var(--overlay-rgb), 0.03);
+  position: relative; display: flex; flex-direction: column;
+  margin-bottom: 12px; border-top: 1px solid var(--line-faint, var(--line)); border-bottom: 1px solid var(--line-faint, var(--line));
 }
-.scr-gman-frow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
-.scr-gman-period { display: flex; align-items: center; gap: 6px; }
-.scr-gman-flabel { flex: none; font-size: var(--fs-caption); font-weight: 600; color: var(--text-dim, var(--muted)); }
-.scr-cselect.scr-gman-sel { flex: 0 0 auto; width: 156px; min-width: 0; }
-.scr-gman-search { flex: 1 1 240px; min-width: 180px; }
-.scr-gman-tris { gap: 6px 10px; }
-/* 있음/없음 거름 — 이름 · 전체 · O · X 한 덩이(누른 칸이 켜짐). */
-.scr-gman-tri {
-  display: inline-flex; align-items: stretch; overflow: hidden;
-  border: 1px solid var(--line-faint, var(--line)); border-radius: 8px; font-size: var(--fs-caption);
-}
-.scr-gman-tri-label { display: flex; align-items: center; padding: 0 8px; font-weight: 600; color: var(--text-dim, var(--muted)); white-space: nowrap; }
-.scr-gman-tri-btn {
-  min-width: 34px; padding: 5px 8px; border: none; border-left: 1px solid var(--line-faint, var(--line));
-  background: transparent; color: var(--text-dim, var(--muted)); font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
-}
-@media (hover: hover) { .scr-gman-tri-btn:not(.is-on):hover { background: var(--lighting-hover-bg); } }
-.scr-gman-tri-btn.is-on { background: var(--text); color: var(--panel-solid); font-weight: 700; }
-.scr-gman-fgo { justify-content: flex-end; }
-.scr-gman-fgo > .scr-rect-btn { min-width: 76px; }
+.scr-gman-frow { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 8px 4px; }
+.scr-gman-filters > .scr-gman-frow + .scr-gman-frow, .scr-gman-filters > .scr-gman-radios { border-top: 1px solid var(--line-faint, var(--line)); }
+.scr-gman-flabel { flex: none; width: 64px; font-size: var(--fs-caption); font-weight: 600; color: var(--text-dim, var(--muted)); white-space: nowrap; }
+.scr-gman-opts { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px; min-width: 0; }
+.scr-gman-opt { font-size: var(--fs-caption); color: var(--text); white-space: nowrap; }
+.scr-gman-radios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.scr-gman-radios > .scr-gman-frow:nth-child(n+4) { border-top: 1px solid var(--line-faint, var(--line)); }
+.scr-gman-reset { position: absolute; top: 6px; right: 4px; font-size: var(--fs-caption); }
+.scr-gman-reset:disabled { visibility: hidden; }
+/* 배치등록 창(옛 제어판 배치등록 칸 · ReplayBatchButton inModal) — 카드 테두리 없이 창 몸에. */
+.scr-batch.scr-batch-bare { padding: 0; border: none; background: none; }
 /* 고른 수 · 일 단추 줄 — 표를 내려 읽어도 위에 붙어 따라온다. */
 .scr-gman-bar {
   position: sticky; top: 0; z-index: 6;
@@ -6469,8 +6460,10 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* 표 — PC 게임 표 앞 여섯 칸(게임번호 ~ 로스터) + 데이터 칸 열 개(GameTable BASE_COLS ★). 좁은 창은 표째 옆으로 민다. */
 .scr-gman-tablewrap { overflow-x: auto; }
 .scr-gtab-list.is-manage {
-  min-width: 1180px;
-  --gtab-cols: 136px 92px 64px minmax(110px, 1fr) 64px minmax(240px, 2.6fr) repeat(10, 48px);
+  min-width: 1240px;
+  /* 게임번호 · 시작일시 · 종류 · 유형 · 맵 · 게임길이 · 로스터 · 데이터 칸 열 — 맵은 120 고정 · 로스터는 좁게(최소 220) · 남는 폭은 데이터 칸과 로스터가 고르게
+     (같은 날 둘째 요청: "시작일시 다음 종류도 추가 · 맵 로스터 칸 줄이기"). 바로 앞(되물림): 136 92 64 minmax(110, 1fr) 64 minmax(240, 2.6fr) repeat(10, 48). */
+  --gtab-cols: 136px 92px 56px 64px 120px 64px minmax(220px, 1fr) repeat(10, minmax(48px, 1fr));
 }
 .scr-gtab-flag { padding-left: 2px; padding-right: 2px; }
 .scr-gman-ox { font-size: var(--fs-12); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -6480,6 +6473,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-gman-rows.is-loading, .scr-gtab-list.is-manage.is-loading { opacity: 0.55; pointer-events: none; }
 /* 폰 줄 — 줄 위에 칸 O/X 한 줄. */
 .scr-gman-mflags { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: var(--fs-10); color: var(--row-dim, var(--muted)); }
+.scr-gman-mno { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-dim, var(--muted)); }
 .scr-gman-mflag { white-space: nowrap; }
 .scr-gman-mflag > .scr-gman-ox { font-size: var(--fs-10); }
 /* 쪽 단추 — 가운데 · 지금 쪽은 켜짐 · 오른끝 쪽 크기. */
@@ -6489,8 +6483,10 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-gman-pginfo { margin: 0 8px; font-size: var(--fs-caption); color: var(--muted); font-variant-numeric: tabular-nums; }
 .scr-cselect.scr-gman-size { flex: 0 0 auto; width: 104px; }
 @media (max-width: 960px) {
-  .scr-gman-filters { padding: 10px; }
-  .scr-cselect.scr-gman-sel { width: auto; flex: 1 1 40%; }
+  .scr-gman-radios { grid-template-columns: minmax(0, 1fr); }
+  .scr-gman-radios > .scr-gman-frow:nth-child(n+2) { border-top: 1px solid var(--line-faint, var(--line)); }
+  .scr-gman-flabel { width: 52px; }
+  .scr-gman-opts { gap: 6px 12px; }
   .scr-gman-bar { top: 0; }
   .scr-gman-acts { width: 100%; }
   .scr-gman-acts > .scr-rect-btn { flex: 1 1 30%; padding-left: 6px; padding-right: 6px; }

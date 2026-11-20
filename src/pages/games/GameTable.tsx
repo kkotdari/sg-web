@@ -50,6 +50,11 @@ const COLS = (league: boolean) => ["게임번호", "시작일시", league ? "경
 /* ★ 게임관리 화면(2026-11-20, 요청: "게임자료 섹션을 화면으로 옮기되 목록은 메인 그리드를 공유해서") — 앞 여섯 칸(게임번호 ~ 로스터)은 이 표 그대로 ·
    뒤 칸(배치 ~ 댓글) 대신 부르는 쪽이 준 칸(manageCols · manage — 리플레이 · 참값 · 통계 · 색인 · 숨김 · 삭제 …)이 선다. 열 틀은 .scr-gtab-list.is-manage(global.css). */
 const BASE_COLS = 6;
+/* 게임관리 표는 시작일시 다음에 '종류'(내전 · 공방 · 리그) 칸을 끼운다(같은 날 둘째, 요청: "컬럼에 시작일시 다음 종류도 추가 · 맵 로스터 칸 줄이기") — GameTableRow kind. */
+const manageHead = (league: boolean, extra: string[]) => {
+  const base = COLS(league).slice(0, BASE_COLS);
+  return [...base.slice(0, 2), "종류", ...base.slice(2), ...extra];
+};
 
 /** 배치 칩 글 — 폭 6칸(한글·한자 등 넓은 글자 2칸 · 영문·숫자 1.2칸) 안에서 앞부터(2026-10-26, 요청: "2글자 정도" → "영어는 4글자" →
  *  2026-10-29 "한글 세 글자 영어 다섯 글자까지" — 한글 셋 = 영문 다섯 = 6칸 · 섞이면 그 사이). */
@@ -116,7 +121,7 @@ export function GameTableHead({ selecting, leagueCol, manageCols, check }: {
   /** 체크 칸 자리에 둘 것(게임관리의 전체 선택) — 없으면 빈 칸. */
   check?: ReactNode;
 }) {
-  const cols = manageCols ? [...COLS(leagueCol).slice(0, BASE_COLS), ...manageCols] : COLS(leagueCol);
+  const cols = manageCols ? manageHead(leagueCol, manageCols) : COLS(leagueCol);
   return (
     <div className={cx("scr-feed-row-wrap scr-gtab-headwrap", selecting && "scr-feed-row-wrap-sel")}>
       {/* 체크 칸만큼 비운다(줄의 RowCheck 와 같은 폭). */}
@@ -195,7 +200,7 @@ export function UnhideRequestButton({ game, inRow }: { game: GameResult; inRow?:
   );
 }
 
-export function GameTableRow({ game, memberOf, check, picked, disabled, onClick, onLongPress, when, leagueCol, league, onHide, manage }: {
+export function GameTableRow({ game, memberOf, check, picked, disabled, onClick, onLongPress, when, leagueCol, league, onHide, manage, kind: kindCell }: {
   game: GameResult;
   memberOf: (id: string) => Member | undefined;
   check?: ReactNode;
@@ -213,6 +218,8 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
   onHide?: () => void;
   /** 게임관리 칸(GameTableHead manageCols 와 같은 차례 · BASE_COLS ★) — 주면 배치 ~ 댓글 대신 선다. */
   manage?: ReactNode[];
+  /** 게임관리의 종류 칸(내전 · 공방 · 리그 · manageHead ★) — manage 와 함께 준다. */
+  kind?: ReactNode;
 }) {
   useReplayMapTick();
   const hold = useLongPress(onLongPress);
@@ -260,6 +267,7 @@ export function GameTableRow({ game, memberOf, check, picked, disabled, onClick,
       >
         <span className="scr-gtab-cell scr-gtab-num scr-gtab-no">{game.matchNo ? <MatchNoCopy no={game.matchNo} /> : "-"}</span>   {/* 누르면 복사(2026-11-19) */}
         <span className="scr-gtab-cell scr-gtab-num">{when}</span>
+        {manage && <span className="scr-gtab-cell">{kindCell ?? "-"}</span>}
         {leagueCol && league ? (
           <span className="scr-gtab-cell scr-gtab-league" title={`${league.name} · ${league.round} (${kind})`}>
             <span>{league.name}</span><span>{league.round} ({kind})</span>

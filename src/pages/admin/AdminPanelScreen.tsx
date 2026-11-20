@@ -3,7 +3,6 @@ import { X } from "lucide-react";
 import { Spinner } from "../../components/common/Feedback";
 import Select from "../../components/common/Select";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import ReplayBatchButton from "../../components/common/ReplayBatchButton";
 import VersionManageModal from "../../modals/VersionManageModal";
 import ExtShareManageModal from "../../modals/ExtShareManageModal";
 import SqlConsoleModal from "../../modals/SqlConsoleModal";
@@ -142,8 +141,6 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 </div>
               </div>
             </section>
-
-            <ReplayBatchButton />
 
             <section className="scr-adm-card">
               <div className="scr-adm-card-head">
