@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import ModalHash from "../../utils/modalHash";
 import { Spinner } from "../../components/common/Feedback";
+import Select from "../../components/common/Select";
 import { api, type ParticipationOut, type ParticipationRow } from "../../api/client";
 import { useLockBodyScroll } from "../../utils/bodyScrollLock";
 import { cx } from "../../utils/format";
@@ -57,11 +58,6 @@ export default function ParticipationModal({ onClose }: { onClose: () => void })
     });
     return list;
   }, [data, sort]);
-  const sum = useMemo(() => {
-    const s = { clanDays: 0, pubDays: 0, days: 0, clanGames: 0, pubGames: 0, games: 0 };
-    for (const r of data?.rows ?? []) for (const c of NUM_COLS) s[c.key] += r[c.key];
-    return s;
-  }, [data]);
   const clickSort = (key: SortKey): void => setSort((s) => (s.key === key ? { key, desc: !s.desc } : { key, desc: key !== "nickname" }));
   const arrow = (key: SortKey): string => (sort.key === key ? (sort.desc ? " ▼" : " ▲") : "");
   const months = data?.months ?? [];
@@ -82,9 +78,8 @@ export default function ParticipationModal({ onClose }: { onClose: () => void })
                 onClick={() => setMonth(months[mi + 1])}>
                 <ChevronLeft size={15} aria-hidden />
               </button>
-              <select value={month ?? ""} onChange={(e) => setMonth(e.target.value)} aria-label="달">
-                {months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}
-              </select>
+              <Select value={month ?? ""} options={months.map((m) => ({ value: m, label: monthLabel(m) }))} onChange={setMonth} size="sm"
+                placeholder={month ? monthLabel(month) : "달"} className="scr-part-month-select" />
               <button type="button" className="scr-month-cal-nav" aria-label="다음 달" disabled={mi <= 0}
                 onClick={() => setMonth(months[mi - 1])}>
                 <ChevronRight size={15} aria-hidden />
@@ -139,14 +134,6 @@ export default function ParticipationModal({ onClose }: { onClose: () => void })
                     </tr>
                   ))}
                 </tbody>
-                {rows.length > 0 && (
-                  <tfoot>
-                    <tr>
-                      <td className="scr-part-name">전체 {rows.length}명</td>
-                      {NUM_COLS.map((c) => <td key={c.key} className={cx(c.label === "합계" && "is-sum")}>{sum[c.key]}</td>)}
-                    </tr>
-                  </tfoot>
-                )}
               </table>
             )}
           </div>

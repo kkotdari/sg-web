@@ -201,7 +201,7 @@ export default function MembersScreen() {
             <UserPlus size={14} /> 생성
           </button>
           {/* 참여현황(2026-11-20, 요청: "회원관리 맨 위에 버튼으로 참여현황 보기 메뉴 추가") — ParticipationModal. */}
-          <button type="button" className="scr-rect-btn is-secondary" onClick={() => setPartOpen(true)}>
+          <button type="button" className="scr-rect-btn" onClick={() => setPartOpen(true)}>
             <CalendarCheck size={14} /> 참여현황
           </button>
         </div>
