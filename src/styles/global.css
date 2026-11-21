@@ -6490,7 +6490,7 @@ body.scr-shortv-open .scr-pv { z-index: 3400; }   /* 댓글 첨부 사진 보기
 /* 로딩 줄(ShortsViewer shortLoadLine ★ · 주소에 sdiag=1 일 때만 · 8초). */
 .scr-shortv-diag { position: absolute; left: 6px; right: 6px; bottom: 6px; z-index: 5; padding: 4px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.72); color: #9fe3a8; font: 11px/1.35 ui-monospace, monospace; pointer-events: none; word-break: break-all; }
 /* 재생기는 가린 채(veil) 자리를 잡고 다 되면 서서히. */
-.scr-shortv-player { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.35s ease; }
+.scr-shortv-player { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s ease; }   /* 0.35 → 0.15s(2026-11-21 "쇼츠 로딩 더 빠르게") */
 .scr-shortv-player.is-ready { opacity: 1; }
 .scr-shortv-player > .scr-story-map { width: 100%; }
 .scr-shortv-tap { position: absolute; inset: 0; z-index: 5; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
