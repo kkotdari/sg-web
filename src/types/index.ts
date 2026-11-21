@@ -177,7 +177,9 @@ export interface RankingShift {
 }
 
 export type CommentTargetType =
-  | "gameResult" | "rankingShift" | "leagueMatch" | "notice" | "post";
+  | "gameResult" | "rankingShift" | "leagueMatch" | "notice" | "post"
+  /** 쇼츠 댓글(2026-11-21 · sg-api target "short" · id 는 쇼츠 id). */
+  | "short";
 export interface ItemComment {
   id: number;
   targetType: CommentTargetType;

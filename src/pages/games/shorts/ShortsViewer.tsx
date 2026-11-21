@@ -1,19 +1,22 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { ExternalLink, Pause, Play, Share2, ThumbsUp, Trash2, X } from "lucide-react";
+import { ExternalLink, MessageCircle, Pause, Play, Share2, ThumbsUp, Trash2, X } from "lucide-react";
 import { ReplayModule, useReplayMap, type MotionBase, type ShortClip9 } from "scplay";
 import { api, type GameShort } from "../../../api/client";
 import Avatar from "../../../components/common/Avatar";
 import { showToast } from "../../../components/common/Toast";
 import { useAppStore } from "../../../store/appStore";
-import { formatAgo } from "../../../utils/date";
+import { formatAgo, serverMs } from "../../../utils/date";
+import Comments from "../../feed/Comments";
+import { renderTags } from "../../../components/common/InlineTags";
 import { shareThumb, shareToKakao, type KakaoShareContent } from "../../../utils/kakaoShare";
 import { gamePath, navigateTo } from "../../../utils/route";
 import { cx } from "../../../utils/format";
 import { isMeleeGame, resolveSlotName } from "../GameResultSides";
 import { SHORTS_CHANGED } from "./shortsBus";
 import { gameOf, prefetchShort, shortOf, tracksOf } from "./shortsPrefetch";
-import type { GameResult } from "../../../types";
+import { useIsMobile } from "../../../hooks/useIsMobile";
+import type { GameResult, ItemComment } from "../../../types";
 
 /* ★ 쇼츠 보기(2026-11-19, 요청: "가운데 큰 재생버튼으로 보기누르면 확대되어 보이기(인스타 스토리처럼) · 끝나면 다음 쇼츠로 · 좌우 탭 이전/다음 · 아래로 쓸면 닫기 ·
    로딩이 오래걸리면 안되서 해당 장면에서 필요한 모델만 로딩") — 화면 위 판(body 포털) · 위에 진행 막대(쇼츠마다 한 칸) · 머리(만든 사람 · 언제 · 게임 보기 · 지우기 · 닫기) ·
@@ -165,6 +168,48 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
   );
 });
 
+/* ★ 쇼츠 댓글 미리보기(2026-11-21, 요청: "쇼츠 댓글 기능 · 기본적으로 게임 댓글과 유사하게 · 아래 남는 공간에 넣어주기 · 최신 거가 위에 3개까지 보이게 · 아래 더 있다는
+   느낌은 주기 · 남는 공간 없으면 어떡할지") — 공용 댓글(sg-api target "short")을 받아 **새것부터** 세 개 · 넘치면(넷째부터 · 칸이 모자라 잘리면) 아래로 흐려지는 그늘과
+   "댓글 N개 모두 보기". 누르면 전체 댓글(폰 시트 · PC 옆 판 — 게임 댓글과 같은 Comments 부품 · 태그 · 첨부 · 지우기 그대로). 자리는 보기 화면이 잰다(아래 room ★) —
+   남는 칸이 없으면 미리보기는 안 서고 옆 단추 줄의 [댓글 N]이 전체 댓글을 연다. */
+const CMT_PREVIEW_N = 3;
+function ShortCmtPreview({ id, ver, onOpen, onCount }: { id: number; ver: number; onOpen: () => void; onCount: (n: number) => void }) {
+  const [notes, setNotes] = useState<ItemComment[] | null>(null);
+  const onCountRef = useRef(onCount); onCountRef.current = onCount;
+  useEffect(() => {
+    let dead = false;
+    api.listComments("short", id)
+      .then((n) => { if (!dead) { setNotes(n); onCountRef.current(n.length); } })
+      .catch(() => { if (!dead) setNotes([]); });
+    return () => { dead = true; };
+  }, [id, ver]);
+  const list = notes ? [...notes].sort((a, b) => serverMs(b.createdAt) - serverMs(a.createdAt)) : [];
+  const n = list.length;
+  return (
+    <div className={cx("scr-shortv-cmts", n > CMT_PREVIEW_N && "is-more")} role="button" tabIndex={0} aria-label={n ? `댓글 ${n}개 보기` : "댓글 쓰기"}
+      onClick={onOpen} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onOpen(); } }}>
+      <div className="scr-shortv-cmts-head">
+        <b>댓글{n ? ` ${n}` : ""}</b>
+        <span>{notes === null ? "" : n ? (n > CMT_PREVIEW_N ? `${n}개 모두 보기` : "댓글 쓰기") : "첫 댓글을 남겨 보세요"}</span>
+      </div>
+      {n > 0 && (
+        <ul className="scr-shortv-cmts-list">
+          {list.slice(0, CMT_PREVIEW_N + 1).map((c) => (
+            <li key={c.id}>
+              <Avatar member={{ id: c.author.memberId, nickname: c.author.nickname, avatar: c.author.avatar }} size={22} />
+              <p>
+                <b>{c.author.nickname}</b>
+                <span className="scr-shortv-cmts-text">{renderTags(c.text, c.mentions.map((m) => m.nickname))}{c.attachments?.length ? " 📎" : ""}</span>
+                <small>{formatAgo(c.createdAt)}</small>
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function ShortsViewer({ items, start, from, onClose, onDeleted, onNeedMore, onPatch }: {
   items: GameShort[];
   start: number;
@@ -184,6 +229,18 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   const [dragY, setDragY] = useState(0);
   const [vw, setVw] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   const it = items[idx] ?? null;
+  /** 전체 댓글이 열렸나(위 ShortCmtPreview ★) — 연 동안 쇼츠는 멈춘다 · 미리보기는 ver 로 다시 받는다(달기 · 지우기 뒤). */
+  const [cmtOpen, setCmtOpen] = useState(false);
+  const [cmtVer, setCmtVer] = useState(0);
+  const cmtOpenRef = useRef(false); cmtOpenRef.current = cmtOpen;
+  /** 전체 댓글을 시트로 여나(Comments 의 폰 갈래와 같은 자 — 아니면 옆 판). */
+  const cmtSheet = useIsMobile();
+  useEffect(() => { setCmtOpen(false); }, [it?.id]);
+  /* 댓글 시트 · 지우기 확인 창은 body 포털(z 90~150)이라 보기 화면(z 3000) 밑에 깔린다 — 연 동안 body 표식으로 올린다(global.css .scr-shortv-open). */
+  useEffect(() => {
+    document.body.classList.add("scr-shortv-open");
+    return () => document.body.classList.remove("scr-shortv-open");
+  }, []);
   useEffect(() => {
     const on = (): void => setVw({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener("resize", on);
@@ -227,6 +284,13 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   const prev = useCallback((): void => { setIdx((i) => Math.max(0, i - 1)); }, []);
   useEffect(() => {
     const on = (e: KeyboardEvent): void => {
+      /* 댓글 칸에 쓰는 중 · 전체 댓글이 열린 동안은 보기 화면 단축키를 안 먹는다(스페이스 · 화살표가 글자 · 커서로 가야) — Esc 는 댓글 창부터 닫는다. */
+      const t9 = e.target as HTMLElement | null;
+      const typing9 = !!t9 && (t9.tagName === "INPUT" || t9.tagName === "TEXTAREA" || t9.isContentEditable);
+      if (cmtOpenRef.current || typing9) {
+        if (e.key === "Escape" && cmtOpenRef.current && !typing9 && !document.querySelector(".scr-comment-confirm-over-modal")) { e.preventDefault(); setCmtOpen(false); }
+        return;
+      }
       if (e.key === "Escape") { e.preventDefault(); onClose(); }
       else if (e.key === "ArrowRight") { e.preventDefault(); next(); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
@@ -319,15 +383,40 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     return { w: s1, h: s1 };
   })();
   const origin = from ? `${from.left + from.width / 2}px ${from.top + from.height / 2}px` : "50% 50%";
+  /* ★ 댓글 자리(위 ShortCmtPreview ★) — 판(.scr-shortv-box)을 그린 뒤 재어 고른다. 폰: 단추 줄 아래 남는 세로(110px 넘으면) · PC: 판 오른쪽 남는 폭(300px 넘으면 옆 칸) →
+     아니면 판 아래 남는 세로(130px 넘으면) → 아니면 없음(단추 줄의 [댓글]만). 폰은 판을 위로 올려(머리 몫만 남기고) 아래 칸을 키운다(.is-phone.has-cmts). */
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [room, setRoom] = useState<{ mode: "below" | "right" | "none"; w: number; h: number }>({ mode: "none", w: 0, h: 0 });
+  useLayoutEffect(() => {
+    const el = boxRef.current; if (!el) return;
+    /* offset 값(변환 전 자리 — 열림 애니메이션 scale · 끌어 닫기 변환에 안 흔들린다) · 부모 .scr-shortv 는 화면 꽉(fixed inset 0). */
+    const r = { right: el.offsetLeft + el.offsetWidth, bottom: el.offsetTop + el.offsetHeight, width: el.offsetWidth, height: el.offsetHeight };
+    const H = window.innerHeight; const W = window.innerWidth;
+    let next: typeof room = { mode: "none", w: 0, h: 0 };
+    if (phone) {
+      const below = H - r.bottom - 92 - 10;
+      if (below >= 110) next = { mode: "below", w: r.width, h: Math.floor(below) };
+    } else {
+      /* 옆 칸은 재지 않고 셈한다 — 판 + 20 + 칸 묶음을 가운데로 세우면(판을 왼쪽으로 민다 · marginRight) 잰 값이 바뀌어 오갈 수 있다. 화면 양 끝 24px 씩 비운다. */
+      const side = W - box.w - 48 - 20;
+      const below = (H - box.h) / 2 - 14 - 16;
+      if (side >= 300) next = { mode: "right", w: Math.floor(Math.min(420, side)), h: box.h };
+      else if (below >= 130) next = { mode: "below", w: r.width, h: Math.floor(below) };
+    }
+    if (next.mode !== room.mode || Math.abs(next.w - room.w) > 1 || Math.abs(next.h - room.h) > 1) setRoom(next);
+  });   // eslint-disable-line react-hooks/exhaustive-deps
+  const patchCount = (n: number): void => { if (it && (it.commentCount ?? 0) !== n) onPatch?.(it.id, { commentCount: n }); };
   if (!it) return null;
   const many = items.length > 24;
   const node = (
-    <div className={cx("scr-shortv", phone && "is-phone", box.h >= vw.h - 2 && "is-tall")} role="dialog" aria-modal="true" aria-label="쇼츠" style={{ transformOrigin: origin }}>
-      <div className="scr-shortv-box" style={{
-        width: box.w, height: box.h,
+    <div className={cx("scr-shortv", phone && "is-phone", box.h >= vw.h - 2 && "is-tall", phone && box.h + 300 < vw.h && "has-cmts")} role="dialog" aria-modal="true" aria-label="쇼츠" style={{ transformOrigin: origin }}>
+      {/* 감싸개(2026-11-21 · 댓글 칸 자리) — 판(.scr-shortv-box)은 PC 에서 overflow hidden 이라 옆 · 아래 댓글 칸을 그 밖(이 감싸개)에 둔다 · 끌어 닫기 변환도 여기서. */}
+      <div className="scr-shortv-wrap" ref={boxRef} style={{
+        width: box.w, height: box.h, ...(room.mode === "right" ? { marginRight: room.w + 20 } : {}),
         ...(dragY ? { transform: `translateY(${dragY}px) scale(${Math.max(0.85, 1 - dragY / 1400)})`, opacity: Math.max(0.4, 1 - dragY / 500) } : {}),
       }}>
-        <ShortStage key={it.id} item={it} w={box.w} h={box.h} paused={hold || stop} onProgress={setProg} onEnd={next} />
+      <div className="scr-shortv-box" style={{ width: box.w, height: box.h }}>
+        <ShortStage key={it.id} item={it} w={box.w} h={box.h} paused={hold || stop || cmtOpen} onProgress={setProg} onEnd={next} />
         <div className="scr-shortv-tap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onContextMenu={(e) => e.preventDefault()} />
         {(hold || stop) && <span className="scr-shortv-paused" aria-hidden><Pause size={30} fill="currentColor" /></span>}
         {/* 판 위 머리 — 진행 막대 · 만든 사람 · 멈춤 · 닫기(릴스 · 스토리처럼 장면 위에 얹는다 · 위 그늘). */}
@@ -362,6 +451,10 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
             <i className="scr-shortv-ico" aria-hidden><ThumbsUp size={22} fill={it.recommended ? "currentColor" : "none"} /></i>
             <span>{it.recommendCount}</span>
           </button>
+          <button type="button" className={cx("scr-shortv-act", cmtOpen && "is-on")} onClick={() => setCmtOpen((v) => !v)} aria-label="댓글" title="댓글">
+            <i className="scr-shortv-ico" aria-hidden><MessageCircle size={22} /></i>
+            <span>{it.commentCount ? it.commentCount : "댓글"}</span>
+          </button>
           <button type="button" className="scr-shortv-act" onClick={goGame} aria-label="이 장면부터 게임 보기" title="이 장면부터 게임 보기">
             <i className="scr-shortv-ico" aria-hidden><ExternalLink size={22} /></i>
             <span>게임</span>
@@ -378,6 +471,43 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
           )}
         </div>
       </div>
+        {/* 댓글 미리보기(남는 칸이 있을 때 · 위 room ★) — PC 옆 칸은 전체 댓글이 열리면 그 자리에 선다. */}
+        {room.mode !== "none" && !(cmtOpen && (cmtSheet || room.mode === "right")) && (
+          <div className={cx("scr-shortv-cmtroom", `is-${room.mode}`)} style={room.mode === "right" ? { width: room.w, maxHeight: room.h } : { maxHeight: room.h }}>
+            <ShortCmtPreview id={it.id} ver={cmtVer} onOpen={() => setCmtOpen(true)} onCount={patchCount} />
+          </div>
+        )}
+        {/* 전체 댓글 — PC: 옆 칸(자리가 있으면 그 자리 · 없으면 화면 오른쪽에 떠서) · 폰은 아래 시트(Comments sheetOnly). */}
+        {cmtOpen && !cmtSheet && room.mode === "right" && (
+          <div className="scr-shortv-cmtpanel is-right"
+            style={{ width: room.w, height: room.h }}
+            onPointerDown={(e) => e.stopPropagation()}>
+            <div className="scr-shortv-cmtpanel-head">
+              <b>댓글{it.commentCount ? ` ${it.commentCount}` : ""}</b>
+              <button type="button" className="scr-shortv-btn" onClick={() => setCmtOpen(false)} aria-label="댓글 닫기" title="닫기 (Esc)"><X size={18} aria-hidden /></button>
+            </div>
+            <div className="scr-shortv-cmtpanel-body scr-scroll">
+              <Comments key={it.id} targetType="short" targetId={it.id} fresh overModal onCount={(n) => { patchCount(n); setCmtVer((v) => v + 1); }} />
+            </div>
+          </div>
+        )}
+      </div>
+      {/* 옆 칸이 없는 PC — 화면 오른쪽에 떠서 */}
+      {cmtOpen && !cmtSheet && room.mode !== "right" && (
+        <div className="scr-shortv-cmtpanel is-float" onPointerDown={(e) => e.stopPropagation()}>
+          <div className="scr-shortv-cmtpanel-head">
+            <b>댓글{it.commentCount ? ` ${it.commentCount}` : ""}</b>
+            <button type="button" className="scr-shortv-btn" onClick={() => setCmtOpen(false)} aria-label="댓글 닫기" title="닫기 (Esc)"><X size={18} aria-hidden /></button>
+          </div>
+          <div className="scr-shortv-cmtpanel-body scr-scroll">
+            <Comments key={it.id} targetType="short" targetId={it.id} fresh overModal onCount={(n) => { patchCount(n); setCmtVer((v) => v + 1); }} />
+          </div>
+        </div>
+      )}
+      {cmtOpen && cmtSheet && (
+        <Comments key={it.id} targetType="short" targetId={it.id} fresh overModal sheetOnly
+          onSheetClose={() => setCmtOpen(false)} onCount={(n) => { patchCount(n); setCmtVer((v) => v + 1); }} />
+      )}
     </div>
   );
   return createPortal(node, document.body);
