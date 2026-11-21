@@ -6337,7 +6337,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 
 .scr-shortv {
   position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center;
-  background: rgba(3, 4, 7, 0.97); animation: scr-shortv-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; overscroll-behavior: contain; touch-action: none;
+  background: #030407; animation: scr-shortv-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; overscroll-behavior: contain; touch-action: none;   /* 불투명(2026-11-21 실기 — 아이폰에서 뒤 목록이 비쳤다 · 옛 rgba(3, 4, 7, 0.97)) */
 }
 @keyframes scr-shortv-in { from { opacity: 0; transform: scale(0.35); } to { opacity: 1; transform: none; } }
 /* 판 — 정사각(2026-11-20 · 옛 2026-11-19: 폰 9:16 화면 꽉 · PC 4:3) · PC 는 머리 · 단추를 판 위에 얹는다 · 폰은 위아래 바깥(아래 .is-phone). */
@@ -6353,7 +6353,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   padding: 8px 10px 22px; background: linear-gradient(180deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0)); pointer-events: none;
 }
 /* 판이 화면 위아래에 닿으면(.is-tall) 안전영역만큼 띄운다 — 띠가 남는 폰(9:16 보다 긴 화면)은 판이 가운데라 필요 없다. */
-.scr-shortv.is-tall .scr-shortv-top { padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+/* 위 자리는 --safe-top-ui(2026-11-21, 실기 지적: "안전영역 침범" — 홈 화면 앱은 iOS 가 투명 상태바 아래 안전 영역 + 20px 까지 흐림 띠를 덮는다 · 다른 전체 화면 창과 같은 자).
+   옛: env(safe-area-inset-top) — 진행 막대 · 제목이 흐림 띠에 걸렸다. */
+.scr-shortv.is-tall .scr-shortv-top { padding-top: calc(8px + var(--safe-top-ui, env(safe-area-inset-top, 0px))); }
 .scr-shortv.is-tall .scr-shortv-side { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
 .scr-shortv-top > * { pointer-events: auto; }
 .scr-shortv-bars { display: flex; gap: 3px; height: 3px; pointer-events: none; }
@@ -6435,7 +6437,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* 즉시 반응(ShortsViewer 즉시 반응 ★ · 2026-11-21) — 닫기는 곧장 숨기고(허무는 일은 그린 뒤) · 쇼츠를 바꾸는 한 장은 새 표지 · 별이 판을 덮는다. */
 .scr-shortv.is-closing { visibility: hidden; pointer-events: none; }
 .scr-shortv-swap { position: absolute; inset: 0; z-index: 3; background: #000; }
-.scr-shortv.is-phone.has-cmts { align-items: flex-start; padding-top: calc(env(safe-area-inset-top, 0px) + 66px); }
+.scr-shortv.is-phone.has-cmts { align-items: flex-start; padding-top: calc(var(--safe-top-ui, env(safe-area-inset-top, 0px)) + 70px); }   /* 위 --safe-top-ui ★ · 머리 몫 66 → 70 */
 .scr-shortv-cmtroom { position: absolute; z-index: 8; display: flex; flex-direction: column; min-height: 0; }
 .scr-shortv-cmtroom.is-below { left: 0; right: 0; top: calc(100% + 14px); }
 .scr-shortv.is-phone .scr-shortv-cmtroom.is-below { left: 12px; right: 12px; top: calc(100% + 92px); }

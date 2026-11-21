@@ -26,6 +26,18 @@ import type { GameResult, ItemComment } from "../../../types";
 
 const TAP_MS = 260;
 
+/** 안전 영역(px) — 위는 --safe-top-ui(홈 화면 앱의 흐림 띠까지 · global.css) · 아래는 홈 표시줄. CSS 값(env)은 JS 로 못 읽어 숨은 재개 판으로 잰다(2026-11-21 실기 "안전영역 침범"). */
+function safeInsets(): { t: number; b: number } {
+  if (typeof document === "undefined") return { t: 0, b: 0 };
+  const el = document.createElement("div");
+  el.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:var(--safe-top-ui, env(safe-area-inset-top, 0px));padding-bottom:env(safe-area-inset-bottom, 0px)";
+  document.body.appendChild(el);
+  const cs = getComputedStyle(el);
+  const out = { t: parseFloat(cs.paddingTop) || 0, b: parseFloat(cs.paddingBottom) || 0 };
+  el.remove();
+  return out;
+}
+
 /* ★ 쇼츠 로딩 줄(2026-11-20, 지적: "로딩이 너무 걸림 · 단축 방안 찾아보자") — 쇼츠마다 단계별로 걸린 때를 재어 다 뜨면 콘솔에 한 줄(`[쇼츠 로딩]`) · window.__shortLoad9(최근 10개).
    재생기 몫은 로딩 진행도(scplay onLoadProgress · 단계마다 몫이 정해져 있다)가 처음 그 몫에 든 때로 가른다 · 아틀라스 · 다지기 값은 재생기 진단(window.__scrDiag).
    주소에 `sdiag=1` 이 있으면 판 아래에도 8초 띄운다(폰 · 콘솔 없는 데서). */
@@ -242,7 +254,17 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     requestAnimationFrame(() => { window.setTimeout(onClose, 0); });
   }, [onClose]);
   const [vw, setVw] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
+  const safe = useMemo(() => safeInsets(), [vw.w, vw.h]);   // eslint-disable-line react-hooks/exhaustive-deps
   const it = items[idx] ?? null;
+  /* 위 띠 색(2026-11-21 실기 "안전영역 침범") — 사파리 · 홈 화면 앱은 상태바 띠를 theme-color 로 칠한다(밝은 테마면 흰 띠가 어두운 보기 화면 위에 떴다). 연 동안 보기 화면 색 · 닫으면 되돌린다. */
+  useEffect(() => {
+    const old = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const had = old ? old.content : null;
+    const m = old ?? Object.assign(document.createElement("meta"), { name: "theme-color" });
+    if (!old) document.head.appendChild(m);
+    m.content = "#030407";
+    return () => { if (had === null) m.remove(); else m.content = had; };
+  }, []);
   /** 전체 댓글이 열렸나(위 ShortCmtPreview ★) — 폰 시트로 연 동안만 쇼츠가 멈춘다(PC 옆 판 · 입력 줄은 보면서) · 미리보기는 ver 로 다시 받는다(달기 · 지우기 뒤). */
   const [cmtOpen, setCmtOpen] = useState(false);
   const [cmtVer, setCmtVer] = useState(0);
@@ -418,7 +440,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
      폰은 폭을 다 쓰는 정사각에 머리를 위 · 단추 줄을 아래 바깥에(장면을 안 가리게 · global.css .is-phone). 옛(2026-11-19): 폰 9:16 화면 꽉 · PC 4:3. */
   const phone = vw.w < 700 || (typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches);
   const box = ((): { w: number; h: number } => {
-    const s0 = phone ? Math.min(vw.w, vw.h - 170) : Math.min(vw.h - 48, 760, vw.w - 48);
+    const s0 = phone ? Math.min(vw.w, vw.h - 170 - safe.t - safe.b) : Math.min(vw.h - 48, 760, vw.w - 48);
     const s1 = Math.max(200, Math.floor(s0));
     return { w: s1, h: s1 };
   })();
@@ -434,7 +456,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     const H = window.innerHeight; const W = window.innerWidth;
     let next: typeof room = { mode: "none", w: 0, h: 0 };
     if (phone) {
-      const below = H - r.bottom - 92 - 10;
+      const below = H - r.bottom - 92 - 10 - safe.b;   // 홈 표시줄 몫은 비운다(위 safeInsets)
       if (below >= 110) next = { mode: "below", w: r.width, h: Math.floor(below) };
     } else {
       /* 옆 칸은 재지 않고 셈한다 — 판 + 20 + 칸 묶음을 가운데로 세우면(판을 왼쪽으로 민다 · marginRight) 잰 값이 바뀌어 오갈 수 있다. 화면 양 끝 24px 씩 비운다. */
@@ -452,7 +474,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   if (!it) return null;
   const many = items.length > 24;
   const node = (
-    <div className={cx("scr-shortv", closing && "is-closing", phone && "is-phone", box.h >= vw.h - 2 && "is-tall", phone && box.h + 300 < vw.h && "has-cmts")} role="dialog" aria-modal="true" aria-label="쇼츠" style={{ transformOrigin: origin }}>
+    <div className={cx("scr-shortv", closing && "is-closing", phone && "is-phone", box.h >= vw.h - 2 && "is-tall", phone && box.h + 300 + safe.t + safe.b < vw.h && "has-cmts")} role="dialog" aria-modal="true" aria-label="쇼츠" style={{ transformOrigin: origin }}>
       {/* 감싸개(2026-11-21 · 댓글 칸 자리) — 판(.scr-shortv-box)은 PC 에서 overflow hidden 이라 옆 · 아래 댓글 칸을 그 밖(이 감싸개)에 둔다 · 끌어 닫기 변환도 여기서. */}
       <div className="scr-shortv-wrap" ref={boxRef} style={{
         width: box.w, height: box.h, ...(room.mode === "right" ? { marginRight: room.w + 20 } : {}),
