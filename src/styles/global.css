@@ -6432,6 +6432,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
    감싸개(.scr-shortv-wrap)가 판과 댓글 칸의 자리 · 폰은 단추 줄 아래(판을 위로 올려 칸을 키운다 · has-cmts) · PC 는 판 오른쪽(남으면) 또는 아래.
    미리보기: 새것부터 · 셋째 아래가 흐려지며(mask) 더 있음을 보인다. 전체 댓글: 폰 시트(Comments) · PC 옆 판 / 떠 있는 판. */
 .scr-shortv-wrap { position: relative; flex: none; transition: transform 0.2s ease, opacity 0.2s ease; }
+/* 즉시 반응(ShortsViewer 즉시 반응 ★ · 2026-11-21) — 닫기는 곧장 숨기고(허무는 일은 그린 뒤) · 쇼츠를 바꾸는 한 장은 새 표지 · 별이 판을 덮는다. */
+.scr-shortv.is-closing { visibility: hidden; pointer-events: none; }
+.scr-shortv-swap { position: absolute; inset: 0; z-index: 3; background: #000; }
 .scr-shortv.is-phone.has-cmts { align-items: flex-start; padding-top: calc(env(safe-area-inset-top, 0px) + 66px); }
 .scr-shortv-cmtroom { position: absolute; z-index: 8; display: flex; flex-direction: column; min-height: 0; }
 .scr-shortv-cmtroom.is-below { left: 0; right: 0; top: calc(100% + 14px); }

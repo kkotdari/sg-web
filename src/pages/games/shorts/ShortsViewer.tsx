@@ -54,11 +54,13 @@ export function shortShareContent(it: GameShort): KakaoShareContent {
 }
 
 /* 무대는 memo — 진행 막대(부모 prog)가 0.1초마다 바뀌어도 재생기까지 다시 그리지 않는다(props 가 다 굳은 값이다). */
-const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, onEnd }: {
+const ShortStage = memo(function ShortStage({ item, w, h, holdRef, onProgress, onEnd }: {
   item: GameShort;
   w: number;
   h: number;
-  paused: boolean;
+  /** 즉시 멈춤 줄(scplay shortHoldRef ★ · 2026-11-21, 지적: "이전 · 다음 · 일시정지 · 닫기 반응속도 느린데 즉각 반응하도록") — 보기 화면이 .current 를 바꾸면 재생기가
+   *  다음 장부터 곧장 선다 · 풀면 곧장 간다(재생기 렌더 없음). 옛: paused prop — 바뀔 때마다 재생기 전체가 두 번 다시 그려진 뒤에야 섰다. */
+  holdRef: { current: boolean };
   onProgress: (p: number) => void;
   onEnd: () => void;
 }) {
@@ -157,7 +159,7 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
             clockKey={`short-${item.id}`}
             melee={isMeleeGame({ matchType: got.game.matchType, team1: got.game.team1, team2: got.game.team2 })}
             loadUnitTracks={loadUnitTracks}
-            short={got.clip} shortPaused={paused} onShortProgress={onProgress} onShortEnd={onEnd}
+            short={got.clip} shortHoldRef={holdRef} onShortProgress={onProgress} onShortEnd={onEnd}
             veil onReady={onPlayerReady} onLoadProgress={onLoadProg}
             frameW={w} frameH={h}
             guide={false}
@@ -229,6 +231,16 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   const [hold, setHold] = useState(false);
   const [stop, setStop] = useState(false);
   const [dragY, setDragY] = useState(0);
+  /* ★ 즉시 반응(2026-11-21, 지적: "쇼츠 이전 · 다음 · 일시정지 · 닫기 반응속도 느린데 즉각 반응하도록") — 누른 그 장에 보이는 것부터 바꾸고 무거운 일(재생기 세우기 ·
+     허물기 · 다시 그리기)은 그린 뒤로 미룬다. ① 멈춤: 줄(holdRef)만 바꾼다 — 재생기는 다음 장부터 서고 렌더가 없다. ② 이전 · 다음: 머리 · 막대 · 새 쇼츠 표지가 먼저
+     서고, 옛 재생기를 허물고 새로 세우는 일(stageId)은 한 장 그린 뒤. ③ 닫기: 곧장 숨기고(is-closing) 허무는 일은 그린 뒤. */
+  const holdRef = useRef(false);
+  const [closing, setClosing] = useState(false);
+  const closeNow = useCallback((): void => {
+    holdRef.current = true;
+    setClosing(true);
+    requestAnimationFrame(() => { window.setTimeout(onClose, 0); });
+  }, [onClose]);
   const [vw, setVw] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   const it = items[idx] ?? null;
   /** 전체 댓글이 열렸나(위 ShortCmtPreview ★) — 폰 시트로 연 동안만 쇼츠가 멈춘다(PC 옆 판 · 입력 줄은 보면서) · 미리보기는 ver 로 다시 받는다(달기 · 지우기 뒤). */
@@ -238,6 +250,21 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   /** 전체 댓글을 시트로 여나(Comments 의 폰 갈래와 같은 자 — 아니면 옆 판). */
   const cmtSheet = useIsMobile();
   useEffect(() => { setCmtOpen(false); }, [it?.id]);
+  /* 재생기에 선 쇼츠(위 즉시 반응 ★ ②) — 고른 쇼츠(it)를 한 장 그린 뒤 따라간다. 따라가는 동안(swapping)은 옛 재생기를 줄로 세우고 새 쇼츠 표지 · 별을 덮는다. */
+  const [stageId, setStageId] = useState<number | null>(it?.id ?? null);
+  useEffect(() => {
+    if (!it || stageId === it.id) return undefined;
+    const want = it.id;
+    let t9 = 0;
+    const r9 = requestAnimationFrame(() => { t9 = window.setTimeout(() => setStageId(want), 0); });
+    return () => { cancelAnimationFrame(r9); window.clearTimeout(t9); };
+  }, [it?.id, stageId]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const stageItem = (stageId !== null ? items.find((x) => x.id === stageId) : undefined) ?? it;
+  const swapping = !!it && !!stageItem && stageItem.id !== it.id;
+  const stageIdRef = useRef<number | null>(null); stageIdRef.current = stageItem?.id ?? null;
+  const itIdRef = useRef<number | null>(null); itIdRef.current = it?.id ?? null;
+  /** 옛 재생기의 진행은 안 받는다(따라가는 동안) — 막대는 새 쇼츠의 0 부터. */
+  const onStageProg = useCallback((p: number): void => { if (stageIdRef.current === itIdRef.current) setProg(p); }, []);
   /* 댓글 시트 · 지우기 확인 창은 body 포털(z 90~150)이라 보기 화면(z 3000) 밑에 깔린다 — 연 동안 body 표식으로 올린다(global.css .scr-shortv-open). */
   useEffect(() => {
     document.body.classList.add("scr-shortv-open");
@@ -281,6 +308,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   const endWaitRef = useRef(false);
   const nextRef = useRef<() => void>(() => undefined);
   const onStageEnd = useCallback((): void => {
+    if (stageIdRef.current !== itIdRef.current) return;   // 따라가는 중의 옛 재생기 끝은 버린다
     if (typingRef.current) { endWaitRef.current = true; return; }
     nextRef.current();
   }, []);
@@ -288,10 +316,10 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   const next = useCallback((): void => {
     setIdx((i) => {
       if (i + 1 < items.length) return i + 1;
-      window.setTimeout(onClose, 0);
+      window.setTimeout(closeNow, 0);
       return i;
     });
-  }, [items.length, onClose]);
+  }, [items.length, closeNow]);
   nextRef.current = next;
   const prev = useCallback((): void => { setIdx((i) => Math.max(0, i - 1)); }, []);
   useEffect(() => {
@@ -303,14 +331,14 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
         if (e.key === "Escape" && cmtOpenRef.current && !typing9 && !document.querySelector(".scr-comment-confirm-over-modal")) { e.preventDefault(); setCmtOpen(false); }
         return;
       }
-      if (e.key === "Escape") { e.preventDefault(); onClose(); }
+      if (e.key === "Escape") { e.preventDefault(); closeNow(); }
       else if (e.key === "ArrowRight") { e.preventDefault(); next(); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
       else if (e.key === " ") { e.preventDefault(); setStop((v) => !v); }
     };
     window.addEventListener("keydown", on, true);
     return () => window.removeEventListener("keydown", on, true);
-  }, [next, prev, onClose]);
+  }, [next, prev, closeNow]);
   /* 누름 — 짧게 떼면 탭(좌 3할 이전 · 나머지 다음) · 오래 누르면 멈춤(떼면 다시) · 아래로 끌면 판이 따라 내려가고 90px 넘게 놓으면 닫힘. */
   const press = useRef<{ x: number; y: number; t: number; id: number; holdTm: number } | null>(null);
   const onDown = (e: RPointerEvent<HTMLDivElement>): void => {
@@ -336,7 +364,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     const held = performance.now() - p.t >= TAP_MS;
     setHold(false);
     setDragY(0);
-    if (dy > 90) { onClose(); return; }
+    if (dy > 90) { closeNow(); return; }
     if (held || Math.abs(dx) > 12 || Math.abs(dy) > 12) return;
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     if (e.clientX - r.left < r.width * 0.3) prev(); else next();
@@ -352,7 +380,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     }
     onDeleted(it.id);
     window.dispatchEvent(new CustomEvent(SHORTS_CHANGED));
-    if (items.length <= 1) onClose();
+    if (items.length <= 1) closeNow();
     else if (idx >= items.length - 1) setIdx(idx - 1);
   };
   /* ★ 쇼츠 추천(2026-11-19, 요청: "쇼츠에도 추천버튼 넣고 3개 이상시 명예의 전당에 들어감") — 누르면 곧장 바꿔 그리고(되면 서버 값 · 안 되면 되돌림) 목록 카드도 고친다. */
@@ -383,7 +411,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   };
   const goGame = (): void => {
     if (!it) return;
-    onClose();
+    closeNow();
     navigateTo(gamePath(it.matchNo || String(it.gameResultId)), { search: `t=${Math.floor(it.t0)}` });
   };
   /* ★ 판은 **정사각**(2026-11-20, 요청: "쇼츠 무조건 정사각형으로 나오기로 했는데 피시랑 폰 모두 수정") — 녹화도 정사각 틀이다(scplay recSq9). PC 는 창 가운데 큰 정사각에 머리 · 단추를 얹고,
@@ -417,18 +445,28 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     }
     if (next.mode !== room.mode || Math.abs(next.w - room.w) > 1 || Math.abs(next.h - room.h) > 1) setRoom(next);
   });   // eslint-disable-line react-hooks/exhaustive-deps
+  /* 즉시 멈춤 줄 맞추기(위 즉시 반응 ★ ①) — 누름 · 오래 누름 · 폰 전체 댓글 · 쇼츠 바꾸는 한 장 · 닫는 중. 보기 화면이 그린 직후 곧장(재생기는 다음 장부터 선다). */
+  const pausedNow = hold || stop || (cmtOpen && cmtSheet) || swapping || closing;
+  useLayoutEffect(() => { holdRef.current = pausedNow; });
   const patchCount = (n: number): void => { if (it && (it.commentCount ?? 0) !== n) onPatch?.(it.id, { commentCount: n }); };
   if (!it) return null;
   const many = items.length > 24;
   const node = (
-    <div className={cx("scr-shortv", phone && "is-phone", box.h >= vw.h - 2 && "is-tall", phone && box.h + 300 < vw.h && "has-cmts")} role="dialog" aria-modal="true" aria-label="쇼츠" style={{ transformOrigin: origin }}>
+    <div className={cx("scr-shortv", closing && "is-closing", phone && "is-phone", box.h >= vw.h - 2 && "is-tall", phone && box.h + 300 < vw.h && "has-cmts")} role="dialog" aria-modal="true" aria-label="쇼츠" style={{ transformOrigin: origin }}>
       {/* 감싸개(2026-11-21 · 댓글 칸 자리) — 판(.scr-shortv-box)은 PC 에서 overflow hidden 이라 옆 · 아래 댓글 칸을 그 밖(이 감싸개)에 둔다 · 끌어 닫기 변환도 여기서. */}
       <div className="scr-shortv-wrap" ref={boxRef} style={{
         width: box.w, height: box.h, ...(room.mode === "right" ? { marginRight: room.w + 20 } : {}),
         ...(dragY ? { transform: `translateY(${dragY}px) scale(${Math.max(0.85, 1 - dragY / 1400)})`, opacity: Math.max(0.4, 1 - dragY / 500) } : {}),
       }}>
       <div className="scr-shortv-box" style={{ width: box.w, height: box.h }}>
-        <ShortStage key={it.id} item={it} w={box.w} h={box.h} paused={hold || stop || (cmtOpen && cmtSheet)} onProgress={setProg} onEnd={onStageEnd} />
+        {stageItem && <ShortStage key={stageItem.id} item={stageItem} w={box.w} h={box.h} holdRef={holdRef} onProgress={onStageProg} onEnd={onStageEnd} />}
+        {/* 따라가는 한 장(위 swapping) — 새 쇼츠 표지 · 별을 곧장 덮는다 */}
+        {swapping && (
+          <div className="scr-shortv-swap" aria-hidden>
+            {it.coverUrl && <img className="scr-shortv-cover" src={it.coverUrl} alt="" draggable={false} />}
+            <div className="scr-shortv-wait"><span className="scr-shortv-star"><img src="/images/logo/symbol.png" alt="" draggable={false} /></span></div>
+          </div>
+        )}
         <div className="scr-shortv-tap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onContextMenu={(e) => e.preventDefault()} />
         {(hold || stop) && <span className="scr-shortv-paused" aria-hidden><Pause size={30} fill="currentColor" /></span>}
         {/* 판 위 머리 — 진행 막대 · 만든 사람 · 멈춤 · 닫기(릴스 · 스토리처럼 장면 위에 얹는다 · 위 그늘). */}
@@ -451,7 +489,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
             <button type="button" className="scr-shortv-btn" onClick={() => setStop((v) => !v)} aria-label={stop ? "재생" : "멈춤"} title={stop ? "재생 (스페이스)" : "멈춤 (스페이스)"}>
               {stop ? <Play size={18} aria-hidden /> : <Pause size={18} aria-hidden />}
             </button>
-            <button type="button" className="scr-shortv-btn" onClick={onClose} aria-label="닫기" title="닫기 (Esc)">
+            <button type="button" className="scr-shortv-btn" onClick={closeNow} aria-label="닫기" title="닫기 (Esc)">
               <X size={20} aria-hidden />
             </button>
           </div>
