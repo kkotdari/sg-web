@@ -182,7 +182,7 @@ export default memo(function GameDetailPage({ idText, onBack, onClose, onGone, o
       {mobile && bar}
       {sized && (
         <div className={`scr-feed-card-comment scr-game-page-comment${shown ? "" : " is-loading"}`}>
-          <Comments targetType="gameResult" targetId={game.id} />
+          <Comments targetType="gameResult" targetId={game.id} inlineInput />
         </div>
       )}
       {pendingDelete && (

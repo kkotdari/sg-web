@@ -6441,8 +6441,18 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   display: flex; flex-direction: column; gap: 8px; min-height: 0; max-height: 100%; padding: 10px 12px; border-radius: 12px;
   background: rgba(255, 255, 255, 0.06); color: #eef2f7; cursor: pointer; overflow: hidden; -webkit-tap-highlight-color: transparent;
 }
-.scr-shortv-cmts:hover { background: rgba(255, 255, 255, 0.09); }
-.scr-shortv-cmts-head { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
+/* (2026-11-21 둘째) 미리보기 판 자체는 단추가 아니다 — 머리 · 목록만 전체 댓글을 연다 · 가운데 입력 줄은 그 자리에서 쓴다(CommentInputBar). */
+.scr-shortv-cmts { cursor: default; }
+.scr-shortv-cmts-list { cursor: pointer; }
+.scr-shortv-cmtinput { flex: none; }
+.scr-shortv-cmtinput .scr-comment-editor { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.18); color: #fff; }
+.scr-shortv-cmtinput .scr-comment-input { color: #fff; }
+.scr-shortv-cmtinput .scr-comment-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+.scr-shortv-cmtinput .scr-cmt-attach-btn { background: rgba(255, 255, 255, 0.1); color: #fff; border-color: transparent; }
+.scr-shortv-cmtinput .scr-comment-clear-btn { color: rgba(255, 255, 255, 0.7); }
+/* 게임 화면 폰 댓글의 입력 줄(Comments inlineInput · 같은 날) — 머리 아래 · 미리보기 위. */
+.scr-cmt-inline { margin: 4px 0 8px; }
+.scr-shortv-cmts-head { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
 .scr-shortv-cmts-head > b { font-weight: 800; }
 .scr-shortv-cmts-head > span { margin-left: auto; font-size: 12px; opacity: 0.6; }
 .scr-shortv-cmts-list { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; min-height: 0; overflow: hidden; }

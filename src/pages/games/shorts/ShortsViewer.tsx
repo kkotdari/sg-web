@@ -7,7 +7,7 @@ import Avatar from "../../../components/common/Avatar";
 import { showToast } from "../../../components/common/Toast";
 import { useAppStore } from "../../../store/appStore";
 import { formatAgo, serverMs } from "../../../utils/date";
-import Comments from "../../feed/Comments";
+import Comments, { CommentInputBar } from "../../feed/Comments";
 import { renderTags } from "../../../components/common/InlineTags";
 import { shareThumb, shareToKakao, type KakaoShareContent } from "../../../utils/kakaoShare";
 import { gamePath, navigateTo } from "../../../utils/route";
@@ -173,7 +173,9 @@ const ShortStage = memo(function ShortStage({ item, w, h, paused, onProgress, on
    "댓글 N개 모두 보기". 누르면 전체 댓글(폰 시트 · PC 옆 판 — 게임 댓글과 같은 Comments 부품 · 태그 · 첨부 · 지우기 그대로). 자리는 보기 화면이 잰다(아래 room ★) —
    남는 칸이 없으면 미리보기는 안 서고 옆 단추 줄의 [댓글 N]이 전체 댓글을 연다. */
 const CMT_PREVIEW_N = 3;
-function ShortCmtPreview({ id, ver, onOpen, onCount }: { id: number; ver: number; onOpen: () => void; onCount: (n: number) => void }) {
+/* (2026-11-21 둘째, 요청: "입력하려면 댓글 모달이 열려서 감상이 깨져 · 입력은 감상하면서 가능하게") — 머리 아래 늘 선 입력 줄(CommentInputBar)에서 그 자리에서 쓰고 보낸다 ·
+   쇼츠는 그대로 돈다. 머리 · 목록을 누르면 전체 댓글(폰 시트 — 그때만 멈춤 · PC 옆 판 — 안 멈춤). 옛(같은 날 첫): 미리보기 전체가 단추 → 전체 댓글을 열고 멈췄다. */
+function ShortCmtPreview({ id, ver, onOpen, onCount, onPosted }: { id: number; ver: number; onOpen: () => void; onCount: (n: number) => void; onPosted: () => void }) {
   const [notes, setNotes] = useState<ItemComment[] | null>(null);
   const onCountRef = useRef(onCount); onCountRef.current = onCount;
   useEffect(() => {
@@ -186,14 +188,14 @@ function ShortCmtPreview({ id, ver, onOpen, onCount }: { id: number; ver: number
   const list = notes ? [...notes].sort((a, b) => serverMs(b.createdAt) - serverMs(a.createdAt)) : [];
   const n = list.length;
   return (
-    <div className={cx("scr-shortv-cmts", n > CMT_PREVIEW_N && "is-more")} role="button" tabIndex={0} aria-label={n ? `댓글 ${n}개 보기` : "댓글 쓰기"}
-      onClick={onOpen} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onOpen(); } }}>
-      <div className="scr-shortv-cmts-head">
+    <div className={cx("scr-shortv-cmts", n > CMT_PREVIEW_N && "is-more")}>
+      <button type="button" className="scr-shortv-cmts-head" onClick={onOpen} aria-label={n ? `댓글 ${n}개 모두 보기` : "댓글"}>
         <b>댓글{n ? ` ${n}` : ""}</b>
-        <span>{notes === null ? "" : n ? (n > CMT_PREVIEW_N ? `${n}개 모두 보기` : "댓글 쓰기") : "첫 댓글을 남겨 보세요"}</span>
-      </div>
+        <span>{notes === null ? "" : n ? (n > CMT_PREVIEW_N ? `${n}개 모두 보기` : "모두 보기") : "첫 댓글을 남겨 보세요"}</span>
+      </button>
+      <CommentInputBar targetType="short" targetId={id} className="scr-shortv-cmtinput" onPosted={onPosted} placeholder="댓글 남기기 (@ 유저)" />
       {n > 0 && (
-        <ul className="scr-shortv-cmts-list">
+        <ul className="scr-shortv-cmts-list" onClick={onOpen}>
           {list.slice(0, CMT_PREVIEW_N + 1).map((c) => (
             <li key={c.id}>
               <Avatar member={{ id: c.author.memberId, nickname: c.author.nickname, avatar: c.author.avatar }} size={22} />
@@ -229,7 +231,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
   const [dragY, setDragY] = useState(0);
   const [vw, setVw] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   const it = items[idx] ?? null;
-  /** 전체 댓글이 열렸나(위 ShortCmtPreview ★) — 연 동안 쇼츠는 멈춘다 · 미리보기는 ver 로 다시 받는다(달기 · 지우기 뒤). */
+  /** 전체 댓글이 열렸나(위 ShortCmtPreview ★) — 폰 시트로 연 동안만 쇼츠가 멈춘다(PC 옆 판 · 입력 줄은 보면서) · 미리보기는 ver 로 다시 받는다(달기 · 지우기 뒤). */
   const [cmtOpen, setCmtOpen] = useState(false);
   const [cmtVer, setCmtVer] = useState(0);
   const cmtOpenRef = useRef(false); cmtOpenRef.current = cmtOpen;
@@ -274,6 +276,15 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     return () => { dead = true; window.clearTimeout(t9); };
   }, [nextItem]);
   useReplayMap(nextHash);
+  /* 댓글 입력 줄에 쓰는 동안(초점이 그 안)은 쇼츠가 끝나도 다음으로 안 넘긴다 — 넘기면 쓰던 글이 다음 쇼츠에 달린다. 초점이 빠지면 그때 넘긴다. */
+  const typingRef = useRef(false);
+  const endWaitRef = useRef(false);
+  const nextRef = useRef<() => void>(() => undefined);
+  const onStageEnd = useCallback((): void => {
+    if (typingRef.current) { endWaitRef.current = true; return; }
+    nextRef.current();
+  }, []);
+  useEffect(() => { typingRef.current = false; endWaitRef.current = false; }, [it?.id]);
   const next = useCallback((): void => {
     setIdx((i) => {
       if (i + 1 < items.length) return i + 1;
@@ -281,6 +292,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
       return i;
     });
   }, [items.length, onClose]);
+  nextRef.current = next;
   const prev = useCallback((): void => { setIdx((i) => Math.max(0, i - 1)); }, []);
   useEffect(() => {
     const on = (e: KeyboardEvent): void => {
@@ -416,7 +428,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
         ...(dragY ? { transform: `translateY(${dragY}px) scale(${Math.max(0.85, 1 - dragY / 1400)})`, opacity: Math.max(0.4, 1 - dragY / 500) } : {}),
       }}>
       <div className="scr-shortv-box" style={{ width: box.w, height: box.h }}>
-        <ShortStage key={it.id} item={it} w={box.w} h={box.h} paused={hold || stop || cmtOpen} onProgress={setProg} onEnd={next} />
+        <ShortStage key={it.id} item={it} w={box.w} h={box.h} paused={hold || stop || (cmtOpen && cmtSheet)} onProgress={setProg} onEnd={onStageEnd} />
         <div className="scr-shortv-tap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onContextMenu={(e) => e.preventDefault()} />
         {(hold || stop) && <span className="scr-shortv-paused" aria-hidden><Pause size={30} fill="currentColor" /></span>}
         {/* 판 위 머리 — 진행 막대 · 만든 사람 · 멈춤 · 닫기(릴스 · 스토리처럼 장면 위에 얹는다 · 위 그늘). */}
@@ -473,8 +485,14 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
       </div>
         {/* 댓글 미리보기(남는 칸이 있을 때 · 위 room ★) — PC 옆 칸은 전체 댓글이 열리면 그 자리에 선다. */}
         {room.mode !== "none" && !(cmtOpen && (cmtSheet || room.mode === "right")) && (
-          <div className={cx("scr-shortv-cmtroom", `is-${room.mode}`)} style={room.mode === "right" ? { width: room.w, maxHeight: room.h } : { maxHeight: room.h }}>
-            <ShortCmtPreview id={it.id} ver={cmtVer} onOpen={() => setCmtOpen(true)} onCount={patchCount} />
+          <div className={cx("scr-shortv-cmtroom", `is-${room.mode}`)} style={room.mode === "right" ? { width: room.w, maxHeight: room.h } : { maxHeight: room.h }}
+            onFocus={(e) => { if ((e.target as HTMLElement).closest(".scr-shortv-cmtinput")) typingRef.current = true; }}
+            onBlur={(e) => {
+              if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+              typingRef.current = false;
+              if (endWaitRef.current) { endWaitRef.current = false; nextRef.current(); }
+            }}>
+            <ShortCmtPreview key={it.id} id={it.id} ver={cmtVer} onOpen={() => setCmtOpen(true)} onCount={patchCount} onPosted={() => setCmtVer((v) => v + 1)} />
           </div>
         )}
         {/* 전체 댓글 — PC: 옆 칸(자리가 있으면 그 자리 · 없으면 화면 오른쪽에 떠서) · 폰은 아래 시트(Comments sheetOnly). */}

@@ -272,7 +272,40 @@ export async function primeComments(items: ItemComment[]): Promise<void> {
   notifyComments();
 }
 
-export default function Comments({ targetType, targetId, overModal = false, sheetOnly = false, onSheetClose, onCount, fresh = false }: {
+/** ★ 바로 쓰는 댓글 줄(2026-11-21, 요청: "게임이나 쇼츠 댓글 모듈에서 입력하려면 댓글 모달이 열려서 감상이 깨져 · 입력은 감상하면서 가능하게") — 시트 · 창을 안 열고
+ *  그 자리에서 쓰고 보낸다(태그 · 첨부 그대로 · NoteComposer). 보낸 댓글은 묶음(primed)에도 넣고 onPosted 로 알린다(쇼츠 미리보기가 다시 받는다). */
+export function CommentInputBar({ targetType, targetId, onPosted, className, placeholder = "댓글 남기기 (@ 유저 · /g 게임 태그)" }: {
+  targetType: CommentTargetType; targetId: number; onPosted?: (c: ItemComment) => void; className?: string; placeholder?: string;
+}) {
+  const user = useAppStore((s) => s.user);
+  const members = useAppStore((s) => s.members);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [k, setK] = useState(0);
+  if (!user) return null;
+  const send = async (text: string, ids: string[], atts: CommentAttachmentIn[]): Promise<void> => {
+    setBusy(true); setErr(null);
+    try {
+      const c = await api.createComment(targetType, targetId, text, ids, atts.length ? atts : undefined);
+      if (primedOnce) { const key = keyOf(targetType, targetId); primed.set(key, [...(primed.get(key) ?? []), c]); notifyComments(); }
+      setK((x) => x + 1);
+      onPosted?.(c);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "댓글을 남기지 못했어요.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className={cx("scr-cmt-inputbar", className)} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+      <NoteComposer key={k} members={members} initialText="" submitting={busy} onSubmit={(t, ids, atts) => void send(t, ids, atts)}
+        placeholder={placeholder} submitLabel={<CornerDownLeft size={14} />} />
+      {err && <div className="scr-err scr-feed-note-err">{err}</div>}
+    </div>
+  );
+}
+
+export default function Comments({ targetType, targetId, overModal = false, sheetOnly = false, onSheetClose, onCount, fresh = false, inlineInput = false }: {
   targetType: CommentTargetType;
   targetId: number;
   overModal?: boolean;
@@ -283,6 +316,9 @@ export default function Comments({ targetType, targetId, overModal = false, shee
   onCount?: (n: number) => void;
   /** 미리 받은 묶음(primed · 피드에 실린 판만)이 있어도 서버에서 다시 받는다 — 피드 밖 판(명예의 전당 등)은 묶음에 없어 비어 보였다(2026-10-29 실기 지적). */
   fresh?: boolean;
+  /** ★ 폰에서도 입력 칸을 그 자리에(2026-11-21, 요청: "입력하려면 댓글 모달이 열려서 감상이 깨져 · 입력은 감상하면서 가능하게") — 머리 아래 늘 선 입력 줄(시트를 안 연다) ·
+   *  미리보기를 누르면 전체 시트는 그대로. 게임 화면(GameDetailPage)이 켠다 · 피드 카드는 옛 꼴([댓글 추가] → 시트). */
+  inlineInput?: boolean;
 }) {
   const [composerOpen, setComposerOpen] = useState(false);
   const composerWrapRef = useRef<HTMLDivElement>(null);
@@ -587,6 +623,13 @@ export default function Comments({ targetType, targetId, overModal = false, shee
       {!sheetOnly && notes.length > 0 && <div className="scr-feed-comments-heading">댓글 {notes.length}</div>}
       {sheetOnly ? null : mobile ? (
         <>
+          {/* 바로 쓰는 입력 줄(위 inlineInput ★) — 시트 없이 그 자리에서 */}
+          {inlineInput && user && editingId === null && (
+            <div className="scr-cmt-inline">
+              {composer}
+              {err && !sheetOpen && <div className="scr-err scr-feed-note-err">{err}</div>}
+            </div>
+          )}
           {notes.length > 0 ? (
             <div
               className="scr-feed-notes-preview" role="button" tabIndex={0}
@@ -598,7 +641,7 @@ export default function Comments({ targetType, targetId, overModal = false, shee
                 {notes.map((c) => renderNote(c, false))}
               </ul>
             </div>
-          ) : user ? (
+          ) : user && !inlineInput ? (
             <div className="scr-feed-comment-row">
               <button
                 type="button" className="scr-feed-comments-toggle"
