@@ -394,6 +394,16 @@ export const api = {
 
   /** 자취 + 경기 채팅 — 채팅은 재생기 중계 자막의 gg 선언·노엘 외침 재료(2026-10-10 · 말한 사람을 아는 줄만 · 프레임 → 초는 fastest 42ms). */
   /* scope(2026-10-26) — "team" 팀챗 · "all" 전체 · 없음 = 서버가 못 가름(재생기는 배지 없이). */
+  /** 쇼츠 참값 꾸러미(2026-11-21 · sg-api /shorts/{id}/tracks · scplay truthPack) — 경기 참값을 쇼츠 구간으로 잘라 싼 것(처음 볼 때 서버가 굽는다).
+   *  pack 이 없으면(참값 없음 · 분석기 실패) 부르는 쪽이 경기 전체 참값(getGameUnitTracks)으로 물러난다. */
+  async getShortTracks(id: number): Promise<{ pack: string | null; chats?: { sec: number; name: string; text: string; scope?: "team" | "all" }[] }> {
+    const res = await request<{ pack?: string | null; chats?: { frame: number; text: string; name?: string | null; scope?: string | null }[] }>(`/api/shorts/${id}/tracks`);
+    const chats = (res.chats ?? []).flatMap((c) => (c.name ? [{
+      sec: (c.frame * 42) / 1000, name: c.name, text: c.text,
+      ...(c.scope === "team" || c.scope === "all" ? { scope: c.scope as "team" | "all" } : {}),
+    }] : []));
+    return { pack: res.pack ?? null, ...(chats.length > 0 ? { chats } : {}) };
+  },
   async getGameUnitTracks(id: number): Promise<{ motion: string | null; chats?: { sec: number; name: string; text: string; scope?: "team" | "all" }[] }> {
     type Res = { motion?: string | null; chats?: { frame: number; text: string; name?: string | null; scope?: string | null }[] };
     const res = extShareCtx

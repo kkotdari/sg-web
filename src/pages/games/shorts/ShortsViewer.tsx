@@ -14,7 +14,7 @@ import { gamePath, navigateTo } from "../../../utils/route";
 import { cx } from "../../../utils/format";
 import { isMeleeGame, resolveSlotName } from "../GameResultSides";
 import { SHORTS_CHANGED } from "./shortsBus";
-import { gameOf, prefetchShort, shortOf, tracksOf } from "./shortsPrefetch";
+import { gameOf, prefetchShort, shortLoadTracks, shortOf, shortTracksOf } from "./shortsPrefetch";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import type { GameResult, ItemComment } from "../../../types";
 
@@ -86,7 +86,7 @@ const ShortStage = memo(function ShortStage({ item, w, h, holdRef, onProgress, o
     let dead = false;
     (async () => {
       try {
-        void tracksOf(item.gameResultId).then(() => { loadRef.current.tracks ??= performance.now(); }, () => undefined);   // 참값(가장 크다)은 먼저 출발 — 재생기가 받을 때 같은 약속을 쓴다
+        void shortTracksOf(item).then(() => { loadRef.current.tracks ??= performance.now(); }, () => undefined);   // 참값 꾸러미(구간만 · 2026-11-21)는 먼저 출발 — 재생기가 받을 때 같은 약속을 쓴다
         const [one, game] = await Promise.all([shortOf(item), gameOf(item.gameResultId)]);
         if (!one.clip) throw new Error("토막 없음");
         loadRef.current.got = performance.now();
@@ -148,9 +148,10 @@ const ShortStage = memo(function ShortStage({ item, w, h, holdRef, onProgress, o
     return out;
   }, [game, memberOf]);
   const teamOfRaw = useCallback((raw: string): 1 | 2 | undefined => bases.find((b) => b.key === raw)?.team as 1 | 2 | undefined, [bases]);
+  /* 쇼츠 참값 꾸러미(구간만 잘라 싼 것 · 2026-11-21, 요청: "쇼츠 로딩 더 아주 빠르게") — 없으면 경기 전체 참값(shortLoadTracks 가 물러난다). */
   const loadUnitTracks = useCallback(
-    () => (game ? tracksOf(game.id).catch(() => ({ motion: null })) : Promise.resolve({ motion: null })),
-    [game],
+    () => (game ? shortLoadTracks(item) : Promise.resolve({ motion: null })),
+    [game, item],
   );
   return (
     <div className="scr-shortv-stage" style={{ width: w, height: h }}>

@@ -8,6 +8,9 @@ import type { GameResult } from "../../../types";
 const shorts = new Map<number, Promise<GameShort>>();
 const games = new Map<number, Promise<GameResult>>();
 const tracks = new Map<number, Promise<{ motion: string | null }>>();
+/** 쇼츠 참값 꾸러미(쇼츠 id · 2026-11-21 — 구간만 잘라 작다 · api.getShortTracks). 최근 몇 개만 쥔다. */
+const shortTracks = new Map<number, Promise<Awaited<ReturnType<typeof api.getShortTracks>>>>();
+const SHORT_TRACKS_KEEP = 6;
 const TRACKS_KEEP = 3;
 
 function keep<K, V>(m: Map<K, Promise<V>>, k: K, make: () => Promise<V>): Promise<V> {
@@ -37,11 +40,25 @@ export function tracksOf(gameId: number): Promise<{ motion: string | null }> {
   return p;
 }
 
+export function shortTracksOf(item: GameShort): Promise<Awaited<ReturnType<typeof api.getShortTracks>>> {
+  const p = keep(shortTracks, item.id, () => api.getShortTracks(item.id));
+  shortTracks.delete(item.id); shortTracks.set(item.id, p);
+  while (shortTracks.size > SHORT_TRACKS_KEEP) { const k = shortTracks.keys().next().value; if (k === undefined) break; shortTracks.delete(k); }
+  return p;
+}
+
+/** 쇼츠 재생기에 넘길 참값 — 꾸러미(truthPack)가 있으면 그것 · 없으면 경기 전체 참값(옛 길). */
+export function shortLoadTracks(item: GameShort): Promise<{ motion: string | null; truthPack?: string | null; chats?: { sec: number; name: string; text: string; scope?: "team" | "all" }[] }> {
+  return shortTracksOf(item)
+    .then((r) => (r.pack ? { motion: null, truthPack: r.pack, ...(r.chats ? { chats: r.chats } : {}) } : tracksOf(item.gameResultId)))
+    .catch(() => tracksOf(item.gameResultId).catch(() => ({ motion: null })));
+}
+
 /** 한 쇼츠를 여는 데 드는 것을 다 출발시킨다(기다리지 않는다). */
 export function prefetchShort(item: GameShort | undefined | null): void {
   if (!item) return;
   replayPrewarm9();   // 재생기 채비(이미 열었으면 아무것도 안 한다)
   void shortOf(item).catch(() => undefined);
   void gameOf(item.gameResultId).catch(() => undefined);
-  void tracksOf(item.gameResultId).catch(() => undefined);
+  void shortTracksOf(item).catch(() => undefined);   // 경기 전체 참값(tracksOf) 대신 쇼츠 꾸러미(구간만 · 2026-11-21) — 없으면 그때 전체를 받는다(shortLoadTracks)
 }
