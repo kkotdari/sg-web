@@ -10,6 +10,7 @@ import { GameTableHead, GameTableRow } from "../games/GameTable";
 import WpaDetailModal from "../../modals/WpaDetailModal";
 import UnhideRequestsModal from "../../modals/UnhideRequestsModal";
 import ReplayBatchButton from "../../components/common/ReplayBatchButton";
+import DayRangePicker from "../../components/common/DayRangePicker";
 import { gamePlayable } from "../../utils/gamePlayable";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { api } from "../../api/client";
@@ -29,7 +30,7 @@ import type { GameDataFlags, GameManageHasKey, GameManagePage, GameManageQuery, 
    표 = PC 게임 목록 표(GameTable ★★)의 앞 여섯 칸 + 데이터 칸(GameTableHead manageCols · GameTableRow manage) · 폰은 게임 목록 줄(ListRow) 위에 칸 O/X.
    목록 · 거름 · 쪽 · 전체 id 는 서버가 한다(POST /api/game-results/admin/manage) — 전체 선택은 거름에 드는 판 id 전부를 받아 고른다.
    ★ 거름 둘째 판(같은 날, 요청: "배치등록도 게임관리로 · 종류(내전 · 공방 · 리그) · 유형 · 특이사항(명예의 전당 · 쇼츠 · 외부 공개) → 체크박스 ·
-   리플레이 · 참값 · 통계 · 색인 · 숨김 · 삭제 → 라디오(전체도 있는 라디오) · 그 외의 필터는 제거 · 디자인은 화려함보단 깔끔하게") — 고르면 바로 다시 받는다(조회 단추 없음).
+   리플레이 · 참값 · 통계 · 색인 · 숨김 · 삭제 → 라디오(전체도 있는 라디오) · 그 외의 필터는 제거 · 디자인은 화려함보단 깔끔하게") — 고르면 바로 다시 받았다(조회 단추 없음 · 2026-11-21 부터 [조회]로 반영 — 아래 draft ★).
    옛 첫 판의 검색 · 종류 하나 고르기 · 참값 끔 · 리그 거름과 전체/O/X 덩이 단추는 걷었다. 삭제 라디오만 처음 값이 X(지운 판 빼고 — 여느 목록과 같게).
    기간(경기일)은 같은 날 셋째에 되살렸다(요청: "미안 기간은 넣어야함") — 맨 윗줄. */
 
@@ -125,7 +126,8 @@ function download(blob: Blob, name: string) {
   URL.revokeObjectURL(url);
 }
 
-type Act = "make" | "purge" | "redo" | "restore" | "unfame";
+/* '명예의 전당 빼기'(unfame)는 걷었다(2026-11-21, 요청: "명전 빼기 버튼은 불필요한 듯") — 서버 길(api.unfameGames)은 그대로 둔다. */
+type Act = "make" | "purge" | "redo" | "restore";
 type RedoFail = { id: number; matchNo: string; why: string };
 
 export default function GameManageScreen() {
@@ -133,6 +135,9 @@ export default function GameManageScreen() {
   const mobile = useIsMobile();
 
   const [applied, setApplied] = useState<Filter>(EMPTY);
+  /* ★ 고르는 중인 거름(2026-11-21, 요청: "필터 적용 후 폰에서도 조회 버튼 눌러야 반영되게") — 고르면 이 칸만 바뀌고 [조회]가 applied 로 옮겨 받는다(PC · 폰 같다).
+     옛(같은 달 20일 둘째): 고르면 바로 다시 받았다(조회 단추 없음). 쪽 · 쪽 크기 · 전체 선택 · 일은 늘 applied(받아 둔 목록)의 거름이다. */
+  const [draft, setDraft] = useState<Filter>(EMPTY);
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(50);
   const [data, setData] = useState<GameManagePage | null>(null);
@@ -163,13 +168,16 @@ export default function GameManageScreen() {
   /** 거름을 바꾸면 바로 다시 받는다 — 첫 쪽부터 · 고른 판은 비운다(안 보이는 판에 일을 걸지 않게). */
   const apply = (next: Filter) => {
     setApplied(next);
+    setDraft(next);
     setPage(1);
     setPicked(new Set());
     void load(next, 1, size);
   };
-  const patch = (x: Partial<Filter>) => apply({ ...applied, ...x });
-  const setRadio = (k: RadioKey, v: Radio) => apply({ ...applied, radios: { ...applied.radios, [k]: v } });
-  const isEmpty = JSON.stringify(applied) === JSON.stringify(EMPTY);
+  const patch = (x: Partial<Filter>) => setDraft((d) => ({ ...d, ...x }));
+  const setRadio = (k: RadioKey, v: Radio) => setDraft((d) => ({ ...d, radios: { ...d.radios, [k]: v } }));
+  const isEmpty = JSON.stringify(applied) === JSON.stringify(EMPTY) && JSON.stringify(draft) === JSON.stringify(EMPTY);
+  /** 고른 거름이 받아 둔 목록과 다르다 — [조회]를 밝힌다. */
+  const dirty = JSON.stringify(draft) !== JSON.stringify(applied);
   const goPage = (p: number) => { setPage(p); void load(applied, p, size); };
   const changeSize = (v: string) => { const sz = Number(v); setSize(sz); setPage(1); void load(applied, 1, sz); };
 
@@ -282,9 +290,6 @@ export default function GameManageScreen() {
       if (act === "purge") {
         const { deleted, skipped } = await api.purgeTruthOf(ids);
         showToast(`${deleted}판의 참값을 지웠어요${skipped ? ` · 지킨 판(리그 · 명예의 전당 · 쇼츠) ${skipped}판은 건너뛰었어요` : ""}.`, { kind: "ok" });
-      } else if (act === "unfame") {
-        const { removed } = await api.unfameGames(ids);
-        showToast(`${removed}판을 명예의 전당에서 뺐어요.`, { kind: "ok" });
       } else if (act === "restore") {
         let ok = 0;
         for (const id of ids) {
@@ -336,8 +341,6 @@ export default function GameManageScreen() {
       message: "참값이 있는 판만 리플레이를 다시 읽어 모든 기록(요약 · 참값 · 통계 · 색인)을 새로 씁니다. 직접 입력한 값(날짜 · 승패 · 회원 연결 등)은 그대로예요. 건수가 많으면 몇 분 걸립니다." },
     restore: { title: `고른 게임 ${ids.length}건을 되살릴까요?`, label: "복원",
       message: "지운 판을 다시 목록에 세우고 서버가 다시 굽습니다. 지운 판이 아니면 그대로 둬요." },
-    unfame: { title: `고른 게임 ${ids.length}건을 명예의 전당에서 뺄까요?`, label: "빼기",
-      message: "명예의 전당 표식만 뗍니다 — 판과 자료는 그대로예요. 추천이 다시 3에 닿으면 또 들어가요." },
   };
 
   const pagerNums = (() => {
@@ -373,25 +376,29 @@ export default function GameManageScreen() {
       <div className="scr-gman-filters">
         <div className="scr-gman-frow">
           <span className="scr-gman-flabel">기간</span>
+          {/* 통계와 같은 기간 고르기(DayRangePicker · react-day-picker · 2026-11-21, 요청: "기간 필터 공통 기간 선택 모듈 사용 · 통계에서 쓰는 거") — 한 달력에서 시작 · 끝 ·
+              프리셋 오늘 · 어제 · 일주일 · 전체. 옛: 시작 ~ 끝 두 칸(input type=date). */}
           <div className="scr-gman-opts scr-gman-period">
-            <input
-              type="date" className="scr-input scr-date-compact" aria-label="시작 날짜"
-              value={applied.from} max={applied.to || todayStr()} onChange={(e) => patch({ from: e.target.value })}
-            />
-            <span aria-hidden>~</span>
-            <input
-              type="date" className="scr-input scr-date-compact" aria-label="끝 날짜"
-              value={applied.to} min={applied.from || undefined} max={todayStr()} onChange={(e) => patch({ to: e.target.value })}
+            <DayRangePicker
+              from={draft.from || draft.to || todayStr()} to={draft.to || draft.from || todayStr()} max={todayStr()}
+              all={!draft.from && !draft.to}
+              onChange={(a, b) => patch({ from: a, to: b })}
+              onAll={() => patch({ from: "", to: "" })}
             />
           </div>
         </div>
-        <CheckRow label="종류" items={KINDS} value={applied.kinds} onChange={(v) => patch({ kinds: v })} />
-        <CheckRow label="유형" items={TYPES} value={applied.types} onChange={(v) => patch({ types: v })} />
-        <CheckRow label="특이사항" items={MARKS} value={applied.marks} onChange={(v) => patch({ marks: v })} />
+        <CheckRow label="종류" items={KINDS} value={draft.kinds} onChange={(v) => patch({ kinds: v })} />
+        <CheckRow label="유형" items={TYPES} value={draft.types} onChange={(v) => patch({ types: v })} />
+        <CheckRow label="특이사항" items={MARKS} value={draft.marks} onChange={(v) => patch({ marks: v })} />
         <div className="scr-gman-radios">
-          {RADIOS.map(([k, t]) => <RadioRow key={k} name={k} label={t} value={applied.radios[k]} onChange={(v) => setRadio(k, v)} />)}
+          {RADIOS.map(([k, t]) => <RadioRow key={k} name={k} label={t} value={draft.radios[k]} onChange={(v) => setRadio(k, v)} />)}
         </div>
-        <button type="button" className="scr-text-btn scr-gman-reset" onClick={() => apply(EMPTY)} disabled={isEmpty || loading}>초기화</button>
+        <div className="scr-gman-fbtns">
+          <button type="button" className="scr-text-btn" onClick={() => apply(EMPTY)} disabled={isEmpty || loading}>초기화</button>
+          <button type="button" className={cx("scr-rect-btn", !dirty && "is-secondary")} onClick={() => apply(draft)} disabled={loading}>
+            {loading ? <Spinner /> : "조회"}
+          </button>
+        </div>
       </div>
 
       <div className="scr-gman-bar">
@@ -422,9 +429,6 @@ export default function GameManageScreen() {
           </button>
           <button type="button" className="scr-rect-btn is-secondary" disabled={ids.length === 0 || working} onClick={() => { void exportPicked(); }}>
             {busy === "export" ? <Spinner /> : "리플레이 받기"}
-          </button>
-          <button type="button" className="scr-rect-btn is-secondary" disabled={ids.length === 0 || working} onClick={() => setConfirm("unfame")}>
-            {busy === "unfame" ? <Spinner /> : "명예의 전당 빼기"}
           </button>
           <button type="button" className="scr-rect-btn is-secondary" disabled={ids.length === 0 || working} onClick={() => setConfirm("restore")}>
             {busy === "restore" ? <Spinner /> : "복원"}
