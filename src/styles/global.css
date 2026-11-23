@@ -6144,6 +6144,12 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg.is-m.is-race9 { --rspan: 5; grid-template-columns: minmax(92px, 1.3fr) repeat(var(--ncw, 5), minmax(46px, 1fr)); }   /* 2026-11-12 WPA 한 칸(7 · 8 → 5 · 6 · StatGrid per · 옛 2026-11-08 밤 교환 이득 · 교전 참여 · 생산) */
 .scr-sg.is-m.is-race9.has-tier { --rspan: 5; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 5), minmax(46px, 1fr)); }   /* 2026-11-15 WPA/티어 한 칸(옛 6) · 칸 틀은 StatGrid 가 인라인으로(첫 칸 넓게) */
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
+/* ★ 주종족 묶음(2026-11-23 · StatGrid MainCells) — 배지 세 자리(테 · 프 · 저 · 해당 종족만 왼쪽부터 · 빈 자리도 폭을 잡는다). */
+.scr-sg-c.scr-sg-mrace { display: flex; align-items: center; justify-content: center; gap: 3px; }
+.scr-sg-mrace-slot { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 16px; flex: none; }
+.scr-sg.is-m .scr-sg-mrace-slot { width: 16px; height: 14px; }
+/* ★ 10판 미만 기록은 글자를 연하게(2026-11-23 · StatGrid DIM_UNDER) — 칸 바탕(강조 · 주종족 배경)은 그대로 두고 내용만. */
+.scr-sg-c.is-dim > * { opacity: 0.42; }
 /* 접힌 표(종합만 · StatGrid foldStyle ★) — 칸 틀은 펼친 표 그대로 두고 종합 오른변(--sgclip)에서 잘라 감춘다(종합 칸 너비가 펼침 · 접힘에 안 흔들린다). */
 .scr-sg.is-race9.is-fold { clip-path: inset(0 calc(100% - var(--sgclip, 100%)) 0 0 round 0 var(--radius-sm) var(--radius-sm) 0); }
 /* PC 종족 묶음 표의 칸 옆 여백 8 → 5(머리 3)(2026-11-08 밤, 지적: "1920 을 꼭 못 채움") — 칸 최소 폭 52px(StatGrid) 안에 "교환이득" 머리 넷 글자 · "+125%" 가 들게. */

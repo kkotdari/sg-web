@@ -9,6 +9,7 @@ import { cx } from "../../utils/format";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import WpaRulesModal, { WPA_RULES } from "../../components/stats/WpaRules";
 import type { BaseRace, Member, MemberStats, TierCalcRow, TierEntry } from "../../types";
+import RaceBadge from "../../components/common/RaceBadge";
 
 /* ★★ 통계 = **표**(2026-10-20, 요청: "통계 PC 도 그리드로 · 클랜원 전체가 맨 위 로우 · 그 아래 개인별 한 로우씩" → 시안 A(한 줄 표)에
    C 의 승률 막대를 얹어(요청: "A에 C의 그래프를 시각적으로 도입")).
@@ -66,7 +67,7 @@ export interface StatGridRow {
   tierByRace?: Record<string, TierEntry> | null;
   /** 종합 티어(2026-11-07 · 서버가 주종족 판으로 · 셈 표까지 · sg-api tier) — 없으면 종족 표를 합친다. */
   tier?: TierEntry | null;
-  /** 주종 티어(2026-11-23 · sg-api mainTier · 주종족 판만) — 티어 조회의 종합 묶음 맨 왼쪽 칸. */
+  /** 주종 티어(2026-11-23 · sg-api mainTier · 주종족 판만) — 티어 조회의 주종족 묶음(종합 왼쪽 · 늘 보임). */
   mainTier?: TierEntry | null;
   /** 그 기간에 번 랭크포인트(1:1 · sg-api rankScore · ratingScope period — 옛 래더 표의 "이 달에 번 점수" · 2026-11-18). 판이 없으면 null. */
   rankScore?: number | null;
@@ -89,8 +90,11 @@ const RP_TIP = "랭크포인트 획득 — 이 기간 1:1 에서 번 점수예�
 /** WPA 머리 툴팁(2026-11-13, 요청: "WPA에만 툴팁 · 아주 간단히"). */
 /* ★ 인분 풀이(2026-11-13, 요청: "WPA 마우스 오버 설명에 인분에 대한 설명 있어야 할 듯") — 티어 조회의 WPA 칸은 인분(배수)이라 %p 만 적으면 값과 안 맞았다. */
 const WPA_TIP = "WPA — 우리 편이 이길 확률을 얼마나 올렸는지예요.\n숫자는 인분이에요. 1.00이면 평균만큼, 1.20이면 평균보다 20% 더 한 거예요.\n티어가 없는 조회에선 판당 점수로 보여요(1점 = 이길 확률 1%).";
-/** 주종 티어 머리 말풍선(2026-11-23) — 주종족 판만 합친 종합. */
-const MTIER_TIP = "주종 티어 — 주종족(그 기간 판의 30% 이상 종족 · 없으면 가장 많이 한 종족) 판만 합친 점수예요.\n부종족 판은 안 들어가요. 주종족 판이 10판 이상이어야 티어가 붙어요.\n옆 칸(WPA/티어)은 모든 종족 판을 합친 점수예요.";
+/** 주종족 묶음 머리 말풍선(2026-11-23). */
+const MRACE_TIP = "주종족 — 그 기간 판의 30% 이상을 한 종족이에요(없으면 가장 많이 한 종족).";
+const MTIER_TIP = "주종족 인분/티어 — 주종족 판만 합친 점수예요.\n부종족 판은 안 들어가요. 주종족 판이 10판 이상이어야 티어가 붙어요.\n종합의 WPA/티어는 모든 종족 판을 합친 점수예요.";
+/** ★ 10판 미만 기록은 글자를 연하게(2026-11-23, 요청: "통계에서 10판 미만 기록엔 모두 글자 연하게 처리") — 묶음마다 그 묶음의 판 수로 가른다. */
+const DIM_UNDER = 10;
 
 /* ★ 값 칸의 변화 그래프 손잡이(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" · StatTrend.tsx) — 표가 문맥으로 내려 주고
    TCell 이 칸마다 단다: PC 는 마우스를 얹으면(enter · 떠나면 잠깐 뒤 닫힘 — 팝오버로 건너갈 틈) · 폰은 누르면(tap · 다시 누르거나 밖을 누르면 닫힘). 자료(trend)가
@@ -283,14 +287,15 @@ function raceFacts(s: MemberStats, t?: TierEntry | null): TrendFact[] {
 }
 /** 종족 묶음 칸 — PC 는 다 · 폰은 넓을 때(scr-sg-mwide)와 좁을 때를 CSS 가 고른다(mobile). */
 /** 묶음 칸 — race 가 null 이면 종합 묶음(전체 판 · 종합 티어 = 종족 티어 가중 평균 · 2026-11-04). */
-function RaceCells({ s, t, mt, race, member, clan, tier, noWpa, mobile, main, rp }: { s?: MemberStats | null; t?: TierEntry | null;
-  /** 주종 티어(종합 묶음 · 티어 조회 · 2026-11-23) — undefined 면 칸이 없다 · null 은 "-". */
-  mt?: TierEntry | null; race: BaseRace | null; member?: Member; clan?: boolean; tier?: boolean; noWpa?: boolean; mobile?: boolean; main?: boolean;
+function RaceCells({ s, t, race, member, clan, tier, noWpa, mobile, main, rp, dim }: { s?: MemberStats | null; t?: TierEntry | null;
+  race: BaseRace | null; member?: Member; clan?: boolean; tier?: boolean; noWpa?: boolean; mobile?: boolean; main?: boolean;
+  /** 그 묶음 판이 DIM_UNDER 미만 — 칸 글자를 연하게(위 ★). */
+  dim?: boolean;
   /** 랭크포인트 칸(1:1 종합 묶음만 · undefined 면 칸이 없다) — 값(null = 판 없음). */
   rp?: number | null }) {
   const has = !!s && s.plays > 0;
   /* 주종족 묶음은 늘 옅은 배경(같은 날 "주종족에 배경 포인트 깔기 · 호버랑 무관하게" · sg-api mainRaces = 그 조회 판의 30% 이상 종족). */
-  const mc = main ? "is-main" : "";
+  const mc = cx(main && "is-main", dim && "is-dim");
   const m = cx(mobile && "scr-sg-mnum", mc);
   const wide = cx(mobile && "scr-sg-mnum scr-sg-mwide", mc);
   /* 티어 조회의 사람 줄은 보정 뒤 점수(calcRowOf ★) · 팝업에 원점수와 그 줄의 보정 과정 · 평균 줄은 보정이 없어 "-". 티어 없는 조회는 원점수 칸 그대로. */
@@ -308,9 +313,7 @@ function RaceCells({ s, t, mt, race, member, clan, tier, noWpa, mobile, main, rp
   return (
     <>
       {/* 티어 조회 — WPA/티어 한 칸(위 WpaTierCell ★) · 평균 줄은 "-" */}
-      {/* ★ 주종 티어(2026-11-23, 요청: "주종티어를 종합의 맨 왼쪽에 추가 줄로 · 기존 티어도 표시") — 주종족 판만 합친 종합(sg-api mainTier) · 그래프는 '주종족' 자 */}
-      {tier && mt !== undefined && <WpaTierCell t={clan ? null : mt} member={clan ? undefined : member} race="주종족" className={cx("scr-sg-gstart", m)} />}
-      {tier && <WpaTierCell t={clan ? null : t} member={clan ? undefined : member} race={race ?? undefined} className={cx(mt === undefined && "scr-sg-gstart", m)} more={has ? raceFacts(s!, t) : undefined} />}
+      {tier && <WpaTierCell t={clan ? null : t} member={clan ? undefined : member} race={race ?? undefined} className={cx("scr-sg-gstart", m)} more={has ? raceFacts(s!, t) : undefined} />}
       <TCell member={member} metric={statMetric("plays", race)} className={cx(!tier && "scr-sg-gstart", tier ? wide : m)}><Num v={has ? s!.plays.toLocaleString() : null} /></TCell>
       <TCell member={member} metric={statMetric("rate", race)} className={wide}>{!has ? <Dash /> : <Rate s={s!} />}</TCell>
       {/* WPA(2026-11-12 ★ WpaCell) — 옛 교환 이득 · 교전 참여 · 생산(2026-11-08 밤) 세 칸 자리. 평균 줄은 사람 몫이라 없다(-). */}
@@ -318,9 +321,26 @@ function RaceCells({ s, t, mt, race, member, clan, tier, noWpa, mobile, main, rp
       {!tier && !noWpa && cell("wpa", has && !clan ? <WpaCell t={t} /> : <Dash />)}
       {/* ★ 1:1 은 그 자리에 랭크포인트 획득(2026-11-18, 요청: "래더를 통계의 1:1 필터 적용으로 통합 · WPA 있던 자리에 랭크포인트 획득") — 종합 묶음만(점수는 사람마다 하나) ·
           옛 래더 표처럼 "+1,234" · 평균 줄 · 판 없는 사람은 "-". */}
-      {rp !== undefined && <span className={cx("scr-sg-c scr-sg-rp", wide)}>{clan || rp === null ? <Dash /> : <Num v={`${rp > 0 ? "+" : ""}${Math.round(rp).toLocaleString()}`} />}</span>}
+      {rp !== undefined && <span className={cx("scr-sg-c scr-sg-rp", wide, dim && "is-dim")}>{clan || rp === null ? <Dash /> : <Num v={`${rp > 0 ? "+" : ""}${Math.round(rp).toLocaleString()}`} />}</span>}
       <TCell member={member} metric={statMetric("apm", race)} className={wide}><Num v={has ? s!.avgApm : null} /></TCell>
       <TCell member={member} metric={statMetric("eapm", race)} className={wide}><Num v={has ? s!.avgEapm : null} /></TCell>
+    </>
+  );
+}
+
+/** 주종족 묶음 두 칸 — 주종족 배지(테 · 프 · 저 세 자리를 늘 잡고 해당 종족만 왼쪽부터) · 인분/티어(sg-api mainTier · 주종족 판만). 평균 줄은 "-". */
+const MAIN_ORDER: readonly BaseRace[] = ["테란", "프로토스", "저그"];
+function MainCells({ row, clan, mobile }: { row: StatGridRow; clan?: boolean; mobile?: boolean }) {
+  const mains = clan ? [] : MAIN_ORDER.filter((r) => row.mainRaces?.includes(r));
+  const mt = clan ? null : row.mainTier ?? null;
+  const dim = !clan && (mt?.plays ?? 0) < DIM_UNDER;
+  const m = cx(mobile && "scr-sg-mnum", dim && "is-dim");
+  return (
+    <>
+      <span className={cx("scr-sg-c scr-sg-gstart scr-sg-mrace", m)}>
+        {clan ? <Dash /> : [0, 1, 2].map((i) => <span key={i} className="scr-sg-mrace-slot">{mains[i] ? <RaceBadge race={mains[i]} size={mobile ? 16 : 18} /> : null}</span>)}
+      </span>
+      <WpaTierCell t={mt} member={clan ? undefined : row.member} race="주종족" className={m} />
     </>
   );
 }
@@ -339,8 +359,12 @@ function PcRow({ row, clan, tier, noWpa, mobile, races, rankPts }: { row: StatGr
         {/* (걷음 · 2026-11-09, 요청: "좁은 폰도 피시랑 똑같이 표시하고 스크롤") 좁은 폰만의 전체 게임수 칸(scr-sg-mnarrow) — 이제 모든 폰이 PC 칸을 다 쓰고 가로로 민다. */}
         {/* 종합(2026-11-04, 요청: "통계에 기본은 종합(전체 종족 평균)") — 전체 판 · 종합 티어(평균 줄은 티어 없음). */}
         {/* 종합 티어 — 서버가 주종족 판으로 낸 것(row.tier · 셈 표까지 · 2026-11-07) 먼저 · 없으면(옛 응답) 종족 표를 합친다. */}
-        <RaceCells s={row.stats} t={clan ? null : row.tier ?? combinedTier(row.tierByRace)} mt={tier ? (clan ? null : row.mainTier ?? null) : undefined} race={null} member={who} clan={clan} tier={tier} noWpa={noWpa} mobile={mobile} rp={rankPts ? row.rankScore ?? null : undefined} />
-        {races.map((r) => <RaceCells key={r} s={row.byRace?.[r]} t={row.tierByRace?.[r]} race={r} member={who} clan={clan} tier={tier} noWpa={noWpa} mobile={mobile} main={!clan && !!row.mainRaces?.includes(r)} />)}
+        {/* ★ 주종족 묶음(2026-11-23, 요청: "주종족 칸을 종합과 구분해서 새로 · 기본으로 보이게 · 주종족 · 인분/티어 · 주종족 칸엔 배지(테프저 세 자리 · 해당되는 것만 왼쪽부터)") — 티어 조회만 */}
+        {tier && <MainCells row={row} clan={clan} mobile={mobile} />}
+        <RaceCells s={row.stats} t={clan ? null : row.tier ?? combinedTier(row.tierByRace)} race={null} member={who} clan={clan} tier={tier} noWpa={noWpa} mobile={mobile} rp={rankPts ? row.rankScore ?? null : undefined}
+          dim={!clan && (row.stats?.plays ?? 0) < DIM_UNDER} />
+        {races.map((r) => <RaceCells key={r} s={row.byRace?.[r]} t={row.tierByRace?.[r]} race={r} member={who} clan={clan} tier={tier} noWpa={noWpa} mobile={mobile} main={!clan && !!row.mainRaces?.includes(r)}
+          dim={!clan && (row.byRace?.[r]?.plays ?? 0) < DIM_UNDER} />)}
       </div>
   );
 }
@@ -465,22 +489,24 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   /** 묶음마다 칸 수 — [티어] 게임수 · 승률 · WPA · APM · EAPM(위 RaceCells ★ · CSS .is-race9 --rspan 과 같이 간다). */
   const per = !tier && noWpa ? 4 : 5;
   /** 묶음마다 칸 수 — 랭크포인트 칸은 종합 묶음에만 하나 더(2026-11-18). */
-  const perOf = (gi: number): number => per + (rankPts && gi === 0 ? 1 : 0) + (tier && gi === 0 ? 1 : 0);   // ★ 티어 조회의 종합 묶음은 주종 티어 칸 하나 더(2026-11-23)   // 2026-11-17 1:1 은 WPA 칸 없이 넷(noWpa) · 2026-11-15 티어 조회는 WPA/티어 한 칸(옛 6 : 5) · 2026-11-12 WPA 한 칸(옛 8 : 7 — 교환 이득 · 교전 참여 · 생산 · 그 전 6 : 5)
+  const perOf = (gi: number): number => per + (rankPts && gi === 0 ? 1 : 0);   // 2026-11-17 1:1 은 WPA 칸 없이 넷(noWpa) · 2026-11-15 티어 조회는 WPA/티어 한 칸(옛 6 : 5) · 2026-11-12 WPA 한 칸(옛 8 : 7 — 교환 이득 · 교전 참여 · 생산 · 그 전 6 : 5)
   /* 칸 틀 — WPA/티어 칸(묶음 첫 칸)은 숫자 + 배지라 넓게(PC 84px · 폰 76px · 2026-11-15 "wpa 티어 칸 늘리고" · 옛 70 · 62) · 나머지는 옛 최소 폭.
      폰 유저 칸 110 → 92px · 2fr → 1.3fr(같은 날 "폰 유저 폭 줄이고"). */
   /* 종합 묶음의 WPA/티어 칸만 넓힌다(first0) — 위아래 표 다이얼(위 StatVoteCtl ★) 몫(PC 18 · 폰 16px) · 다이얼이 없으면 다른 묶음과 같은 폭.
      ★ 티어 칸 좁힘(2026-11-16, 요청: "티어칸 폭 줄이고 나머지 칸에 나눠줘도 될 듯" · 머리 '?' 걷음과 함께) — 폰 76px · 1.5fr(종합 92px · 1.6fr) → 70px · 1.2fr ·
      PC 84px · 1.5fr(종합 102px · 1.6fr) → 76px · 1.2fr. 남는 폭은 fr 로 나머지 칸이 나눠 갖는다(폰 360px 화면에서 표가 가로로 넘치던 8px 도 걷힌다). */
-  const colsOf = (who: string, first: string, rest: string, first0 = first): string => `${who} ${groups.map((_g, gi) => (tier && gi === 0
-    ? [first, vote ? first0 : first, ...Array(perOf(gi) - 2).fill(rest)]   // 주종 티어 · 종합 WPA/티어(다이얼) · 나머지
-    : [tier ? first : rest, ...Array(perOf(gi) - 1).fill(rest)]).join(" ")).join(" ")}`;
+  /* ★ 주종족 묶음(티어 조회 · 2026-11-23) — 유저 다음 · 종합 앞: 배지 칸(세 자리) · 인분/티어 칸(묶음 첫 칸과 같은 폭). */
+  const mainCols = tier ? `${mobile ? "minmax(60px, .8fr)" : "minmax(68px, .8fr)"} ` : "";
+  const colsOf = (who: string, first: string, rest: string, first0 = first): string => `${who} ${tier ? `${mainCols}${first} ` : ""}${groups.map((_g, gi) => [tier ? (gi === 0 && vote ? first0 : first) : rest, ...Array(perOf(gi) - 1).fill(rest)].join(" ")).join(" ")}`;
+  /** 머리 윗줄 묶음 칸 수(주종족 묶음이 있으면 하나 더) — 열 강조의 머리 자리 셈. */
+  const nHg = groups.length + (tier ? 1 : 0);
   const gridRef = useRef<HTMLDivElement>(null);
   const [clipW, setClipW] = useState<number | null>(null);
   useLayoutEffect(() => {
     const g = gridRef.current;
     if (showRaces || !g) return undefined;
     const meas = (): void => {
-      const h = g.querySelector(".scr-sg-head > .scr-sg-hgroup") as HTMLElement | null;
+      const h = g.querySelector(".scr-sg-head > .scr-sg-hgroup[data-g=\"종합\"]") as HTMLElement | null;   // 접힘은 종합 오른변에서 자른다(주종족 묶음은 그 왼쪽 · 늘 보임)
       if (h) setClipW(Math.ceil(h.getBoundingClientRect().right - g.getBoundingClientRect().left));
     };
     meas();
@@ -523,7 +549,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     const ix = Array.prototype.indexOf.call(row.children, el) as number;
     if (row.classList.contains("scr-sg-head")) {
       if (mobile || !el.classList.contains("scr-sg-hsub")) return null;
-      return { r: null, c: ix - groups.length };
+      return { r: null, c: ix - nHg };
     }
     const r = Array.prototype.indexOf.call(row.parentElement.children, row) as number;
     return { r, c: ix >= valBase ? ix : null };
@@ -531,7 +557,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   const sameCell = (a: HCell | null, b: HCell | null): boolean => !!a && !!b && a.r === b.r && a.c === b.c;
   useEffect(() => { setHPin(null); setHHover(null); }, [mobile, tier, showRaces]);
   const hcolCss = hcell === null ? null : [
-    hcol === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:not(.scr-sg-head) > :nth-child(${hcol + 1})${mobile ? "" : `, .scr-sg.is-hcol > .scr-sg-head > :nth-child(${hcol + groups.length + 1})`} { background: var(--lighting-hover-bg); }`,
+    hcol === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:not(.scr-sg-head) > :nth-child(${hcol + 1})${mobile ? "" : `, .scr-sg.is-hcol > .scr-sg-head > :nth-child(${hcol + nHg + 1})`} { background: var(--lighting-hover-bg); }`,
     hrow === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:nth-child(${hrow + 1}) > .scr-sg-c { background: var(--lighting-hover-bg); }`,
     hrow === null || hcol === null ? "" : `.scr-sg.is-hcol > .scr-sg-row:nth-child(${hrow + 1}) > :nth-child(${hcol + 1}) { background: linear-gradient(var(--lighting-hover-bg), var(--lighting-hover-bg)), var(--lighting-hover-bg); }`,
     /* ★ 폰 붙박이 유저 칸은 강조돼도 **불투명**(2026-11-13, 실기: "하이라이트된 셀이 유저 틀고정 행까지 넘어가는 오류") — 강조 칠(반투명)이 유저 칸의 페이지 바탕을 덮어
@@ -544,28 +570,37 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     onClickCapture: (e: React.MouseEvent) => { const c = cellOf(e.target); if (c) setHPin((p) => (sameCell(p, c) ? null : c)); },
   };
   /** 종족 묶음 머리 두 줄 — 윗줄 종족 이름(묶음 칸 수만큼 덮음) · 아랫줄 칸 머리. 폰은 좁을 때 칸이 줄어 덮는 수가 CSS 변수(--rspan)다. */
-  const SUBS: readonly (readonly ["WPA/티어" | "게임수" | "승률" | "WPA" | "APM" | "EAPM" | "랭크P" | "주종 티어", "tier" | "plays" | "rate" | "wpa" | "apm" | "eapm" | "rp" | "mtier"])[] =
+  const SUBS: readonly (readonly ["WPA/티어" | "게임수" | "승률" | "WPA" | "APM" | "EAPM" | "랭크P", "tier" | "plays" | "rate" | "wpa" | "apm" | "eapm" | "rp"])[] =
     tier ? [["WPA/티어", "tier"], ["게임수", "plays"], ["승률", "rate"], ["APM", "apm"], ["EAPM", "eapm"]]
       : noWpa ? [["게임수", "plays"], ["승률", "rate"], ["APM", "apm"], ["EAPM", "eapm"]]
       : [["게임수", "plays"], ["승률", "rate"], ["WPA", "wpa"], ["APM", "apm"], ["EAPM", "eapm"]];
   const head = (m: boolean) => (
     <div className="scr-sg-row scr-sg-head" role="row">
       <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
+      {tier && <span className="scr-sg-c scr-sg-hgroup scr-sg-gstart" data-g="주종족" style={{ gridColumn: "span 2" }}>주종족</span>}
       {groups.map((r, gi) => (
-        <span key={r ?? "종합"} className="scr-sg-c scr-sg-hgroup scr-sg-gstart" style={{ gridColumn: m && perOf(gi) === per ? "span var(--rspan)" : `span ${perOf(gi)}` }}>
+        <span key={r ?? "종합"} data-g={r ?? "종합"} className="scr-sg-c scr-sg-hgroup scr-sg-gstart" style={{ gridColumn: m && perOf(gi) === per ? "span var(--rspan)" : `span ${perOf(gi)}` }}>
           {r ?? "종합"}
           {/* 종족별 펼치기/접기 단추는 표 밖 정렬 줄로 옮겼다(2026-11-05, 요청: "저 펴고 접는 버튼은 표 외부로 이동" · ClanStatsScreen). */}
         </span>
       ))}
+      {tier && (
+        <>
+          <span className={cx("scr-sg-c scr-sg-hsub scr-sg-gstart", m && "scr-sg-race-head")} title={MRACE_TIP}>주종족</span>
+          <span className={cx("scr-sg-c scr-sg-hsub", m && "scr-sg-race-head")} title={MTIER_TIP}>
+            <SortHead {...(m ? mToggle : pcToggle)("주종족:tier")}>인분/티어</SortHead>
+          </span>
+        </>
+      )}
       {groups.map((r) => (
         <Fragment key={r ?? "종합"}>
-          {(!r && tier ? [["주종 티어", "mtier"] as const, ...SUBS] : rankPts && !r ? [...SUBS.slice(0, 2), ["랭크P", "rp"] as const, ...SUBS.slice(2)] : SUBS).map(([h, k], i) => {
+          {(rankPts && !r ? [...SUBS.slice(0, 2), ["랭크P", "rp"] as const, ...SUBS.slice(2)] : SUBS).map(([h, k], i) => {
             /* 폰: 좁을 때는 종족마다 첫 칸(티어 · 티어 없는 조회는 게임수) 만 · 넓을 때 다(RaceCells 와 같은 가름). */
             const wideOnly = m && i >= 1;
             return (
               <span key={k} className={cx("scr-sg-c scr-sg-hsub", i === 0 && "scr-sg-gstart", m && "scr-sg-race-head", wideOnly && "scr-sg-mwide")}
-                title={k === "mtier" ? MTIER_TIP : k === "wpa" || k === "tier" ? WPA_TIP : k === "rp" ? RP_TIP : undefined}>
-                <SortHead {...(m ? mToggle : pcToggle)((k === "mtier" ? "주종족:tier" : r ? `${r}:${k}` : k) as StatSortKey)}>{h}</SortHead>
+                title={k === "wpa" || k === "tier" ? WPA_TIP : k === "rp" ? RP_TIP : undefined}>
+                <SortHead {...(m ? mToggle : pcToggle)((r ? `${r}:${k}` : k) as StatSortKey)}>{h}</SortHead>
                 {/* (걷음 2026-11-16, 요청: "헬프 아이콘 제거 · 내용은 WPA란? 툴팁에 아래") 종합 WPA 칸 머리 '?'(WPA 계산 조건 창) → WpaHelp 말풍선 아래 */}
               </span>
             );
@@ -583,7 +618,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
       <div className="scr-sg-sizer" style={sizerStyle}>
       <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-        style={{ "--ncw": groups.length * per + (rankPts ? 1 : 0) + (tier ? 1 : 0), "--rspan": per, gridTemplateColumns: colsOf("minmax(92px, 1.3fr)", "minmax(70px, 1.2fr)", "minmax(46px, 1fr)", "minmax(86px, 1.4fr)"), ...foldStyle } as React.CSSProperties}>
+        style={{ "--ncw": groups.length * per + (rankPts ? 1 : 0) + (tier ? 2 : 0), "--rspan": per, gridTemplateColumns: colsOf("minmax(92px, 1.3fr)", "minmax(70px, 1.2fr)", "minmax(46px, 1fr)", "minmax(86px, 1.4fr)"), ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} noWpa={noWpa} mobile races={races} rankPts={rankPts} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} noWpa={noWpa} mobile races={races} rankPts={rankPts} />)}
