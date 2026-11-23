@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { ExternalLink, MessageCircle, Pause, Play, Share2, ThumbsUp, Trash2, X } from "lucide-react";
+import { Pause, Play, Share2, ThumbsUp, Trash2, X } from "lucide-react";
 import { ReplayModule, useReplayMap, type MotionBase, type ShortClip9 } from "scplay";
 import { api, type GameShort } from "../../../api/client";
 import Avatar from "../../../components/common/Avatar";
@@ -10,7 +10,6 @@ import { formatAgo, serverMs } from "../../../utils/date";
 import Comments, { CommentInputBar } from "../../feed/Comments";
 import { renderTags } from "../../../components/common/InlineTags";
 import { shareThumb, shareToKakao, type KakaoShareContent } from "../../../utils/kakaoShare";
-import { gamePath, navigateTo } from "../../../utils/route";
 import { cx } from "../../../utils/format";
 import { isMeleeGame, resolveSlotName } from "../GameResultSides";
 import { SHORTS_CHANGED } from "./shortsBus";
@@ -432,11 +431,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
     else if (out === "failed") showToast("공유하지 못했어요.", { kind: "warn" });
     if (out !== "failed") api.pingAccess("short_share", `short#${it.id}`).catch(() => undefined);
   };
-  const goGame = (): void => {
-    if (!it) return;
-    closeNow();
-    navigateTo(gamePath(it.matchNo || String(it.gameResultId)), { search: `t=${Math.floor(it.t0)}` });
-  };
+
   /* ★ 판은 **정사각**(2026-11-20, 요청: "쇼츠 무조건 정사각형으로 나오기로 했는데 피시랑 폰 모두 수정") — 녹화도 정사각 틀이다(scplay recSq9). PC 는 창 가운데 큰 정사각에 머리 · 단추를 얹고,
      폰은 폭을 다 쓰는 정사각에 머리를 위 · 단추 줄을 아래 바깥에(장면을 안 가리게 · global.css .is-phone). 옛(2026-11-19): 폰 9:16 화면 꽉 · PC 4:3. */
   const phone = vw.w < 700 || (typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches);
@@ -517,28 +512,21 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
             </button>
           </div>
         </div>
-        {/* 오른쪽 아래 단추 줄(릴스처럼 세로) — 추천(수) · 이 장면부터 게임 보기 · 내 쇼츠 지우기. 미니맵은 왼아래 · 자막은 가운데 아래라 안 겹친다. */}
+        {/* 오른쪽 아래 단추 줄(릴스처럼 세로 · 폰은 판 아래 가로 — 추천은 왼끝 · 공유 · 지우기는 오른끝) — 추천(수) · 공유 · 내 쇼츠 지우기. 미니맵은 왼아래 · 자막은 가운데 아래라 안 겹친다. */}
         <div className="scr-shortv-side">
           <button type="button" className={cx("scr-shortv-act", it.recommended && "is-on")} onClick={recToggle} disabled={recBusy}
             aria-pressed={it.recommended} aria-label={it.recommended ? "추천 취소" : "추천"} title={it.recommended ? "추천 취소" : "추천 — 3개가 모이면 명예의 전당"}>
-            <i className="scr-shortv-ico" aria-hidden><ThumbsUp size={22} fill={it.recommended ? "currentColor" : "none"} /></i>
+            <i className="scr-shortv-ico" aria-hidden><ThumbsUp size={18} fill={it.recommended ? "currentColor" : "none"} /></i>
             <span>{it.recommendCount}</span>
           </button>
-          <button type="button" className={cx("scr-shortv-act", cmtOpen && "is-on")} onClick={() => setCmtOpen((v) => !v)} aria-label="댓글" title="댓글">
-            <i className="scr-shortv-ico" aria-hidden><MessageCircle size={22} /></i>
-            <span>{it.commentCount ? it.commentCount : "댓글"}</span>
-          </button>
-          <button type="button" className="scr-shortv-act" onClick={goGame} aria-label="이 장면부터 게임 보기" title="이 장면부터 게임 보기">
-            <i className="scr-shortv-ico" aria-hidden><ExternalLink size={22} /></i>
-            <span>게임</span>
-          </button>
+          {/* (걷음 2026-11-23, 요청: "댓글 · 게임 두 버튼은 제거 · 나머지 버튼도 크기 줄이고 좌우로 몰아서") 댓글 · 이 장면부터 게임 보기 단추 — 댓글은 아래 입력 줄 · 머리로 연다. */}
           <button type="button" className="scr-shortv-act" onClick={() => { void share(); }} aria-label="쇼츠 공유" title="공유 — 링크를 누르면 게임 화면에서 이 쇼츠가 바로 재생돼요">
-            <i className="scr-shortv-ico" aria-hidden><Share2 size={22} /></i>
+            <i className="scr-shortv-ico" aria-hidden><Share2 size={18} /></i>
             <span>공유</span>
           </button>
           {it.mine && (
             <button type="button" className="scr-shortv-act" onClick={() => { void del(); }} aria-label="쇼츠 지우기" title="지우기">
-              <i className="scr-shortv-ico" aria-hidden><Trash2 size={22} /></i>
+              <i className="scr-shortv-ico" aria-hidden><Trash2 size={18} /></i>
               <span>지우기</span>
             </button>
           )}

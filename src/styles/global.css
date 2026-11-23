@@ -6377,7 +6377,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 /* ★ 정사각 판(2026-11-20, 요청: "쇼츠 무조건 정사각형") — 폰은 폭을 다 쓰는 정사각이라 머리(진행 막대 · 만든 사람)를 판 **위 바깥**에, 단추 줄을 판 **아래 바깥** 가로로(장면을 안 가린다).
    PC 는 큰 정사각 안에 그대로 얹는다. 장면은 무대(.scr-shortv-stage)가 자른다. */
 .scr-shortv.is-phone .scr-shortv-top { top: auto; bottom: 100%; padding: 0 10px 10px; background: none; }
-.scr-shortv.is-phone .scr-shortv-side { left: 0; right: 0; bottom: auto; top: calc(100% + 14px); flex-direction: row; justify-content: center; gap: 26px; }
+.scr-shortv.is-phone .scr-shortv-side { left: 0; right: 0; bottom: auto; top: calc(100% + 10px); flex-direction: row; justify-content: flex-start; gap: 14px; padding: 0 14px; }
+/* ★ 폰 단추 줄을 좌우로(2026-11-23, 요청: "댓글 · 게임 두 버튼은 제거 · 나머지 버튼도 크기 줄이고 좌우로 몰아서 배치") — 추천은 왼끝 · 공유 · 지우기는 오른끝. 옛: 가운데 모아 26px 간격. */
+.scr-shortv.is-phone .scr-shortv-side > .scr-shortv-act:first-child { margin-right: auto; }
 .scr-shortv.is-phone .scr-shortv-stage { overflow: hidden; }
 .scr-shortv-top {
   position: absolute; left: 0; right: 0; top: 0; z-index: 7; display: flex; flex-direction: column; gap: 10px;
@@ -6404,16 +6406,16 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   position: absolute; right: 8px; bottom: 18px; z-index: 7; display: flex; flex-direction: column; align-items: center; gap: 14px;
 }
 .scr-shortv-act {
-  display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 48px; padding: 0; border: 0; background: none; color: #fff; cursor: pointer;
-  font-size: 11px; font-weight: 800; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); -webkit-tap-highlight-color: transparent;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 40px; padding: 0; border: 0; background: none; color: #fff; cursor: pointer;
+  font-size: 10px; font-weight: 800; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); -webkit-tap-highlight-color: transparent;
 }
 /* 동그라미는 감싸개(.scr-shortv-ico)가 지고 아이콘(22px)은 그 가운데 — 획이 안 잘린다(2026-11-19, 지적: "아이콘이 테두리 잘리는 문제" · 옛: svg 에 padding 10px + 둥근 바탕을
    직접 주어 폰 웹뷰가 획 가장자리를 svg 안쪽 상자에서 잘랐다). */
 .scr-shortv-ico {
-  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-style: normal;
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; font-style: normal;   /* 2026-11-23 44 → 36px("크기 줄이고") */
   background: rgba(0, 0, 0, 0.42); transition: transform 0.15s ease, background 0.15s ease;
 }
-.scr-shortv-ico > svg { display: block; width: 22px; height: 22px; overflow: visible; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
+.scr-shortv-ico > svg { display: block; width: 18px; height: 18px; overflow: visible; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
 .scr-shortv-act:hover > .scr-shortv-ico { background: rgba(255, 255, 255, 0.22); }
 .scr-shortv-act:active > .scr-shortv-ico { transform: scale(0.9); }
 .scr-shortv-act.is-on { color: #ffd34d; }
