@@ -436,11 +436,9 @@ export default function ClanStatsScreen() {
            그래도 같으면 승패 보정(adj · 서버가 끄며 늘 1) → 전투 보정(cbt) 높은 쪽(옛 2026-11-07 "티어 안에서 인분 → 승패 보정 → 전투 보정") — 그래도 같으면 바깥 차례. */
         const num = (v: number | null | undefined) => (typeof v === "number" ? v : null);
         const by = (av: number | null, bv: number | null) => missingLast(av === null, bv === null) || dirSign * ((av ?? 0) - (bv ?? 0));
-        /* ★ 종합 · 주종족은 **티어 없어도 인분으로**(2026-11-23, 요청: "주종족티어를 … 티어가 아닌 인분으로" · "종합 티어를 정렬기준으로 할 때 티어 없어도 포함되게 인분으로") —
-           옛: 티어 없는 사람(판이 문턱 아래)을 뒤로 몬 뒤 인분. 종족 티어는 그대로(티어 있는 사람 먼저). */
-        const byInbun = key === "tier" || rc === "주종족";
-        return (byInbun ? 0 : missingLast(typeof at?.tier !== "number", typeof bt?.tier !== "number"))
-          || missingLast(typeof ai !== "number", typeof bi !== "number")
+        /* ★ 티어 정렬은 **티어 없어도 인분으로**(2026-11-23, 요청: "주종족티어를 … 티어가 아닌 인분으로" · "종합 티어를 정렬기준으로 할 때 티어 없어도 포함되게 인분으로" ·
+           "종족별도 마찬가지") — 종합 · 주종족 · 종족별 모두. 옛: 티어 없는 사람(판이 문턱 아래)을 뒤로 몬 뒤 인분. 인분이 없는 사람만 뒤로. */
+        return missingLast(typeof ai !== "number", typeof bi !== "number")
           || dirSign * ((ai ?? 0) - (bi ?? 0))
           || by(num(at?.plays), num(bt?.plays))
           || by(num(at?.adj), num(bt?.adj))
