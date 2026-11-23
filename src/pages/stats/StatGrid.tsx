@@ -495,6 +495,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
   /* 종합 묶음의 WPA/티어 칸만 넓힌다(first0) — 위아래 표 다이얼(위 StatVoteCtl ★) 몫(PC 18 · 폰 16px) · 다이얼이 없으면 다른 묶음과 같은 폭.
      ★ 티어 칸 좁힘(2026-11-16, 요청: "티어칸 폭 줄이고 나머지 칸에 나눠줘도 될 듯" · 머리 '?' 걷음과 함께) — 폰 76px · 1.5fr(종합 92px · 1.6fr) → 70px · 1.2fr ·
      PC 84px · 1.5fr(종합 102px · 1.6fr) → 76px · 1.2fr. 남는 폭은 fr 로 나머지 칸이 나눠 갖는다(폰 360px 화면에서 표가 가로로 넘치던 8px 도 걷힌다). */
+  /* ★ 티어 칸(WPA/티어 · 인분/티어) 폭 살짝 넓게(2026-11-23, 요청: "티어칸의 폭 비율을 다른 칸들보다 좀더 살짝만 더 넓게") — 1.2fr → 1.35fr(다이얼 칸 1.4 → 1.55 · 최소 폭 +2~4px). */
   /* ★ 주종족 묶음(티어 조회 · 2026-11-23) — 종합 다음 · 종족 앞(같은 날 "순서를 종합 다음에"): 배지 칸 · 인분/티어 칸(묶음 첫 칸과 같은 폭). */
   const mainCols = (first: string): string => (tier ? ` ${mobile ? "minmax(64px, .8fr)" : "minmax(72px, .8fr)"} ${first}` : "");
   const colsOf = (who: string, first: string, rest: string, first0 = first): string => `${who} ${groups.map((_g, gi) => [tier ? (gi === 0 && vote ? first0 : first) : rest, ...Array(perOf(gi) - 1).fill(rest)].join(" ") + (gi === 0 ? mainCols(first) : "")).join(" ")}`;
@@ -620,7 +621,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
       <div className="scr-sg-sizer" style={sizerStyle}>
       <div className={cx("scr-sg is-m is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-        style={{ "--ncw": groups.length * per + (rankPts ? 1 : 0) + (tier ? 2 : 0), "--rspan": per, gridTemplateColumns: colsOf("minmax(92px, 1.3fr)", "minmax(70px, 1.2fr)", "minmax(46px, 1fr)", "minmax(86px, 1.4fr)"), ...foldStyle } as React.CSSProperties}>
+        style={{ "--ncw": groups.length * per + (rankPts ? 1 : 0) + (tier ? 2 : 0), "--rspan": per, gridTemplateColumns: colsOf("minmax(92px, 1.3fr)", "minmax(72px, 1.35fr)", "minmax(46px, 1fr)", "minmax(88px, 1.55fr)"), ...foldStyle } as React.CSSProperties}>
         {head(true)}
         {clanRow && <PcRow row={clanRow} clan tier={tier} noWpa={noWpa} mobile races={races} rankPts={rankPts} />}
         {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} noWpa={noWpa} mobile races={races} rankPts={rankPts} />)}
@@ -644,7 +645,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
     <div className={cx("scr-sg-scroll", !showRaces && "is-fold")} ref={scrollRef} style={scrollStyle}>
     <div className="scr-sg-sizer" style={sizerStyle}>
     <div className={cx("scr-sg is-race9", tier && "has-tier", !showRaces && "is-fold", hcell !== null && "is-hcol")} role="table" aria-label="통계" {...hcolProps} ref={gridRef}
-      style={{ gridTemplateColumns: colsOf("minmax(140px, 1.4fr)", "minmax(72px, 1.2fr)", "minmax(50px, 1fr)", "minmax(90px, 1.4fr)"), ...foldStyle }}>
+      style={{ gridTemplateColumns: colsOf("minmax(140px, 1.4fr)", "minmax(76px, 1.35fr)", "minmax(50px, 1fr)", "minmax(92px, 1.55fr)"), ...foldStyle }}>
       {head(false)}
       {clanRow && <PcRow row={clanRow} clan tier={tier} noWpa={noWpa} races={races} rankPts={rankPts} />}
       {rows.map((r) => <PcRow key={r.member.id} row={r} tier={tier} noWpa={noWpa} races={races} rankPts={rankPts} />)}
