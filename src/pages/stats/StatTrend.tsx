@@ -154,7 +154,8 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part
   if (scored && kind === "wpa") {
     return {
       key: `${race ?? ""}:wpa:sc`, label: `${who}점수(인분 · WPA × 경기 수준 · 1.00 = 보통)`,
-      series: [{ label: "인분", cls: "", pick: (e) => { const t = tierOf(e); return n(t?.stdInbun ?? t?.inbun ?? calcRowOf(t, "wpa")?.mult); }, fmt: x2 }],
+      /* ★ 티어 조건을 못 채운 달은 비운다(2026-11-23, 요청: "인분 없으면 그래프도 비어있게" — 표 칸이 "-" 인 것과 같게). */
+      series: [{ label: "인분", cls: "", pick: (e) => { const t = tierOf(e); return typeof t?.tier === "number" ? n(t?.stdInbun ?? t?.inbun ?? calcRowOf(t, "wpa")?.mult) : null; }, fmt: x2 }],
       mode: "single",
     };
   }
