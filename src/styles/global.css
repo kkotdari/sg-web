@@ -6145,16 +6145,16 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg.is-m.is-race9.has-tier { --rspan: 5; grid-template-columns: minmax(110px, 2fr) repeat(var(--ncw, 5), minmax(46px, 1fr)); }   /* 2026-11-15 WPA/티어 한 칸(옛 6) · 칸 틀은 StatGrid 가 인라인으로(첫 칸 넓게) */
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
 /* ★ 주종족 묶음(2026-11-23 · StatGrid MainCells) — 종합 다음 · 주종족 글자 배지(테 · 프 · 저 차례 · 가운데). */
-.scr-sg-c.scr-sg-mrace { display: flex; align-items: center; justify-content: center; gap: 4px; }   /* 가운데 정렬(같은 날 · 옛: 세 자리 왼쪽부터) */
+.scr-sg-c.scr-sg-mrace { display: flex; align-items: center; justify-content: center; gap: 3px; }   /* 가운데 정렬(같은 날 · 옛: 세 자리 왼쪽부터) */
 /* 배지 = 티어 배지(.scr-sg-tier)와 같은 둥근 네모 · 종족색 채움 · 흰 글자(같은 날, 요청: "티어처럼 둥근네모 · 글자색을 채움색으로 · 프로토스는 더 황토빛으로 진하게 · 글자는 흰색") */
 .scr-sg-rbadge {
-  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; border-radius: 5px;
-  font-size: 12px; font-weight: 800; line-height: 1; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px; border-radius: 4px;
+  font-size: 10px; font-weight: 800; line-height: 1; color: #fff;   /* 티어 배지(22px)보다 작게(같은 날, 지적: "종족배지가 너무 큼 · 티어 배지보다 작아야" · 옛 22px) */
 }
 .scr-sg-rbadge.is-t { background: var(--terran); }
-.scr-sg-rbadge.is-p { background: #b8862b; }   /* 프로토스 — 황토(--protoss #f5d347 보다 진하게) */
+.scr-sg-rbadge.is-p { background: #d6a63a; }   /* 프로토스 — 황토(--protoss #f5d347 보다 진하게 · 같은 날 "플토는 너무 어둡" — 옛 #b8862b) */
 .scr-sg-rbadge.is-z { background: var(--zerg); }
-.scr-sg.is-m .scr-sg-rbadge { width: 20px; height: 20px; font-size: 11px; }
+.scr-sg.is-m .scr-sg-rbadge { width: 15px; height: 15px; font-size: 9.5px; }
 /* ★ 10판 미만 기록은 글자를 연하게(2026-11-23 · StatGrid DIM_UNDER) — 칸 바탕(강조 · 주종족 배경)은 그대로 두고 내용만. */
 .scr-sg-c.is-dim > * { opacity: 0.42; }
 /* 접힌 표(종합만 · StatGrid foldStyle ★) — 칸 틀은 펼친 표 그대로 두고 종합 오른변(--sgclip)에서 잘라 감춘다(종합 칸 너비가 펼침 · 접힘에 안 흔들린다). */

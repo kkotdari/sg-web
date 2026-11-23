@@ -496,7 +496,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
      ★ 티어 칸 좁힘(2026-11-16, 요청: "티어칸 폭 줄이고 나머지 칸에 나눠줘도 될 듯" · 머리 '?' 걷음과 함께) — 폰 76px · 1.5fr(종합 92px · 1.6fr) → 70px · 1.2fr ·
      PC 84px · 1.5fr(종합 102px · 1.6fr) → 76px · 1.2fr. 남는 폭은 fr 로 나머지 칸이 나눠 갖는다(폰 360px 화면에서 표가 가로로 넘치던 8px 도 걷힌다). */
   /* ★ 주종족 묶음(티어 조회 · 2026-11-23) — 종합 다음 · 종족 앞(같은 날 "순서를 종합 다음에"): 배지 칸 · 인분/티어 칸(묶음 첫 칸과 같은 폭). */
-  const mainCols = (first: string): string => (tier ? ` ${mobile ? "minmax(76px, .9fr)" : "minmax(88px, .9fr)"} ${first}` : "");
+  const mainCols = (first: string): string => (tier ? ` ${mobile ? "minmax(64px, .8fr)" : "minmax(72px, .8fr)"} ${first}` : "");
   const colsOf = (who: string, first: string, rest: string, first0 = first): string => `${who} ${groups.map((_g, gi) => [tier ? (gi === 0 && vote ? first0 : first) : rest, ...Array(perOf(gi) - 1).fill(rest)].join(" ") + (gi === 0 ? mainCols(first) : "")).join(" ")}`;
   /** 머리 윗줄 묶음 칸 수(주종족 묶음이 있으면 하나 더) — 열 강조의 머리 자리 셈. */
   const nHg = groups.length + (tier ? 1 : 0);
