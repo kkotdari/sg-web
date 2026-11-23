@@ -328,7 +328,7 @@ function RaceCells({ s, t, race, member, clan, tier, noWpa, mobile, main, rp, di
   );
 }
 
-/** 주종족 묶음 두 칸 — 주종족 배지(테 · 프 · 저 세 자리를 늘 잡고 해당 종족만 왼쪽부터) · 인분/티어(sg-api mainTier · 주종족 판만). 평균 줄은 "-". */
+/** 주종족 묶음 두 칸 — 주종족 배지(게임 목록과 같은 글자 배지 · RaceBadge circleLetter · 테 · 프 · 저 세 자리를 늘 잡고 해당 종족만 왼쪽부터) · 인분/티어(sg-api mainTier · 주종족 판만). 평균 줄은 "-". */
 const MAIN_ORDER: readonly BaseRace[] = ["테란", "프로토스", "저그"];
 function MainCells({ row, clan, mobile }: { row: StatGridRow; clan?: boolean; mobile?: boolean }) {
   const mains = clan ? [] : MAIN_ORDER.filter((r) => row.mainRaces?.includes(r));
@@ -338,7 +338,7 @@ function MainCells({ row, clan, mobile }: { row: StatGridRow; clan?: boolean; mo
   return (
     <>
       <span className={cx("scr-sg-c scr-sg-gstart scr-sg-mrace", m)}>
-        {clan ? <Dash /> : [0, 1, 2].map((i) => <span key={i} className="scr-sg-mrace-slot">{mains[i] ? <RaceBadge race={mains[i]} size={mobile ? 16 : 18} /> : null}</span>)}
+        {clan ? <Dash /> : [0, 1, 2].map((i) => <span key={i} className="scr-sg-mrace-slot">{mains[i] ? <RaceBadge race={mains[i]} size={13} circleLetter className="scr-sg-mrace-b" /> : null}</span>)}
       </span>
       <WpaTierCell t={mt} member={clan ? undefined : row.member} race="주종족" className={m} />
     </>

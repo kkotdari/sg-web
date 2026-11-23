@@ -6146,8 +6146,8 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg.is-race9 .scr-sg-head > .scr-sg-hgroup { text-align: center; justify-content: center; }
 /* ★ 주종족 묶음(2026-11-23 · StatGrid MainCells) — 배지 세 자리(테 · 프 · 저 · 해당 종족만 왼쪽부터 · 빈 자리도 폭을 잡는다). */
 .scr-sg-c.scr-sg-mrace { display: flex; align-items: center; justify-content: center; gap: 3px; }
-.scr-sg-mrace-slot { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 16px; flex: none; }
-.scr-sg.is-m .scr-sg-mrace-slot { width: 16px; height: 14px; }
+.scr-sg-mrace-slot { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 16px; flex: none; }
+.scr-sg-mrace-slot > .scr-sg-mrace-b { position: static; -webkit-text-stroke: 0.6px rgba(0,0,0,0.7); }   /* 게임 목록 배지(scr-feed-row-race)와 같은 꼴 */
 /* ★ 10판 미만 기록은 글자를 연하게(2026-11-23 · StatGrid DIM_UNDER) — 칸 바탕(강조 · 주종족 배경)은 그대로 두고 내용만. */
 .scr-sg-c.is-dim > * { opacity: 0.42; }
 /* 접힌 표(종합만 · StatGrid foldStyle ★) — 칸 틀은 펼친 표 그대로 두고 종합 오른변(--sgclip)에서 잘라 감춘다(종합 칸 너비가 펼침 · 접힘에 안 흔들린다). */
