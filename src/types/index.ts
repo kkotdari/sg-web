@@ -385,6 +385,8 @@ export interface MemberStatsEntry {
   provisional: boolean | null;
   /** 팀전 티어(sg-api tier.py · 2026-10-27) — 팀전 조회에서만 · 1 이 가장 높다. */
   tier?: TierEntry | null;
+  /** 주종 티어(sg-api mainTier · 2026-11-23) — 주종족 판만 합친 종합(tier 는 전 종족). */
+  mainTier?: TierEntry | null;
   /** 종족별 인분(sg-api tierByRace=true 일 때만 · 2026-10-31) — 그 종족으로 한 판만으로 잰 티어. */
   tierByRace?: Record<string, TierEntry> | null;
 }

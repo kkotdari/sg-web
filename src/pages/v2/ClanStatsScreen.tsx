@@ -425,8 +425,9 @@ export default function ClanStatsScreen() {
          판 수준이 모두 같아 그 판의 인분 순과 같다. */
       /* 종족 티어("테란:tier" …) — 그 종족 판으로 잰 인분 내림차순 · "tier" 는 종합 티어(종족 티어 인분을 판 수로 가중 평균 · StatTrend combinedTier · 2026-11-04). */
       if (key === "tier" || key.endsWith(":tier")) {
-        const rc = key === "tier" ? null : (key.split(":")[0] as BaseRace);
-        const pick = (c: Card) => (rc ? c.entry?.tierByRace?.[rc] : c.entry?.tier ?? combinedTier(c.entry?.tierByRace)) ?? undefined;
+        const rc = key === "tier" ? null : (key.split(":")[0] as BaseRace | "주종족");
+        /* "주종족:tier" = 주종 티어(2026-11-23 · sg-api mainTier · 종합 묶음 맨 왼쪽 칸) — 옛 응답은 종합. */
+        const pick = (c: Card) => (rc === "주종족" ? c.entry?.mainTier ?? c.entry?.tier : rc ? c.entry?.tierByRace?.[rc] : c.entry?.tier ?? combinedTier(c.entry?.tierByRace)) ?? undefined;
         const at = pick(a); const bt = pick(b);
         const ai = at?.stdInbun ?? at?.inbun; const bi = bt?.stdInbun ?? bt?.inbun;
         /* ★ 인분이 같으면 **판 수가 많은 쪽이 위**(2026-11-14, 요청: "공동점수인 경우는 경기수가 많은 게 위로") — 그 티어를 낸 판 수(TierEntry.plays) ·
@@ -677,7 +678,7 @@ export default function ClanStatsScreen() {
           /* ★★ 표(StatGrid · 2026-10-20) — 맨 윗줄 클랜원 전체 · 그 아래 사람마다 한 줄. */
           <StatGrid
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace, main: view.clan.main } : null}
-            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tierByRace: c.entry?.tierByRace, tier: c.entry?.tier, rankScore: c.entry?.rankScore ?? null }))}
+            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tierByRace: c.entry?.tierByRace, tier: c.entry?.tier, mainTier: c.entry?.mainTier, rankScore: c.entry?.rankScore ?? null }))}
             noWpa={size === "1"}
             rankPts={size === "1"}   /* WPA 자리에 랭크포인트 획득(★ 래더 합침 · 종합 묶음만) */
             tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */

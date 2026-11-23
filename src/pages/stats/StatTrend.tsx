@@ -144,7 +144,9 @@ export function prodOf(s: MemberStatsEntry["overall"] | undefined | null): numbe
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
 export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part" | "prod" | "wpa" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null, scored = false): StatMetric {
   const who = race ? `${race} ` : "";
-  const tierOf = (e: TrendEntry): TierEntry | null | undefined => (race && race !== "주종족" ? e.tierByRace?.[race] : e.tier ?? combinedTier(e.tierByRace));
+  /* "주종족" = 주종 티어(2026-11-23 · sg-api mainTier · 종합 묶음 맨 왼쪽 칸) — 옛 응답(mainTier 없음)은 종합. */
+  const tierOf = (e: TrendEntry): TierEntry | null | undefined => (race === "주종족" ? e.mainTier ?? e.tier ?? combinedTier(e.tierByRace)
+    : race ? e.tierByRace?.[race] : e.tier ?? combinedTier(e.tierByRace));
   /* ★ 보정 뒤 점수 그래프(2026-11-09, 요청: "통계의 셀 팝업의 그래프도 인분(보정 후)로 나타내기") — 표 칸이 보정 뒤 인분 배수(calcRowOf ★)인 티어 조회면 그래프도 달마다
      그 달 티어 셈 표의 그 줄 배수(1.00 = 보통). 종족 묶음은 그 종족 티어 · 종합은 종합 티어(combinedTier). 원점수는 팝업 글자(원점수 줄)에 남는다. */
   /* ★ 그래프 = 칸의 점수(인분)(2026-11-16, 요청: "티어 팝업 그래프에 운영까지 반영된 걸로 나와야") — 옛: 셈 표 'WPA' 줄 배수만(판 수준 · 위아래 표가 빠졌다).
