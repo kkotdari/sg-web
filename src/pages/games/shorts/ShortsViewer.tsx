@@ -516,7 +516,7 @@ export default function ShortsViewer({ items, start, from, onClose, onDeleted, o
         <div className="scr-shortv-side">
           <button type="button" className={cx("scr-shortv-act", it.recommended && "is-on")} onClick={recToggle} disabled={recBusy}
             aria-pressed={it.recommended} aria-label={it.recommended ? "추천 취소" : "추천"} title={it.recommended ? "추천 취소" : "추천 — 3개가 모이면 명예의 전당"}>
-            <i className="scr-shortv-ico" aria-hidden><ThumbsUp size={18} fill="currentColor" /></i>
+            <i className="scr-shortv-ico" aria-hidden><ThumbsUp size={18} fill={it.recommended ? "currentColor" : "none"} /></i>
             <span>{it.recommendCount}</span>
           </button>
           {/* (걷음 2026-11-23, 요청: "댓글 · 게임 두 버튼은 제거 · 나머지 버튼도 크기 줄이고 좌우로 몰아서") 댓글 · 이 장면부터 게임 보기 단추 — 댓글은 아래 입력 줄 · 머리로 연다. */}

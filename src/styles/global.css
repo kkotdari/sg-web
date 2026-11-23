@@ -6418,8 +6418,7 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-shortv-ico > svg { display: block; width: 18px; height: 18px; overflow: visible; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
 .scr-shortv-act:hover > .scr-shortv-ico { background: rgba(255, 255, 255, 0.22); }
 .scr-shortv-act:active > .scr-shortv-ico { transform: scale(0.9); }
-/* 추천을 누른 단추는 동그라미가 라임 녹색(손은 늘 흰 채움 · 같은 날 요청) — 옛: 글자 · 손이 노랑. */
-.scr-shortv-act.is-on > .scr-shortv-ico, .scr-shortv-act.is-on:hover > .scr-shortv-ico { background: #7cc314; }
+/* 추천을 누른 단추 — 손이 흰 채움(아니면 흰 테두리 · 같은 날 "녹색은 안 써도 됨") · 옛: 글자 · 손이 노랑 · 잠깐 라임 녹색 동그라미(걷음). */
 .scr-shortv-act:disabled { cursor: default; }
 .scr-shortv-stage { position: relative; overflow: hidden; }
 .scr-shortv-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.75) saturate(0.9); }
@@ -6538,10 +6537,9 @@ body.scr-shortv-open .scr-pv { z-index: 3400; }   /* 댓글 첨부 사진 보기
   color: #fff; font-size: 10px; font-weight: 800; line-height: 1.4; letter-spacing: 0.02em; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 .scr-short-card-rec { position: absolute; right: 6px; top: 26px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.55); font-size: 10px; font-weight: 700; line-height: 1.4; }
-/* ★ 추천(좋아요)(2026-11-23, 요청: "좋아요 버튼 · 섬네일 라임녹색으로 · 좋아요 버튼은 채워진 흰색" → "썸네일도 흰손") — 카드 수 배지도 보기 화면 단추와 같게:
-   손은 늘 흰 채움 · 바탕은 검은 반투명 · 내가 누른 카드만 라임 녹색 바탕. 옛: 누른 사람은 글자 · 손이 노랑. */
+/* ★ 추천(좋아요)(2026-11-23, 요청: "좋아요 버튼은 채워진 흰색" → "썸네일도 흰손" → "녹색은 안 써도 됨") — 손 · 숫자는 늘 흰색 · 내가 누른 것은 흰 채움 · 아니면 흰 테두리.
+   옛: 누른 사람은 글자 · 손이 노랑. (같은 날 잠깐: 누른 것은 라임 녹색 바탕 — 걷음) */
 .scr-short-card-rec { color: #fff; }
-.scr-short-card-rec.is-on { background: #7cc314; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); }
 .scr-shorts.is-fame .scr-shorts-head svg { color: #ffb020; }
 .scr-shortv-fame { flex: none; padding: 3px 9px; border-radius: 999px; background: linear-gradient(135deg, #ffb020, #ff6a3d); font-size: 11px; font-weight: 800; }
 

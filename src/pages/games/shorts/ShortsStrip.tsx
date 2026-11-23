@@ -142,7 +142,7 @@ export default function ShortsStrip({ fame = false }: {
             {/* (걷음 2026-11-23, 요청: "명전의 쇼츠 배지 제거 · 위에 타이틀 있으니") 명예의 전당 줄 카드의 '쇼츠' 배지 — 줄 머리가 "명예의 전당 쇼츠"다. */}
             {it.recommendCount > 0 && (
               <span className={it.recommended ? "scr-short-card-rec is-on" : "scr-short-card-rec"}>
-                <ThumbsUp size={10} fill="currentColor" aria-hidden />{it.recommendCount}
+                <ThumbsUp size={10} fill={it.recommended ? "currentColor" : "none"} aria-hidden />{it.recommendCount}
               </span>
             )}
             <span className="scr-short-card-foot">
