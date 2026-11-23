@@ -92,8 +92,8 @@ const RP_TIP = "랭크포인트 획득 — 이 기간 1:1 에서 번 점수예�
 /* ★ 인분 풀이(2026-11-13, 요청: "WPA 마우스 오버 설명에 인분에 대한 설명 있어야 할 듯") — 티어 조회의 WPA 칸은 인분(배수)이라 %p 만 적으면 값과 안 맞았다. */
 const WPA_TIP = "WPA — 우리 편이 이길 확률을 얼마나 올렸는지예요.\n숫자는 인분이에요. 1.00이면 평균만큼, 1.20이면 평균보다 20% 더 한 거예요.\n티어가 없는 조회에선 판당 점수로 보여요(1점 = 이길 확률 1%).";
 /** 주종족 묶음 머리 말풍선(2026-11-23). */
-const MRACE_TIP = "주종족 — 10판 이상 한 종족 가운데 점수(인분)가 가장 높은 종족이에요(없으면 가장 많이 한 종족).";
-const MTIER_TIP = "주종족 WPA/티어 — 주종족 판만 합친 점수예요.\n부종족 판은 안 들어가요. 주종족 판이 10판 이상이어야 티어가 붙어요.\n종합의 WPA/티어는 모든 종족 판을 합친 점수예요.";
+const MRACE_TIP = "대표 종족 — 인분이 나온(티어가 붙은) 종족 가운데 인분이 가장 높은 종족이에요(없으면 가장 많이 한 종족).";
+const MTIER_TIP = "대표 종족 WPA/티어 — 대표 종족 판만으로 낸 점수예요(그 종족 칸과 같아요).\n종합의 WPA/티어는 모든 종족 판을 합친 점수예요.";
 /** ★ 10판 미만 기록은 글자를 연하게(2026-11-23, 요청: "통계에서 10판 미만 기록엔 모두 글자 연하게 처리") — 묶음마다 그 묶음의 판 수로 가른다. */
 const DIM_UNDER = 10;
 
@@ -585,7 +585,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
       <span className="scr-sg-c scr-sg-who scr-sg-h2">유저</span>
       {groups.map((r, gi) => (
         <Fragment key={r ?? "종합"}>
-          {gi === 0 && tier && <span className="scr-sg-c scr-sg-hgroup scr-sg-gstart" data-g="주종족" style={{ gridColumn: "span 2" }}>주종족</span>}
+          {gi === 0 && tier && <span className="scr-sg-c scr-sg-hgroup scr-sg-gstart" data-g="주종족" style={{ gridColumn: "span 2" }}>대표 종족</span>}
           <span data-g={r ?? "종합"} className="scr-sg-c scr-sg-hgroup scr-sg-gstart" style={{ gridColumn: m && perOf(gi) === per ? "span var(--rspan)" : `span ${perOf(gi)}` }}>
             {r ?? "종합"}
             {/* 종족별 펼치기/접기 단추는 표 밖 정렬 줄로 옮겼다(2026-11-05, 요청: "저 펴고 접는 버튼은 표 외부로 이동" · ClanStatsScreen). */}
@@ -596,7 +596,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
         <Fragment key={r ?? "종합"}>
           {!r && tier && (
             <>
-              <span className={cx("scr-sg-c scr-sg-hsub scr-sg-gstart", m && "scr-sg-race-head")} title={MRACE_TIP}>주종족</span>
+              <span className={cx("scr-sg-c scr-sg-hsub scr-sg-gstart", m && "scr-sg-race-head")} title={MRACE_TIP}>종족</span>
               <span className={cx("scr-sg-c scr-sg-hsub", m && "scr-sg-race-head")} title={MTIER_TIP}>
                 <SortHead {...(m ? mToggle : pcToggle)("주종족:tier")}>WPA/티어</SortHead>
               </span>

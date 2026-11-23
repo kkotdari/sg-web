@@ -143,7 +143,9 @@ export function prodOf(s: MemberStatsEntry["overall"] | undefined | null): numbe
 
 /** 칸 → 재는 값들. race 가 있으면 그 종족 칸. */
 export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part" | "prod" | "wpa" | "apm" | "eapm" | "eapmApm" | "games" | "tier", race: StatRace | null = null, scored = false): StatMetric {
-  const who = race ? `${race} ` : "";
+  /* 화면 이름(2026-11-23 요청 "주종족 → 대표 종족으로 변경") — 열쇠는 "주종족" 그대로. */
+  const rname = race === "주종족" ? "대표 종족" : race;
+  const who = rname ? `${rname} ` : "";
   /* "주종족" = 주종 티어(2026-11-23 · sg-api mainTier · 종합 묶음 맨 왼쪽 칸) — 옛 응답(mainTier 없음)은 종합. */
   const tierOf = (e: TrendEntry): TierEntry | null | undefined => (race === "주종족" ? e.mainTier ?? e.tier ?? combinedTier(e.tierByRace)
     : race ? e.tierByRace?.[race] : e.tier ?? combinedTier(e.tierByRace));
@@ -172,7 +174,7 @@ export function statMetric(kind: "plays" | "rate" | "dmg" | "ex" | "exr" | "part
   if (kind === "tier") {
     return {
       /* 종족 티어(2026-11-04 · race) — 그 달 tierByRace[종족]. 종족이 없으면 옛 전체 티어(팀 빌더 등). */
-      key: race ? `${race}:tier` : "tier", label: race ? `${race} 티어` : "종합 티어",
+      key: race ? `${race}:tier` : "tier", label: rname ? `${rname} 티어` : "종합 티어",
       series: [{ label: "티어", cls: "", pick: (e) => { const v = race && race !== "주종족" ? e.tierByRace?.[race]?.tier : (e.tier ?? combinedTier(e.tierByRace))?.tier; return typeof v === "number" ? -v : null; }, fmt: (v) => tierLabel(-v) }],
       mode: "single",
     };
