@@ -131,6 +131,8 @@ export interface GameShort {
   recommendCount: number; recommended: boolean; fame: boolean;
 }
 export interface SqlConsoleResult { columns: string[]; rows: unknown[][]; rowCount: number; truncated: boolean; ms: number; wrote: boolean }
+/** 제어판 진단 결과(sg-api admin/diag · admin/diag/script · 2026-11-22) — 결과 글(마크다운) · 스크립트면 오류 줄 · 끝난 값 · 걸린 초 · 글 sha1. */
+export interface DiagResult { text: string; stderr?: string | null; exit?: number | null; seconds?: number | null; sha1?: string | null }
 
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
 
@@ -1104,6 +1106,17 @@ export const api = {
   /** DB SQL 콘솔(sg-api admin_console · 관리자만 · 기본 읽기 전용 · 2026-11-13). */
   async adminSql(sql: string, write: boolean): Promise<SqlConsoleResult> {
     return request<SqlConsoleResult>("/api/admin/sql", { method: "POST", body: JSON.stringify({ sql, write }) });
+  },
+  /** 제어판 진단(2026-11-22 · 관리자만) — kind: wpa-swing · tier-calibration. */
+  async adminDiag(kind: string, dateFrom?: string, dateTo?: string): Promise<DiagResult> {
+    const qs = new URLSearchParams({ kind });
+    if (dateFrom) qs.set("dateFrom", dateFrom);
+    if (dateTo) qs.set("dateTo", dateTo);
+    return request<DiagResult>(`/api/game-results/admin/diag?${qs.toString()}`);
+  },
+  /** 진단 스크립트(2026-11-22 · 관리자만) — 올린 파이썬 글을 서버가 딴 프로세스에서 돌려 print 한 것을 돌려준다. */
+  async adminDiagScript(code: string, dateFrom?: string, dateTo?: string): Promise<DiagResult> {
+    return request<DiagResult>("/api/game-results/admin/diag/script", { method: "POST", body: JSON.stringify({ code, dateFrom: dateFrom || null, dateTo: dateTo || null }) });
   },
   async adminExtShareLists(): Promise<ExtShareList[]> {
     return request<ExtShareList[]>("/api/ext-share/admin/lists");

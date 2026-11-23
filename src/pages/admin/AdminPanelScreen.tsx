@@ -8,6 +8,7 @@ import ExtShareManageModal from "../../modals/ExtShareManageModal";
 import SqlConsoleModal from "../../modals/SqlConsoleModal";
 import PollResultsModal from "../../modals/PollResultsModal";
 import SuggestionsModal from "../../modals/SuggestionsModal";
+import AdminDiagCard from "./AdminDiagCard";
 import { useAppStore } from "../../store/appStore";
 import { showAlert } from "../../components/common/AlertDialog";
 import { versionNumber } from "../../utils/appVersion";
@@ -196,6 +197,9 @@ export default function AdminPanelScreen({ isAdmin }: AdminPanelScreenProps) {
                 </div>
               </div>
             </section>
+
+            {/* ★ 진단(2026-11-22 · AdminDiagCard ★ — 고른 진단 · 스크립트 업로드 · 결과 복사) */}
+            <AdminDiagCard />
 
             <section className="scr-adm-card">
               <div className="scr-adm-card-head">
