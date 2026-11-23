@@ -94,7 +94,6 @@ const WPA_TIP = "WPA — 우리 편이 이길 확률을 얼마나 올렸는지�
 /** 주종족 묶음 머리 말풍선(2026-11-23). */
 const MRACE_TIP = "대표 종족 — 인분이 나온(티어가 붙은) 종족 가운데 인분이 가장 높은 종족이에요(없으면 가장 많이 한 종족).";
 /** ★ 10판 미만 기록은 글자를 연하게(2026-11-23, 요청: "통계에서 10판 미만 기록엔 모두 글자 연하게 처리") — 묶음마다 그 묶음의 판 수로 가른다. */
-const DIM_UNDER = 10;
 
 /* ★ 값 칸의 변화 그래프 손잡이(2026-10-24, 요청: "통계 컬럼 피시는 호버 폰은 클릭시 → 5개월간의 변화 그래프로" · StatTrend.tsx) — 표가 문맥으로 내려 주고
    TCell 이 칸마다 단다: PC 는 마우스를 얹으면(enter · 떠나면 잠깐 뒤 닫힘 — 팝오버로 건너갈 틈) · 폰은 누르면(tap · 다시 누르거나 밖을 누르면 닫힘). 자료(trend)가
@@ -288,15 +287,14 @@ function raceFacts(s: MemberStats, t?: TierEntry | null): TrendFact[] {
 }
 /** 종족 묶음 칸 — PC 는 다 · 폰은 넓을 때(scr-sg-mwide)와 좁을 때를 CSS 가 고른다(mobile). */
 /** 묶음 칸 — race 가 null 이면 종합 묶음(전체 판 · 종합 티어 = 종족 티어 가중 평균 · 2026-11-04). */
-function RaceCells({ s, t, race, member, clan, tier, noWpa, mobile, main, rp, dim }: { s?: MemberStats | null; t?: TierEntry | null;
+function RaceCells({ s, t, race, member, clan, tier, noWpa, mobile, main, rp }: { s?: MemberStats | null; t?: TierEntry | null;
   race: BaseRace | null; member?: Member; clan?: boolean; tier?: boolean; noWpa?: boolean; mobile?: boolean; main?: boolean;
-  /** 그 묶음 판이 DIM_UNDER 미만 — 칸 글자를 연하게(위 ★). */
-  dim?: boolean;
   /** 랭크포인트 칸(1:1 종합 묶음만 · undefined 면 칸이 없다) — 값(null = 판 없음). */
   rp?: number | null }) {
   const has = !!s && s.plays > 0;
   /* 주종족 묶음은 늘 옅은 배경(같은 날 "주종족에 배경 포인트 깔기 · 호버랑 무관하게" · sg-api mainRaces = 그 조회 판의 30% 이상 종족). */
-  const mc = cx(main && "is-main", dim && "is-dim");
+  /* (걷음 2026-11-23 저녁, 요청: "10판 미만 데이터 흐리게 처리한 거 다시 원래대로") 10판 미만 묶음 글자 연하게(is-dim). */
+  const mc = cx(main && "is-main");
   const m = cx(mobile && "scr-sg-mnum", mc);
   const wide = cx(mobile && "scr-sg-mnum scr-sg-mwide", mc);
   /* 티어 조회의 사람 줄은 보정 뒤 점수(calcRowOf ★) · 팝업에 원점수와 그 줄의 보정 과정 · 평균 줄은 보정이 없어 "-". 티어 없는 조회는 원점수 칸 그대로. */
@@ -322,7 +320,7 @@ function RaceCells({ s, t, race, member, clan, tier, noWpa, mobile, main, rp, di
       {!tier && !noWpa && cell("wpa", has && !clan ? <WpaCell t={t} /> : <Dash />)}
       {/* ★ 1:1 은 그 자리에 랭크포인트 획득(2026-11-18, 요청: "래더를 통계의 1:1 필터 적용으로 통합 · WPA 있던 자리에 랭크포인트 획득") — 종합 묶음만(점수는 사람마다 하나) ·
           옛 래더 표처럼 "+1,234" · 평균 줄 · 판 없는 사람은 "-". */}
-      {rp !== undefined && <span className={cx("scr-sg-c scr-sg-rp", wide, dim && "is-dim")}>{clan || rp === null ? <Dash /> : <Num v={`${rp > 0 ? "+" : ""}${Math.round(rp).toLocaleString()}`} />}</span>}
+      {rp !== undefined && <span className={cx("scr-sg-c scr-sg-rp", wide)}>{clan || rp === null ? <Dash /> : <Num v={`${rp > 0 ? "+" : ""}${Math.round(rp).toLocaleString()}`} />}</span>}
       {/* ★ 종족 묶음은 APM · EAPM 칸 없음(2026-11-23, 요청: "세부 종족칸의 apm eapm 제거") — 종합에만. */}
       {race === null && <TCell member={member} metric={statMetric("apm", race)} className={wide}><Num v={has ? s!.avgApm : null} /></TCell>}
       {race === null && <TCell member={member} metric={statMetric("eapm", race)} className={wide}><Num v={has ? s!.avgEapm : null} /></TCell>}
@@ -335,9 +333,7 @@ const MAIN_ORDER: readonly BaseRace[] = ["테란", "프로토스", "저그"];
 const RACE_CODE: Record<BaseRace, "t" | "p" | "z"> = { 테란: "t", 프로토스: "p", 저그: "z" };
 function MainCells({ row, clan, mobile }: { row: StatGridRow; clan?: boolean; mobile?: boolean }) {
   const mains = clan ? [] : row.mainRace ? [row.mainRace] : MAIN_ORDER.filter((r) => row.mainRaces?.includes(r));
-  const mt = clan ? null : row.mainTier ?? null;
-  const dim = !clan && (mt?.plays ?? 0) < DIM_UNDER;
-  const m = cx(mobile && "scr-sg-mnum", dim && "is-dim");
+  const m = cx(mobile && "scr-sg-mnum");
   return (
     <>
       <span className={cx("scr-sg-c scr-sg-gstart scr-sg-mrace", m)}>
@@ -364,10 +360,8 @@ function PcRow({ row, clan, tier, noWpa, mobile, races, rankPts }: { row: StatGr
         {/* 종합 티어 — 서버가 주종족 판으로 낸 것(row.tier · 셈 표까지 · 2026-11-07) 먼저 · 없으면(옛 응답) 종족 표를 합친다. */}
         {/* ★ 주종족 묶음(2026-11-23, 요청: "주종족 칸을 종합과 구분해서 새로 · 기본으로 보이게 · 주종족 · 인분/티어" → "순서를 종합 다음에" → 같은 날 "주종족을 맨 왼쪽으로") — 티어 조회만 */}
         {tier && <MainCells row={row} clan={clan} mobile={mobile} />}
-        <RaceCells s={row.stats} t={clan ? null : row.tier ?? combinedTier(row.tierByRace)} race={null} member={who} clan={clan} tier={tier} noWpa={noWpa} mobile={mobile} rp={rankPts ? row.rankScore ?? null : undefined}
-          dim={!clan && (row.stats?.plays ?? 0) < DIM_UNDER} />
-        {races.map((r) => <RaceCells key={r} s={row.byRace?.[r]} t={row.tierByRace?.[r]} race={r} member={who} clan={clan} tier={tier} noWpa={noWpa} mobile={mobile} main={!clan && (row.mainRace ? row.mainRace === r : !!row.mainRaces?.includes(r))}
-          dim={!clan && (row.byRace?.[r]?.plays ?? 0) < DIM_UNDER} />)}
+        <RaceCells s={row.stats} t={clan ? null : row.tier ?? combinedTier(row.tierByRace)} race={null} member={who} clan={clan} tier={tier} noWpa={noWpa} mobile={mobile} rp={rankPts ? row.rankScore ?? null : undefined} />
+        {races.map((r) => <RaceCells key={r} s={row.byRace?.[r]} t={row.tierByRace?.[r]} race={r} member={who} clan={clan} tier={tier} noWpa={noWpa} mobile={mobile} main={!clan && (row.mainRace ? row.mainRace === r : !!row.mainRaces?.includes(r))} />)}
       </div>
   );
 }

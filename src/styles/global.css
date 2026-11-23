@@ -6158,7 +6158,6 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg-rbadge.is-z { background: var(--zerg); }   /* 저그 — 보라(같은 날 "저그는 다시 보라로" · 되물림: #c2338f 자홍 · #a83c7e 적보라) */
 .scr-sg.is-m .scr-sg-rbadge { width: 15px; height: 15px; font-size: 9.5px; }
 /* ★ 10판 미만 기록은 글자를 연하게(2026-11-23 · StatGrid DIM_UNDER) — 칸 바탕(강조 · 주종족 배경)은 그대로 두고 내용만. */
-.scr-sg-c.is-dim > * { opacity: 0.42; }
 /* 접힌 표(종합만 · StatGrid foldStyle ★) — 칸 틀은 펼친 표 그대로 두고 종합 오른변(--sgclip)에서 잘라 감춘다(종합 칸 너비가 펼침 · 접힘에 안 흔들린다). */
 .scr-sg.is-race9.is-fold { clip-path: inset(0 calc(100% - var(--sgclip, 100%)) 0 0 round 0 var(--radius-sm) var(--radius-sm) 0); }
 /* PC 종족 묶음 표의 칸 옆 여백 8 → 5(머리 3)(2026-11-08 밤, 지적: "1920 을 꼭 못 채움") — 칸 최소 폭 52px(StatGrid) 안에 "교환이득" 머리 넷 글자 · "+125%" 가 들게. */
