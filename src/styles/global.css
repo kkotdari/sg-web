@@ -6151,9 +6151,9 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
   display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px; border-radius: 4px;
   font-size: 10px; font-weight: 800; line-height: 1; color: #fff;   /* 티어 배지(22px)보다 작게(같은 날, 지적: "종족배지가 너무 큼 · 티어 배지보다 작아야" · 옛 22px) */
 }
-.scr-sg-rbadge.is-t { background: var(--terran); }
+.scr-sg-rbadge.is-t { background: #6f8fb4; }   /* 테란 — 은청색(같은 날 "테란은 은청색" · 옛 var(--terran)) */
 .scr-sg-rbadge.is-p { background: #e0b020; }   /* 프로토스 — 금색(같은 날 "황토라기보단 금색" · 옛 #d6a63a · 그 전 "플토는 너무 어둡" #b8862b) */
-.scr-sg-rbadge.is-z { background: var(--zerg); }
+.scr-sg-rbadge.is-z { background: #a83c7e; }   /* 저그 — 적보라(같은 날 "저그는 적보라" · 옛 var(--zerg)) */
 .scr-sg.is-m .scr-sg-rbadge { width: 15px; height: 15px; font-size: 9.5px; }
 /* ★ 10판 미만 기록은 글자를 연하게(2026-11-23 · StatGrid DIM_UNDER) — 칸 바탕(강조 · 주종족 배경)은 그대로 두고 내용만. */
 .scr-sg-c.is-dim > * { opacity: 0.42; }
