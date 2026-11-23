@@ -387,6 +387,8 @@ export interface MemberStatsEntry {
   tier?: TierEntry | null;
   /** 주종 티어(sg-api mainTier · 2026-11-23) — 주종족 판만 합친 종합(tier 는 전 종족). */
   mainTier?: TierEntry | null;
+  /** 주종족(티어 조회 · sg-api mainRace · 2026-11-23) — 10판 넘은 종족 가운데 인분이 가장 높은 종족(없으면 가장 많이 한 종족). */
+  mainRace?: BaseRace | null;
   /** 종족별 인분(sg-api tierByRace=true 일 때만 · 2026-10-31) — 그 종족으로 한 판만으로 잰 티어. */
   tierByRace?: Record<string, TierEntry> | null;
 }

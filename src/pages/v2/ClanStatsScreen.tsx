@@ -162,7 +162,8 @@ export default function ClanStatsScreen() {
   /* 기본 정렬 = 티어(2026-10-28, 요청: "기본정렬 티어순" · 옛: 전체 승률) — 티어 칸이 없는 1:1 조회에선 티어를 빼고 본다(아래 shownSort). */
   /* ★ 기본 정렬 = 종합 인분(2026-11-23, 요청: "기본 정렬기준은 종합인분" — 티어 없어도 인분 차례 · 아래 compareData ★) ·
      되물림(같은 날): 주종족 인분("주종족티어를 기본 정렬 기준으로 하되 티어가 아닌 인분으로"). */
-  const DEFAULT_SORT: StatSortKey = "tier";
+  /* ★ 기본 정렬 = 주종족 인분(2026-11-23 저녁, 요청: "주종족을 맨 왼쪽으로 옮기고 순위도 주종 기준으로" · 주종족 = 10판 넘은 종족 가운데 인분 최고) · 옛(같은 날): 종합 인분. */
+  const DEFAULT_SORT: StatSortKey = "주종족:tier";
   const [sortKeys, setSortKeys] = useState<StatSortKey[]>([DEFAULT_SORT]);
   /* 복수 기준 토글(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 기본은 하나(머리를 누르면 그 자로 갈아탐).
      끄는 순간 여럿이 쌓여 있었으면 첫 자(맨 먼저 누른 것)만 남긴다. */
@@ -683,7 +684,7 @@ export default function ClanStatsScreen() {
           /* ★★ 표(StatGrid · 2026-10-20) — 맨 윗줄 클랜원 전체 · 그 아래 사람마다 한 줄. */
           <StatGrid
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace, main: view.clan.main } : null}
-            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, tierByRace: c.entry?.tierByRace, tier: c.entry?.tier, mainTier: c.entry?.mainTier, rankScore: c.entry?.rankScore ?? null }))}
+            rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, mainRace: c.entry?.mainRace, tierByRace: c.entry?.tierByRace, tier: c.entry?.tier, mainTier: c.entry?.mainTier, rankScore: c.entry?.rankScore ?? null }))}
             noWpa={size === "1"}
             rankPts={size === "1"}   /* WPA 자리에 랭크포인트 획득(★ 래더 합침 · 종합 묶음만) */
             tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */
