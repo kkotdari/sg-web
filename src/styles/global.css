@@ -6538,8 +6538,10 @@ body.scr-shortv-open .scr-pv { z-index: 3400; }   /* 댓글 첨부 사진 보기
   color: #fff; font-size: 10px; font-weight: 800; line-height: 1.4; letter-spacing: 0.02em; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 .scr-short-card-rec { position: absolute; right: 6px; top: 26px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.55); font-size: 10px; font-weight: 700; line-height: 1.4; }
-/* ★ 추천(좋아요) 라임 녹색(2026-11-23, 요청: "좋아요 버튼 · 섬네일 라임녹색으로 · 좋아요 버튼은 채워진 흰색") — 카드 수 배지는 늘 라임 바탕 · 흰 채운 손. 옛: 검은 반투명 · 누른 사람은 노랑. */
-.scr-short-card-rec { background: #7cc314; color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); }
+/* ★ 추천(좋아요)(2026-11-23, 요청: "좋아요 버튼 · 섬네일 라임녹색으로 · 좋아요 버튼은 채워진 흰색" → "썸네일도 흰손") — 카드 수 배지도 보기 화면 단추와 같게:
+   손은 늘 흰 채움 · 바탕은 검은 반투명 · 내가 누른 카드만 라임 녹색 바탕. 옛: 누른 사람은 글자 · 손이 노랑. */
+.scr-short-card-rec { color: #fff; }
+.scr-short-card-rec.is-on { background: #7cc314; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); }
 .scr-shorts.is-fame .scr-shorts-head svg { color: #ffb020; }
 .scr-shortv-fame { flex: none; padding: 3px 9px; border-radius: 999px; background: linear-gradient(135deg, #ffb020, #ff6a3d); font-size: 11px; font-weight: 800; }
 
