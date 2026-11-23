@@ -91,7 +91,7 @@ const RP_TIP = "랭크포인트 획득 — 이 기간 1:1 에서 번 점수예�
 const WPA_TIP = "WPA — 우리 편이 이길 확률을 얼마나 올렸는지예요.\n숫자는 인분이에요. 1.00이면 평균만큼, 1.20이면 평균보다 20% 더 한 거예요.\n티어가 없는 조회에선 판당 점수로 보여요(1점 = 이길 확률 1%).";
 /** 주종족 묶음 머리 말풍선(2026-11-23). */
 const MRACE_TIP = "주종족 — 그 기간 판의 30% 이상을 한 종족이에요(없으면 가장 많이 한 종족).";
-const MTIER_TIP = "주종족 인분/티어 — 주종족 판만 합친 점수예요.\n부종족 판은 안 들어가요. 주종족 판이 10판 이상이어야 티어가 붙어요.\n종합의 WPA/티어는 모든 종족 판을 합친 점수예요.";
+const MTIER_TIP = "주종족 WPA/티어 — 주종족 판만 합친 점수예요.\n부종족 판은 안 들어가요. 주종족 판이 10판 이상이어야 티어가 붙어요.\n종합의 WPA/티어는 모든 종족 판을 합친 점수예요.";
 /** ★ 10판 미만 기록은 글자를 연하게(2026-11-23, 요청: "통계에서 10판 미만 기록엔 모두 글자 연하게 처리") — 묶음마다 그 묶음의 판 수로 가른다. */
 const DIM_UNDER = 10;
 
@@ -197,13 +197,14 @@ function WpaTierCell({ t, member, race, className, more }: { t?: TierEntry | nul
   const metric = statMetric("wpa", race ?? null, true);
   const cl = cx("scr-sg-tier-c", className);
   const ib = t ? (t.stdInbun ?? t.inbun ?? calcRowOf(t, "wpa")?.mult ?? null) : null;
-  if (!t || typeof ib !== "number") return <TCell member={member} metric={metric} facts={more} className={cl}><Dash /></TCell>;
+  /* ★ 조건(티어 문턱 판 수)을 못 채운 사람은 인분도 안 보인다(2026-11-23, 요청: "인분기준은 살리되 조건을 충족하지 않는 사람은 인분을 아예 없애기") — "-" · 정렬도 맨 뒤. */
+  if (!t || typeof ib !== "number" || typeof t.tier !== "number") return <TCell member={member} metric={metric} facts={more} className={cl}><Dash /></TCell>;
   const facts = [...(t.calc ? [] : more ?? []), ...wpaFacts(t)];
   return (
     <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}>
       <span className="scr-sg-wt">
         <b className="scr-sg-wt-v">{ib.toFixed(2)}<VoteMark v={t.vote} /></b>
-        {typeof t.tier === "number" ? <TierBadge tier={t.tier} /> : <i className="scr-sg-wt-gap" aria-hidden />}
+        <TierBadge tier={t.tier} />
         {race === undefined && member && <VoteDial memberId={member.id} />}
       </span>
     </TCell>
@@ -328,7 +329,7 @@ function RaceCells({ s, t, race, member, clan, tier, noWpa, mobile, main, rp, di
   );
 }
 
-/** 주종족 묶음 두 칸 — 주종족 배지(티어 배지 같은 둥근 네모 · 종족색으로 채우고 흰 글자 · 테 · 프 · 저 차례 · 가운데 정렬 — 2026-11-23 옛: 게임 목록 글자 배지 · 세 자리 왼쪽부터) · 인분/티어(sg-api mainTier · 주종족 판만). 평균 줄은 "-". */
+/** 주종족 묶음 두 칸 — 주종족 배지(티어 배지 같은 둥근 네모 · 종족색으로 채우고 흰 글자 · 테 · 프 · 저 차례 · 가운데 정렬 — 2026-11-23 옛: 게임 목록 글자 배지 · 세 자리 왼쪽부터) · WPA/티어(sg-api mainTier · 주종족 판만 · 2026-11-23 머리 이름 통일 · 옛 '인분/티어'). 평균 줄은 "-". */
 const MAIN_ORDER: readonly BaseRace[] = ["테란", "프로토스", "저그"];
 const RACE_CODE: Record<BaseRace, "t" | "p" | "z"> = { 테란: "t", 프로토스: "p", 저그: "z" };
 function MainCells({ row, clan, mobile }: { row: StatGridRow; clan?: boolean; mobile?: boolean }) {
@@ -605,7 +606,7 @@ export default function StatGrid({ clan, rows, mobile, sortKeys, onSortKeys, mul
             <>
               <span className={cx("scr-sg-c scr-sg-hsub scr-sg-gstart", m && "scr-sg-race-head")} title={MRACE_TIP}>주종족</span>
               <span className={cx("scr-sg-c scr-sg-hsub", m && "scr-sg-race-head")} title={MTIER_TIP}>
-                <SortHead {...(m ? mToggle : pcToggle)("주종족:tier")}>인분/티어</SortHead>
+                <SortHead {...(m ? mToggle : pcToggle)("주종족:tier")}>WPA/티어</SortHead>
               </span>
             </>
           )}

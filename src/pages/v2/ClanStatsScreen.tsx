@@ -432,7 +432,8 @@ export default function ClanStatsScreen() {
         /* "주종족:tier" = 주종 티어(2026-11-23 · sg-api mainTier · 종합 묶음 맨 왼쪽 칸) — 옛 응답은 종합. */
         const pick = (c: Card) => (rc === "주종족" ? c.entry?.mainTier ?? c.entry?.tier : rc ? c.entry?.tierByRace?.[rc] : c.entry?.tier ?? combinedTier(c.entry?.tierByRace)) ?? undefined;
         const at = pick(a); const bt = pick(b);
-        const ai = at?.stdInbun ?? at?.inbun; const bi = bt?.stdInbun ?? bt?.inbun;
+        /* 조건(티어)을 못 채운 사람은 인분이 없는 것으로(2026-11-23, 요청: "조건을 충족하지 않는 사람은 인분을 아예 없애기") — 표 칸 "-" 와 같게 맨 뒤. */
+        const ai = typeof at?.tier === "number" ? at?.stdInbun ?? at?.inbun : undefined; const bi = typeof bt?.tier === "number" ? bt?.stdInbun ?? bt?.inbun : undefined;
         /* ★ 인분이 같으면 **판 수가 많은 쪽이 위**(2026-11-14, 요청: "공동점수인 경우는 경기수가 많은 게 위로") — 그 티어를 낸 판 수(TierEntry.plays) ·
            그래도 같으면 승패 보정(adj · 서버가 끄며 늘 1) → 전투 보정(cbt) 높은 쪽(옛 2026-11-07 "티어 안에서 인분 → 승패 보정 → 전투 보정") — 그래도 같으면 바깥 차례. */
         const num = (v: number | null | undefined) => (typeof v === "number" ? v : null);
