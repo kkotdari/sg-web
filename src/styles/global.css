@@ -6148,12 +6148,12 @@ html.scr-light-theme .scr-bbs-new { color: #fff; }
 .scr-sg-c.scr-sg-mrace { display: flex; align-items: center; justify-content: center; gap: 3px; }   /* 가운데 정렬(같은 날 · 옛: 세 자리 왼쪽부터) */
 /* 배지 = 티어 배지(.scr-sg-tier)와 같은 둥근 네모 · 종족색 채움 · 흰 글자(같은 날, 요청: "티어처럼 둥근네모 · 글자색을 채움색으로 · 프로토스는 더 황토빛으로 진하게 · 글자는 흰색") */
 .scr-sg-rbadge {
-  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px; border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px; border-radius: 50%;   /* 동그라미(같은 날 "종족배지는 동그라미로" · 옛 둥근 네모 4px) */
   font-size: 10px; font-weight: 800; line-height: 1; color: #fff;   /* 티어 배지(22px)보다 작게(같은 날, 지적: "종족배지가 너무 큼 · 티어 배지보다 작아야" · 옛 22px) */
 }
-.scr-sg-rbadge.is-t { background: #8b98aa; }   /* 테란 — 은색에 가까운 은청(같은 날 "테란은 좀더 은색에 가깝게" · 옛 #6f8fb4 은청 · 그 전 var(--terran)) */
+.scr-sg-rbadge.is-t { background: #5a8fd2; }   /* 테란 — 푸른 은청(같은 날 "롤백 + 테란 좀더 푸르게" · 되물림: #8b98aa 은색 쪽 · #6f8fb4 은청 · 그 전 var(--terran)) */
 .scr-sg-rbadge.is-p { background: #e0b020; }   /* 프로토스 — 금색(같은 날 "황토라기보단 금색" · 옛 #d6a63a · 그 전 "플토는 너무 어둡" #b8862b) */
-.scr-sg-rbadge.is-z { background: #c2338f; }   /* 저그 — 자홍빛 적보라(같은 날 "저그 좀더 자홍" · 옛 #a83c7e · 그 전 var(--zerg)) */
+.scr-sg-rbadge.is-z { background: var(--zerg); }   /* 저그 — 보라(같은 날 "저그는 다시 보라로" · 되물림: #c2338f 자홍 · #a83c7e 적보라) */
 .scr-sg.is-m .scr-sg-rbadge { width: 15px; height: 15px; font-size: 9.5px; }
 /* ★ 10판 미만 기록은 글자를 연하게(2026-11-23 · StatGrid DIM_UNDER) — 칸 바탕(강조 · 주종족 배경)은 그대로 두고 내용만. */
 .scr-sg-c.is-dim > * { opacity: 0.42; }
