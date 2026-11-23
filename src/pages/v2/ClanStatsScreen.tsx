@@ -160,7 +160,9 @@ export default function ClanStatsScreen() {
      다 빼면 기본 차례만(줄에 "기본"). 머리를 누르는 셈(켜고 끄기 · 폰 전적 머리의 승률 → 게임수 → 끔)은 StatGrid 가 한다.
      한때(같은 날): 정렬 탭 · 탭 옆 "승률순 × > 참여순 × 적용중" 줄 · 탭 앞/위 차례 숫자. 고른 자들로 가린 뒤에도 같으면 늘 쓰던 차례(참여 → 승률 → APM → 커맨드). */
   /* 기본 정렬 = 티어(2026-10-28, 요청: "기본정렬 티어순" · 옛: 전체 승률) — 티어 칸이 없는 1:1 조회에선 티어를 빼고 본다(아래 shownSort). */
-  const [sortKeys, setSortKeys] = useState<StatSortKey[]>(["tier"]);
+  /* ★ 기본 정렬 = 주종족 인분(2026-11-23, 요청: "주종족티어를 기본 정렬 기준으로 하되 티어가 아닌 인분으로" · 옛 종합 티어). */
+  const DEFAULT_SORT: StatSortKey = "주종족:tier";
+  const [sortKeys, setSortKeys] = useState<StatSortKey[]>([DEFAULT_SORT]);
   /* 복수 기준 토글(2026-10-24, 요청: "통계 기준 1개로 하고 복수 기준하고 싶으면 맨 위에 복수 기준 정렬 토글 켜기") — 기본은 하나(머리를 누르면 그 자로 갈아탐).
      끄는 순간 여럿이 쌓여 있었으면 첫 자(맨 먼저 누른 것)만 남긴다. */
   /* (걷음 2026-11-17 · 정렬 줄 왼쪽 제거와 함께) 여러 기준 체크박스 — 머리를 누르면 늘 그 자 하나로 갈아탄다. */
@@ -177,7 +179,7 @@ export default function ClanStatsScreen() {
     const next = !showRaces;
     setShowRacesRaw(next);
     if (!isMobile) try { localStorage.setItem("stats.showRaces", next ? "1" : "0"); } catch { /* 저장 못 해도 이번 화면은 된다 */ }
-    if (!next) { const rest = sortKeys.filter((k) => !k.includes(":")); setSortKeys(rest.length > 0 ? rest : ["tier"]); }
+    if (!next) { const rest = sortKeys.filter((k) => !k.includes(":") || k.startsWith("주종족:")); setSortKeys(rest.length > 0 ? rest : [DEFAULT_SORT]); }   // 주종족 묶음은 접어도 보인다
   };
   /* 목록 거르기의 바탕 — 정지만 뺀 사람(탈퇴자도 그 기간에 회원이었으면 서버 명단 · 아래 statMembers ★ 에 들어 줄이 선다 · 유저 검색으로도 찾는다). */
   const matchedMembers = useMemo(() => {
@@ -237,9 +239,9 @@ export default function ClanStatsScreen() {
   /** 실제로 쓰는 정렬 — 티어 칸이 없는 조회엔 티어를 빼고, 남는 게 없으면 전체 승률. */
   const shownSort = useMemo<StatSortKey[]>(() => {
     /* 랭크포인트(rp)는 1:1 에만 있는 칸(아래 ★ 래더 합침) — 다른 조회에선 그 자를 뺀다. */
-    if (showTier) { const t = sortKeys.filter((k) => k !== "rp"); return t.length > 0 ? t : ["tier"]; }
+    if (showTier) { const t = sortKeys.filter((k) => k !== "rp"); return t.length > 0 ? t : [DEFAULT_SORT]; }
     /* 1:1 은 WPA 칸도 없다(2026-11-17 · StatGrid noWpa) — 그 자로는 줄 세우지 않는다. */
-    const rest = sortKeys.filter((k) => k !== "tier" && !(size === "1" && (k === "wpa" || k.endsWith(":wpa"))) && !(size !== "1" && k === "rp"));
+    const rest = sortKeys.filter((k) => k !== "tier" && !k.endsWith(":tier") && !(size === "1" && (k === "wpa" || k.endsWith(":wpa"))) && !(size !== "1" && k === "rp"));
     /* 1:1 의 기본 = 랭크포인트 획득 내림차순(래더 표의 순서 · 2026-11-18) · 그 밖은 전체 승률. */
     return rest.length > 0 ? rest : [size === "1" ? "rp" : "rate"];
   }, [sortKeys, showTier, size]);
@@ -434,7 +436,10 @@ export default function ClanStatsScreen() {
            그래도 같으면 승패 보정(adj · 서버가 끄며 늘 1) → 전투 보정(cbt) 높은 쪽(옛 2026-11-07 "티어 안에서 인분 → 승패 보정 → 전투 보정") — 그래도 같으면 바깥 차례. */
         const num = (v: number | null | undefined) => (typeof v === "number" ? v : null);
         const by = (av: number | null, bv: number | null) => missingLast(av === null, bv === null) || dirSign * ((av ?? 0) - (bv ?? 0));
-        return missingLast(typeof at?.tier !== "number", typeof bt?.tier !== "number")
+        /* ★ 종합 · 주종족은 **티어 없어도 인분으로**(2026-11-23, 요청: "주종족티어를 … 티어가 아닌 인분으로" · "종합 티어를 정렬기준으로 할 때 티어 없어도 포함되게 인분으로") —
+           옛: 티어 없는 사람(판이 문턱 아래)을 뒤로 몬 뒤 인분. 종족 티어는 그대로(티어 있는 사람 먼저). */
+        const byInbun = key === "tier" || rc === "주종족";
+        return (byInbun ? 0 : missingLast(typeof at?.tier !== "number", typeof bt?.tier !== "number"))
           || missingLast(typeof ai !== "number", typeof bi !== "number")
           || dirSign * ((ai ?? 0) - (bi ?? 0))
           || by(num(at?.plays), num(bt?.plays))
