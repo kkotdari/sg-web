@@ -2813,6 +2813,12 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   html.scr-light-theme .scr-drawer { border-color: rgba(0, 0, 0, 0.12); }
   .scr-drawer-nav { margin-top: 0; }
   .scr-drawer-nav:empty { display: none; }
+  /* 운영 펼침(2026-11-24, 요청: "운영 메뉴도 탭바에 넣고 클릭시 옆에 오버레이로 오픈") — 운영 단추 바로 위 · 서랍과 같은 둥근 판(AdminMenu placement "top" · 틈 26 = 줄 안 여백 16 + 10). */
+  .scr-menu-pop-drop.scr-menu-pop-drop-bar {
+    border-radius: 14px; padding: 6px; border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  }
+  html.scr-light-theme .scr-menu-pop-drop.scr-menu-pop-drop-bar { border-color: rgba(0, 0, 0, 0.12); }
 }
 @media (max-width: 960px) {
   .scr-scrolltop {

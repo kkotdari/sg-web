@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { cx } from "../utils/format";
 import { attachPopover } from "../utils/popover";
+import type { Placement } from "@floating-ui/dom";
 import type { ScreenKey } from "../types";
 
 export interface AdminItem {
@@ -19,11 +20,13 @@ interface AdminMenuProps {
   onNavigate: (screen: ScreenKey) => void;
   variant: "nav" | "drawer" | "mobile";
   onOpenChange?: (open: boolean) => void;
+  /** 펼침 창 자리(mobile 꼴만 · 기본 아래 — 2026-11-24 PC 떠 있는 줄의 운영은 "top": 단추 바로 위). */
+  placement?: Placement;
 }
 
 
 export default function AdminMenu({
-  screen, onNavigate, variant, onOpenChange, title = "운영", menuItems,
+  screen, onNavigate, variant, onOpenChange, title = "운영", menuItems, placement,
 }: AdminMenuProps) {
   const items: AdminItem[] = menuItems ?? [
     { key: "members", label: "회원", isActive: screen === "members", onSelect: () => onNavigate("members") },
@@ -39,8 +42,8 @@ export default function AdminMenu({
 
   useLayoutEffect(() => {
     if (variant !== "mobile" || !open || !anchorRef.current || !dropRef.current) return;
-    return attachPopover(anchorRef.current, dropRef.current, { growToContent: true, maxWidth: 200 });
-  }, [open, variant]);
+    return attachPopover(anchorRef.current, dropRef.current, { growToContent: true, maxWidth: 200, placement, ...(placement ? { gap: 26 } : {}) });
+  }, [open, variant, placement]);
 
   useEffect(() => {
     if (variant === "drawer" || !open) return;
@@ -111,7 +114,7 @@ export default function AdminMenu({
 
       {open && createPortal(
         <div
-          className={cx("scr-menu-pop-drop scr-scroll", variant === "mobile" && "scr-menu-pop-drop-mobile")}
+          className={cx("scr-menu-pop-drop scr-scroll", variant === "mobile" && "scr-menu-pop-drop-mobile", placement && "scr-menu-pop-drop-bar")}
           ref={dropRef}
         >
           {optionButtons}

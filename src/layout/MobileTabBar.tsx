@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { parseRoute } from "../utils/route";
 import { createPortal } from "react-dom";
 import { Menu as MenuIcon } from "lucide-react";
@@ -16,6 +16,8 @@ interface MobileTabBarProps {
   onOpenMenu?: () => void;
   items?: NavMenuItem[];
   action?: { label: string; onClick: () => void };
+  /** 서랍 단추 바로 앞에 끼우는 칸(2026-11-24 · PC 떠 있는 줄의 운영 메뉴 — AdminMenu variant "mobile"). */
+  extra?: ReactNode;
 }
 
 const INDICATOR_VERTICAL_INSET = -1;
@@ -60,7 +62,7 @@ function useActiveTabIndicator(navRef: { current: HTMLElement | null }, deps: un
   return indicator;
 }
 
-export default function MobileTabBar({ screen, menuOpen, hidden, mini, onNavigate, onOpenMenu, items, action }: MobileTabBarProps) {
+export default function MobileTabBar({ screen, menuOpen, hidden, mini, onNavigate, onOpenMenu, items, action, extra }: MobileTabBarProps) {
   const navRef = useRef<HTMLElement>(null);
   const visibleItems = items ?? NAV_MENU_ITEMS;
 
@@ -123,6 +125,7 @@ export default function MobileTabBar({ screen, menuOpen, hidden, mini, onNavigat
           <span>{action.label}</span>
         </button>
       )}
+      {extra}
       {onOpenMenu && (
         <button
           type="button"

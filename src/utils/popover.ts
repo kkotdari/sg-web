@@ -9,6 +9,8 @@ interface PopoverOpts {
   /** 플로팅 UI 의 잘림 셈(flip·shift·size) 대신 **창 기준 단순 자리**(2026-10-26, 지적: 아이폰 홈 화면 앱에서 통계 달 고르기 창이 단추 위로 뒤집혀
    *  화면 맨 위에 붙던 것 — 크로뮴에선 안 난다) — 단추 바로 아래 · 좌우는 창 안으로 죄고 · 아래가 모자랄 때만 위로. 창 크기는 innerWidth/innerHeight. */
   simple?: boolean;
+  /** 단추와 창 사이 틈(px · 기본 4) — PC 떠 있는 줄의 운영(2026-11-24)은 줄 윗변 위로 띄운다. */
+  gap?: number;
 }
 
 const MARGIN = 8;
@@ -45,7 +47,7 @@ export function attachPopover(
       strategy: "fixed",
       placement: opts.placement ?? "bottom-start",
       middleware: [
-        offset(4),
+        offset(opts.gap ?? 4),
         flip({ boundary, padding: MARGIN }),
         shift({ boundary, padding: MARGIN }),
         size({

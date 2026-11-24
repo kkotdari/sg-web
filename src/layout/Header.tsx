@@ -262,9 +262,9 @@ export default function Header({
               </div>
             </div>
             <nav className="scr-drawer-nav">
-              {/* PC 는 리그 · 연습실이 떠 있는 줄에 있다 — 서랍엔 운영자 메뉴만. */}
+              {/* PC 는 리그 · 연습실 · 운영이 떠 있는 줄에 있다(운영은 2026-11-24, 요청: "운영 메뉴도 탭바에 넣고 클릭시 옆에 오버레이로 오픈") — 서랍 메뉴 칸은 폰만. */}
               {!pcBar && railOnlyItems}
-              {isAdmin && <AdminMenu screen={screen} onNavigate={go} variant="drawer" />}
+              {!pcBar && isAdmin && <AdminMenu screen={screen} onNavigate={go} variant="drawer" />}
             </nav>
 
             <div className="scr-drawer-actions">
@@ -278,9 +278,12 @@ export default function Header({
                   업로더 설치
                 </button>
               )}
-              <button className="scr-rect-btn is-secondary" onClick={() => setMenuOpen(false)}>
-                메뉴 닫기
-              </button>
+              {/* 메뉴 닫기 — 폰만(PC 는 2026-11-24, 요청: "피시 서랍메뉴 - 메뉴 닫기 버튼 제거" · 서랍 단추 · 바깥 누름으로 닫힌다). */}
+              {!pcBar && (
+                <button className="scr-rect-btn is-secondary" onClick={() => setMenuOpen(false)}>
+                  메뉴 닫기
+                </button>
+              )}
             </div>
           </div>,
         document.body,
@@ -300,6 +303,7 @@ export default function Header({
         onNavigate={go}
         onOpenMenu={() => setMenuOpen(true)}
         items={pcBar ? [...NAV_MENU_ITEMS, ...RAIL_MENU_ITEMS] : undefined}
+        extra={pcBar && isAdmin ? <AdminMenu screen={screen} onNavigate={go} variant="mobile" placement="top" /> : undefined}
       />
     </header>
     </>
