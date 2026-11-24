@@ -886,91 +886,6 @@ html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
 .scr-v2-primary-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }   /* 단추 둘 이상이면 8px 틈(2026-11-20 · 회원 [생성] [참여현황]) */
 .scr-members-screen-v2 .scr-v2-primary-row { margin-bottom: 30px; }
 .scr-rail-hotzone { display: none; }
-@media (min-width: 961px) {
-  :root { --rail-w: 0px; --rail-col: 176px; }
-  .scr-app { padding-left: var(--rail-w); }
-  .scr-app.scr-app-fallback-scroll { padding-left: 0; }
-  .scr-header {
-    position: fixed; left: 0; top: 0; bottom: 0; width: var(--rail-col); z-index: 30;
-    overflow-y: auto; scrollbar-width: none;
-    border-right: 1px solid rgba(255, 255, 255, 0.26);
-  }
-  @media (min-resolution: 2dppx) {
-    .scr-header { border-right-width: 0.5px; }
-  }
-  .scr-light-theme .scr-header { border-right-color: rgba(0, 0, 0, 0.30); }
-  .scr-header::-webkit-scrollbar { display: none; }
-  .scr-header-inner {
-    max-width: none; margin: 0; padding: 24px 16px 20px;
-    flex-direction: column; flex-wrap: nowrap; gap: 4px;
-    align-items: flex-start;
-    min-height: 100%;
-  }
-  .scr-brand { justify-content: flex-start; transform: none; margin-bottom: 4px; }
-  .scr-brand-logo-img { height: 16.5px; }
-  .scr-user { display: contents; }
-  .scr-user .scr-text-btn {
-    order: 1; text-align: left; padding: 7px 10px; border-radius: 6px; margin-left: 2px;
-  }
-  .scr-nav {
-    order: 3; flex-direction: column; flex: 0 0 auto; gap: 2px; overflow: visible;
-    align-items: flex-start;
-  }
-  .scr-header-inner::before,
-  .scr-header-inner::after { content: ""; flex-basis: 0; min-height: 0; }
-  .scr-header-inner::before { order: 2; flex-grow: 0; flex-basis: 22vh; }
-  .scr-header-inner::after { order: 4; flex-grow: 1; }
-  .scr-nav-tab { justify-content: flex-start; padding: 9px 10px; border-radius: 6px; margin-left: 2px; }
-  .scr-nav-desktop .scr-nav-tab { font-size: var(--fs-subhead); }
-  .scr-nav-desktop .scr-nav-tab-active { background: rgba(var(--overlay-rgb), 0.10); }
-  .scr-user-chip { order: 5; justify-content: flex-start; border-radius: 6px; margin-left: 8px; }
-
-  .scr-header {
-    transform: translateX(calc(-100% - 2px));
-    /* 부드럽게 — .22s ease → .38s 감속 곡선(2026-10-22, 요청: "레일 메뉴 부드럽게 나오게"). */
-    transition: transform .38s cubic-bezier(.22, 1, .36, 1), box-shadow .38s ease;
-    /* 바탕 · 흐림은 닫혀 있을 때도 깐다(2026-10-22, 지적: "트랜지션이 아예 없었어") — 열림 클래스에만 있으면 닫을 때 바탕이 한 번에 사라져
-       글자만 빠져나가고, 열 때도 바탕이 툭 켜져 미끄러짐이 안 보였다. 닫힌 레일은 화면 밖이라 보이지 않는다. */
-  }
-  html .scr-app .scr-header, html:not(.scr-light-theme) .scr-app-hasbg .scr-header {
-    background: color-mix(in srgb, var(--void) 90%, transparent);
-    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-  }
-  /* 그림자는 옅고 짧게(2026-10-26, 지적: "여기 그림자가 너무 심해" — 옛 12px 0 40px · 0.45 가 밝은 테마에서 표 왼쪽을 회색 띠로 덮었다).
-     어두운 테마는 바탕이 어두워 조금 더 진하게 둔다. */
-  html .scr-app .scr-header.scr-header-rail-open {
-    transform: none;
-    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.22);
-  }
-  html.scr-light-theme .scr-app .scr-header.scr-header-rail-open {
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
-  }
-  /* 움직임 줄이기(OS 애니메이션 끔)여도 레일 미끄러짐만은 남긴다 — 뿌리의 body * { transition: none !important } 를 이긴다(같은 지적). */
-  @media (prefers-reduced-motion: reduce) {
-    body .scr-app .scr-header { transition: transform .38s cubic-bezier(.22, 1, .36, 1), box-shadow .38s ease !important; }
-  }
-  .scr-rail-hotzone {
-    /* 폭 16 → 6(2026-10-09, 지적: "다른 버튼 누르려다가 자꾸 나옴") → 14(2026-10-10, 지적: "레일 메뉴 꺼내기가 너무 어려운 거 같아 다시 영역을 좀 넓혀주고 대신 윗부분은
-       제외해줘(브래드크럼 부분)") — 위 72px(브레드크럼 줄 · 뒤로 단추)는 비운다. 여는 것은 그대로 140ms 머문 뒤다(useRail railEnterSoon). */
-    /* → 24(2026-10-22, 요청: "나오는 트리거 폭도 넓히고"). */
-    display: block; position: fixed; left: 0; top: 72px; bottom: 0; width: 24px; z-index: 29;
-    color: var(--muted);
-  }
-  /* 꺼내기 택 — 가운데 막대(3×56)였던 것을 위로(존 위 72 + 64 = 화면 136px) 올리고 세로 글씨 '메뉴'를 단 탭으로(2026-10-22, 요청: "레일 메뉴 오픈하라고 튀어나온 택을
-     좀 많이 위로 옮겨 줘 · 세로로 메뉴라고 적어 줘"). */
-  .scr-rail-hotzone::after {
-    content: "메뉴"; position: absolute; left: 0; top: 64px;
-    writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 4px;
-    font-size: 11px; font-weight: 600; line-height: 1; padding: 18px 4px 14px;   /* 위아래 길게(되요청 "탭 위아래 길이도 좀 더 길게" · 옛 9px · 글자 사이 2px) — 키 ≈ 46 → 62 */
-    /* 강조색 바탕 · 흰 글씨(2026-10-22, 요청: "레일 메뉴 탭 강조색으로" — 옛: 0.08 덧칠 · 0.14 테두리 · 옅은 글씨). */
-    border-radius: 0 6px 6px 0; background: var(--lighting-accent); color: #fff;
-    transition: opacity .15s;   /* 불투명(같은 날 "레일 메뉴 탭 불투명하게" — 옛 0.85 · 얹으면 1) */
-  }
-  .scr-rail-hotzone-open::after, .scr-rail-hotzone-open:hover::after { opacity: 0; }
-  /* 데이터 창이 떠 있으면 레일 띠를 걷는다(2026-10-24, 지적: "데이터창 뜬상태에서 레일메뉴 접근되는 문제") — 창 덮개가 display: contents 라 왼쪽 띠가 창 밖에
-     살아 있었고 오른쪽 칸(dock)은 덮개조차 없다. 창이 body.scr-gc-open 을 단다(GameCurvesModal). */
-  body.scr-gc-open .scr-rail-hotzone { display: none; }
-}
 @media (min-width: 961px) and (hover: hover) {
   .scr-nav-desktop .scr-nav-tab:hover,
   .scr-header-inner .scr-text-btn:hover,
@@ -2871,6 +2786,33 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   .scr-user .scr-text-btn { display: none; }
   .scr-user-name { max-width: 50vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .scr-mobile-tabbar { display: flex; }
+}
+/* ★ PC 도 떠 있는 메뉴(2026-11-24, 요청: "피시에서 레일 메뉴를 폐기하고 플로팅 메뉴 · 형태와 액션은 폰과 같게 · 너비를 좀 넓게 해서 메뉴를 다 넣고 · 마지막에 서랍 메뉴 ·
+   서랍은 그 자리에서 오버레이로 버튼 옆에") — 옛 왼쪽 레일(가장자리 띠에 머물면 미끄러져 나옴 · '메뉴' 세로 택 · 2026-10-09 ~ 10-26 손질)은 걷었다.
+   머리띠(로고 · 테마 · 업로더 · 프로필)는 폰처럼 숨기고 그 몫은 서랍이 진다(Header.tsx). 떠 있는 줄은 폰 탭바(.scr-mobile-tabbar) 그대로 · 폭만 넓게(--pc-bar-w) 가운데.    기본 탭바·서랍 규칙(display:none · 오른쪽 판) 뒤에 둬야 이긴다(미디어 블록끼리는 파일 차례). */
+@media (min-width: 961px) {
+  :root { --rail-w: 0px; --pc-bar-w: min(560px, calc(100vw - 32px)); }
+  .scr-app .scr-header { padding-top: 0; }
+  .scr-app .scr-header-inner { display: none; }
+  .scr-mobile-tabbar {
+    display: flex; left: 0; right: 0; margin: 0 auto; width: var(--pc-bar-w);
+    bottom: var(--scr-float-bottom-pc);
+  }
+  .scr-main { padding-bottom: calc(var(--mobile-footer-h) + var(--scr-float-bottom-pc) + 32px); }
+  /* 서랍 — 오른쪽에서 미끄러지는 판 대신 **서랍 단추 바로 위**(떠 있는 줄 오른끝에 맞춰)에 뜨는 판. 끌어 닫기 · 바깥 누르면 닫힘은 폰과 같다. */
+  .scr-drawer {
+    width: 220px; min-height: 0; max-height: calc(100vh - var(--mobile-footer-h) - var(--scr-float-bottom-pc) - 40px);
+    right: calc(50% - var(--pc-bar-w) / 2); bottom: calc(var(--scr-float-bottom-pc) + var(--mobile-footer-h) + 10px);
+    border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+    padding: 16px;
+    transform: translateY(10px) scale(0.96); transform-origin: 100% 100%; opacity: 0;
+    transition: transform .22s cubic-bezier(0.32, 0.72, 0, 1), opacity .18s ease;
+  }
+  .scr-drawer.scr-drawer-open { transform: none; opacity: 1; }
+  html.scr-light-theme .scr-drawer { border-color: rgba(0, 0, 0, 0.12); }
+  .scr-drawer-nav { margin-top: 0; }
+  .scr-drawer-nav:empty { display: none; }
 }
 @media (max-width: 960px) {
   .scr-scrolltop {

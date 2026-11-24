@@ -5,7 +5,6 @@ import ToastHost from "../../components/common/Toast";
 import AlertHost from "../../components/common/AlertDialog";
 import NavTab from "../../layout/NavTab";
 import MobileTabBar from "../../layout/MobileTabBar";
-import { useRail } from "../../layout/useRail";
 import ExploreScreen from "./ExploreScreen";
 import { useAppStore } from "../../store/appStore";
 import { navigateTo, parseRoute } from "../../utils/route";
@@ -21,7 +20,6 @@ const GUEST_ITEMS: NavMenuItem[] = [
 export default function GuestApp() {
   const exitGuest = useAppStore((s) => s.exitGuest);
   const [lightTheme, setLightTheme] = useLightTheme();
-  const { railOpen, railEnter, railEnterSoon, railLeave } = useRail();
 
   useEffect(() => {
     if (parseRoute().screen !== "explore") navigateTo("/explore", { replace: true, notify: false });
@@ -49,16 +47,8 @@ export default function GuestApp() {
     <div className="scr-app scr-extshare" id="scr-app">
       <div className="scr-bg-grid" />
       <div id="scroll-root">
-        <div
-          className={cx("scr-rail-hotzone", railOpen && "scr-rail-hotzone-open")}
-          onPointerEnter={railEnterSoon} onPointerLeave={railLeave} onClick={railEnter} aria-hidden
-        />
-        <header
-          className={cx("scr-header", railOpen && "scr-header-rail-open")}
-          onPointerEnter={railEnter} onPointerLeave={railLeave}
-          onFocus={railEnter}
-          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) railLeave(); }}
-        >
+        {/* PC 레일 걷음(2026-11-24 · Header ★ PC 도 떠 있는 메뉴) — 손님도 폰과 같은 떠 있는 줄(게임 · 로그인). */}
+        <header className="scr-header">
           <div className="scr-header-inner">
             <button type="button" className="scr-brand" onClick={go} aria-label="처음으로">
               <BrandLogo light={lightTheme} />

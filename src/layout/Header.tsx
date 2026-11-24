@@ -16,7 +16,6 @@ import { useEditableFocused } from "../hooks/useEditableFocused";
 import { isAdminRole } from "../constants/roles";
 import { useLightTheme } from "../utils/theme";
 import { HOME_SCREEN, NAV_MENU_ITEMS, RAIL_MENU_ITEMS } from "../constants/menuVersions";
-import { useRail } from "./useRail";
 import type { Member, ScreenKey } from "../types";
 
 interface HeaderProps {
@@ -124,7 +123,6 @@ export default function Header({
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
-  const { railOpen, railEnter, railEnterSoon, railLeave } = useRail();
   const profileAnchorRef = useRef<HTMLButtonElement>(null);
   const profileDropRef = useRef<HTMLDivElement>(null);
   const isNarrowHeader = useIsNarrow(960);
@@ -161,18 +159,13 @@ export default function Header({
     </>
   );
 
+  /* ★ PC 도 떠 있는 메뉴(2026-11-24, 요청: "피시에서 레일 메뉴를 폐기하고 플로팅 메뉴 · 형태와 액션은 폰과 같게 · 너비를 좀 넓게 해서 메뉴를 다 넣고 · 마지막에 서랍 메뉴 ·
+     서랍은 그 자리에서 오버레이로 버튼 옆에") — PC(961 이상)는 아래 떠 있는 줄에 탭 메뉴 + 서랍 메뉴(리그 · 연습실)까지 다 넣고 끝에 서랍 단추. 서랍은 단추 위에 붙어 뜬다(global.css).
+     옛: 왼쪽 레일(가장자리에 머물면 미끄러져 나옴 · useRail) — 걷었다. 머리띠(로고 · 테마 · 업로더 · 프로필)는 폰처럼 숨고 그 몫은 서랍이 진다. */
+  const pcBar = !isNarrowHeader;
   return (
     <>
-    <div
-      className={cx("scr-rail-hotzone", railOpen && "scr-rail-hotzone-open")}
-      onPointerEnter={railEnterSoon} onPointerLeave={railLeave} onClick={railEnter} aria-hidden
-    />
-    <header
-      className={cx("scr-header", railOpen && "scr-header-rail-open")}
-      onPointerEnter={railEnter} onPointerLeave={railLeave}
-      onFocus={railEnter}
-      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) railLeave(); }}
-    >
+    <header className="scr-header">
       <div className="scr-header-inner">
         <button
           type="button" className="scr-brand"
@@ -269,7 +262,8 @@ export default function Header({
               </div>
             </div>
             <nav className="scr-drawer-nav">
-              {railOnlyItems}
+              {/* PC 는 리그 · 연습실이 떠 있는 줄에 있다 — 서랍엔 운영자 메뉴만. */}
+              {!pcBar && railOnlyItems}
               {isAdmin && <AdminMenu screen={screen} onNavigate={go} variant="drawer" />}
             </nav>
 
@@ -278,6 +272,12 @@ export default function Header({
               <button type="button" className="scr-drawer-user-act scr-drawer-theme" onClick={() => setLightTheme((v) => !v)}>
                 테마 변경
               </button>
+              {/* 업로더 설치 — PC 만(옛 PC 머리띠 자리 · 폰 서랍엔 2026-10-26 걷음 그대로). */}
+              {pcBar && (
+                <button type="button" className="scr-drawer-user-act scr-drawer-theme" onClick={() => { setUploaderOpen(true); setMenuOpen(false); }}>
+                  업로더 설치
+                </button>
+              )}
               <button className="scr-rect-btn is-secondary" onClick={() => setMenuOpen(false)}>
                 메뉴 닫기
               </button>
@@ -299,6 +299,7 @@ export default function Header({
         mini={tabBarMini}
         onNavigate={go}
         onOpenMenu={() => setMenuOpen(true)}
+        items={pcBar ? [...NAV_MENU_ITEMS, ...RAIL_MENU_ITEMS] : undefined}
       />
     </header>
     </>
