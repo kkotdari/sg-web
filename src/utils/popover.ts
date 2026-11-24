@@ -26,11 +26,16 @@ export function attachPopover(
   if (opts.simple) {
     const place = (): void => {
       const r = anchorEl.getBoundingClientRect();
-      const w = Math.min(opts.maxWidth ?? 280, window.innerWidth - MARGIN * 2);
+      /* 폭은 스크롤바를 뺀 창(2026-11-24 — innerWidth 면 오른 끝 단추의 창이 스크롤바 밑으로 15px 잘렸다). 앱은 문서가 아니라 #scroll-root 가 스크롤하니
+         그 상자의 스크롤바 앞까지(left + clientWidth) · 없으면 문서 clientWidth. */
+      const sr = document.getElementById("scroll-root");
+      const vw = Math.min(document.documentElement.clientWidth || window.innerWidth, sr ? sr.getBoundingClientRect().left + sr.clientWidth : Infinity);
+      const w = Math.min(opts.maxWidth ?? 280, vw - MARGIN * 2);
       floatingEl.style.position = "fixed";
       floatingEl.style.width = `${w}px`;
       const h = floatingEl.offsetHeight;
-      const left = Math.max(MARGIN, Math.min(r.left, window.innerWidth - MARGIN - w));
+      const ow = floatingEl.offsetWidth || w;   // 실제 폭(안 여백 · 테두리까지 — 상자 셈이 content-box 면 w 보다 넓다)
+      const left = Math.max(MARGIN, Math.min(r.left, vw - MARGIN - ow));
       const below = r.bottom + 4;
       const top = below + h <= window.innerHeight - MARGIN || r.top - 4 - h < MARGIN ? below : r.top - 4 - h;
       floatingEl.style.left = `${left}px`;

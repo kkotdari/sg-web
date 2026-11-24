@@ -83,12 +83,16 @@ export interface GameSearchForm {
   size: string;
   nos: string[];
   links: GameSearchLink[];
+  /** ★ 기간(2026-11-24, 요청: "게임 검색 필터에 기간도 넣어주고") — "YYYY-MM-DD" 두 끝(끝 날 포함 · 하루면 같다) · 빈 글이면 전체 기간.
+   *  서버 질의는 any 가 아니라 dateFrom · dateTo(GameListPage — PC 달별 쪽은 그 달과 겹치는 몫 · 판 있는 달 목록도 이 기간으로 거른다). */
+  from: string;
+  to: string;
 }
-export const EMPTY_GAME_SEARCH: GameSearchForm = { players: [], races: [], items: [], maps: [], size: "", nos: [], links: [] };
+export const EMPTY_GAME_SEARCH: GameSearchForm = { players: [], races: [], items: [], maps: [], size: "", nos: [], links: [], from: "", to: "" };
 
 export function gameSearchEmpty(f: GameSearchForm): boolean {
   return f.players.length + f.races.length + f.items.length + f.maps.length + f.nos.length === 0
-    && !f.size && f.links.every((l) => !l.name.trim());
+    && !f.size && !f.from && f.links.every((l) => !l.name.trim());
 }
 
 export function formToServer(f: GameSearchForm): ServerQuery {
@@ -129,6 +133,7 @@ export function encodeGameSearch(f: GameSearchForm): string {
   if (f.nos.length) o.n = f.nos;
   const links = f.links.filter((l) => l.name.trim());
   if (links.length) o.l = links.map((l) => [l.name, ...l.items]);
+  if (f.from && f.to) o.d = [f.from, f.to];
   return JSON.stringify(o);
 }
 export function decodeGameSearch(raw: string): GameSearchForm {
@@ -141,6 +146,7 @@ export function decodeGameSearch(raw: string): GameSearchForm {
       size: typeof o.s === "string" ? o.s : "", nos: arr(o.n),
       /* 옛 주소는 [이름, 종족, …유닛]이었다 — 빈 종족 자리만 버린다(종족 이름은 이제 한 사람 줄의 조건 · 2026-10-26). */
       links: Array.isArray(o.l) ? o.l.map((x) => { const a = arr(x); return { name: a[0] ?? "", items: a.slice(1).filter((t) => t) }; }) : [],
+      ...(() => { const d = arr(o.d); const ok = d.length === 2 && d.every((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)); return ok ? { from: d[0], to: d[1] } : { from: "", to: "" }; })(),
     };
   } catch {
     return EMPTY_GAME_SEARCH;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, Plus, Search, X } from "lucide-react";
 import ChipInput, { type ChipOpt as Opt } from "../../components/common/ChipInput";
+import DayRangePicker from "../../components/common/DayRangePicker";
 import { cx } from "../../utils/format";
 import {
   EMPTY_GAME_SEARCH, GAME_KIND_OPTIONS, TEAM_SIZE_OPTIONS, gameSearchEmpty,
@@ -49,6 +50,16 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
   /* ★ 접힌 채 빠른 칸(2026-11-19, 요청: "게임목록 검색필터에 게임번호 사람이름 검색은 접힌 상태에서도 보이게") — 선수 · 게임번호 두 칸만 늘 보인다. 칩을 담거나 빼는 순간 바로 찾는다
      (펼친 판과 같은 초안이라 값이 맞물린다). */
   const quick = (k: "players" | "nos", v: string[]): void => { const next = { ...draftRef.current, [k]: v }; setDraft(next); apply(next); };
+  /* ★ 기간(2026-11-24, 요청: "게임 검색 필터에 기간도 넣어주고") — 공통 기간 고르기(DayRangePicker · 통계 · 게임관리와 같은 것). 접힌 줄에서는 고르는 즉시 찾고, 펼친 판에서는 초안([검색]). */
+  const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+  const period = (live: boolean) => (
+    <DayRangePicker
+      from={draft.from || today} to={draft.to || today} max={today} all={!draft.from}
+      onChange={(a, b) => { const next = { ...draftRef.current, from: a, to: b }; setDraft(next); if (live) apply(next); }}
+      onAll={() => { const next = { ...draftRef.current, from: "", to: "" }; setDraft(next); if (live) apply(next); }}
+      className="scr-gs-period"
+    />
+  );
 
   const memberOpts = useMemo<Opt[]>(() => members.map((m) => ({ value: m.nickname, member: m })), [members]);
   const itemOpts = useMemo<Opt[]>(() => {
@@ -73,6 +84,7 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
   value.items.forEach((v) => summary.push({ key: `i${v}`, label: v, drop: dropFrom("items", v) }));
   if (value.maps.length) summary.push({ key: "m", label: `맵 ${value.maps.join(" / ")}`, drop: () => apply({ ...value, maps: [] }) });
   if (value.size) summary.push({ key: "s", label: value.size, drop: () => apply({ ...value, size: "" }) });
+  if (open && value.from) summary.push({ key: "d", label: value.from === value.to ? value.from : `${value.from} ~ ${value.to}`, drop: () => apply({ ...value, from: "", to: "" }) });   // 접힌 채엔 빠른 칸의 기간 단추가 보인다
   if (open && value.nos.length) summary.push({ key: "n", label: `#${value.nos.join(" / ")}`, drop: () => apply({ ...value, nos: [] }) });
   value.links.forEach((l, i) => {
     if (!l.name.trim()) return;
@@ -102,6 +114,7 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
         <div className="scr-gs-quick">
           <ChipInput values={draft.players} onChange={(v) => quick("players", v)} options={memberOpts} placeholder="선수 닉네임" onSubmit={() => apply()} />
           <ChipInput values={draft.nos} onChange={(v) => quick("nos", v)} options={[]} placeholder="게임번호" onSubmit={() => apply()} />
+          {period(true)}
         </div>
       )}
 
@@ -109,6 +122,9 @@ export default function GameSearchForm({ value, onApply, members, terms, maps, d
         <div className="scr-gs-panel">
           <Field label="선수" hint="모두 뛴 판">
             <ChipInput values={draft.players} onChange={(v) => set("players", v)} options={memberOpts} placeholder="닉네임" onSubmit={() => apply()} />
+          </Field>
+          <Field label="기간" hint="끝 날 포함">
+            {period(false)}
           </Field>
           <Field label="맵" hint="그중 한 맵">
             <ChipInput values={draft.maps} onChange={(v) => set("maps", v)} options={mapOpts} placeholder="맵 이름" onSubmit={() => apply()} />

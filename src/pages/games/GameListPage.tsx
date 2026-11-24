@@ -141,6 +141,8 @@ export default memo(function GameListPage({
      지금 달은 주소 m= · 없거나 그 탭에 없는 달이면 그 앞(옛날 쪽) 가장 가까운 달 · 그것도 없으면 가장 새 달. 폰 · 명예의 전당은 옛 무한 스크롤 그대로. */
   const monthMode9 = !view.isMobile && gameTab !== "fame";
   const [monRaw, setMonRaw] = useUrlState("m");
+  /** 검색 폼의 기간(★ 2026-11-24 · gameSearch from/to) — 빈 글이면 전체. */
+  const span9 = useMemo(() => { const f9 = decodeGameSearch(formRaw); return { from: f9.from, to: f9.to }; }, [formRaw]);
   const baseQuery9 = useMemo(() => {
     const merged = formToServer(decodeGameSearch(formRaw));
     return { any: merged.any, linked: merged.linked, ...tabQuery(gameTab) };
@@ -151,7 +153,7 @@ export default memo(function GameListPage({
     if (!monthMode9) return undefined;
     let dead = false;
     api.getGameDays(baseQuery9)
-      .then((list) => { if (!dead) setDays9({ key: dayKey9, list }); })
+      .then((list) => { if (!dead) setDays9({ key: dayKey9, list: span9.from ? list.filter((d9) => d9.date >= span9.from && d9.date <= span9.to) : list }); })   // 판 있는 날은 서버가 기간을 안 받는다 — 여기서 거른다
       .catch(() => { if (!dead) setDays9({ key: dayKey9, list: [] }); });
     return () => { dead = true; };
   }, [monthMode9, dayKey9]);
@@ -183,10 +185,11 @@ export default memo(function GameListPage({
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [setMonRaw]);
   const listQuery9 = useMemo<GameBulkAll["filter"]>(() => {
-    if (!monCur9) return baseQuery9;
+    if (!monCur9) return span9.from ? { ...baseQuery9, dateFrom: span9.from, dateTo: span9.to } : baseQuery9;
     const r9 = monthRange9(monCur9);
-    return { ...baseQuery9, dateFrom: r9.from, dateTo: r9.to };
-  }, [baseQuery9, monCur9]);
+    /* 달 쪽 + 검색 기간 — 둘이 겹치는 몫만(그 달의 앞뒤를 기간 끝으로 죈다). */
+    return { ...baseQuery9, dateFrom: span9.from && span9.from > r9.from ? span9.from : r9.from, dateTo: span9.to && span9.to < r9.to ? span9.to : r9.to };
+  }, [baseQuery9, monCur9, span9]);
   /** 달 쪽이면 달 목록이 와야 받는다 · 판이 없는 거름이면 빈 목록. */
   const ready9 = monCur9 !== null;
   const none9 = monCur9 === "";

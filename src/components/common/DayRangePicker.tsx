@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker, type DateRange } from "react-day-picker";
+import { DayPicker, type DateRange, type MonthCaptionProps } from "react-day-picker";
 import { ko } from "react-day-picker/locale";
 import "react-day-picker/style.css";
 import { cx } from "../../utils/format";
@@ -56,11 +56,17 @@ export default function DayRangePicker({ from, to, max, onChange, all = false, o
   const [hover, setHover] = useState<string | null>(null);
   /** 보고 있는 달(그 달 1일) — 열 때 끝 날의 달로 맞춘다. */
   const [month, setMonth] = useState(() => toDate(to));
+  /** ★ 달력 머리에서 해 · 달 바로 고르기(2026-11-24, 요청: "공통 기간필터 모듈에서 년도나 달 누르면 년도나 월 바로 고르는 UI") — "days" 날 달력 ·
+   *  "months" 그 해 열두 달 격자(머리의 "N월") · "years" 열두 해 격자(머리의 "N년"). 고르면 한 칸 안쪽 보기로(해 → 달 → 날). */
+  const [view, setView] = useState<"days" | "months" | "years">("days");
+  /** 달 · 해 격자가 보는 해(달 격자) · 해 격자 끝 해(열두 칸의 마지막). */
+  const [viewYear, setViewYear] = useState(() => toDate(to).getFullYear());
   const ref = useRef<HTMLDivElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) setMonth(toDate(to));
+    setView("days");
     setAnchor(null); setHover(null);
     // 열고 닫을 때만 — 고르는 동안 보던 달을 지킨다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,6 +117,20 @@ export default function DayRangePicker({ from, to, max, onChange, all = false, o
     ? (() => { const h = hover ?? anchor; const [lo, hi] = anchor <= h ? [anchor, h] : [h, anchor]; return { from: toDate(lo), to: toDate(hi) }; })()
     : all ? undefined : { from: toDate(from), to: toDate(to) };
   const maxDate = toDate(max);
+  const maxY = maxDate.getFullYear();
+  const maxM = maxDate.getMonth();
+  /** 달력 머리 — "2026년"(해 격자) · "11월"(달 격자) 두 단추. 앞뒤 달 화살은 라이브러리 그대로(navLayout around). */
+  const Caption = ({ calendarMonth, displayIndex: _i, className: cn, ...rest }: MonthCaptionProps) => {
+    const d = calendarMonth.date;
+    return (
+      <div {...rest} className={cx(cn, "scr-drp-cap")}>
+        <button type="button" className="scr-drp-cap-btn" onClick={() => { setViewYear(d.getFullYear()); setView("years"); }} aria-label="해 고르기">{d.getFullYear()}년</button>
+        <button type="button" className="scr-drp-cap-btn" onClick={() => { setViewYear(d.getFullYear()); setView("months"); }} aria-label="달 고르기">{d.getMonth() + 1}월</button>
+      </div>
+    );
+  };
+  const yearsEnd = Math.min(maxY, viewYear + ((maxY - viewYear) % 12));   // 해 격자 열두 칸의 끝(지금 해가 들도록 · 오늘 해 기준 12 칸씩)
+  const years = Array.from({ length: 12 }, (_, i) => yearsEnd - 11 + i);
   const presetOn = (p: (typeof PRESETS)[number]) => { const [a, b] = p.range(max); return !all && a === from && b === to; };
 
   return (
@@ -147,7 +167,49 @@ export default function DayRangePicker({ from, to, max, onChange, all = false, o
               </button>
             )}
           </div>
-          <DayPicker
+          {view === "months" && (
+            <div className="scr-drp-grid-wrap">
+              <div className="scr-month-cal-head">
+                <button type="button" className="scr-month-cal-nav" aria-label="이전 해" onClick={() => setViewYear((y) => y - 1)}><ChevronLeft size={15} aria-hidden /></button>
+                <button type="button" className="scr-drp-cap-btn scr-month-cal-year" onClick={() => setView("years")} aria-label="해 고르기">{viewYear}년</button>
+                <button type="button" className="scr-month-cal-nav" aria-label="다음 해" disabled={viewYear >= maxY} onClick={() => setViewYear((y) => y + 1)}><ChevronRight size={15} aria-hidden /></button>
+              </div>
+              <div className="scr-month-cal-grid">
+                {Array.from({ length: 12 }, (_, m) => (
+                  <button
+                    key={m} type="button"
+                    className={cx("scr-month-cal-cell", month.getFullYear() === viewYear && month.getMonth() === m && "scr-month-cal-cell-on")}
+                    disabled={viewYear > maxY || (viewYear === maxY && m > maxM)}
+                    onClick={() => { setMonth(new Date(viewYear, m, 1)); setView("days"); }}
+                  >
+                    {m + 1}월
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {view === "years" && (
+            <div className="scr-drp-grid-wrap">
+              <div className="scr-month-cal-head">
+                <button type="button" className="scr-month-cal-nav" aria-label="앞 열두 해" onClick={() => setViewYear(years[0] - 1)}><ChevronLeft size={15} aria-hidden /></button>
+                <span className="scr-month-cal-year">{years[0]} ~ {years[11]}</span>
+                <button type="button" className="scr-month-cal-nav" aria-label="뒤 열두 해" disabled={years[11] >= maxY} onClick={() => setViewYear(Math.min(maxY, years[11] + 12))}><ChevronRight size={15} aria-hidden /></button>
+              </div>
+              <div className="scr-month-cal-grid">
+                {years.map((y) => (
+                  <button
+                    key={y} type="button"
+                    className={cx("scr-month-cal-cell", month.getFullYear() === y && "scr-month-cal-cell-on")}
+                    disabled={y > maxY}
+                    onClick={() => { setViewYear(y); setView("months"); }}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {view === "days" && <DayPicker
             mode="range"
             locale={ko}
             className="scr-drp-cal"
@@ -165,9 +227,10 @@ export default function DayRangePicker({ from, to, max, onChange, all = false, o
             formatters={{ formatCaption: (d) => `${d.getFullYear()}년 ${d.getMonth() + 1}월` }}
             components={{
               Chevron: ({ orientation }) => (orientation === "left" ? <ChevronLeft size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />),
+              MonthCaption: Caption,
             }}
-          />
-          <p className="scr-month-cal-hint">{anchor === null ? "시작과 끝 날을 선택" : "끝 날을 선택 · 같은 날을 한 번 더 누르면 하루"}</p>
+          />}
+          <p className="scr-month-cal-hint">{view === "years" ? "해를 선택" : view === "months" ? "달을 선택" : anchor === null ? "시작과 끝 날을 선택" : "끝 날을 선택 · 같은 날을 한 번 더 누르면 하루"}</p>
         </div>,
         document.body,
       )}
