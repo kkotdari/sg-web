@@ -10,7 +10,7 @@ import { useBottomViewportInset } from "./hooks/useBottomViewportInset";
 import { useModalDragDismiss } from "./hooks/useModalDragDismiss";
 import { scrollRootTo } from "./utils/scrollRoot";
 import { resampleSafariChrome } from "./utils/theme";
-import { HOME_SCREEN } from "./constants/menuVersions";
+import { HOME_SCREEN, PRACTICE_CLOSED } from "./constants/menuVersions";
 
 import AuthScreen from "./pages/auth/AuthScreen";
 import Header from "./layout/Header";
@@ -238,7 +238,7 @@ export default function App() {
             {isAdmin && !booting && resolvedScreen === "members" && <MembersScreen />}
             {!booting && resolvedScreen === "leagues" && <LeagueScreen />}
             {!booting && resolvedScreen === "placement" && <PlacementScreen />}
-            {!booting && resolvedScreen === "practice" && <PracticeScreen />}
+            {!booting && resolvedScreen === "practice" && (PRACTICE_CLOSED ? <div className="scr-empty">연습실은 잠시 닫았어요</div> : <PracticeScreen />)}
             {isAdmin && !booting && resolvedScreen === "minimaps" && <MapCanonScreen />}
             {!booting && resolvedScreen === "catalog" && <CatalogScreen />}
             {isAdmin && !booting && resolvedScreen === "control" && <AdminPanelScreen isAdmin={isAdmin} />}
