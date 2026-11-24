@@ -631,7 +631,7 @@ html.scr-light-theme { --header-bg: rgba(255, 255, 255, 0.9); }
   animation: scr-pv-in .2s ease-out; transition: opacity .2s ease-in;
 }
 html.scr-light-theme .scr-pv-card::before { background: rgba(244, 246, 250, 0.86); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.06); }
-.scr-pv-frame { position: relative; display: flex; align-items: center; justify-content: center; touch-action: none; }
+.scr-pv-frame { position: relative; display: flex; align-items: center; justify-content: center; touch-action: none; overflow: hidden; border-radius: 6px; }   /* 키운 그림은 틀 안에서 잘린다(PhotoViewer confine ★ 2026-11-24) */
 .scr-pv-media {
   display: block; object-fit: contain; transform-origin: center; cursor: zoom-in; border-radius: 6px;
   background-position: center; background-size: 100% 100%; background-repeat: no-repeat;

@@ -74,17 +74,21 @@ function centreOf(img: HTMLImageElement, z: Zoom): Pt {
   const r = img.getBoundingClientRect();
   return { x: r.left + r.width / 2 - z.tx, y: r.top + r.height / 2 - z.ty };
 }
-function axis(size: number, limit: number, c: number, t: number, settle: boolean): number {
-  if (settle && size <= limit) return 0;
-  const a = size / 2 - c;
-  const b = limit - c - size / 2;
+/** 한 축 — 그림(size)이 [lo, hi] 칸을 덮도록 옮김 t 를 죈다(칸보다 작으면 가운데). */
+function axis(size: number, lo: number, hi: number, c: number, t: number, settle: boolean): number {
+  if (settle && size <= hi - lo) return 0;
+  const a = lo + size / 2 - c;
+  const b = hi - size / 2 - c;
   return clamp(t, Math.min(a, b), Math.max(a, b));
 }
-function confine(base: { w: number; h: number }, c: Pt, z: Zoom, settle: boolean): Zoom {
+/** ★ 키운 그림은 **판의 그림 틀 안**에서만 움직인다(2026-11-24, 지적: "피시에서 사진뷰어 패널과 사진이 따로 노는 현상") — 옛: 창 전체에 죄어 PC 에서는
+ *  키운 그림이 판 밖으로 창 끝까지 넘쳤다(폰은 판이 곧 화면이라 안 보였다). 틀(frame)은 overflow hidden 으로 자른다. */
+function confine(base: { w: number; h: number }, c: Pt, z: Zoom, settle: boolean, box: DOMRect | null): Zoom {
+  const b = box ?? new DOMRect(0, 0, window.innerWidth, window.innerHeight);
   return {
     s: z.s,
-    tx: axis(base.w * z.s, window.innerWidth, c.x, z.tx, settle),
-    ty: axis(base.h * z.s, window.innerHeight, c.y, z.ty, settle),
+    tx: axis(base.w * z.s, b.left, b.right, c.x, z.tx, settle),
+    ty: axis(base.h * z.s, b.top, b.bottom, c.y, z.ty, settle),
   };
 }
 function zoomAt(c: Pt, z: Zoom, p: Pt, next: number): Zoom {
@@ -157,14 +161,29 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     refit();
   };
   const media = (): HTMLElement | null => imgRef.current ?? videoRef.current;
+  /** 키운 그림이 머무는 칸 — 판의 그림 틀(위 confine ★). */
+  const frameBox = (): DOMRect | null => frameRef.current?.getBoundingClientRect() ?? null;
+  /** ★ 열고 닫는 움직임은 **판째**(2026-11-24, 지적: "피시에서 사진뷰어 패널과 사진이 따로 노는 현상") — 옛: 그림만 누른 칸에서 커지고(판은 제자리에서 번짐)
+   *  PC 처럼 칸과 가운데가 멀면 판과 그림이 따로 놀았다. 이제 판(card)을 그림 가운데를 축으로 옮기고 줄여, 그림은 그대로 누른 칸에 닿고 판은 그 둘레로 함께 움직인다. */
+  const cardToward = (b: Box): { transform: string; origin: string } | null => {
+    const card = cardRef.current;
+    const el = media();
+    if (!card || !el) return null;
+    const cr = card.getBoundingClientRect();
+    const ir = el.getBoundingClientRect();
+    return { transform: toward(ir, b), origin: `${ir.left + ir.width / 2 - cr.left}px ${ir.top + ir.height / 2 - cr.top}px` };
+  };
   const close = (): void => {
     const el = media();
     const a = aspect.current;
     const b = a ? fromRef.current?.() : null;
     const dst = b && a ? fitIn(b, a) : null;
-    if (closing || !el || !dst || z.current.s !== 1) { onClose(); return; }
+    const mv = dst ? cardToward(dst) : null;
+    const card = cardRef.current;
+    if (closing || !el || !dst || !mv || !card || z.current.s !== 1) { onClose(); return; }
     setClosing(true);
-    const anim = el.animate([{ transform: "none" }, { transform: toward(el.getBoundingClientRect(), dst) }], {
+    card.style.transformOrigin = mv.origin;
+    const anim = card.animate([{ transform: "none" }, { transform: mv.transform }], {
       duration: SHRINK_MS, easing: "cubic-bezier(.4,0,.8,.4)", fill: "forwards",
     });
     anim.onfinish = () => onClose();
@@ -249,8 +268,11 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     const a = aspect.current;
     const b = a ? fromRef.current?.() : null;
     const src0 = b && a ? fitIn(b, a) : null;
-    if (!el || !src0) return;
-    el.animate([{ transform: toward(el.getBoundingClientRect(), src0) }, { transform: "none" }], {
+    const mv = src0 ? cardToward(src0) : null;
+    const card = cardRef.current;
+    if (!el || !mv || !card) return;
+    card.style.transformOrigin = mv.origin;
+    card.animate([{ transform: mv.transform }, { transform: "none" }], {
       duration: GROW_MS, easing: "cubic-bezier(.2,.8,.2,1)",
     });
   }, [fit]);
@@ -275,7 +297,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
       const next = clamp(z.current.s * Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0025)), MIN_SCALE, MAX_SCALE);
       const c = centreOf(img, z.current);
-      z.current = confine(base.current, c, zoomAt(c, z.current, { x: e.clientX, y: e.clientY }, next), false);
+      z.current = confine(base.current, c, zoomAt(c, z.current, { x: e.clientX, y: e.clientY }, next), false, frameBox());
       paint(false);
       bakeLater(160);
     };
@@ -326,7 +348,7 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
       paint(false);
     } else if (pointers.current.size === 1 && z.current.s > 1) {
       const c = centreOf(img, z.current);
-      z.current = confine(base.current, c, { s: z.current.s, tx: z.current.tx + (p.x - prev.x), ty: z.current.ty + (p.y - prev.y) }, false);
+      z.current = confine(base.current, c, { s: z.current.s, tx: z.current.tx + (p.x - prev.x), ty: z.current.ty + (p.y - prev.y) }, false, frameBox());
       paint(false);
     }
   };
@@ -348,10 +370,10 @@ export default function PhotoViewer({ src, alt, onClose, video, onPrev, onNext, 
     const c = centreOf(img, z.current);
     if (!moved.current && tap && now - tap.t < TAP_MS && dist(p, tap.p) < TAP_SLOP) {
       lastTap.current = null;
-      z.current = z.current.s > 1 ? HOME : confine(base.current, c, zoomAt(c, HOME, p, TAP_ZOOM), false);
+      z.current = z.current.s > 1 ? HOME : confine(base.current, c, zoomAt(c, HOME, p, TAP_ZOOM), false, frameBox());
     } else {
       lastTap.current = moved.current ? null : { t: now, p };
-      z.current = z.current.s < 1.05 ? HOME : confine(base.current, c, z.current, true);
+      z.current = z.current.s < 1.05 ? HOME : confine(base.current, c, z.current, true, frameBox());
     }
     paint(true);
     bakeLater(SETTLE_MS + 20);
