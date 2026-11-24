@@ -2832,6 +2832,12 @@ html.scr-light-theme .scr-drawer { border-left-color: rgba(0,0,0,0.12); border-t
   }
   html.scr-light-theme .scr-menu-pop-drop.scr-menu-pop-drop-bar { border-color: rgba(0, 0, 0, 0.12); }
 }
+/* PC 떠 있는 줄 — 내려 읽느라 작아진(mini · scale 0.72) 줄도 마우스를 올리면 제 크기로(2026-11-24, 지적: "피시 탭바에 마우스 올려도 안커짐") · 서랍 · 운영 창이 열려 있어도. */
+@media (min-width: 961px) and (hover: hover) {
+  .scr-mobile-tabbar-mini:hover,
+  .scr-mobile-tabbar-mini:focus-within,
+  .scr-mobile-tabbar-mini:has(.scr-mobile-tab-menu[aria-expanded="true"]) { transform: none; }
+}
 @media (max-width: 960px) {
   .scr-scrolltop {
     right: 20px;
