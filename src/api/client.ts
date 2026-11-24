@@ -121,7 +121,7 @@ export interface ParticipationOut {
 }
 /** 쇼츠 한 개(2026-11-19 · sg-api ShortOut) — 목록은 clip 없이(표지 · 글) · 한 개 받기(getShort)는 토막까지. */
 export interface GameShort {
-  id: number; gameResultId: number; matchNo: string; t0: number; t1: number; dur: number; caption: string; coverUrl: string | null;
+  id: number; gameResultId: number; matchNo: string; t0: number; t1: number; dur: number; coverUrl: string | null;
   author: { memberId: string; nickname: string; avatar?: string | null }; mine: boolean; createdAt: string; clip?: ShortClip9 | null;
   /** 제목(2026-11-20 · 재생기 다듬기 끝 칸에서 넣는다 · 없으면 "") — 카드 · 보기 머리 · 공유 글은 제목이 먼저, 없으면 첫 자막(caption). */
   title?: string;

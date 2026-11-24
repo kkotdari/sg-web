@@ -134,7 +134,7 @@ export default function ShortsStrip({ fame = false }: {
             key={it.id} type="button" className={it.id === focusId ? "scr-short-card is-focus" : "scr-short-card"} data-short-id={it.id}
             onPointerDown={() => prefetchShort(it)}   /* 누르는 순간 받기 출발(떼기 · 열기 애니메이션 동안 번다) */
             onClick={(e) => { prefetchShort(it); setOpen({ i, from: e.currentTarget.getBoundingClientRect() }); }}
-            aria-label={`쇼츠 보기 — ${it.author.nickname}${it.title || it.caption ? ` · ${it.title || it.caption}` : ""}`}
+            aria-label={`쇼츠 보기 — ${it.author.nickname}${it.title ? ` · ${it.title}` : ""}`}
           >
             {it.coverUrl ? <img src={it.coverUrl} alt="" loading="lazy" decoding="async" draggable={false} /> : <span className="scr-short-card-blank" aria-hidden />}
             <span className="scr-short-card-shade" aria-hidden />
@@ -146,8 +146,8 @@ export default function ShortsStrip({ fame = false }: {
               </span>
             )}
             <span className="scr-short-card-foot">
-              {/* 제목(2026-11-20)이 먼저 · 없으면 첫 자막 */}
-              {(it.title || it.caption) && <span className="scr-short-card-cap">{it.title || it.caption}</span>}
+              {/* 제목(2026-11-20) — 없으면 글 없음(2026-11-24, 요청: "caption 컬럼 없애기" · 옛: 없으면 첫 자막) */}
+              {it.title && <span className="scr-short-card-cap">{it.title}</span>}
               <span className="scr-short-card-by">
                 <Avatar member={{ id: it.author.memberId, nickname: it.author.nickname, avatar: memberOf(it.author.memberId)?.avatar ?? it.author.avatar ?? null }} size={14} />
                 <span>{it.author.nickname}</span>

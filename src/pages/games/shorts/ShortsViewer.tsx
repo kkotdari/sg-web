@@ -56,7 +56,7 @@ function shortLoadLine(L: ShortLoad9, end: number): string {
 export const SHORT_PARAM = "short";
 export const shortLink = (id: number): string => `${window.location.origin}/games?${SHORT_PARAM}=${id}`;
 export function shortShareContent(it: GameShort): KakaoShareContent {
-  const head = it.title || it.caption;   // 제목이 먼저 · 없으면 첫 자막
+  const head = it.title;   // 제목(2026-11-24 · 옛: 없으면 첫 자막 caption — 서버 칸 걷음)
   const title = head ? `쇼츠 · ${head}` : `${it.author.nickname}의 쇼츠`;
   const desc = `${it.author.nickname} · ${Math.round(it.dur)}초`;
   /* 표지(정사각 · 서버 파일)가 바깥에서 읽히는 주소면 그걸 · 아니면 게임 공유 그림. */
