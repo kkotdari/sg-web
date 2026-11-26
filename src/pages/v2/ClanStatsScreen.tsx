@@ -246,7 +246,7 @@ export default function ClanStatsScreen() {
     /* 랭크포인트(rp)는 1:1 에만 있는 칸(아래 ★ 래더 합침) — 다른 조회에선 그 자를 뺀다. */
     if (showTier) { const t = sortKeys.filter((k) => k !== "rp"); return t.length > 0 ? t : [DEFAULT_SORT]; }
     /* 1:1 은 WPA 칸도 없다(2026-11-17 · StatGrid noWpa) — 그 자로는 줄 세우지 않는다. */
-    const rest = sortKeys.filter((k) => k !== "tier" && !k.endsWith(":tier") && !(size === "1" && (k === "wpa" || k.endsWith(":wpa"))) && !(size !== "1" && k === "rp"));
+    const rest = sortKeys.filter((k) => k !== "tier" && !k.endsWith(":tier") && k !== "wpa" && !k.endsWith(":wpa") && !(size !== "1" && k === "rp"));
     /* 1:1 의 기본 = 랭크포인트 획득 내림차순(래더 표의 순서 · 2026-11-18) · 그 밖은 전체 승률. */
     return rest.length > 0 ? rest : [size === "1" ? "rp" : "rate"];
   }, [sortKeys, showTier, size]);
@@ -688,7 +688,7 @@ export default function ClanStatsScreen() {
           <StatGrid
             clan={view?.clan ? { stats: view.clan.overall, byRace: view.clan.byRace, main: view.clan.main } : null}
             rows={cards.map((c) => ({ member: c.member, stats: c.stats, byRace: c.entry?.byRace, mainRaces: c.entry?.mainRaces, mainRace: c.entry?.mainRace, tierByRace: c.entry?.tierByRace, tier: c.entry?.tier, mainTier: c.entry?.mainTier, rankScore: c.entry?.rankScore ?? null }))}
-            noWpa={size === "1"}
+            noWpa   /* WPA 칸은 어느 조회에도 없다(2026-11-26, 요청: "wpa컬럼도 나오는 곳 없게") — 팀전 전체 월별의 WPA/티어 칸만(옛: 1:1 만 걷음 · 2026-11-17) */
             rankPts={size === "1"}   /* WPA 자리에 랭크포인트 획득(★ 래더 합침 · 종합 묶음만) */
             tier={showTier}   /* 팀전 티어 정식(2026-10-28, 요청: "이제 통계에 티어 정식으로 추가" — 옛 `?tier=1` 문을 걷었다) · 팀전 전체 · 맵 전체에서만(위 showTier ★) */
             mobile={isMobile}
