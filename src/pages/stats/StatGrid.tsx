@@ -198,7 +198,8 @@ function WpaTierCell({ t, member, race, className, more }: { t?: TierEntry | nul
   const cl = cx("scr-sg-tier-c", className);
   const ib = t ? (t.stdInbun ?? t.inbun ?? calcRowOf(t, "wpa")?.mult ?? null) : null;
   /* ★ 조건(티어 문턱 판 수)을 못 채운 사람은 인분도 안 보인다(2026-11-23, 요청: "인분기준은 살리되 조건을 충족하지 않는 사람은 인분을 아예 없애기") — "-" · 정렬도 맨 뒤. */
-  if (!t || typeof ib !== "number" || typeof t.tier !== "number") return <TCell member={member} metric={metric} facts={more} className={cl}><Dash /></TCell>;
+  /* 티어가 없으면(판수 부족 포함) 0판과 같은 팝업 — 근거값 없이 변화 그래프만(2026-11-26, 요청: "판수부족도 0판과 똑같이 팝업 나오게 데이터 노 그래프만"). */
+  if (!t || typeof ib !== "number" || typeof t.tier !== "number") return <TCell member={member} metric={metric} className={cl}><Dash /></TCell>;
   const facts = [...(t.calc ? [] : more ?? []), ...wpaFacts(t)];
   return (
     <TCell member={member} metric={metric} facts={facts} calc={t.calc} className={cl}>
